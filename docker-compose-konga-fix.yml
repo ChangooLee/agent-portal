@@ -1,0 +1,17 @@
+  konga:
+    image: pantsel/konga:latest
+    platform: linux/amd64
+    depends_on:
+      konga-db:
+        condition: service_healthy
+      kong:
+        condition: service_healthy
+    environment:
+      - DB_ADAPTER=postgres
+      - DB_HOST=konga-db
+      - DB_USER=konga
+      - DB_PASSWORD=kongapass
+      - DB_DATABASE=konga
+      - NODE_ENV=production
+      - NODE_PG_FORCE_NATIVE=true
+    # 외부 포트는 공개하지 않고 BFF 프록시로만 접근
