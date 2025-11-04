@@ -1,0 +1,82 @@
+"""LiteLLM Service for LLM Gateway"""
+import httpx
+from typing import Optional, Dict, Any
+from app.config import get_settings
+
+settings = get_settings()
+
+
+class LiteLLMService:
+    """Service for interacting with LiteLLM gateway"""
+    
+    def __init__(self):
+        self.base_url = getattr(settings, "LITELLM_HOST", "http://litellm:4000")
+        
+    async def list_models(self) -> Dict[str, Any]:
+        """Get list of available models from LiteLLM"""
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                response = await client.get(f"{self.base_url}/v1/models")
+                response.raise_for_status()
+                return response.json()
+            except httpx.RequestError as e:
+                raise Exception(f"Failed to connect to LiteLLM: {str(e)}")
+            except httpx.HTTPStatusError as e:
+                raise Exception(f"LiteLLM API error: {e.response.status_code} - {e.response.text}")
+    
+    async def chat_completion(
+        self,
+        model: str,
+        messages: list,
+        stream: bool = False,
+        **kwargs
+    ):
+        """Create a chat completion via LiteLLM (async generator for stream mode)"""
+        url = f"{self.base_url}/v1/chat/completions"
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": stream,
+            **kwargs
+        }
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            try:
+                async with client.stream("POST", url, json=payload) as response:
+                    response.raise_for_status()
+                    async for line in response.aiter_lines():
+                        if line.strip():
+                            yield line
+            except httpx.RequestError as e:
+                raise Exception(f"Failed to connect to LiteLLM: {str(e)}")
+            except httpx.HTTPStatusError as e:
+                raise Exception(f"LiteLLM API error: {e.response.status_code} - {e.response.text}")
+    
+    async def chat_completion_sync(
+        self,
+        model: str,
+        messages: list,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Create a non-streaming chat completion via LiteLLM"""
+        url = f"{self.base_url}/v1/chat/completions"
+        payload = {
+            "model": model,
+            "messages": messages,
+            "stream": False,
+            **kwargs
+        }
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            try:
+                response = await client.post(url, json=payload)
+                response.raise_for_status()
+                return response.json()
+            except httpx.RequestError as e:
+                raise Exception(f"Failed to connect to LiteLLM: {str(e)}")
+            except httpx.HTTPStatusError as e:
+                raise Exception(f"LiteLLM API error: {e.response.status_code} - {e.response.text}")
+
+
+# Singleton instance
+litellm_service = LiteLLMService()
