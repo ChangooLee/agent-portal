@@ -10,7 +10,7 @@ class LiteLLMService:
     """Service for interacting with LiteLLM gateway"""
     
     def __init__(self):
-        self.base_url = getattr(settings, "LITELLM_HOST", "http://litellm:4000")
+        self.base_url = getattr(settings, 'LITELLM_HOST', 'http://litellm:4000')
         
     async def list_models(self) -> Dict[str, Any]:
         """Get list of available models from LiteLLM"""

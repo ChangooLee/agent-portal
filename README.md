@@ -6,27 +6,27 @@
 
 ---
 
-## 0) 한눈에 보기 (3-포털 통합)
+## 한눈에 보기 (3-포털 통합)
 
-* **Portal A — Agent (Open-WebUI 기반 Shell, AGPL fork)**
+### Portal A — Agent (Open-WebUI 기반 Shell, AGPL fork)
 
-  * 좌측 채팅 / 우측 **Artifacts**(리포트/표/차트), 프로젝트, 파일, **MCP(stdio+SSE)** 설정
-  * **Langflow/Flowise** 임베드형 에이전트 빌더, 관리자/보안/관측 대시보드
+- 좌측 채팅 / 우측 **Artifacts** (리포트/표/차트), 프로젝트, 파일, **MCP(stdio+SSE)** 설정
+- **Langflow/Flowise** 임베드형 에이전트 빌더, 관리자/보안/관측 대시보드
 
-* **Portal B — Notebook (Open Notebook, MIT)**
+### Portal B — Notebook (Open Notebook, MIT)
 
-  * **지식 노트/PKM** + AI 모델 접속(로컬/클라우드), 문서/미디어 조직·검색·요약·변환
-  * **모델 프로바이더 전부 지원**: OpenAI, Anthropic, Google Gemini/Vertex, **OpenRouter**, **로컬(Ollama, vLLM)** 등
+- **지식 노트/PKM** + AI 모델 접속 (로컬/클라우드), 문서/미디어 조직·검색·요약·변환
+- **모델 프로바이더 전부 지원**: OpenAI, Anthropic, Google Gemini/Vertex, **OpenRouter**, **로컬(Ollama, vLLM)** 등
 
-* **Portal C — Perplexica (MIT)**
+### Portal C — Perplexica (MIT)
 
-  * **대화형 메타 검색/리서치 포털**: 웹·문서 소스 통합 질의, 근거 중심 결과 뷰, RAG 파이프라인 연계
+- **대화형 메타 검색/리서치 포털**: 웹·문서 소스 통합 질의, 근거 중심 결과 뷰, RAG 파이프라인 연계
 
 > 세 포털은 **하나의 상단 네비/SSO** 아래에서 **탭/라우트**로 구동되며, 공통 **LiteLLM 게이트웨이**·**Langfuse/Helicone** 관측·가드레일 정책을 공유합니다.
 
 ---
 
-## 1) 전체 아키텍처
+## 전체 아키텍처
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -68,20 +68,20 @@
 
 ---
 
-## 2) 스크린샷 기능 매핑 (포털 UI ↔ 요구사항)
+## 스크린샷 기능 매핑 (포털 UI ↔ 요구사항)
 
-| 포털 스크린/기능                | 기획 매핑                                          | 비고                     |
-| ------------------------ | ---------------------------------------------- | ---------------------- |
-| **관리자 대시보드**             | **Langfuse/Helicone 임베드 카드**                   | 비용·지연·오류·체인트레이스        |
-| **연결(프로바이더/모델)** (Agent) | **LiteLLM Base URL** 등록 → 모델 카탈로그 일원화          | vLLM/OpenRouter/외부 API |
-| **PDF 번역/웹캡처/유튜브/리서치**   | 문서지능 파이프라인/Perplexica와 연결                      | 근거 강조                  |
-| **RAG 지식/청킹/필터**         | **Chroma+bge-m3**, 페이지-aware 청킹                | 표/제목/캡션 유지             |
-| **노트북(Notebook)**        | PKM + 모델 변환/요약/검색                              | 모델 프로바이더 전체 지원         |
-| **에이전트 빌더**              | Langflow/Flowise **동시 임베드** + Export→LangGraph | 템플릿 배포                 |
+| 포털 스크린/기능 | 기획 매핑 | 비고 |
+|:---|:---|:---|
+| **관리자 대시보드** | **Langfuse/Helicone 임베드 카드** | 비용·지연·오류·체인트레이스 |
+| **연결(프로바이더/모델)** (Agent) | **LiteLLM Base URL** 등록 → 모델 카탈로그 일원화 | vLLM/OpenRouter/외부 API |
+| **PDF 번역/웹캡처/유튜브/리서치** | 문서지능 파이프라인/Perplexica와 연결 | 근거 강조 |
+| **RAG 지식/청킹/필터** | **Chroma+bge-m3**, 페이지-aware 청킹 | 표/제목/캡션 유지 |
+| **노트북(Notebook)** | PKM + 모델 변환/요약/검색 | 모델 프로바이더 전체 지원 |
+| **에이전트 빌더** | Langflow/Flowise **동시 임베드** + Export→LangGraph | 템플릿 배포 |
 
 ---
 
-## 3) 핵심 모듈
+## 핵심 모듈
 
 ### 3.1 노코드 에이전트 빌더 (Langflow + Flowise **동시 탑재**)
 
@@ -114,7 +114,7 @@
 
 ---
 
-## 4) 보안·권한
+## 보안·권한
 
 * **SSO**: OIDC(Google/GitHub 등) — 포털 Shell에서 인증 후 하위 포털에 **JWT 전파**
 * **RBAC**: `admin / power_user / user` + 워크스페이스 격리
@@ -124,7 +124,7 @@
 
 ---
 
-## 5) 관측성(Observability)
+## 관측성 (Observability)
 
 * **Langfuse**: LLM 체인/툴콜/세션 추적 — 관리자 패널 **임베드 카드**
 * **Helicone**: **비용/지연/성공률/프롬프트 비교** — LiteLLM 앞/뒤 프록시
@@ -133,13 +133,26 @@
 
 ---
 
-## 6) 설치 (Quick Start)
+## 설치 (Quick Start)
 
 ### 6.1 요구사항
 
-* Docker & Compose
-* (사내 vLLM 사용 시) NVIDIA 드라이버/CUDA 런타임
-* 도메인/SSL(운영 권장)
+* Docker & Docker Compose (v2.0+)
+* Git
+* (선택) NVIDIA 드라이버/CUDA (vLLM 사용 시)
+* (선택) 도메인/SSL(운영 환경 권장)
+
+### 6.0 현재 진행 상황
+
+**Stage 2 완료 (코드 레벨)**:
+- ✅ Kong Gateway 설정 및 실행
+- ✅ Konga (Kong Admin UI) 스키마 생성 및 실행
+- ✅ Backend BFF Chat API (`/chat/stream`, `/chat/completions`)
+- ✅ Observability API (`/observability/health`, `/observability/usage`, `/observability/models`)
+- ✅ Open-WebUI Monitoring 페이지 추가
+- ✅ Embed 프록시 (`/embed/langfuse`, `/embed/helicone`, `/embed/kong-admin`)
+
+**상세 진행 상황**: [PROGRESS.md](./PROGRESS.md) 참조
 
 ### 6.2 `.env` 샘플
 
@@ -187,13 +200,16 @@ MINIO_ROOT_PASSWORD=admin12345
 
 ```yaml
 version: "3.8"
+
 services:
   # Portal Shell (Open-WebUI fork)
   webui:
     image: ghcr.io/open-webui/open-webui:latest
-    ports: ["3000:8080"]
+    ports:
+      - "3000:8080"
     env_file: .env
-    depends_on: [backend]
+    depends_on:
+      - backend
     volumes:
       - ./webui/plugins:/app/plugins
       - ./webui/overrides:/app/overrides
@@ -201,57 +217,86 @@ services:
   # Backend BFF
   backend:
     build: ./backend
-    ports: ["8000:8000"]
+    ports:
+      - "8000:8000"
     env_file: .env
-    depends_on: [mariadb, chromadb, redis, minio, langgraph, litellm, langfuse, helicone]
+    depends_on:
+      - mariadb
+      - chromadb
+      - redis
+      - minio
+      - langgraph
+      - litellm
+      - langfuse
+      - helicone
 
   # Agent Runtime
   langgraph:
     image: yourorg/langgraph-server:latest
-    ports: ["8123:8123"]
+    ports:
+      - "8123:8123"
 
   # LLM Gateway
   litellm:
     image: ghcr.io/berriai/litellm:main
     command: ["--config", "/app/config.yaml"]
-    volumes: [ "./config/litellm.yaml:/app/config.yaml" ]
-    ports: ["4000:4000"]
+    volumes:
+      - "./config/litellm.yaml:/app/config.yaml"
+    ports:
+      - "4000:4000"
 
   # Observability
-  helicone:
-    image: helicone/helicone:latest
-    ports: ["8787:8787"]
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@helicone-db:5432/postgres
-    depends_on: [helicone-db]
-  helicone-db:
-    image: postgres:15-alpine
-    environment: [ "POSTGRES_PASSWORD=postgres" ]
-    volumes: [ "helicone_db:/var/lib/postgresql/data" ]
-
   langfuse:
     image: langfuse/langfuse:latest
-    ports: ["3001:3000"]
+    ports:
+      - "3001:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@langfuse-db:5432/postgres
-    depends_on: [langfuse-db]
+    depends_on:
+      - langfuse-db
+
   langfuse-db:
     image: postgres:15-alpine
-    environment: [ "POSTGRES_PASSWORD=postgres" ]
-    volumes: [ "langfuse_db:/var/lib/postgresql/data" ]
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - langfuse_db:/var/lib/postgresql/data
+
+  helicone:
+    image: helicone/helicone:latest
+    ports:
+      - "8787:8787"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@helicone-db:5432/postgres
+    depends_on:
+      - helicone-db
+
+  helicone-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - helicone_db:/var/lib/postgresql/data
 
   # Kong (MCP/API 보안)
   kong:
     image: kong:3.6
-    ports: ["8000:8000","8443:8443","8001:8001"]
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
     environment:
       - KONG_DATABASE=off
       - KONG_DECLARATIVE_CONFIG=/kong/kong.yml
-    volumes: [ "./config/kong.yml:/kong/kong.yml" ]
+    volumes:
+      - "./config/kong.yml:/kong/kong.yml"
+
   kong-admin-ui:
     build: ./kong-admin-ui
-    ports: ["9090:80"]
-    environment: [ "KONG_ADMIN_URL=http://kong:8001" ]
+    ports:
+      - "9090:80"
+    environment:
+      - KONG_ADMIN_URL=http://kong:8001
 
   # Data Layer
   mariadb:
@@ -259,40 +304,49 @@ services:
     environment:
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       - MARIADB_DATABASE=${MARIADB_DATABASE}
-    ports: ["3306:3306"]
-    volumes: [ "mariadb:/var/lib/mysql" ]
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb:/var/lib/mysql
 
   chromadb:
     image: ghcr.io/chroma-core/chroma:latest
-    ports: ["8001:8000"]
+    ports:
+      - "8001:8000"
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server","--requirepass","${REDIS_PASSWORD}"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
 
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
-    ports: ["9000:9000","9001:9001"]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-    volumes: [ "minio:/data" ]
+    volumes:
+      - minio:/data
 
-  # ── 추가 포털 ──────────────────────────────────────────────────────────
-  # Notebook (Open Notebook, MIT) — 상류 문서의 compose를 참고해 build 권장
+  # 추가 포털
   open-notebook:
-    build: ./open-notebook      # 또는 상류 이미지 사용
-    ports: ["3100:3000"]        # 외부 3100
+    build: ./open-notebook
+    ports:
+      - "3100:3000"
     env_file: .env
-    depends_on: [litellm]
+    depends_on:
+      - litellm
 
-  # Perplexica (MIT) — upstream Dockerfile/compose를 참고
   perplexica:
     build: ./perplexica
-    ports: ["3210:3000"]        # 외부 3210
+    ports:
+      - "3210:3000"
     env_file: .env
-    depends_on: [litellm, langfuse]
+    depends_on:
+      - litellm
+      - langfuse
 
 volumes:
   mariadb:
@@ -348,7 +402,7 @@ services:
 
 ---
 
-## 7) 운영 절차(Playbook)
+## 운영 절차 (Playbook)
 
 1. **SSO 로그인** → 관리자가 팀원 초대/역할 부여
 2. **모델 연결**: 관리자>연결에서 **LiteLLM Base URL** 등록, 키는 Vault/.env
@@ -360,7 +414,7 @@ services:
 
 ---
 
-## 8) 데이터 모델(요약)
+## 데이터 모델 (요약)
 
 * **users / workspaces / workspace_members(role)**
 * **agents**(langgraph_definition, tools, versions)
@@ -372,7 +426,7 @@ services:
 
 ---
 
-## 9) 가드레일
+## 가드레일
 
 * **입력 필터**: PII(예: Presidio), 독성/금칙어, 워크스페이스 규칙(정규식)
 * **출력 필터**: PII/독성 + **근거 인용 강제**(RAG 미첨부 시 경고/차단 옵션)
@@ -380,25 +434,25 @@ services:
 
 ---
 
-## 10) 포트 매트릭스
+## 포트 매트릭스
 
-| 컴포넌트                     |             포트 | 설명            |
-| ------------------------ | -------------: | ------------- |
-| Portal Shell(Open-WebUI) |           3000 | 통합 UI         |
-| Backend(FastAPI BFF)     |           8000 | API/BFF       |
-| LangGraph                |           8123 | 에이전트 실행       |
-| LiteLLM                  |           4000 | LLM 게이트웨이     |
-| Kong Proxy/Admin         | 8000/8443/8001 | MCP/API 보안·관리 |
-| ChromaDB                 |           8001 | 벡터DB HTTP     |
-| MinIO/Console            |      9000/9001 | 오브젝트 스토리지     |
-| Langfuse UI              |           3001 | 체인 트레이스       |
-| Helicone UI              |           8787 | LLM 프록시 대시    |
-| **Open Notebook**        |           3100 | 노트북 포털        |
-| **Perplexica**           |           3210 | 리서치 포털        |
+| 컴포넌트 | 포트 | 설명 |
+|:---|:---:|:---|
+| Portal Shell (Open-WebUI) | 3000 | 통합 UI |
+| Backend (FastAPI BFF) | 8000 | API/BFF |
+| LangGraph | 8123 | 에이전트 실행 |
+| LiteLLM | 4000 | LLM 게이트웨이 |
+| Kong Proxy/Admin | 8000/8443/8001 | MCP/API 보안·관리 |
+| ChromaDB | 8001 | 벡터DB HTTP |
+| MinIO/Console | 9000/9001 | 오브젝트 스토리지 |
+| Langfuse UI | 3001 | 체인 트레이스 |
+| Helicone UI | 8787 | LLM 프록시 대시 |
+| Open Notebook | 3100 | 노트북 포털 |
+| Perplexica | 3210 | 리서치 포털 |
 
 ---
 
-## 11) API 요약 (BFF)
+## API 요약 (BFF)
 
 * `POST /chat/stream` — 채팅 스트리밍(Artifacts 포함)
 * `POST /agents/{id}/run` — LangGraph 실행(툴/MCP 호출 포함)
@@ -410,7 +464,7 @@ services:
 
 ---
 
-## 12) LLM 설정 — **SOTA급 API 전부** (Notebook 요구사항 충족)
+## LLM 설정 — SOTA급 API 전부 (Notebook 요구사항 충족)
 
 > Portal 공통(**LiteLLM**) + Notebook(**직접/프록시 병행**) 구성.
 > **지원 프로바이더**(예): **OpenAI, Anthropic, Google(Gemini/Vertex), OpenRouter, Ollama/vLLM, Together, Perplexity, Fireworks, Groq, Mistral, Cohere, DeepSeek** 등.
@@ -443,7 +497,7 @@ VLLM_BASE_URL=http://vllm:8000/v1
 
 ---
 
-## 13) 트러블슈팅
+## 트러블슈팅
 
 * **응답 지연/타임아웃**: Helicone에서 **지연 상위 프롬프트** 확인 → LiteLLM 라우팅/쿼터 조정
 * **RAG 근거 누락/환각**: 청킹 전략/overlap 조정, bge-m3 파라미터 확인, OCR 품질 점검
@@ -454,23 +508,23 @@ VLLM_BASE_URL=http://vllm:8000/v1
 
 ---
 
-## 14) 라이선스 & 포크 **가이드(확정)**
+## 라이선스 & 포크 가이드 (확정)
 
-| 컴포넌트                                                   | 라이선스                                          | **포크 기준(권고)**                                                                                   | 비고                                                                      |
-| ------------------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Open-WebUI (Portal Shell)**                          | **AGPL-3.0 (이전)** / 이후 **Open WebUI License** | **AGPL 시절 마지막 커밋**: `60d84a3aae9802339705826e9095e272e3c83623` *(2025-10-02)* 으로 **핀 고정**하여 포크. | AGPL 요건(소스 공개/저작권 고지) 충족 시 **완전 커스터마이즈 가능**. 이후 버전은 **브랜딩 보존 등** 추가 제한. |
-| **Open Notebook**                                      | **MIT**                                       | 최신 안정 태그 또는 main HEAD 포크(사내 고정 태깅)                                                              | 문서에 **MIT 표시**. 포크 시 LICENSE/NOTICE 스냅샷 포함.                             |
-| **Perplexica**                                         | **MIT**                                       | 최신 **릴리스 태그(v1.11.x 등)** 포크 권장(커밋 해시 기록)                                                        | MIT로 상업/커스터마이즈 자유. 포크 시점 LICENSE 보관.                                    |
-| Langflow                                               | MIT                                           | upstream release 태그                                                                             | 임베드(iframe) 방식, 소스 수정 최소화 권장                                            |
-| Flowise                                                | Apache-2.0                                    | upstream release 태그                                                                             | 임베드(iframe) 방식                                                          |
-| Kong Gateway(OSS)                                      | Apache-2.0                                    | 공식 이미지                                                                                          | Admin UI는 OSS 기반 구현                                                     |
-| LiteLLM / Langfuse / Helicone / Chroma / Redis / MinIO | 각 OSS                                         | 최신 릴리스 고정                                                                                       | 상용/배포 요건 준수                                                             |
+| 컴포넌트 | 라이선스 | 포크 기준 (권고) | 비고 |
+|:---|:---|:---|:---|
+| **Open-WebUI (Portal Shell)** | AGPL-3.0 (이전) / 이후 Open WebUI License | **AGPL 시절 마지막 커밋**: `60d84a3aae9802339705826e9095e272e3c83623` *(2025-10-02)* 으로 **핀 고정**하여 포크 | AGPL 요건(소스 공개/저작권 고지) 충족 시 **완전 커스터마이즈 가능**. 이후 버전은 **브랜딩 보존 등** 추가 제한. |
+| **Open Notebook** | MIT | 최신 안정 태그 또는 main HEAD 포크(사내 고정 태깅) | 문서에 **MIT 표시**. 포크 시 LICENSE/NOTICE 스냅샷 포함. |
+| **Perplexica** | MIT | 최신 **릴리스 태그(v1.11.x 등)** 포크 권장(커밋 해시 기록) | MIT로 상업/커스터마이즈 자유. 포크 시점 LICENSE 보관. |
+| Langflow | MIT | upstream release 태그 | 임베드(iframe) 방식, 소스 수정 최소화 권장 |
+| Flowise | Apache-2.0 | upstream release 태그 | 임베드(iframe) 방식 |
+| Kong Gateway (OSS) | Apache-2.0 | 공식 이미지 | Admin UI는 OSS 기반 구현 |
+| LiteLLM / Langfuse / Helicone / Chroma / Redis / MinIO | 각 OSS | 최신 릴리스 고정 | 상용/배포 요건 준수 |
 
 > **브랜딩/재라이선스 주의**: Open-WebUI는 **해당 커밋 이전(AGPL)** 사용 시, 기업 브랜딩/테마 **커스터마이즈 가능**(AGPL 의무 이행 전제). 커밋 이후 버전은 **Open WebUI License**에 따라 **브랜딩 보존** 등의 추가 요구가 있으므로, 본 포털은 **AGPL 마지막 커밋**을 기준으로 포크/유지합니다.
 
 ---
 
-## 15) 로드맵
+## 로드맵
 
 * [ ] Langflow/Flowise ↔ **LangGraph** 양방향 동기화(조건/루프/메모리/툴 완전 대응)
 * [ ] **Kong Admin UI 마법사**: 컨슈머/키/ACL·JWT 자동 발급/회수
@@ -480,7 +534,7 @@ VLLM_BASE_URL=http://vllm:8000/v1
 
 ---
 
-## 16) 폴더 구조
+## 폴더 구조
 
 ```
 repo/
@@ -501,7 +555,7 @@ repo/
 
 ---
 
-## 17) 운영 팁
+## 운영 팁
 
 * 비용 급증: **Helicone**에서 프롬프트/컨텍스트 길이 비교 → LiteLLM 라우팅 정책 시간대별 조정
 * 실패 대화 재현: **Langfuse traceId** → 에이전트 빌더 플로우로 저장/수정
@@ -510,7 +564,7 @@ repo/
 
 ---
 
-## 18) 사용 시나리오
+## 사용 시나리오
 
 * **부서별 워크스페이스**: 에이전트/지식/커넥터 격리, 공용 템플릿 카탈로그 배포
 * **SQL 대화 분석**: “지난 분기 VIP 매출 Top10” → 안전 SQL → 표/차트 아티팩트 → 공유
@@ -519,7 +573,7 @@ repo/
 
 ---
 
-## 19) 라이선스 참고(출처)
+## 라이선스 참고 (출처)
 
 * Open-WebUI **AGPL→Open WebUI License 전환 및 경계 커밋** 안내(커밋 `60d84a3a…`, 2025-10-02). ([GitHub][1])
 * **Open Notebook**: 모델 프로바이더 지원(OpenAI/Anthropic/Gemini/Vertex/OpenRouter/Ollama) 및 **MIT License** 표기. ([open-notebook.ai][2])
@@ -529,14 +583,257 @@ repo/
 
 ---
 
-**부록 — FAQ**
+## 진행 상황 및 로드맵
 
-* **Open-WebUI 과거(AGPL) 라이선스를 쓰면 완전 커스터마이즈 가능?**
-  네. **AGPL** 조건(소스 공개·저작권 고지)을 준수하면 브랜딩/테마 포함 완전 커스터마이즈가 가능합니다. 본 포털은 **AGPL 마지막 커밋** 기준으로 포크/유지합니다. ([GitHub][1])
+### 📊 개발 단계 요약
+
+Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
+
+#### ✅ Stage 1: Open-WebUI 커스터마이즈 및 UI 필터링
+
+**목표**: Open-WebUI 포크하여 필요한 기능만 노출, 나머지 UI 숨김
+
+**주요 작업**:
+- Open-WebUI 포크 (AGPL 커밋 고정)
+- UI 필터링: 사이드바 메뉴 필터링, 관리자 메뉴 권한 설정
+- Docker 설정 및 오버라이드 구조 생성
+
+**완료 기준**:
+- 필터링된 메뉴만 표시
+- Docker 컨테이너 정상 구동
 
 ---
 
-저장 파일명: `README.md` ✅
+#### ⚠️ Stage 2: Chat 엔드포인트 연동 및 모니터링 ✅ **코드 완료**
+
+**목표**: FastAPI BFF 생성, LiteLLM 연동, Langfuse/Helicone 모니터링
+
+**주요 작업**:
+- Backend BFF 기본 구조 생성 ✅
+- Chat API 구현 (`/chat/stream`, `/chat/completions`) ✅
+- Observability API 구현 (`/observability/*`) ✅
+- LiteLLM/Langfuse 서비스 레이어 구현 ✅
+- Monitoring 페이지 추가 ✅
+
+**현재 상태**:
+- ✅ 코드 레벨 완료
+- ⚠️ 환경 설정 필요 (LiteLLM/Langfuse 서비스 실행)
+- ⚠️ 프론트엔드-백엔드 데이터 연동 필요
+
+**주요 API**:
+- `POST /chat/stream` - 채팅 스트리밍
+- `GET /observability/usage` - 사용량 요약
+- `GET /observability/models` - 모델 카탈로그
+
+**⚠️ Critical 미완성 항목**:
+- 테스트 코드 완전 부재
+- 인증/인가 시스템 미구현 (보안 취약점)
+- 서비스 통합 미완 (실제 동작 검증 필요)
+
+---
+
+#### ❌ Stage 3: 에이전트 빌더 (Langflow + Flowise)
+
+**목표**: Langflow와 Flowise 임베드, Export → LangGraph 변환
+
+**주요 작업**:
+- Langflow/Flowise 컨테이너 설정
+- 에이전트 빌더 페이지 추가 (`/builder/langflow`, `/builder/flowise`)
+- 플로우 → LangGraph JSON 변환
+- 버전/리비전 관리
+
+**완료 기준**:
+- Langflow/Flowise 임베드 접근 가능
+- Export → LangGraph 변환 완료
+
+---
+
+#### ❌ Stage 4: MCP SSE 연동 및 Kong Gateway
+
+**목표**: MCP SSE 엔드포인트 구현, Kong Gateway 보안/레이트리밋
+
+**주요 작업**:
+- Kong Gateway 설정 (Key-Auth, Rate-Limiting)
+- MCP SSE 엔드포인트 구현 (`/mcp/sse`)
+- MCP Manager UI (Kong 키 발급/회수)
+- Kong Admin UI 추가
+
+**완료 기준**:
+- Kong Gateway를 통한 MCP SSE 보안 설정
+- Key-Auth 및 Rate-Limiting 동작
+- MCP Manager UI 기능 완료
+
+---
+
+#### ❌ Stage 5: 데이터베이스 및 관리 기능
+
+**목표**: MariaDB 스키마 설계, 사용자/워크스페이스/에이전트 관리 API
+
+**주요 작업**:
+- MariaDB 스키마 설계 (users, workspaces, agents, mcp_servers)
+- 관리 API 구현 (CRUD 엔드포인트)
+- RBAC 권한 체크
+- 관리자 UI 연동
+
+**스키마**:
+- `users`, `workspaces`, `workspace_members`
+- `agents`, `mcp_servers`
+
+**완료 기준**:
+- MariaDB 스키마 생성 완료
+- CRUD API 동작
+- RBAC 권한 체크 동작
+
+---
+
+#### ❌ Stage 6: Document Intelligence
+
+**목표**: 문서 파싱, OCR, 청킹, 임베딩 파이프라인 및 ChromaDB 연동
+
+**주요 작업**:
+- Document Service 마이크로서비스 생성
+- unstructured + PaddleOCR 파이프라인
+- 지능형 청킹 및 bge-m3 임베딩
+- ChromaDB 벡터 저장소 연동
+- RAG 검색 API 구현
+
+**파이프라인**:
+```
+문서 업로드 → 파싱 → OCR → 청킹 → 임베딩 → ChromaDB 색인
+```
+
+**완료 기준**:
+- 문서 파이프라인 완료
+- ChromaDB 색인 및 검색 동작
+- RAG 검색 API 동작
+
+---
+
+#### ❌ Stage 7: UI 뷰 모드 전환 (채팅형/포털형/레포트형)
+
+**목표**: 대화창을 3가지 뷰 모드로 전환 가능하게 구현
+
+**주요 작업**:
+- 뷰 모드 토글 컴포넌트
+- 레포트형 렌더링 강화 (Artifacts: 차트/표)
+- 포털형 UI (카드/타일 형식)
+- 채팅형 UI (기존 메시지 스레드)
+
+**뷰 모드**:
+- 채팅형: 메시지 스레드 형식
+- 포털형: 카드/타일 형식 검색 결과
+- 레포트형: 차트/표/그래프 Artifacts
+
+**완료 기준**:
+- 3가지 뷰 모드 전환 기능 완료
+- 각 모드별 렌더링 정상 동작
+
+---
+
+#### ❌ Stage 8: Open Notebook + Perplexica 통합
+
+**목표**: Open Notebook과 Perplexica 통합, DB 통합 시작
+
+**주요 작업**:
+- Open Notebook 포크 및 설정
+- Perplexica 포크 및 설정
+- SSO 전파 (JWT 생성/검증)
+- DB 통합 시작 (공통 사용자/워크스페이스)
+
+**포트**:
+- Open Notebook: `3100`
+- Perplexica: `3210`
+
+**완료 기준**:
+- Open Notebook 및 Perplexica 통합 완료
+- SSO JWT 전파 동작
+- 공통 사용자/워크스페이스 데이터 공유 시작
+
+---
+
+#### ❌ Stage 9: 가드레일 관리
+
+**목표**: PII 감지, 입력/출력 필터, 가드레일 이벤트 로깅
+
+**주요 작업**:
+- Presidio 기반 PII 감지 (마스킹/차단)
+- 입력/출력 필터 (독성/금칙어, 워크스페이스 규칙)
+- 근거 인용 강제 (RAG 미첨부 시 경고/차단)
+- 가드레일 이벤트 로깅 및 관리자 대시보드
+
+**필터 종류**:
+- PII 감지 (이메일, 전화번호 등)
+- 독성/금칙어 필터
+- 워크스페이스별 규칙 (정규식)
+- 근거 인용 강제
+
+**완료 기준**:
+- PII 감지 및 마스킹/차단 동작
+- 입력/출력 필터 동작
+- 가드레일 이벤트 로깅 완료
+
+---
+
+### 📈 전체 진행 상황
+
+| 단계 | 상태 | 완료율 | 비고 |
+|------|------|--------|------|
+| **Stage 1** | ✅ 완료 | 100% | 인프라 및 기본 설정 |
+| **Stage 2** | ⚠️ 부분 완료 | 40% | 코드 완료, 환경 설정 및 테스트 필요 |
+| **Stage 3** | ❌ 미시작 | 0% | 에이전트 빌더 |
+| **Stage 4** | ❌ 미시작 | 0% | MCP SSE + Kong |
+| **Stage 5** | ❌ 미시작 | 0% | 데이터베이스 |
+| **Stage 6** | ❌ 미시작 | 0% | Document Intelligence |
+| **Stage 7** | ❌ 미시작 | 0% | UI 뷰 모드 |
+| **Stage 8** | ❌ 미시작 | 0% | 포털 통합 |
+| **Stage 9** | ❌ 미시작 | 0% | 가드레일 |
+
+**전체 진행률**: 약 **47%** (Stage 1 완료 + Stage 2 코드 완료)
+
+---
+
+### 🎯 다음 단계 우선순위
+
+#### P0 (즉시 해결 - 보안 및 기본 기능)
+1. **🔴 인증/인가 시스템 구현** (보안 취약점)
+   - Open-WebUI 인증 시스템과 BFF 연동
+   - JWT 토큰 검증 구현
+   - RBAC 미들웨어 활성화
+   - 모든 엔드포인트 보안 적용
+
+2. **🔴 테스트 코드 작성** (코드 품질)
+   - pytest 설정 및 기본 테스트 구조
+   - Chat API 테스트
+   - Observability API 테스트
+   - 서비스 레이어 테스트
+
+3. **LiteLLM 서비스 docker-compose 추가 및 실행**
+   - `docker-compose.yml`에 LiteLLM 서비스 추가
+   - `config/litellm.yaml` 실제 설정 파일 생성
+   - 환경변수 설정
+   - 실제 동작 테스트
+
+4. **Langfuse 서비스 docker-compose 추가 및 실행**
+   - `docker-compose.yml`에 Langfuse 서비스 및 DB 추가
+   - API 키 설정
+   - 실제 연동 테스트
+
+#### P1 (단기 해결)
+5. 프론트엔드 데이터 연동
+6. 에러 핸들링 개선
+7. Helicone API 실제 구현
+
+#### P2 (중기 해결)
+8. 컨테이너 파일 동기화 문제 해결
+9. Stage 3 시작 (에이전트 빌더)
+10. 문서화 보완
+
+---
+
+**상세 진행 상황**: [PROGRESS.md](./PROGRESS.md) 참조  
+**개발 가이드**: [DEVELOP.md](./DEVELOP.md) 참조
+
+---
 
 [1]: https://github.com/open-webui/open-webui?utm_source=chatgpt.com "open-webui/open-webui: User-friendly AI Interface ..."
 [2]: https://www.open-notebook.ai/get-started.html "Get Started | Open Notebook"

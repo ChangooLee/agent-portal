@@ -65,7 +65,7 @@ node_modules/
 ### 1.1 포크할 오픈소스 리스트
 
 | 컴포넌트 | 라이선스 | 포크 기준 | 저장소 위치 | 비고 |
-|---------|---------|----------|-----------|------|
+|:---|:---|:---|:---|:---|
 | **Open-WebUI** | AGPL-3.0 | 커밋 `60d84a3aae9802339705826e9095e272e3c83623` (2025-10-02) | `webui/` | AGPL 마지막 커밋 고정 |
 | **Open Notebook** | MIT | 최신 안정 태그 또는 main HEAD | `open-notebook/` | LICENSE 포함 |
 | **Perplexica** | MIT | 최신 릴리스 태그 (v1.11.x 등) | `perplexica/` | 포크 시점 LICENSE 보관 |
@@ -151,7 +151,8 @@ echo "All forks completed. Check LICENSE files in each directory."
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 webui/
 ├─ Dockerfile
@@ -165,7 +166,7 @@ webui/
    └─ custom-features/        # 커스텀 기능 플러그인
 ```
 
-**주요 수정 사항**:
+**주요 수정 사항:**
 - `overrides/components/Sidebar.tsx`: 불필요한 메뉴 항목 숨김
 - 기본 채팅, 프로젝트, 설정 메뉴만 노출
 - 관리자 메뉴는 `admin` 역할만 접근
@@ -212,13 +213,15 @@ services:
 
 ---
 
-### 2.2 2단계: Chat 엔드포인트 연동 및 모니터링
+### 2.2 2단계: Chat 엔드포인트 연동 및 모니터링 ✅ **완료**
 
 **목표**: FastAPI BFF 생성, LiteLLM 연동, Langfuse/Helicone 모니터링 및 관리자 화면 임베드
 
+**상태**: ✅ **코드 레벨 완료** (환경 설정 필요)
+
 #### 작업 내용
 
-1. **Backend BFF 기본 구조 생성**
+1. **Backend BFF 기본 구조 생성** ✅
    ```bash
    mkdir -p backend
    cd backend
@@ -227,20 +230,23 @@ services:
    pip install fastapi uvicorn litellm langfuse-sdk
    ```
 
-2. **LiteLLM 설정**
-   - `config/litellm.yaml` 생성
-   - 기본 모델 리스트 설정 (테스트용)
+2. **LiteLLM 설정** ⚠️
+   - `config/litellm.yaml` 생성 (구조 준비)
+   - 기본 모델 리스트 설정 (테스트용) - 환경 설정 필요
 
-3. **관찰성 도구 설정**
-   - Langfuse 컨테이너 추가
-   - Helicone 컨테이너 추가
+3. **관찰성 도구 설정** ✅
+   - Langfuse 컨테이너 추가 (docker-compose.yml)
+   - Helicone 컨테이너 추가 (docker-compose.yml)
+   - Langfuse/Helicone 서비스 레이어 구현 완료
 
-4. **관리자 대시보드 임베드**
+4. **관리자 대시보드 임베드** ✅
    - Langfuse/Helicone iframe 카드 추가
+   - Monitoring 페이지 구현 (`webui/src/routes/(app)/admin/monitoring/+page.svelte`)
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 backend/
 ├─ Dockerfile
@@ -250,19 +256,20 @@ backend/
 │  ├─ main.py                 # FastAPI 앱
 │  ├─ routes/
 │  │  ├─ chat.py              # /chat/stream
-│  │  └─ observability.py    # /observability/*
+│  │  └─ observability.py     # /observability/*
 │  ├─ services/
 │  │  ├─ litellm_service.py   # LiteLLM 연동
 │  │  └─ langfuse_service.py  # Langfuse 연동
 │  └─ config.py
 ```
 
-**주요 API**:
+**주요 API:**
 - `POST /chat/stream`: 채팅 스트리밍
 - `GET /observability/usage`: Langfuse/Helicone 요약 데이터
 - `GET /catalog/models`: LiteLLM 모델 카탈로그
 
-**webui 오버라이드**:
+**webui 오버라이드:**
+
 - `overrides/pages/Admin.tsx`: 모니터링 임베드 카드 추가
 
 #### docker-compose 설정
@@ -339,10 +346,16 @@ services:
 
 #### 완료 기준
 
-- [ ] 채팅 스트리밍 API 정상 동작
-- [ ] LiteLLM 게이트웨이 연동 완료
-- [ ] Langfuse/Helicone 데이터 수집 및 표시
-- [ ] 관리자 화면에 모니터링 임베드 완료
+- [x] 채팅 스트리밍 API 코드 구현 완료 (`/chat/stream`, `/chat/completions`)
+- [x] LiteLLM 게이트웨이 서비스 레이어 구현 완료 (`litellm_service.py`)
+- [x] Langfuse/Helicone 서비스 레이어 구현 완료 (`langfuse_service.py`)
+- [x] Observability API 엔드포인트 구현 완료 (`/observability/*`)
+- [x] 관리자 화면에 모니터링 페이지 추가 완료
+- [ ] LiteLLM 서비스 실행 및 설정 (환경 설정 필요)
+- [ ] Langfuse/Helicone 실제 연동 테스트 (환경 설정 필요)
+- [ ] 프론트엔드-백엔드 데이터 연동 (BFF API 호출)
+
+**참고**: 상세 진행 상황은 [PROGRESS.md](./PROGRESS.md) 참조
 
 ---
 
@@ -366,7 +379,8 @@ services:
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 backend/
 └─ app/
@@ -450,7 +464,8 @@ services:
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 backend/
 └─ app/
@@ -568,7 +583,8 @@ consumers:
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 backend/
 └─ app/
@@ -582,7 +598,7 @@ backend/
       └─ rbac.py               # RBAC 체크
 ```
 
-**스키마 설계**:
+**스키마 설계:**
 - `users` (id, email, role, created_at)
 - `workspaces` (id, name, created_at)
 - `workspace_members` (workspace_id, user_id, role)
@@ -656,7 +672,8 @@ services:
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 document-service/
 ├─ Dockerfile
@@ -744,7 +761,8 @@ services:
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 webui/
 └─ overrides/
@@ -799,7 +817,8 @@ webui/
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 open-notebook/
 ├─ Dockerfile
@@ -885,14 +904,15 @@ services:
 
 #### 구현 작업
 
-**파일 구조**:
+**파일 구조:**
+
 ```
 backend/
 └─ app/
    ├─ services/
    │  ├─ guardrails.py        # 가드레일 로직
    │  ├─ pii_detection.py     # Presidio 연동
-   │  └─ content_filter.py    # 독성/금칙어 필터
+   │  └─ content_filter.py   # 독성/금칙어 필터
    └─ routes/
       └─ guardrails.py        # 가드레일 정책 관리
 

@@ -18,9 +18,9 @@ class LangfuseService:
     """Service for interacting with Langfuse"""
     
     def __init__(self):
-        self.base_url = settings.LANGFUSE_INTERNAL_URL
-        self.public_key = settings.LANGFUSE_PUBLIC_KEY
-        self.secret_key = settings.LANGFUSE_SECRET_KEY
+        self.base_url = getattr(settings, 'LANGFUSE_INTERNAL_URL', 'http://langfuse:3000')
+        self.public_key = getattr(settings, 'LANGFUSE_PUBLIC_KEY', '')
+        self.secret_key = getattr(settings, 'LANGFUSE_SECRET_KEY', '')
         
         # Initialize Langfuse client if keys are provided and module is available
         if LANGFUSE_AVAILABLE and self.public_key and self.secret_key:

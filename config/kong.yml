@@ -1,0 +1,26 @@
+_format_version: "3.0"
+
+services:
+  - name: backend-proxy
+    url: http://backend:8000
+    plugins:
+      - name: prometheus
+
+routes:
+  - name: backend-route
+    service: backend-proxy
+    paths:
+      - /api
+
+# Prometheus plugin configuration
+plugins:
+  - name: prometheus
+    enabled: true
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
+
+

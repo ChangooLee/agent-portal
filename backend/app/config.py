@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     
     # Langfuse
     LANGFUSE_INTERNAL_URL: str = "http://langfuse:3000"
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_HOST: str = "http://langfuse:3000"
+    
+    # LiteLLM
+    LITELLM_HOST: str = "http://litellm:4000"
+    OPENAI_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
     
     # Default workspace filter
     DEFAULT_WORKSPACE_FILTER: str = "ws_default"
@@ -38,3 +46,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance"""
     return Settings()
+

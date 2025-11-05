@@ -19,6 +19,9 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    volumes:
+      # 개발 중 로컬 파일 직접 마운트
+      - ./backend/app:/app/app:ro
     depends_on:
       - mariadb
       - chromadb
@@ -56,7 +59,7 @@ services:
       - langfuse-db
 
   langfuse-db:
-    image: postgres:11-alpine
+    image: postgres:15-alpine
     environment:
       - POSTGRES_PASSWORD=postgres
     volumes:
@@ -72,7 +75,7 @@ services:
       - helicone-db
 
   helicone-db:
-    image: postgres:11-alpine
+    image: postgres:15-alpine
     environment:
       - POSTGRES_PASSWORD=postgres
     volumes:
@@ -137,13 +140,14 @@ services:
 
   # Konga Database (Postgres)
   konga-db:
-    image: postgres:11-alpine
+    image: postgres:11-alpine # Changed to 11 for sails-postgresql compatibility (consrc column)
     environment:
       - POSTGRES_DB=konga
       - POSTGRES_USER=konga
       - POSTGRES_PASSWORD=kongapass
     volumes:
       - konga_db:/var/lib/postgresql/data
+      - ./scripts/init-konga-db.sh:/docker-entrypoint-initdb.d/init-konga-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U konga"]
       interval: 10s
@@ -151,10 +155,9 @@ services:
       retries: 5
 
   # Konga (Kong Admin UI)
-  # Konga (Kong Admin UI)
   konga:
     image: pantsel/konga:latest
-    platform: linux/amd64
+    platform: linux/amd64 # Added for ARM64 compatibility
     depends_on:
       konga-db:
         condition: service_healthy
@@ -167,6 +170,10 @@ services:
       - DB_PASSWORD=kongapass
       - DB_DATABASE=konga
       - NODE_ENV=production
+      - TOKEN_SECRET=kongasecret
+      - KONGA_HOOK_TIMEOUT=120000
+      - MIGRATE=safe
+      - KONGA_SEED=false
     # 외부 포트는 공개하지 않고 BFF 프록시로만 접근
     # ports: ["1337:1337"]
 
@@ -232,3 +239,4 @@ volumes:
   helicone_db:
   kong_db:
   konga_db:
+
