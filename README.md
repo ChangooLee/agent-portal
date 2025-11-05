@@ -1,4 +1,4 @@
-# Agent Portal — **3-in-1 OSS Super Portal** (Open-WebUI + Open Notebook + Perplexica)
+# Agent Portal — **3-in-1 OSS Super Portal**
 
 > **목표**: Claude Desktop 수준의 **채팅·아티팩트·파일/프로젝트·MCP**를 웹 포털로 구현하고,
 > **오픈소스 노트북(KM/PKM)**과 **오픈소스 리서치 포털(Perplexica)**까지 **한 곳**에서 운영
