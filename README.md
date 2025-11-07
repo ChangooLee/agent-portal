@@ -15,6 +15,56 @@
 
 ---
 
+## 스크린샷
+
+> 📸 **이미지 추가 예정**: 아래 이미지들은 프로젝트 진행에 따라 추가될 예정입니다.
+
+### 포털 메인 화면
+
+![Portal Main](./docs/images/portal-main.png)
+*통합 포털 메인 화면 - Open-WebUI 기반 Portal Shell*
+
+### 에이전트 빌더
+
+#### Langflow
+![Langflow Builder](./docs/images/langflow-builder.png)
+*Langflow 노코드 에이전트 빌더*
+
+#### Flowise
+![Flowise Builder](./docs/images/flowise-builder.png)
+*Flowise 노코드 에이전트 빌더*
+
+#### AutoGen Studio
+![AutoGen Studio](./docs/images/autogen-studio.png)
+*AutoGen Studio 대화형 워크플로 설계*
+
+### Apps 탭
+
+#### Perplexica 검색 포털
+![Perplexica](./docs/images/perplexica.png)
+*Perplexica 검색 포털 (iframe 임베드)*
+
+#### Open-Notebook
+![Open Notebook](./docs/images/open-notebook.png)
+*Open-Notebook AI 노트북 (iframe 임베드)*
+
+### 관리자 대시보드
+
+#### 관측성 (Observability)
+![Observability Dashboard](./docs/images/observability-dashboard.png)
+*Langfuse/Helicone 관측성 대시보드*
+
+#### Kong 관리 (Konga)
+![Konga Admin](./docs/images/konga-admin.png)
+*Kong Gateway 관리 UI (Konga)*
+
+### 아키텍처 다이어그램
+
+![Architecture Diagram](./docs/images/architecture-diagram.png)
+*전체 시스템 아키텍처 다이어그램*
+
+---
+
 ## 한눈에 보기 (통합 포털)
 
 ### Open-WebUI 기반 Portal Shell (AGPL fork)
@@ -497,6 +547,8 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 ---
 
 ## 스크린샷 기능 매핑 (포털 UI ↔ 요구사항)
+
+> 📸 위의 **스크린샷 섹션**에서 각 기능의 실제 화면을 확인할 수 있습니다.
 
 | 포털 스크린/기능 | 기획 매핑 | 비고 |
 |:---|:---|:---|
