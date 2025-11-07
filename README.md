@@ -1,8 +1,17 @@
-# Agent Portal — **3-in-1 OSS Super Portal**
+# Agent Portal — **Enterprise AI Agent Platform**
 
-> **목표**: Claude Desktop 수준의 **채팅·아티팩트·파일/프로젝트·MCP**를 웹 포털로 구현하고,
-> **오픈소스 노트북(KM/PKM)**과 **오픈소스 리서치 포털(Perplexica)**까지 **한 곳**에서 운영
-> **원칙**: 100% 오픈소스 조합, 기업 **멀티 유저·멀티 에이전트** 운영, **SSO·RBAC·가드레일·관측성** 완비
+> **비전**: **대화형 AI 에이전트를 설계·실행·모니터링·관리하는 통합 플랫폼**
+>
+> **핵심 가치**: 
+> - **유연한 인터페이스**: 채팅, 보고서, 웹검색 등 다양한 뷰 모드로 동일한 에이전트와 상호작용
+> - **확장 가능한 시스템 통합**: MCP(Model Context Protocol)를 통한 자유로운 외부 시스템 연동
+> - **다양한 에이전트 생성 방식**: 대화형(AutoGen Studio), 노코드(Langflow/Flowise), 코드 기반(LangGraph) 모두 지원
+> - **즉시 테스트 및 반복**: 엔드포인트에서 실시간 실행·검증·수정·재배포가 가능한 개발 사이클
+> - **프로덕션급 운영**: 모든 에이전트의 실행 추적, 비용 모니터링, 가드레일 정책 적용
+> - **제로 카피 데이터 접근**: 기존 데이터베이스에 직접 연결하여 실시간 쿼리 및 분석
+> - **지능형 문서 처리**: OCR, 구조 인식, 지능형 청킹을 통한 고품질 RAG 파이프라인
+>
+> **원칙**: 100% 오픈소스 기반, 엔터프라이즈급 **멀티 유저·멀티 에이전트·멀티 워크스페이스** 운영, **SSO·RBAC·가드레일·관측성** 완비
 
 ---
 
@@ -11,7 +20,7 @@
 ### Portal A — Agent (Open-WebUI 기반 Shell, AGPL fork)
 
 - 좌측 채팅 / 우측 **Artifacts** (리포트/표/차트), 프로젝트, 파일, **MCP(stdio+SSE)** 설정
-- **Langflow/Flowise** 임베드형 에이전트 빌더, 관리자/보안/관측 대시보드
+- **Langflow/Flowise/AutoGen Studio** 임베드형 에이전트 빌더, 관리자/보안/관측 대시보드
 
 ### Portal B — Notebook (Open Notebook, MIT)
 
@@ -22,42 +31,161 @@
 
 - **대화형 메타 검색/리서치 포털**: 웹·문서 소스 통합 질의, 근거 중심 결과 뷰, RAG 파이프라인 연계
 
-> 세 포털은 **하나의 상단 네비/SSO** 아래에서 **탭/라우트**로 구동되며, 공통 **LiteLLM 게이트웨이**·**Langfuse/Helicone** 관측·가드레일 정책을 공유합니다.
+> 세 포털은 **하나의 상단 네비/SSO** 아래에서 **탭/라우트**로 구동됩니다.
+> - **Open-WebUI (Portal A)**: 모델 직접 연결 지원 (Open-WebUI 자체 기능)
+> - **Backend BFF / 에이전트 실행**: **LiteLLM 게이트웨이** 사용 (모델 카탈로그 일원화, 관측성 통합)
+> - **Notebook / Perplexica**: **LiteLLM 게이트웨이** 또는 직접 연결 (선택)
+> - **공통**: **Langfuse/Helicone** 관측·가드레일 정책 공유
 
 ---
 
 ## 전체 아키텍처
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ UI LAYER — Unified Portal Shell (Open-WebUI fork)                             │
-│  [A] Agent: Chat/Artifacts/Projects/MCP/Builder   [B] Notebook   [C] Perplexica │
-│  • 공통: SSO(OIDC), RBAC, Guardrails Banner, Admin/Observability             │
-└──────────────▲───────────────────────────────────────────────▲───────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ UI LAYER — Unified Portal Shell (Open-WebUI fork)                                │
+│  [A] Agent: Chat/Artifacts/Projects/MCP/Builder   [B] Notebook   [C] Perplexica  │
+│    • Chat(일반/분할) • Projects/RAG • AI WebCapture • AI Research/YouTube          │
+│    • PDF 번역 • 갤러리 • 모델/연결 • (NEW) Agent Builder                              │
+│      - Langflow • Flowise • **AutoGen Studio(대화형 워크플로)**                      │
+│    • MCP 설정 • Admin                                                             │
+│  • 공통: SSO(OIDC), RBAC, Guardrails Banner, Admin/Observability                  │
+└──────────────▲───────────────────────────────────────────────▲───────────────────┘
                │ REST/WS/SSE                                      │ iframe/프록시
-┌──────────────┴───────────────────────────┐        ┌─────────────┴────────────┐
-│ FastAPI(BFF)                             │        │ Observability             │
-│  • /chat • /agents • /mcp • /documents  │        │ • Langfuse (traces)       │
-│  • /admin • RBAC/JWT • Guardrails       │        │ • Helicone (LLM proxy)    │
-│  • LiteLLM/LangGraph/Chroma/MinIO 연동  │        │ • (opt) OTEL→SigNoz/OO    │
-└─────▲───────────────▲───────────────▲─────┘        └──────────────────────────┘
+┌──────────────┴───────────────────────────┐        ┌─────────────┴──────────────┐
+│ FastAPI(BFF)                             │        │ Observability              │
+│  • /chat • /agents • /mcp • /documents   │        │ • Langfuse (traces)        │
+│  • /admin • RBAC/JWT • Guardrails        │        │ • Helicone (LLM proxy)     │
+│  • /proxy/* (Langflow/Flowise/AutoGen)   │        │ • (opt) OTEL→SigNoz/OO     │
+│  • LiteLLM/LangGraph/Chroma/MinIO/Doc    │        │                            │
+│    Svc 연동                               │        │                            │
+└─────▲───────────────▲───────────────▲────┘        └────────────────────────────┘
       │               │               │
 ┌─────┴─────┐   ┌─────┴─────┐   ┌─────┴───────────────────────┐
 │LangGraph  │   │ LiteLLM   │   │ Kong Gateway (MCP/API 보안)  │
-│Server 8123│   │Proxy 4000 │   │ + 키/레이트리밋/mTLS/감사     │
+│Server 8123│   │Proxy 4000 │   │ + 키/레이트리밋/mTLS/감사       │
 └─────▲─────┘   └─────▲─────┘   └─────▲───────────────────────┘
       │               │               │
 ┌─────┴───────────────────────────────────────────────────────────────────────┐
 │ DATA LAYER                                                                  │
-│ • MariaDB(코어 메타) • ChromaDB+bge-m3(벡터) • Redis(세션/캐시) • MinIO(오브젝트)  │
-│ • (Langfuse/Helicone는 자체 Postgres; 코어 DB와 분리 운용)                          │
+│ • MariaDB(코어 메타) • ChromaDB+bge-m3(벡터) • Redis(세션/캐시) • MinIO(오브젝트)   │
+│ • (Langfuse/Helicone/Konga는 자체 Postgres; 코어 DB와 분리 운용)                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────┐
-│ Document Intelligence Svc   │ ← unstructured + PaddleOCR
-│ • 페이지/표/캡션/레이아웃 인지 │ ← (선택) VLM 캡셔닝
-│ • 지능형 청킹 + bge-m3 임베딩  │ → ChromaDB 색인
-└─────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Document Intelligence Service                                                │
+│ • 페이지/표/캡션/레이아웃 인지 ← unstructured + PaddleOCR + (선택) VLM 캡셔닝         │
+│ • 지능형 청킹 + bge-m3 임베딩 → ChromaDB 색인                                     │
+│ • MinIO 원본 문서 저장                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 상세 아키텍처 다이어그램 (Mermaid)
+
+```mermaid
+graph TB
+    subgraph "UI Layer - Portal Shell"
+        OWUI["Open-WebUI<br/>Portal Shell<br/>Port: 3000<br/>• Chat/Artifacts<br/>• Projects/RAG<br/>• Agent Builder<br/>• MCP 설정"]
+        NOTEBOOK["Open Notebook<br/>Port: 3100<br/>• PKM/지식 관리<br/>• 모델 변환/요약"]
+        PERPLEX["Perplexica<br/>Port: 3210<br/>• 메타 검색<br/>• 리서치 포털"]
+    end
+
+    subgraph "BFF Layer - FastAPI"
+        BFF["FastAPI BFF<br/>Port: 8000<br/>• /chat/stream<br/>• /agents/{id}/run<br/>• /mcp/stdio|sse<br/>• /documents/index|search<br/>• /db/query<br/>• /proxy/*<br/>• RBAC/JWT/Guardrails"]
+    end
+
+    subgraph "Agent Builders"
+        LANGFLOW["Langflow<br/>Port: 7860<br/>노코드 빌더<br/>LangGraph 친화"]
+        FLOWISE["Flowise<br/>Port: 3002<br/>노코드 빌더<br/>위젯/임베드"]
+        AUTOGEN_STUDIO["AutoGen Studio<br/>Port: 5050<br/>대화형 워크플로<br/>그룹챗 설계"]
+        AUTOGEN_API["AutoGen API<br/>Port: 5051<br/>Studio 백엔드<br/>YAML/JSON Export"]
+    end
+
+    subgraph "Service Layer"
+        LANGGRAPH["LangGraph Server<br/>Port: 8123<br/>에이전트 실행<br/>툴/MCP 호출"]
+        LITELLM["LiteLLM Gateway<br/>Port: 4000<br/>모델 카탈로그<br/>비용 추적"]
+        KONG["Kong Gateway<br/>Proxy: 8002<br/>Admin: 8001<br/>Key-Auth/Rate-Limit<br/>mTLS/감사"]
+        DOC_SVC["Document Service<br/>Port: 8080<br/>OCR/청킹/임베딩<br/>unstructured+PaddleOCR"]
+    end
+
+    subgraph "Observability"
+        LANGFUSE["Langfuse<br/>Port: 3001<br/>LLM 체인 추적<br/>세션/툴콜"]
+        HELICONE["Helicone<br/>Port: 8787<br/>비용/지연 분석<br/>프롬프트 비교"]
+    end
+
+    subgraph "Data Layer"
+        MARIADB[("MariaDB<br/>Port: 3306<br/>코어 메타데이터<br/>users/workspaces/agents")]
+        CHROMA[("ChromaDB<br/>Port: 8001<br/>벡터 저장소<br/>bge-m3 임베딩")]
+        REDIS[("Redis<br/>세션/캐시<br/>상태 관리")]
+        MINIO[("MinIO<br/>Port: 9000<br/>오브젝트 스토리지<br/>원본 문서")]
+    end
+
+    subgraph "External Systems"
+        LLM_PROVIDERS["LLM Providers<br/>OpenAI/Anthropic<br/>Gemini/OpenRouter<br/>Ollama/vLLM"]
+        EXTERNAL_DB["External DBs<br/>SAP HANA/Oracle<br/>Postgres/MariaDB<br/>S3/CSV/Parquet"]
+        MCP_SERVERS["MCP Servers<br/>stdio 프로세스<br/>SSE 엔드포인트<br/>외부 시스템 연동"]
+    end
+
+    %% UI to BFF
+    OWUI -->|"REST/WS/SSE<br/>채팅/에이전트 실행"| BFF
+    NOTEBOOK -->|"API<br/>모델 호출"| BFF
+    PERPLEX -->|"API<br/>리서치 요청"| BFF
+
+    %% BFF to Services
+    BFF -->|"에이전트 실행<br/>POST /agents/{id}/run"| LANGGRAPH
+    BFF -->|"모델 호출<br/>LiteLLM Service"| LITELLM
+    BFF -->|"MCP 보안<br/>Kong 경유"| KONG
+    BFF -->|"문서 처리<br/>POST /documents/index"| DOC_SVC
+    BFF -->|"리버스 프록시<br/>/proxy/langflow"| LANGFLOW
+    BFF -->|"리버스 프록시<br/>/proxy/flowise"| FLOWISE
+    BFF -->|"리버스 프록시<br/>/proxy/autogen"| AUTOGEN_STUDIO
+    BFF -->|"API 프록시<br/>/autogen/api/*"| AUTOGEN_API
+
+    %% Agent Builders
+    AUTOGEN_STUDIO -->|"UI 요청"| AUTOGEN_API
+    AUTOGEN_API -->|"모델 호출"| LITELLM
+    LANGFLOW -->|"Export LangGraph<br/>JSON 변환"| BFF
+    FLOWISE -->|"Export LangGraph<br/>JSON 변환"| BFF
+    AUTOGEN_API -->|"Export LangGraph<br/>YAML/JSON 변환"| BFF
+
+    %% Services to Data
+    BFF -->|"메타데이터 저장<br/>users/workspaces/agents"| MARIADB
+    DOC_SVC -->|"벡터 임베딩 저장<br/>bge-m3"| CHROMA
+    DOC_SVC -->|"원본 문서 저장<br/>PDF/이미지"| MINIO
+    BFF -->|"세션 관리<br/>캐시"| REDIS
+    LANGGRAPH -->|"상태 저장<br/>에이전트 메모리"| REDIS
+
+    %% Services to Observability
+    LITELLM -->|"트레이싱<br/>체인/툴콜"| LANGFUSE
+    LANGGRAPH -->|"트레이싱<br/>에이전트 실행"| LANGFUSE
+    AUTOGEN_API -->|"트레이싱<br/>그룹챗"| LANGFUSE
+    LITELLM -->|"프록시<br/>비용/지연 추적"| HELICONE
+
+    %% Services to External
+    LITELLM -->|"API 호출<br/>OpenAI/Anthropic/etc"| LLM_PROVIDERS
+    HELICONE -->|"프록시<br/>LLM 요청"| LLM_PROVIDERS
+    BFF -->|"안전 SQL 쿼리<br/>POST /db/query"| EXTERNAL_DB
+    KONG -->|"보안 연결<br/>Key-Auth"| MCP_SERVERS
+
+    %% Observability to Data
+    LANGFUSE -.->|"메타데이터 저장<br/>자체 Postgres"| MARIADB
+    HELICONE -.->|"메타데이터 저장<br/>자체 Postgres"| MARIADB
+
+    %% Document Service flow
+    DOC_SVC -->|"OCR 결과<br/>청킹 메타"| MARIADB
+
+    style OWUI fill:#e1f5ff,stroke:#0066cc,stroke-width:2px
+    style BFF fill:#fff4e1,stroke:#cc6600,stroke-width:2px
+    style LANGGRAPH fill:#ffe1f5,stroke:#cc0066,stroke-width:2px
+    style LITELLM fill:#e1ffe1,stroke:#00cc00,stroke-width:2px
+    style KONG fill:#f5e1ff,stroke:#6600cc,stroke-width:2px
+    style DOC_SVC fill:#ffe1e1,stroke:#cc0000,stroke-width:2px
+    style MARIADB fill:#e1e1ff,stroke:#0000cc,stroke-width:2px
+    style CHROMA fill:#e1e1ff,stroke:#0000cc,stroke-width:2px
+    style REDIS fill:#e1e1ff,stroke:#0000cc,stroke-width:2px
+    style MINIO fill:#e1e1ff,stroke:#0000cc,stroke-width:2px
+    style LANGFUSE fill:#fff9e1,stroke:#cc9900,stroke-width:2px
+    style HELICONE fill:#fff9e1,stroke:#cc9900,stroke-width:2px
 ```
 
 **왜 이 조합인가?**
@@ -73,22 +201,29 @@
 | 포털 스크린/기능 | 기획 매핑 | 비고 |
 |:---|:---|:---|
 | **관리자 대시보드** | **Langfuse/Helicone 임베드 카드** | 비용·지연·오류·체인트레이스 |
-| **연결(프로바이더/모델)** (Agent) | **LiteLLM Base URL** 등록 → 모델 카탈로그 일원화 | vLLM/OpenRouter/외부 API |
+| **연결(프로바이더/모델)** (Agent) | **Open-WebUI 직접 연결** 또는 **LiteLLM Base URL** 등록 (선택) | Open-WebUI는 직접 연결 지원, BFF/에이전트는 LiteLLM 게이트웨이 사용 |
 | **PDF 번역/웹캡처/유튜브/리서치** | 문서지능 파이프라인/Perplexica와 연결 | 근거 강조 |
 | **RAG 지식/청킹/필터** | **Chroma+bge-m3**, 페이지-aware 청킹 | 표/제목/캡션 유지 |
 | **노트북(Notebook)** | PKM + 모델 변환/요약/검색 | 모델 프로바이더 전체 지원 |
 | **에이전트 빌더** | Langflow/Flowise **동시 임베드** + Export→LangGraph | 템플릿 배포 |
+| **에이전트 빌더(대화형)** | **AutoGen Studio** 임베드(그룹챗/멀티에이전트) → YAML/JSON Export → LangGraph | 대화기반 설계 |
 
 ---
 
 ## 핵심 모듈
 
-### 3.1 노코드 에이전트 빌더 (Langflow + Flowise **동시 탑재**)
+### 3.1 노코드/대화형 에이전트 빌더 (Langflow + Flowise + **AutoGen Studio**)
 
 * **Langflow (MIT)**: LangGraph 친화, 배포 API/템플릿 풍부
-* **Flowise (Apache-2.0)**: 위젯/임베드 용이, 커뮤니티 노드 다수
-* **임베드**: `/builder/langflow`, `/builder/flowise` (iframe/리버스 프록시)
-* **Export → LangGraph**: 플로우를 LangGraph JSON으로 저장(버전/리비전 관리)
+* **Flowise (Apache-2.0)**: 위젯/임베드 용이, 커뮤니티 노드 매우 많음
+* **AutoGen Studio**: **대화형**으로 멀티에이전트 워크플로 설계(그룹챗, 역할/툴 바인딩, 코디네이터 패턴)
+* **임베드 방식**: `/builder/langflow`, `/builder/flowise` 경로에 **iframe/리버스 프록시**
+  - **AutoGen Studio**는 `/builder/autogen`으로 임베드(리버스 프록시)
+* **Export → LangGraph**: 설계 플로우를 LangGraph JSON으로 변환 저장(버전/리비전 관리)
+
+> AutoGen Studio 사용 시:
+> - LLM/툴 설정을 LiteLLM 카탈로그와 연동(모델 교체 용이)
+> - 그룹챗 시나리오 → YAML/JSON Export → LangGraph 변환기 통해 에이전트 카탈로그에 등록
 
 ### 3.2 MCP (stdio & SSE, **Kong 보안**)
 
@@ -169,6 +304,9 @@ OAUTH_GITHUB_SECRET=...
 
 # Backends
 API_BASE_URL=http://backend:8000
+AUTOGEN_STUDIO_PORT=5050
+AUTOGEN_API_PORT=5051
+# (선택) 외부 접근 막을 경우 127.0.0.1 바인딩: AUTOGEN_BIND_HOST=0.0.0.0
 
 # LiteLLM
 LITELLM_PORT=4000
@@ -278,25 +416,91 @@ services:
     volumes:
       - helicone_db:/var/lib/postgresql/data
 
+  # AutoGen Studio
+  autogen-studio:
+    build: ./autogen-studio   # (repo 서브폴더) Dockerfile 포함
+    ports: ["${AUTOGEN_STUDIO_PORT:-5050}:5050"]
+    environment:
+      - LITELLM_BASE_URL=http://litellm:4000
+    depends_on: [litellm]
+
+  autogen-api:
+    build: ./autogen-api
+    ports: ["${AUTOGEN_API_PORT:-5051}:5051"]
+    environment:
+      - LITELLM_BASE_URL=http://litellm:4000
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+    depends_on: [litellm, langfuse]
+
   # Kong (MCP/API 보안)
   kong:
     image: kong:3.6
     ports:
-      - "8000:8000"
+      - "8002:8000"  # Proxy port (8000은 Backend BFF 사용)
       - "8443:8443"
-      - "8001:8001"
+      - "8001:8001"  # Admin API
     environment:
       - KONG_DATABASE=off
       - KONG_DECLARATIVE_CONFIG=/kong/kong.yml
     volumes:
       - "./config/kong.yml:/kong/kong.yml"
 
-  kong-admin-ui:
-    build: ./kong-admin-ui
+  konga:
+    image: pantsel/konga:latest
     ports:
-      - "9090:80"
+      - "1337:1337"
     environment:
-      - KONG_ADMIN_URL=http://kong:8001
+      - NODE_ENV=production
+      - KONGA_HOOK_TIMEOUT=120000
+    depends_on:
+      - konga-db
+
+  konga-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=konga
+      - POSTGRES_PASSWORD=konga
+      - POSTGRES_DB=konga
+    volumes:
+      - konga_db:/var/lib/postgresql/data
+
+  # Langflow (에이전트 빌더)
+  langflow:
+    image: langflowai/langflow:latest
+    ports:
+      - "7860:7860"
+    environment:
+      - LANGFLOW_HOST=0.0.0.0
+      - LANGFLOW_PORT=7860
+    volumes:
+      - langflow_data:/data
+
+  # Flowise (에이전트 빌더)
+  flowise:
+    image: flowiseai/flowise:latest
+    ports:
+      - "3002:3000"  # Langfuse UI(3001)와 포트 충돌 방지
+    environment:
+      - PORT=3000
+    volumes:
+      - flowise_data:/root/.flowise
+
+  # Document Intelligence Service
+  document-service:
+    build: ./document-service
+    ports:
+      - "8080:8080"
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+    depends_on:
+      - chromadb
+      - minio
 
   # Data Layer
   mariadb:
@@ -312,7 +516,7 @@ services:
   chromadb:
     image: ghcr.io/chroma-core/chroma:latest
     ports:
-      - "8001:8000"
+      - "8001:8000"  # 내부 포트 8000, 외부 포트 8001 (Kong Admin 8001과는 다른 용도)
 
   redis:
     image: redis:7-alpine
@@ -353,6 +557,9 @@ volumes:
   helicone_db:
   langfuse_db:
   minio:
+  konga_db:
+  langflow_data:
+  flowise_data:
 ```
 
 ### 6.4 LiteLLM 설정 (`config/litellm.yaml`)
@@ -398,6 +605,17 @@ services:
   - name: key-auth
   - name: rate-limiting
     config: { minute: 120 }
+
+- name: autogen-api
+  url: http://autogen-api:5051
+  routes:
+  - name: autogen-api-route
+    paths: ["/autogen/api"]
+    protocols: ["http","https"]
+  plugins:
+  - name: key-auth
+  - name: rate-limiting
+    config: { minute: 600 }
 ```
 
 ---
@@ -405,9 +623,13 @@ services:
 ## 운영 절차 (Playbook)
 
 1. **SSO 로그인** → 관리자가 팀원 초대/역할 부여
-2. **모델 연결**: 관리자>연결에서 **LiteLLM Base URL** 등록, 키는 Vault/.env
+2. **모델 연결**:
+   - **Open-WebUI**: 관리자>연결에서 각 프로바이더 API 키/엔드포인트 직접 등록 (또는 LiteLLM Base URL 등록)
+   - **Backend BFF**: `config/litellm.yaml`에 모델 설정, 키는 Vault/.env
 3. **MCP 등록**: 연결>MCP에서 stdio/SSE 서버 추가, **Kong 키** 발급/만료 연결
-4. **에이전트 생성**: 에이전트>**Langflow/Flowise** 템플릿 → 저장 → **Export→LangGraph**
+4. **에이전트 생성**:
+   - 노코드: **Langflow/Flowise**
+   - **대화형**: **AutoGen Studio**(그룹챗 설계) → Export → **LangGraph 등록**
 5. **문서 업로드**: 프로젝트>문서 업로드 → 문서지능(OCR/청킹/임베딩) → RAG 사용
 6. **모니터링**: 관리자 대시보드에서 **Langfuse/Helicone** 임베드 카드 확인
 7. **가드레일**: 정책 변경 → 즉시 반영, 위반 이벤트 차트 점검
@@ -442,11 +664,18 @@ services:
 | Backend (FastAPI BFF) | 8000 | API/BFF |
 | LangGraph | 8123 | 에이전트 실행 |
 | LiteLLM | 4000 | LLM 게이트웨이 |
-| Kong Proxy/Admin | 8000/8443/8001 | MCP/API 보안·관리 |
-| ChromaDB | 8001 | 벡터DB HTTP |
+| Kong Proxy | 8002 | MCP/API 보안 프록시 |
+| Kong Admin | 8001 | Kong 관리 API |
+| Kong Admin UI (Konga) | 1337 | Kong 관리 UI |
+| ChromaDB | 8001 | 벡터DB HTTP (내부 포트) |
 | MinIO/Console | 9000/9001 | 오브젝트 스토리지 |
 | Langfuse UI | 3001 | 체인 트레이스 |
 | Helicone UI | 8787 | LLM 프록시 대시 |
+| AutoGen Studio | 5050 | 대화형 워크플로 UI |
+| AutoGen API | 5051 | Studio 백엔드 |
+| Langflow | 7860 | 노코드 에이전트 빌더 |
+| Flowise | 3002 | 노코드 에이전트 빌더 |
+| Document Service | 8080 | 문서 인텔리전스 마이크로서비스 |
 | Open Notebook | 3100 | 노트북 포털 |
 | Perplexica | 3210 | 리서치 포털 |
 
@@ -458,17 +687,33 @@ services:
 * `POST /agents/{id}/run` — LangGraph 실행(툴/MCP 호출 포함)
 * `POST /mcp/stdio/launch` — MCP stdio 스폰/헬스체크
 * `GET  /mcp/sse/ping` — SSE 라우트 상태
-* `POST /documents/index` — 문서 파이프라인(OCR/청킹/임베딩)
+* `GET  /proxy/langflow` — Langflow UI 리버스 프록시(iframe 임베드용)
+* `GET  /proxy/flowise` — Flowise UI 리버스 프록시(iframe 임베드용)
+* `GET  /proxy/autogen` — AutoGen Studio UI 리버스 프록시(iframe 임베드용)
+* `ANY  /autogen/api/*` — AutoGen API(Kong 보호 하에 프록시)
+* `POST /documents/index` — 문서 파이프라인(OCR/청킹/임베딩) → Document Service 호출
+* `GET  /documents/search` — RAG 검색 (하이브리드: 키워드+벡터)
+* `POST /db/query` — 데이터베이스 커넥터를 통한 안전 SQL 쿼리
 * `GET  /observability/usage` — Helicone·Langfuse 요약 카드
 * `GET  /catalog/models` — LiteLLM 모델 카탈로그 조회(포털 공통)
 
 ---
 
-## LLM 설정 — SOTA급 API 전부 (Notebook 요구사항 충족)
+## LLM 설정 — SOTA급 API 전부
 
-> Portal 공통(**LiteLLM**) + Notebook(**직접/프록시 병행**) 구성.
-> **지원 프로바이더**(예): **OpenAI, Anthropic, Google(Gemini/Vertex), OpenRouter, Ollama/vLLM, Together, Perplexity, Fireworks, Groq, Mistral, Cohere, DeepSeek** 등.
-> **권장**: 모든 키를 `.env`에 선언하고 Notebook/Perplexica/Agent가 **LiteLLM**를 **기본 엔드포인트**로 사용.
+> **Open-WebUI (Portal A)**: 자체 모델 연결 UI 사용 (직접 연결 지원)
+> - Open-WebUI 설정에서 각 프로바이더 API 키/엔드포인트 직접 등록 가능
+> - **선택사항**: LiteLLM Base URL을 Open-WebUI에 등록하여 게이트웨이 경유 가능
+>
+> **Backend BFF / 에이전트 실행**: **LiteLLM 게이트웨이 필수**
+> - 에이전트 실행, LangGraph, AutoGen Studio 등은 LiteLLM을 통해 모델 호출
+> - 모델 카탈로그 일원화, 비용 추적, 관측성 통합을 위해 LiteLLM 사용
+>
+> **Notebook / Perplexica**: **LiteLLM 게이트웨이 권장** (직접 연결도 가능)
+> - 공통 모델 카탈로그 및 관측성 통합을 위해 LiteLLM 사용 권장
+> - 필요 시 각 포털에서 직접 연결도 지원
+>
+> **지원 프로바이더**: **OpenAI, Anthropic, Google(Gemini/Vertex), OpenRouter, Ollama/vLLM, Together, Perplexity, Fireworks, Groq, Mistral, Cohere, DeepSeek** 등
 
 `.env` 예시(필요한 것만 채움):
 
@@ -499,7 +744,9 @@ VLLM_BASE_URL=http://vllm:8000/v1
 
 ## 트러블슈팅
 
-* **응답 지연/타임아웃**: Helicone에서 **지연 상위 프롬프트** 확인 → LiteLLM 라우팅/쿼터 조정
+* **응답 지연/타임아웃**: 
+  - Open-WebUI 직접 연결: Open-WebUI 설정에서 타임아웃/재시도 조정
+  - LiteLLM 경유: Helicone에서 **지연 상위 프롬프트** 확인 → LiteLLM 라우팅/쿼터 조정
 * **RAG 근거 누락/환각**: 청킹 전략/overlap 조정, bge-m3 파라미터 확인, OCR 품질 점검
 * **MCP SSE 401/429**: Kong의 key-auth/레이트리밋 로그 확인, 컨슈머 키 재발급
 * **Open-WebUI 업데이트 충돌**: `overrides/`로 코어 수정 최소화, 상류 머지 가이드 준수
@@ -540,6 +787,8 @@ VLLM_BASE_URL=http://vllm:8000/v1
 repo/
 ├─ webui/                # Open-WebUI fork (플러그인/오버라이드/테마)
 ├─ backend/              # FastAPI BFF (RBAC/Guardrails/Routes)
+├─ autogen-studio/       # AutoGen Studio UI (임베드)
+├─ autogen-api/          # AutoGen Studio 백엔드(프록시/어댑터)
 ├─ document-service/     # OCR/VLM/청킹/임베딩 마이크로서비스
 ├─ open-notebook/        # Open Notebook (Dockerfile/override/env)
 ├─ perplexica/           # Perplexica (Dockerfile/override/env)
@@ -632,57 +881,74 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 
 ---
 
-#### ❌ Stage 3: 에이전트 빌더 (Langflow + Flowise)
+#### ❌ Stage 3: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
 
-**목표**: Langflow와 Flowise 임베드, Export → LangGraph 변환
+**목표**: Langflow, Flowise, AutoGen Studio 임베드, Export → LangGraph 변환
 
 **주요 작업**:
-- Langflow/Flowise 컨테이너 설정
-- 에이전트 빌더 페이지 추가 (`/builder/langflow`, `/builder/flowise`)
-- 플로우 → LangGraph JSON 변환
-- 버전/리비전 관리
+- **Langflow 컨테이너 설정** (포트 7860)
+- **Flowise 컨테이너 설정** (포트 3002)
+- **AutoGen Studio/API 컨테이너 설정** (로컬 빌드, 포트 5050/5051)
+- 에이전트 빌더 페이지 추가 (`/builder/langflow`, `/builder/flowise`, `/builder/autogen`)
+- **리버스 프록시 구현** (`/proxy/langflow`, `/proxy/flowise`, `/proxy/autogen`)
+- 플로우 → LangGraph JSON 변환기 구현
+- **AutoGen YAML/JSON → LangGraph 변환기** 구현
+- 에이전트 버전/리비전 관리 시스템
 
 **완료 기준**:
-- Langflow/Flowise 임베드 접근 가능
-- Export → LangGraph 변환 완료
+- Langflow/Flowise/AutoGen Studio 임베드 접근 가능
+- 각 빌더에서 Export → LangGraph 변환 완료
+- **AutoGen 그룹챗 시나리오 → LangGraph 등록** 파이프라인 완료
+- 에이전트 버전 관리 시스템 동작
 
 ---
 
-#### ❌ Stage 4: MCP SSE 연동 및 Kong Gateway
+#### ❌ Stage 4: MCP 연동 및 Kong Gateway
 
-**목표**: MCP SSE 엔드포인트 구현, Kong Gateway 보안/레이트리밋
+**목표**: MCP stdio/SSE 엔드포인트 구현, Kong Gateway 보안/레이트리밋
 
 **주요 작업**:
-- Kong Gateway 설정 (Key-Auth, Rate-Limiting)
-- MCP SSE 엔드포인트 구현 (`/mcp/sse`)
-- MCP Manager UI (Kong 키 발급/회수)
-- Kong Admin UI 추가
+- Kong Gateway 설정 (Key-Auth, Rate-Limiting, mTLS)
+- MCP stdio 엔드포인트 구현 (`/mcp/stdio/launch`) - BFF가 프로세스 스폰/브릿지
+- MCP SSE 엔드포인트 구현 (`/mcp/sse`) - Kong 경유
+- MCP Manager UI (서버 등록, Kong 키 발급/회수, 스코프 관리)
+- Kong Admin UI (Konga) 설정 및 연동
 
 **완료 기준**:
+- MCP stdio 프로세스 스폰 및 브릿지 동작
 - Kong Gateway를 통한 MCP SSE 보안 설정
 - Key-Auth 및 Rate-Limiting 동작
 - MCP Manager UI 기능 완료
+- Konga를 통한 Kong 관리 가능
 
 ---
 
 #### ❌ Stage 5: 데이터베이스 및 관리 기능
 
-**목표**: MariaDB 스키마 설계, 사용자/워크스페이스/에이전트 관리 API
+**목표**: MariaDB 스키마 설계, 사용자/워크스페이스/에이전트 관리 API, 데이터베이스 커넥터
 
 **주요 작업**:
 - MariaDB 스키마 설계 (users, workspaces, agents, mcp_servers)
 - 관리 API 구현 (CRUD 엔드포인트)
 - RBAC 권한 체크
 - 관리자 UI 연동
+- **데이터베이스 커넥터 구현** (Data-Cloud 스타일)
+  - SAP HANA, Oracle, MariaDB, Postgres, S3/CSV/Parquet, Elastic 지원
+  - SQLAlchemy/ODBC 기반 연결
+  - 스키마 카탈로그 (테이블/컬럼/PK/FK/비즈니스 사전)
+  - 대화형 객체화 (용어집 → 안전 SQL → 표/차트)
+  - RAG+DB 하이브리드 (규정/ERD 임베딩)
 
 **스키마**:
 - `users`, `workspaces`, `workspace_members`
 - `agents`, `mcp_servers`
+- `db_connections` (데이터베이스 커넥터 메타)
 
 **완료 기준**:
 - MariaDB 스키마 생성 완료
 - CRUD API 동작
 - RBAC 권한 체크 동작
+- 데이터베이스 커넥터를 통한 쿼리 및 분석 가능
 
 ---
 
@@ -691,21 +957,26 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 **목표**: 문서 파싱, OCR, 청킹, 임베딩 파이프라인 및 ChromaDB 연동
 
 **주요 작업**:
-- Document Service 마이크로서비스 생성
+- **Document Service 마이크로서비스 생성** (FastAPI, 포트 8080)
 - unstructured + PaddleOCR 파이프라인
-- 지능형 청킹 및 bge-m3 임베딩
-- ChromaDB 벡터 저장소 연동
-- RAG 검색 API 구현
+- 레이아웃 인식 (표/캡션/도형) 및 VLM 캡셔닝 (선택)
+- 지능형 청킹 (페이지 경계 인지, 문맥 overlap, 표/제목 보존)
+- bge-m3 임베딩 및 ChromaDB 벡터 저장소 연동
+- RAG 검색 API 구현 (하이브리드: 키워드+벡터)
+- MinIO 오브젝트 스토리지 연동 (원본 문서 저장)
 
 **파이프라인**:
 ```
-문서 업로드 → 파싱 → OCR → 청킹 → 임베딩 → ChromaDB 색인
+문서 업로드 → MinIO 저장 → 파싱 → OCR → 레이아웃 인식 → 
+지능형 청킹 → bge-m3 임베딩 → ChromaDB 색인 → RAG 검색
 ```
 
 **완료 기준**:
+- Document Service 마이크로서비스 실행
 - 문서 파이프라인 완료
 - ChromaDB 색인 및 검색 동작
 - RAG 검색 API 동작
+- 근거 하이라이트 및 Artifacts 출력
 
 ---
 
