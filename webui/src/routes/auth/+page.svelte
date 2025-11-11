@@ -252,17 +252,10 @@
 />
 
 <div class="w-full h-screen max-h-[100dvh] relative overflow-hidden">
-	<!-- Animated Samsung Blue Gradient Background - Layered -->
-	<div
-		class="absolute inset-0 animate-samsung-gradient"
-		style="background: radial-gradient(circle at 30% 30%, #00AEEF, transparent 50%), radial-gradient(circle at 70% 70%, #1428A0, transparent 50%), linear-gradient(-45deg, #1428A0, #0072CE, #00AEEF, #1428A0); background-size: 200% 200%;"
-	></div>
-	
-	<!-- Animated light overlay for shimmer effect -->
-	<div
-		class="absolute inset-0 animate-shimmer pointer-events-none"
-		style="background: radial-gradient(circle at 20% 40%, rgba(255,255,255,0.1), transparent 70%), radial-gradient(circle at 80% 60%, rgba(255,255,255,0.15), transparent 70%); mix-blend-mode: overlay;"
-	></div>
+	<!-- Subtle reflective light layer -->
+	<div class="absolute inset-0 -z-20 bg-light-overlay"></div>
+	<!-- Animated Samsung Blue Multi-Layer Gradient Background -->
+	<div class="absolute inset-0 -z-10 bg-animated-samsung"></div>
 
 	<div class="w-full absolute top-0 left-0 right-0 h-8 drag-region z-50" />
 
