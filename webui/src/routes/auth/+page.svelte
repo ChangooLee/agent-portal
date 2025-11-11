@@ -1,7 +1,7 @@
 <script>
 	import { toast } from 'svelte-sonner';
 
-	import { onMount, getContext, tick } from 'svelte';
+	import { onMount, onDestroy, getContext, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
@@ -27,6 +27,52 @@
 	let password = '';
 
 	let ldapUsername = '';
+
+	let transitioning = false;
+
+	// Hero 메시지 세트 배열 (제목 + 본문)
+	const heroSets = [
+		{
+			title: 'AI 에이전트의 모든 순간을 한곳에서',
+			text: ['대화로 시작해 실행으로 이어지는 새로운 업무 공간,', 'SFN AI Portal은 사람과 AI가 함께 일하는 방식을 새롭게 만듭니다.']
+		},
+		{
+			title: '대화만으로 아이디어가 실행됩니다',
+			text: ['채팅창에서 아이디어를 나누면 바로 보고서를 만들고,', '필요한 정보를 웹과 사내 시스템에서 찾아볼 수 있습니다.']
+		},
+		{
+			title: '시스템과 데이터를 자유롭게 연결하세요',
+			text: ['복잡한 설정 없이도 필요한 정보가 자동으로 연결되고 실행됩니다.', '모든 업무가 하나로 통합됩니다.']
+		},
+		{
+			title: '누구나 자신만의 AI를 만들 수 있습니다',
+			text: ['대화로 설계하고 시각적으로 조합해,', '당신의 일에 꼭 맞는 AI를 직접 만들어보세요.']
+		},
+		{
+			title: '운영까지 한눈에 관리됩니다',
+			text: ['에이전트의 동작과 결과를 실시간으로 확인하고,', '필요할 땐 즉시 수정하고 다시 실행할 수 있습니다.']
+		},
+		{
+			title: '문서를 올리면 지식이 됩니다',
+			text: ['PDF나 이미지를 업로드하면 자동으로 분석되어,', '필요한 정보만 바로 찾아드립니다. 복잡한 문서도 한눈에 이해할 수 있습니다.']
+		},
+		{
+			title: '데이터베이스와 직접 대화하세요',
+			text: ['기존 시스템의 데이터를 복사하지 않고도 실시간으로 조회하고 분석할 수 있습니다.', '안전하고 빠른 데이터 접근이 가능합니다.']
+		},
+		{
+			title: '채팅, 보고서, 검색을 자유롭게 전환하세요',
+			text: ['같은 대화를 채팅 형식으로 보거나,', '보고서나 검색 결과로 볼 수 있습니다. 상황에 맞는 가장 편한 방식으로 작업하세요.']
+		},
+		{
+			title: 'AI와 함께 일하는 새로운 방식의 시작',
+			text: ['SFN AI Portal에서 당신의 AI 파트너를 만나보세요.', '대화가 곧 결과가 됩니다.']
+		}
+	];
+
+	let heroSetIndex = 0;
+	let heroOpacity = 1;
+	let heroInterval = null;
 
 	const querystringValue = (key) => {
 		const querystring = window.location.search;
@@ -87,6 +133,15 @@
 		} else {
 			await signUpHandler();
 		}
+	};
+
+	const switchMode = (newMode) => {
+		if (mode === newMode) return;
+		transitioning = true;
+		setTimeout(() => {
+			mode = newMode;
+			transitioning = false;
+		}, 150);
 	};
 
 	const checkOauthCallback = async () => {
@@ -152,14 +207,40 @@
 			await signInHandler();
 		} else {
 			onboarding = $config?.onboarding ?? false;
+
+			// Hero 메시지 자동 전환 (8초마다)
+			heroInterval = setInterval(() => {
+				heroOpacity = 0;
+				setTimeout(() => {
+					heroSetIndex = (heroSetIndex + 1) % heroSets.length;
+					heroOpacity = 1;
+				}, 500);
+			}, 8000);
+		}
+	});
+
+	onDestroy(() => {
+		if (heroInterval !== null) {
+			clearInterval(heroInterval);
 		}
 	});
 </script>
 
+<style>
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+</style>
+
 <svelte:head>
-	<title>
-		{`${$WEBUI_NAME}`}
-	</title>
+	<title>SFN AI Portal</title>
 </svelte:head>
 
 <OnBoarding
@@ -170,37 +251,61 @@
 	}}
 />
 
-<div class="w-full h-screen max-h-[100dvh] text-white relative">
-	<div class="w-full h-full absolute top-0 left-0 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-black"></div>
+<div class="w-full h-screen max-h-[100dvh] relative overflow-hidden">
+	<!-- Animated Samsung Blue Gradient Background - Layered -->
+	<div
+		class="absolute inset-0 animate-samsung-gradient"
+		style="background: radial-gradient(circle at 30% 30%, #00AEEF, transparent 50%), radial-gradient(circle at 70% 70%, #1428A0, transparent 50%), linear-gradient(-45deg, #1428A0, #0072CE, #00AEEF, #1428A0); background-size: 200% 200%;"
+	></div>
+	
+	<!-- Animated light overlay for shimmer effect -->
+	<div
+		class="absolute inset-0 animate-shimmer pointer-events-none"
+		style="background: radial-gradient(circle at 20% 40%, rgba(255,255,255,0.1), transparent 70%), radial-gradient(circle at 80% 60%, rgba(255,255,255,0.15), transparent 70%); mix-blend-mode: overlay;"
+	></div>
 
-	<div class="w-full absolute top-0 left-0 right-0 h-8 drag-region" />
+	<div class="w-full absolute top-0 left-0 right-0 h-8 drag-region z-50" />
 
 	{#if loaded}
-		<div class="fixed m-10 z-50">
-			<div class="flex space-x-2">
-				<div class=" self-center">
-					<img
-						id="logo"
-						crossorigin="anonymous"
-						src="{WEBUI_BASE_URL}/static/splash.png"
-						class=" w-6 rounded-full"
-						alt="logo"
-					/>
+		<div
+			class="fixed min-h-screen w-full flex flex-col justify-center items-center font-primary z-40 px-4 py-16"
+			style="font-family: 'Samsung Gothic', -apple-system, BlinkMacSystemFont, sans-serif;"
+		>
+			<!-- Logo at top -->
+			<div class="mb-8">
+				<img
+					id="logo"
+					crossorigin="anonymous"
+					src="/samsung-financial-networks-logo.webp"
+					class="h-16 w-auto"
+					alt="Samsung Financial Networks"
+				/>
+			</div>
+
+			<!-- Hero Section -->
+			<div class="w-full max-w-3xl mb-12 text-center text-white">
+				<div
+					class="transition-opacity duration-1000 ease-in-out"
+					style="opacity: {heroOpacity};"
+				>
+					<h1 class="text-3xl md:text-4xl font-extrabold leading-snug mb-4">
+						{heroSets[heroSetIndex].title}
+					</h1>
+					<p class="text-lg md:text-xl opacity-90 max-w-2xl mx-auto">
+						{heroSets[heroSetIndex].text[0]}<br />
+						{heroSets[heroSetIndex].text[1]}
+					</p>
 				</div>
 			</div>
-		</div>
 
-		<div
-			class="fixed bg-transparent min-h-screen w-full flex justify-center font-primary z-50 text-black dark:text-white"
-		>
-			<div class="w-full sm:max-w-md px-10 min-h-screen flex flex-col text-center">
+			<div class="w-full max-w-[400px]">
 				{#if ($config?.features.auth_trusted_header ?? false) || $config?.features.auth === false}
 					<div class=" my-auto pb-10 w-full">
 						<div
-							class="flex items-center justify-center gap-3 text-xl sm:text-2xl text-center font-semibold dark:text-gray-200"
+							class="flex items-center justify-center gap-3 text-xl sm:text-2xl text-center font-semibold text-white"
 						>
 							<div>
-								{$i18n.t('Signing in to {{WEBUI_NAME}}', { WEBUI_NAME: $WEBUI_NAME })}
+								{$i18n.t('Signing in...')}
 							</div>
 
 							<div>
@@ -209,46 +314,60 @@
 						</div>
 					</div>
 				{:else}
-					<div class="  my-auto pb-10 w-full dark:text-gray-100">
+					<div class="w-full bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 p-8 transition-all duration-300 text-white {transitioning ? 'opacity-50' : 'opacity-100'}">
+						{#if $config?.features.enable_signup && !($config?.onboarding ?? false) && !$config?.features.enable_ldap}
+							<!-- Tab Switcher - Stripe style -->
+							<div class="flex mb-8 border-b border-gray-600">
+								<button
+									type="button"
+									class="flex-1 pb-3.5 text-sm font-medium transition-all duration-200 border-b-2 {mode === 'signin'
+										? 'text-white border-white'
+										: 'text-gray-400 border-transparent hover:text-gray-300'}"
+									on:click={() => switchMode('signin')}
+								>
+									{$i18n.t('Sign in')}
+								</button>
+								<button
+									type="button"
+									class="flex-1 pb-3.5 text-sm font-medium transition-all duration-200 border-b-2 {mode === 'signup'
+										? 'text-white border-white'
+										: 'text-gray-400 border-transparent hover:text-gray-300'}"
+									on:click={() => switchMode('signup')}
+								>
+									{$i18n.t('Sign up')}
+								</button>
+							</div>
+						{/if}
+
 						<form
-							class=" flex flex-col justify-center"
+							class="flex flex-col"
 							on:submit={(e) => {
 								e.preventDefault();
 								submitHandler();
 							}}
 						>
-							<div class="mb-1">
-								<div class=" text-2xl font-medium">
-									{#if $config?.onboarding ?? false}
-										{$i18n.t(`Get started with {{WEBUI_NAME}}`, { WEBUI_NAME: $WEBUI_NAME })}
-									{:else if mode === 'ldap'}
-										{$i18n.t(`Sign in to {{WEBUI_NAME}} with LDAP`, { WEBUI_NAME: $WEBUI_NAME })}
-									{:else if mode === 'signin'}
-										{$i18n.t(`Sign in to {{WEBUI_NAME}}`, { WEBUI_NAME: $WEBUI_NAME })}
-									{:else}
-										{$i18n.t(`Sign up to {{WEBUI_NAME}}`, { WEBUI_NAME: $WEBUI_NAME })}
-									{/if}
-								</div>
-
-								{#if $config?.onboarding ?? false}
-									<div class=" mt-1 text-xs font-medium text-gray-500">
+							{#if $config?.onboarding ?? false}
+								<div class="mb-6 text-center">
+									<div class="text-sm text-gray-300">
 										ⓘ {$WEBUI_NAME}
 										{$i18n.t(
 											'does not make any external connections, and your data stays securely on your locally hosted server.'
 										)}
 									</div>
-								{/if}
-							</div>
+								</div>
+							{/if}
 
 							{#if $config?.features.enable_login_form || $config?.features.enable_ldap}
-								<div class="flex flex-col mt-4">
+								<div class="flex flex-col space-y-5">
 									{#if mode === 'signup'}
-										<div class="mb-2">
-											<div class=" text-sm font-medium text-left mb-1">{$i18n.t('Name')}</div>
+										<div>
+											<label class="block text-sm font-medium text-gray-200 mb-2.5">
+												{$i18n.t('Name')}
+											</label>
 											<input
 												bind:value={name}
 												type="text"
-												class="my-0.5 w-full text-sm outline-hidden bg-transparent"
+												class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
 												autocomplete="name"
 												placeholder={$i18n.t('Enter Your Full Name')}
 												required
@@ -257,12 +376,14 @@
 									{/if}
 
 									{#if mode === 'ldap'}
-										<div class="mb-2">
-											<div class=" text-sm font-medium text-left mb-1">{$i18n.t('Username')}</div>
+										<div>
+											<label class="block text-sm font-medium text-gray-200 mb-2.5">
+												{$i18n.t('Username')}
+											</label>
 											<input
 												bind:value={ldapUsername}
 												type="text"
-												class="my-0.5 w-full text-sm outline-hidden bg-transparent"
+												class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
 												autocomplete="username"
 												name="username"
 												placeholder={$i18n.t('Enter Your Username')}
@@ -270,12 +391,14 @@
 											/>
 										</div>
 									{:else}
-										<div class="mb-2">
-											<div class=" text-sm font-medium text-left mb-1">{$i18n.t('Email')}</div>
+										<div>
+											<label class="block text-sm font-medium text-gray-200 mb-2.5">
+												{$i18n.t('Email')}
+											</label>
 											<input
 												bind:value={email}
 												type="email"
-												class="my-0.5 w-full text-sm outline-hidden bg-transparent"
+												class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
 												autocomplete="email"
 												name="email"
 												placeholder={$i18n.t('Enter Your Email')}
@@ -285,12 +408,13 @@
 									{/if}
 
 									<div>
-										<div class=" text-sm font-medium text-left mb-1">{$i18n.t('Password')}</div>
-
+										<label class="block text-sm font-medium text-gray-200 mb-2.5">
+											{$i18n.t('Password')}
+										</label>
 										<input
 											bind:value={password}
 											type="password"
-											class="my-0.5 w-full text-sm outline-hidden bg-transparent"
+											class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
 											placeholder={$i18n.t('Enter Your Password')}
 											autocomplete="current-password"
 											name="current-password"
@@ -299,18 +423,18 @@
 									</div>
 								</div>
 							{/if}
-							<div class="mt-5">
+							<div class="mt-8">
 								{#if $config?.features.enable_login_form || $config?.features.enable_ldap}
 									{#if mode === 'ldap'}
 										<button
-											class="bg-gray-700/5 hover:bg-gray-700/10 dark:bg-gray-100/5 dark:hover:bg-gray-100/10 dark:text-gray-300 dark:hover:text-white transition w-full rounded-full font-medium text-sm py-2.5"
+											class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-4 rounded-md transition-all duration-200"
 											type="submit"
 										>
 											{$i18n.t('Authenticate')}
 										</button>
 									{:else}
 										<button
-											class="bg-gray-700/5 hover:bg-gray-700/10 dark:bg-gray-100/5 dark:hover:bg-gray-100/10 dark:text-gray-300 dark:hover:text-white transition w-full rounded-full font-medium text-sm py-2.5"
+											class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-4 rounded-md transition-all duration-200"
 											type="submit"
 										>
 											{mode === 'signin'
@@ -319,49 +443,27 @@
 													? $i18n.t('Create Admin Account')
 													: $i18n.t('Create Account')}
 										</button>
-
-										{#if $config?.features.enable_signup && !($config?.onboarding ?? false)}
-											<div class=" mt-4 text-sm text-center">
-												{mode === 'signin'
-													? $i18n.t("Don't have an account?")
-													: $i18n.t('Already have an account?')}
-
-												<button
-													class=" font-medium underline"
-													type="button"
-													on:click={() => {
-														if (mode === 'signin') {
-															mode = 'signup';
-														} else {
-															mode = 'signin';
-														}
-													}}
-												>
-													{mode === 'signin' ? $i18n.t('Sign up') : $i18n.t('Sign in')}
-												</button>
-											</div>
-										{/if}
 									{/if}
 								{/if}
 							</div>
 						</form>
 
 						{#if Object.keys($config?.oauth?.providers ?? {}).length > 0}
-							<div class="inline-flex items-center justify-center w-full">
-								<hr class="w-32 h-px my-4 border-0 dark:bg-gray-100/10 bg-gray-700/10" />
+							<div class="inline-flex items-center justify-center w-full my-8">
+								<hr class="flex-1 h-px border-0 bg-gray-600" />
 								{#if $config?.features.enable_login_form || $config?.features.enable_ldap}
 									<span
-										class="px-3 text-sm font-medium text-gray-900 dark:text-white bg-transparent"
+										class="px-4 text-sm font-medium text-gray-400 bg-gray-800/95"
 										>{$i18n.t('or')}</span
 									>
 								{/if}
 
-								<hr class="w-32 h-px my-4 border-0 dark:bg-gray-100/10 bg-gray-700/10" />
+								<hr class="flex-1 h-px border-0 bg-gray-600" />
 							</div>
-							<div class="flex flex-col space-y-2">
+							<div class="flex flex-col space-y-2.5">
 								{#if $config?.oauth?.providers?.google}
 									<button
-										class="flex justify-center items-center bg-gray-700/5 hover:bg-gray-700/10 dark:bg-gray-100/5 dark:hover:bg-gray-100/10 dark:text-gray-300 dark:hover:text-white transition w-full rounded-full font-medium text-sm py-2.5"
+										class="flex justify-center items-center bg-gray-700 border border-gray-600 hover:bg-gray-600 text-gray-200 transition-all duration-200 w-full rounded-md font-medium text-sm py-3.5 px-4"
 										on:click={() => {
 											window.location.href = `${WEBUI_BASE_URL}/oauth/google/login`;
 										}}
@@ -386,7 +488,7 @@
 								{/if}
 								{#if $config?.oauth?.providers?.microsoft}
 									<button
-										class="flex justify-center items-center bg-gray-700/5 hover:bg-gray-700/10 dark:bg-gray-100/5 dark:hover:bg-gray-100/10 dark:text-gray-300 dark:hover:text-white transition w-full rounded-full font-medium text-sm py-2.5"
+										class="flex justify-center items-center bg-gray-700 border border-gray-600 hover:bg-gray-600 text-gray-200 transition-all duration-200 w-full rounded-md font-medium text-sm py-3.5 px-4"
 										on:click={() => {
 											window.location.href = `${WEBUI_BASE_URL}/oauth/microsoft/login`;
 										}}
@@ -411,7 +513,7 @@
 								{/if}
 								{#if $config?.oauth?.providers?.github}
 									<button
-										class="flex justify-center items-center bg-gray-700/5 hover:bg-gray-700/10 dark:bg-gray-100/5 dark:hover:bg-gray-100/10 dark:text-gray-300 dark:hover:text-white transition w-full rounded-full font-medium text-sm py-2.5"
+										class="flex justify-center items-center bg-gray-700 border border-gray-600 hover:bg-gray-600 text-gray-200 transition-all duration-200 w-full rounded-md font-medium text-sm py-3.5 px-4"
 										on:click={() => {
 											window.location.href = `${WEBUI_BASE_URL}/oauth/github/login`;
 										}}
@@ -427,7 +529,7 @@
 								{/if}
 								{#if $config?.oauth?.providers?.oidc}
 									<button
-										class="flex justify-center items-center bg-gray-700/5 hover:bg-gray-700/10 dark:bg-gray-100/5 dark:hover:bg-gray-100/10 dark:text-gray-300 dark:hover:text-white transition w-full rounded-full font-medium text-sm py-2.5"
+										class="flex justify-center items-center bg-gray-700 border border-gray-600 hover:bg-gray-600 text-gray-200 transition-all duration-200 w-full rounded-md font-medium text-sm py-3.5 px-4"
 										on:click={() => {
 											window.location.href = `${WEBUI_BASE_URL}/oauth/oidc/login`;
 										}}
@@ -458,9 +560,9 @@
 						{/if}
 
 						{#if $config?.features.enable_ldap && $config?.features.enable_login_form}
-							<div class="mt-2">
+							<div class="mt-6 text-center">
 								<button
-									class="flex justify-center items-center text-xs w-full text-center underline"
+									class="text-sm text-gray-300 hover:text-white transition-colors duration-200"
 									type="button"
 									on:click={() => {
 										if (mode === 'ldap')
