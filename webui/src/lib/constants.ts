@@ -1,7 +1,7 @@
 import { browser, dev } from '$app/environment';
 // import { version } from '../../package.json';
 
-export const APP_NAME = 'Open WebUI';
+export const APP_NAME = 'SFN AI Portal';
 
 // 개발 모드에서는 Vite dev server를 통해 접근 (프록시 사용)
 export const WEBUI_HOSTNAME = browser ? (dev ? location.host : ``) : '';

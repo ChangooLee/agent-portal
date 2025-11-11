@@ -20,12 +20,46 @@
 	}
 }
 
+/* Samsung Gothic Font Face */
+@font-face {
+	font-family: 'Samsung Gothic';
+	src: url('/assets/fonts/SamsungGothic-Light.ttf') format('truetype');
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Samsung Gothic';
+	src: url('/assets/fonts/SamsungGothic-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Samsung Gothic';
+	src: url('/assets/fonts/SamsungGothic-Medium.ttf') format('truetype');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Samsung Gothic';
+	src: url('/assets/fonts/SamsungGothic-Bold.ttf') format('truetype');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
 @layer base {
 	html,
-	pre {
-		font-family: -apple-system, BlinkMacSystemFont, 'Inter', ui-sans-serif, system-ui, 'Segoe UI',
+	pre,
+	body {
+		font-family: 'Samsung Gothic', -apple-system, BlinkMacSystemFont, 'Inter', ui-sans-serif, system-ui, 'Segoe UI',
 			Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif, 'Helvetica Neue', Arial,
-			'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+			'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji' !important;
 	}
 
 	pre {
@@ -43,3 +77,50 @@
 }
 
 @custom-variant hover (&:hover);
+
+/* Samsung Blue Gradient Animation - Stripe Style */
+@keyframes samsungGradient {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		transform: translateX(0px) translateY(0px);
+		opacity: 0.7;
+	}
+	100% {
+		transform: translateX(40px) translateY(-40px);
+		opacity: 0.4;
+	}
+}
+
+.animate-samsung-gradient {
+	animation: samsungGradient 18s ease-in-out infinite;
+}
+
+.animate-shimmer {
+	animation: shimmer 12s ease-in-out infinite alternate;
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.animate-fade-in {
+	animation: fade-in 1s ease-out;
+}

@@ -261,7 +261,7 @@
 				if (done) {
 					if ($isLastActiveTab) {
 						if ($settings?.notificationEnabled ?? false) {
-							new Notification(`${title} | Open WebUI`, {
+							new Notification(`${title} | SFN AI Portal`, {
 								body: content,
 								icon: `${WEBUI_BASE_URL}/static/favicon.png`
 							});
@@ -410,7 +410,7 @@
 			if (type === 'message') {
 				if ($isLastActiveTab) {
 					if ($settings?.notificationEnabled ?? false) {
-						new Notification(`${data?.user?.name} (#${event?.channel?.name}) | Open WebUI`, {
+						new Notification(`${data?.user?.name} (#${event?.channel?.name}) | SFN AI Portal`, {
 							body: data?.content,
 							icon: data?.user?.profile_image_url ?? `${WEBUI_BASE_URL}/static/favicon.png`
 						});
@@ -606,7 +606,7 @@
 </script>
 
 <svelte:head>
-	<title>{$WEBUI_NAME || 'Samsung Life Agent Portal'}</title>
+	<title>{$WEBUI_NAME || 'SFN AI Portal'}</title>
 	<link crossorigin="anonymous" rel="icon" href="{WEBUI_BASE_URL}/static/favicon.png" />
 	<link rel="apple-touch-icon" href="{WEBUI_BASE_URL}/static/favicon.png" />
 
