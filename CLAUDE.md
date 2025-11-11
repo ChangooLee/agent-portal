@@ -81,6 +81,10 @@ agent-portal/
 │   │   │   ├── components/  # Svelte 컴포넌트
 │   │   │   └── apis/       # API 클라이언트
 │   └── .skills/      # Skills 시스템 파일
+├── autogen-studio/   # AutoGen Studio UI (임베드)
+├── autogen-api/      # AutoGen Studio 백엔드
+├── perplexica/       # Perplexica (iframe 임베드)
+├── open-notebook/    # Open Notebook (iframe 임베드)
 ├── config/           # 설정 파일
 └── scripts/          # 유틸리티 스크립트
 ```

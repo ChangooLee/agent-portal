@@ -1,0 +1,172 @@
+{
+  "metadata": {
+    "generatedAt": "2025-11-07T06:49:02.546Z"
+  },
+  "tailwind": {
+    "colors": {},
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px",
+      "2xl": "1536px"
+    },
+    "plugins": [
+      "typography",
+      "containerQuries"
+    ],
+    "darkMode": "class"
+  },
+  "globalCSS": {
+    "fonts": [
+      {
+        "name": "Inter",
+        "file": "app.css"
+      },
+      {
+        "name": "Archivo",
+        "file": "app.css"
+      },
+      {
+        "name": "Mona Sans",
+        "file": "app.css"
+      },
+      {
+        "name": "InstrumentSerif",
+        "file": "app.css"
+      }
+    ],
+    "customClasses": [
+      "font-secondary",
+      "hljs",
+      "input-prose",
+      "input-prose-sm",
+      "markdown-prose",
+      "markdown-prose-xs",
+      "font-primary",
+      "drag-region",
+      "no-drag-region",
+      "shimmer",
+      "shimmer",
+      "status-description",
+      "katex-mathml",
+      "scrollbar-none",
+      "katex-display",
+      "cm-editor",
+      "cm-focused",
+      "password",
+      "codespan",
+      "svelte-flow",
+      "bg-gray-950-90",
+      "ProseMirror",
+      "hljs-quote",
+      "hljs-selector-class",
+      "hljs-params",
+      "hljs-bullet",
+      "hljs-section",
+      "hljs-selector-tag",
+      "hljs-emphasis",
+      "hljs-strong",
+      "card",
+      "card",
+      "grid-container",
+      "page-container",
+      "btn-primary",
+      "btn-secondary",
+      "input-field"
+    ],
+    "cssVariables": [
+      {
+        "name": "spacing-base",
+        "value": "1rem",
+        "file": "app.css"
+      },
+      {
+        "name": "spacing-sm",
+        "value": "0.5rem",
+        "file": "app.css"
+      },
+      {
+        "name": "spacing-md",
+        "value": "1.5rem",
+        "file": "app.css"
+      },
+      {
+        "name": "spacing-lg",
+        "value": "2rem",
+        "file": "app.css"
+      },
+      {
+        "name": "spacing-xl",
+        "value": "3rem",
+        "file": "app.css"
+      },
+      {
+        "name": "card-padding",
+        "value": "1.5rem",
+        "file": "app.css"
+      },
+      {
+        "name": "card-border-radius",
+        "value": "0.75rem",
+        "file": "app.css"
+      },
+      {
+        "name": "card-shadow",
+        "value": "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+        "file": "app.css"
+      },
+      {
+        "name": "card-shadow-hover",
+        "value": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+        "file": "app.css"
+      },
+      {
+        "name": "grid-gap",
+        "value": "1.5rem",
+        "file": "app.css"
+      },
+      {
+        "name": "page-padding",
+        "value": "2rem",
+        "file": "app.css"
+      },
+      {
+        "name": "tw-border-opacity",
+        "value": "1",
+        "file": "app.css"
+      }
+    ],
+    "mediaQueries": []
+  },
+  "themeSystem": {
+    "available": [
+      "system",
+      "dark",
+      "oled-dark",
+      "light",
+      "her",
+      "rose-pine dark",
+      "rose-pine-dawn light"
+    ],
+    "default": "system",
+    "storageKey": "theme",
+    "applyMethod": "class",
+    "colorVariables": {
+      "gray-800": "#101010",
+      "gray-850": "#050505",
+      "gray-900": "#000000",
+      "gray-950": "#000000"
+    }
+  },
+  "responsive": {
+    "breakpointUsage": {
+      "sm": 64,
+      "md": 141,
+      "lg": 55,
+      "xl": 11,
+      "2xl": 1
+    },
+    "mostUsed": "md"
+  }
+}

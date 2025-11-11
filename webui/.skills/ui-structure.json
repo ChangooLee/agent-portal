@@ -1,0 +1,7306 @@
+{
+  "metadata": {
+    "generatedAt": "2025-11-07T06:49:02.379Z",
+    "webuiDir": "/Users/lchangoo/Workspace/agent-portal/webui/src",
+    "routeCount": 40,
+    "componentCount": 295,
+    "apiModuleCount": 23
+  },
+  "routes": [
+    {
+      "path": "routes/(app)/+layout.svelte",
+      "routePath": "/",
+      "description": "Layout",
+      "components": [
+        "layout/Sidebar.svelte",
+        "chat/SettingsModal.svelte",
+        "ChangelogModal.svelte",
+        "layout/Overlay/AccountPending.svelte",
+        "layout/UpdateInfoToast.svelte",
+        "common/Spinner.svelte"
+      ],
+      "apis": [
+        "knowledge",
+        "functions",
+        "chats",
+        "prompts",
+        "tools",
+        "configs",
+        "users"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "getAllFromIndex"
+        },
+        {
+          "type": "function",
+          "name": "deleteDB"
+        },
+        {
+          "type": "function",
+          "name": "getUserSettings"
+        },
+        {
+          "type": "function",
+          "name": "getItem"
+        },
+        {
+          "type": "function",
+          "name": "getModels"
+        },
+        {
+          "type": "function",
+          "name": "getBanners"
+        },
+        {
+          "type": "function",
+          "name": "getTools"
+        },
+        {
+          "type": "function",
+          "name": "getToolServersData"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementsByClassName"
+        },
+        {
+          "type": "function",
+          "name": "getElementsByClassName"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getVersionUpdates"
+        },
+        {
+          "type": "function",
+          "name": "deleteDB"
+        }
+      ],
+      "stores": [],
+      "keywords": [
+        "settings",
+        "chats",
+        "import chats",
+        "close",
+        "(app)"
+      ],
+      "fileSize": 10650,
+      "lineCount": 369
+    },
+    {
+      "path": "routes/(app)/+page.svelte",
+      "routePath": "/",
+      "description": "Page",
+      "components": [
+        "chat/Chat.svelte",
+        "layout/Help.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)"
+      ],
+      "fileSize": 158,
+      "lineCount": 8
+    },
+    {
+      "path": "routes/(app)/admin/+layout.svelte",
+      "routePath": "admin",
+      "description": "{$i18n.t('Admin Panel')} | {$WEBUI_NAME}",
+      "components": [
+        "icons/MenuLines.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "{$i18n.t('admin",
+        "panel')}",
+        "{$webui_name}",
+        "admin panel",
+        "users",
+        "evaluations",
+        "functions",
+        "monitoring",
+        "settings",
+        "gateway",
+        "(app)",
+        "admin"
+      ],
+      "fileSize": 3914,
+      "lineCount": 105
+    },
+    {
+      "path": "routes/(app)/admin/+page.svelte",
+      "routePath": "admin",
+      "description": "Page",
+      "components": [],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "admin"
+      ],
+      "fileSize": 152,
+      "lineCount": 9
+    },
+    {
+      "path": "routes/(app)/admin/evaluations/+page.svelte",
+      "routePath": "admin/evaluations",
+      "description": "Page",
+      "components": [
+        "admin/Evaluations.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "admin",
+        "evaluations"
+      ],
+      "fileSize": 105,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/admin/functions/+page.svelte",
+      "routePath": "admin/functions",
+      "description": "Page",
+      "components": [
+        "admin/Functions.svelte"
+      ],
+      "apis": [
+        "functions"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getFunctions"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "(app)",
+        "admin",
+        "functions"
+      ],
+      "fileSize": 405,
+      "lineCount": 20
+    },
+    {
+      "path": "routes/(app)/admin/functions/create/+page.svelte",
+      "routePath": "admin/functions/create",
+      "description": "Page",
+      "components": [
+        "admin/Functions/FunctionEditor.svelte"
+      ],
+      "apis": [
+        "functions"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "createNewFunction"
+        },
+        {
+          "type": "function",
+          "name": "getFunctions"
+        },
+        {
+          "type": "function",
+          "name": "getModels"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "function created successfully",
+        "(app)",
+        "admin",
+        "functions",
+        "create"
+      ],
+      "fileSize": 2547,
+      "lineCount": 104
+    },
+    {
+      "path": "routes/(app)/admin/functions/edit/+page.svelte",
+      "routePath": "admin/functions/edit",
+      "description": "Page",
+      "components": [
+        "admin/Functions/FunctionEditor.svelte",
+        "common/Spinner.svelte"
+      ],
+      "apis": [
+        "functions"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "updateFunctionById"
+        },
+        {
+          "type": "function",
+          "name": "getFunctions"
+        },
+        {
+          "type": "function",
+          "name": "getModels"
+        },
+        {
+          "type": "function",
+          "name": "getFunctionById"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "function updated successfully",
+        "(app)",
+        "admin",
+        "functions",
+        "edit"
+      ],
+      "fileSize": 2377,
+      "lineCount": 94
+    },
+    {
+      "path": "routes/(app)/admin/gateway/+page.svelte",
+      "routePath": "admin/gateway",
+      "description": "{$i18n.t('Gateway')} | Admin Panel",
+      "components": [],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [],
+      "keywords": [
+        "{$i18n.t('gateway')}",
+        "admin",
+        "panel",
+        "gateway",
+        "(app)"
+      ],
+      "fileSize": 2917,
+      "lineCount": 104
+    },
+    {
+      "path": "routes/(app)/admin/monitoring/+page.svelte",
+      "routePath": "admin/monitoring",
+      "description": "{$i18n.t('Monitoring')} | Admin Panel",
+      "components": [],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "fetch",
+          "url": "${BFF_BASE_URL}/observability/usage"
+        },
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "getIframeSrc"
+        },
+        {
+          "type": "function",
+          "name": "getIframeSrc"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "tab navigation",
+        "content area",
+        "langfuse summary",
+        "helicone summary",
+        "status card",
+        "{$i18n.t('monitoring')}",
+        "admin",
+        "panel",
+        "monitoring",
+        "access denied: only administrators can view this page.",
+        "summary",
+        "loading usage summary...",
+        "error loading usage summary. please check the backend service.",
+        "loading...",
+        "error loading {activetab}. please check the backend service.",
+        "(app)"
+      ],
+      "fileSize": 7065,
+      "lineCount": 217
+    },
+    {
+      "path": "routes/(app)/admin/settings/+page.svelte",
+      "routePath": "admin/settings",
+      "description": "Page",
+      "components": [
+        "admin/Settings.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 96,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/admin/users/+page.svelte",
+      "routePath": "admin/users",
+      "description": "Page",
+      "components": [
+        "admin/Users.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "admin",
+        "users"
+      ],
+      "fileSize": 87,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/c/[id]/+page.svelte",
+      "routePath": "c/:id",
+      "description": "Page",
+      "components": [
+        "chat/Chat.svelte",
+        "layout/Help.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "[id]"
+      ],
+      "fileSize": 225,
+      "lineCount": 10
+    },
+    {
+      "path": "routes/(app)/channels/[id]/+page.svelte",
+      "routePath": "channels/:id",
+      "description": "Page",
+      "components": [
+        "channel/Channel.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "channels",
+        "[id]"
+      ],
+      "fileSize": 164,
+      "lineCount": 8
+    },
+    {
+      "path": "routes/(app)/home/+layout.svelte",
+      "routePath": "home",
+      "description": "{$i18n.t('Home')} | {$WEBUI_NAME}",
+      "components": [
+        "icons/MenuLines.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "{$i18n.t('home')}",
+        "{$webui_name}",
+        "home",
+        "notes",
+        "calendar",
+        "(app)"
+      ],
+      "fileSize": 1938,
+      "lineCount": 66
+    },
+    {
+      "path": "routes/(app)/home/+page.svelte",
+      "routePath": "home",
+      "description": "Page",
+      "components": [],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "home"
+      ],
+      "fileSize": 0,
+      "lineCount": 1
+    },
+    {
+      "path": "routes/(app)/playground/+layout.svelte",
+      "routePath": "playground",
+      "description": "{$i18n.t('Playground')} | {$WEBUI_NAME}",
+      "components": [
+        "icons/MenuLines.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "{$i18n.t('playground')}",
+        "{$webui_name}",
+        "playground",
+        "chat",
+        "notes",
+        "completions",
+        "(app)"
+      ],
+      "fileSize": 2272,
+      "lineCount": 77
+    },
+    {
+      "path": "routes/(app)/playground/+page.svelte",
+      "routePath": "playground",
+      "description": "Page",
+      "components": [
+        "playground/Chat.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "playground"
+      ],
+      "fileSize": 89,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/playground/completions/+page.svelte",
+      "routePath": "playground/completions",
+      "description": "Page",
+      "components": [
+        "playground/Completions.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "playground",
+        "completions"
+      ],
+      "fileSize": 110,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/playground/notes/+page.svelte",
+      "routePath": "playground/notes",
+      "description": "Page",
+      "components": [
+        "playground/Notes.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "playground",
+        "notes"
+      ],
+      "fileSize": 92,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/workspace/+layout.svelte",
+      "routePath": "workspace",
+      "description": "{$i18n.t('Workspace')} | {$WEBUI_NAME}",
+      "components": [
+        "icons/MenuLines.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [],
+      "keywords": [
+        "<div class=\"flex items-center text-xl font-semibold\">{$i18n.t('workspace')}</div>",
+        "{$i18n.t('workspace')}",
+        "{$webui_name}",
+        "workspace",
+        "models",
+        "knowledge",
+        "prompts",
+        "tools",
+        "(app)"
+      ],
+      "fileSize": 4361,
+      "lineCount": 136
+    },
+    {
+      "path": "routes/(app)/workspace/+page.svelte",
+      "routePath": "workspace",
+      "description": "Page",
+      "components": [],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "(app)",
+        "workspace"
+      ],
+      "fileSize": 618,
+      "lineCount": 24
+    },
+    {
+      "path": "routes/(app)/workspace/functions/create/+page.svelte",
+      "routePath": "workspace/functions/create",
+      "description": "Page",
+      "components": [],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "workspace",
+        "functions",
+        "create"
+      ],
+      "fileSize": 163,
+      "lineCount": 9
+    },
+    {
+      "path": "routes/(app)/workspace/knowledge/+page.svelte",
+      "routePath": "workspace/knowledge",
+      "description": "Page",
+      "components": [
+        "workspace/Knowledge.svelte"
+      ],
+      "apis": [
+        "knowledge"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getKnowledgeBases"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "(app)",
+        "workspace",
+        "knowledge"
+      ],
+      "fileSize": 419,
+      "lineCount": 20
+    },
+    {
+      "path": "routes/(app)/workspace/knowledge/[id]/+page.svelte",
+      "routePath": "workspace/knowledge/:id",
+      "description": "Page",
+      "components": [
+        "workspace/Knowledge/KnowledgeBase.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "workspace",
+        "knowledge",
+        "[id]"
+      ],
+      "fileSize": 125,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/workspace/knowledge/create/+page.svelte",
+      "routePath": "workspace/knowledge/create",
+      "description": "Page",
+      "components": [
+        "workspace/Knowledge/CreateKnowledgeBase.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "workspace",
+        "knowledge",
+        "create"
+      ],
+      "fileSize": 143,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/workspace/models/+page.svelte",
+      "routePath": "workspace/models",
+      "description": "Page",
+      "components": [
+        "workspace/Models.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getModels"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "(app)",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 510,
+      "lineCount": 24
+    },
+    {
+      "path": "routes/(app)/workspace/models/create/+page.svelte",
+      "routePath": "workspace/models/create",
+      "description": "Page",
+      "components": [
+        "workspace/Models/ModelEditor.svelte"
+      ],
+      "apis": [
+        "models"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "createNewModel"
+        },
+        {
+          "type": "function",
+          "name": "getModels"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "model created successfully!",
+        "(app)",
+        "workspace",
+        "models",
+        "create"
+      ],
+      "fileSize": 2262,
+      "lineCount": 92
+    },
+    {
+      "path": "routes/(app)/workspace/models/edit/+page.svelte",
+      "routePath": "workspace/models/edit",
+      "description": "Page",
+      "components": [
+        "workspace/Models/ModelEditor.svelte"
+      ],
+      "apis": [
+        "models"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "getModelById"
+        },
+        {
+          "type": "function",
+          "name": "updateModelById"
+        },
+        {
+          "type": "function",
+          "name": "getModels"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "model updated successfully",
+        "(app)",
+        "workspace",
+        "models",
+        "edit"
+      ],
+      "fileSize": 1246,
+      "lineCount": 52
+    },
+    {
+      "path": "routes/(app)/workspace/prompts/+page.svelte",
+      "routePath": "workspace/prompts",
+      "description": "Page",
+      "components": [
+        "workspace/Prompts.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "workspace",
+        "prompts"
+      ],
+      "fileSize": 97,
+      "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/workspace/prompts/create/+page.svelte",
+      "routePath": "workspace/prompts/create",
+      "description": "Page",
+      "components": [
+        "workspace/Prompts/PromptEditor.svelte"
+      ],
+      "apis": [
+        "prompts"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "createNewPrompt"
+        },
+        {
+          "type": "function",
+          "name": "getPrompts"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "prompt created successfully",
+        "(app)",
+        "workspace",
+        "prompts",
+        "create"
+      ],
+      "fileSize": 1605,
+      "lineCount": 67
+    },
+    {
+      "path": "routes/(app)/workspace/prompts/edit/+page.svelte",
+      "routePath": "workspace/prompts/edit",
+      "description": "Page",
+      "components": [
+        "workspace/Prompts/PromptEditor.svelte"
+      ],
+      "apis": [
+        "prompts"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "updatePromptByCommand"
+        },
+        {
+          "type": "function",
+          "name": "getPrompts"
+        },
+        {
+          "type": "function",
+          "name": "getPromptByCommand"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "prompt updated successfully",
+        "(app)",
+        "workspace",
+        "prompts",
+        "edit"
+      ],
+      "fileSize": 1480,
+      "lineCount": 59
+    },
+    {
+      "path": "routes/(app)/workspace/tools/+page.svelte",
+      "routePath": "workspace/tools",
+      "description": "Page",
+      "components": [
+        "workspace/Tools.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "(app)",
+        "workspace",
+        "tools"
+      ],
+      "fileSize": 127,
+      "lineCount": 8
+    },
+    {
+      "path": "routes/(app)/workspace/tools/create/+page.svelte",
+      "routePath": "workspace/tools/create",
+      "description": "Page",
+      "components": [
+        "workspace/Tools/ToolkitEditor.svelte"
+      ],
+      "apis": [
+        "tools"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "createNewTool"
+        },
+        {
+          "type": "function",
+          "name": "getTools"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "tool created successfully",
+        "(app)",
+        "workspace",
+        "tools",
+        "create"
+      ],
+      "fileSize": 2333,
+      "lineCount": 98
+    },
+    {
+      "path": "routes/(app)/workspace/tools/edit/+page.svelte",
+      "routePath": "workspace/tools/edit",
+      "description": "Page",
+      "components": [
+        "common/Spinner.svelte",
+        "workspace/Tools/ToolkitEditor.svelte"
+      ],
+      "apis": [
+        "tools"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "updateToolById"
+        },
+        {
+          "type": "function",
+          "name": "getTools"
+        },
+        {
+          "type": "function",
+          "name": "getToolById"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "tool updated successfully",
+        "(app)",
+        "workspace",
+        "tools",
+        "edit"
+      ],
+      "fileSize": 2218,
+      "lineCount": 89
+    },
+    {
+      "path": "routes/+layout.svelte",
+      "routePath": "/",
+      "description": "{$WEBUI_NAME}",
+      "components": [
+        "NotificationToast.svelte",
+        "app/AppSidebar.svelte"
+      ],
+      "apis": [
+        "auths",
+        "chats",
+        "openai"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getChatList"
+        },
+        {
+          "type": "function",
+          "name": "getAllTags"
+        },
+        {
+          "type": "function",
+          "name": "getReader"
+        },
+        {
+          "type": "function",
+          "name": "getBackendConfig"
+        },
+        {
+          "type": "function",
+          "name": "getLanguages"
+        },
+        {
+          "type": "function",
+          "name": "getSessionUser"
+        },
+        {
+          "type": "function",
+          "name": "getBackendConfig"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        }
+      ],
+      "stores": [],
+      "keywords": [
+        "rosepine themes have been disabled as it's not up to date with our latest version.",
+        "feel free to make a pr to fix if anyone wants to see it return",
+        "{$webui_name}"
+      ],
+      "fileSize": 16498,
+      "lineCount": 643
+    },
+    {
+      "path": "routes/auth/+page.svelte",
+      "routePath": "/auth",
+      "description": "{`${$WEBUI_NAME}`}",
+      "components": [
+        "common/Spinner.svelte",
+        "OnBoarding.svelte"
+      ],
+      "apis": [
+        "auths"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "getBackendConfig"
+        },
+        {
+          "type": "function",
+          "name": "getSessionUser"
+        },
+        {
+          "type": "function",
+          "name": "getElementById"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "{`${$webui_name}`}",
+        "signing in to {{webui_name}}",
+        "name",
+        "enter your full name",
+        "username",
+        "enter your username",
+        "email",
+        "enter your email",
+        "password",
+        "enter your password",
+        "authenticate",
+        "sign in",
+        "create admin account",
+        "create account",
+        "don",
+        "already have an account?",
+        "sign up",
+        "continue with {{provider}}",
+        "continue with email",
+        "continue with ldap",
+        "auth"
+      ],
+      "fileSize": 16450,
+      "lineCount": 485
+    },
+    {
+      "path": "routes/error/+page.svelte",
+      "routePath": "/error",
+      "description": "Page",
+      "components": [],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "{{webuiname}} backend required",
+        "see readme.md for instructions",
+        "join our discord for help.",
+        "check again",
+        "error"
+      ],
+      "fileSize": 1667,
+      "lineCount": 61
+    },
+    {
+      "path": "routes/s/[id]/+page.svelte",
+      "routePath": "/s/:id",
+      "description": "{title\n\t\t\t? `${title.length > 30 ? `${title.slice(0, 30)}...` : title} | ${$WEBUI_NAME}`\n\t\t\t: `${$WEBUI_NAME}`}",
+      "components": [
+        "chat/Messages.svelte",
+        "layout/Navbar.svelte"
+      ],
+      "apis": [
+        "chats",
+        "users"
+      ],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        },
+        {
+          "type": "function",
+          "name": "createMessagesList"
+        },
+        {
+          "type": "function",
+          "name": "getUserSettings"
+        },
+        {
+          "type": "function",
+          "name": "getItem"
+        },
+        {
+          "type": "function",
+          "name": "getModels"
+        },
+        {
+          "type": "function",
+          "name": "getChatByShareId"
+        },
+        {
+          "type": "function",
+          "name": "getUserById"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "{title",
+        "`${title.length",
+        "`${title.slice(0,",
+        "30)}...`",
+        "title}",
+        "${$webui_name}`",
+        "`${$webui_name}`}",
+        "clone chat",
+        "[id]"
+      ],
+      "fileSize": 5231,
+      "lineCount": 213
+    },
+    {
+      "path": "routes/watch/+page.svelte",
+      "routePath": "/watch",
+      "description": "Page",
+      "components": [],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [],
+      "keywords": [
+        "watch"
+      ],
+      "fileSize": 543,
+      "lineCount": 23
+    }
+  ],
+  "components": [
+    {
+      "name": "AddConnectionModal",
+      "path": "lib/components/AddConnectionModal.svelte",
+      "directory": "root",
+      "imports": [
+        "common/Modal.svelte",
+        "icons/Plus.svelte",
+        "icons/Minus.svelte",
+        "icons/PencilSolid.svelte",
+        "common/SensitiveInput.svelte",
+        "common/Tooltip.svelte",
+        "common/Switch.svelte"
+      ],
+      "keywords": [
+        "server connection verified",
+        "edit connection",
+        "add connection",
+        "url",
+        "api base url",
+        "verify connection",
+        "enabled",
+        "disabled",
+        "key",
+        "api key",
+        "prefix id",
+        "tags",
+        "model ids",
+        "leave empty to include all models from ",
+        "add a model id",
+        "delete",
+        "save"
+      ],
+      "fileSize": 11051,
+      "lineCount": 401
+    },
+    {
+      "name": "AddFilesPlaceholder",
+      "path": "lib/components/AddFilesPlaceholder.svelte",
+      "directory": "root",
+      "imports": [],
+      "keywords": [
+        "add files",
+        "drop any files here to add to the conversation"
+      ],
+      "fileSize": 579,
+      "lineCount": 29
+    },
+    {
+      "name": "AddServerModal",
+      "path": "lib/components/AddServerModal.svelte",
+      "directory": "root",
+      "imports": [
+        "common/Modal.svelte",
+        "icons/Plus.svelte",
+        "icons/Minus.svelte",
+        "icons/PencilSolid.svelte",
+        "common/SensitiveInput.svelte",
+        "common/Tooltip.svelte",
+        "common/Switch.svelte"
+      ],
+      "keywords": [
+        "please enter a valid url",
+        "please enter a valid path",
+        "connection failed",
+        "connection successful",
+        "edit connection",
+        "add connection",
+        "url",
+        "api base url",
+        "verify connection",
+        "enabled",
+        "disabled",
+        "openapi.json path",
+        "auth",
+        "api key",
+        "forwards system user session credentials to authenticate",
+        "delete",
+        "save"
+      ],
+      "fileSize": 9915,
+      "lineCount": 348
+    },
+    {
+      "name": "ChangelogModal",
+      "path": "lib/components/ChangelogModal.svelte",
+      "directory": "root",
+      "imports": [],
+      "keywords": [
+        "what’s new in",
+        "release notes",
+        "okay, let"
+      ],
+      "fileSize": 3691,
+      "lineCount": 121
+    },
+    {
+      "name": "NotificationToast",
+      "path": "lib/components/NotificationToast.svelte",
+      "directory": "root",
+      "imports": [],
+      "keywords": [],
+      "fileSize": 1503,
+      "lineCount": 54
+    },
+    {
+      "name": "OnBoarding",
+      "path": "lib/components/OnBoarding.svelte",
+      "directory": "root",
+      "imports": [],
+      "keywords": [
+        "<div class=\"absolute bottom-12 left-0 right-0 w-full\"></div>",
+        "explore the cosmos",
+        "unlock mysteries",
+        "chart new frontiers",
+        "dive into knowledge",
+        "discover wonders",
+        "ignite curiosity",
+        "forge new paths",
+        "unravel secrets",
+        "pioneer insights",
+        "embark on adventures"
+      ],
+      "fileSize": 2905,
+      "lineCount": 106
+    },
+    {
+      "name": "FeedbackMenu",
+      "path": "lib/components/admin/Evaluations/FeedbackMenu.svelte",
+      "directory": "admin/Evaluations",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "icons/Download.svelte"
+      ],
+      "keywords": [
+        "more",
+        "delete",
+        "admin",
+        "evaluations"
+      ],
+      "fileSize": 1408,
+      "lineCount": 47
+    },
+    {
+      "name": "Feedbacks",
+      "path": "lib/components/admin/Evaluations/Feedbacks.svelte",
+      "directory": "admin/Evaluations",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/ArrowDownTray.svelte",
+        "common/Badge.svelte",
+        "icons/CloudArrowUp.svelte",
+        "common/Pagination.svelte",
+        "icons/EllipsisHorizontal.svelte"
+      ],
+      "keywords": [
+        "{$i18n.t('and {{count}} more')}",
+        "redirecting you to open webui community",
+        "feedback history",
+        "export",
+        "no feedbacks found",
+        "user",
+        "models",
+        "result",
+        "updated at",
+        "and {{count}} more",
+        "won",
+        "draw",
+        "lost",
+        "help us create the best community leaderboard by sharing your feedback history!",
+        "share to open webui community",
+        "admin",
+        "evaluations"
+      ],
+      "fileSize": 8696,
+      "lineCount": 286
+    },
+    {
+      "name": "Leaderboard",
+      "path": "lib/components/admin/Evaluations/Leaderboard.svelte",
+      "directory": "admin/Evaluations",
+      "imports": [
+        "common/Spinner.svelte",
+        "common/Tooltip.svelte",
+        "icons/MagnifyingGlass.svelte"
+      ],
+      "keywords": [
+        "leaderboard",
+        "re-rank models by topic similarity",
+        "search",
+        "no models found",
+        "model",
+        "rating",
+        "won",
+        "lost",
+        "admin",
+        "evaluations"
+      ],
+      "fileSize": 11503,
+      "lineCount": 415
+    },
+    {
+      "name": "Evaluations",
+      "path": "lib/components/admin/Evaluations.svelte",
+      "directory": "admin",
+      "imports": [],
+      "keywords": [
+        "leaderboard",
+        "feedbacks",
+        "admin"
+      ],
+      "fileSize": 3362,
+      "lineCount": 101
+    },
+    {
+      "name": "FunctionEditor",
+      "path": "lib/components/admin/Functions/FunctionEditor.svelte",
+      "directory": "admin/Functions",
+      "imports": [
+        "common/CodeEditor.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/Badge.svelte",
+        "common/Tooltip.svelte",
+        "icons/ChevronLeft.svelte"
+      ],
+      "keywords": [
+        "back",
+        "e.g. my filter",
+        "function name",
+        "function",
+        "e.g. my_filter",
+        "function id",
+        "e.g. a filter to remove profanity from text",
+        "function description",
+        "warning:",
+        "functions allow arbitrary code execution",
+        "save",
+        "please carefully review the following warnings:",
+        "functions allow arbitrary code execution.",
+        "do not install functions from sources you do not fully trust.",
+        "admin",
+        "functions"
+      ],
+      "fileSize": 13598,
+      "lineCount": 432
+    },
+    {
+      "name": "FunctionMenu",
+      "path": "lib/components/admin/Functions/FunctionMenu.svelte",
+      "directory": "admin/Functions",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "common/Tooltip.svelte",
+        "icons/Share.svelte",
+        "icons/DocumentDuplicate.svelte",
+        "icons/ArrowDownTray.svelte",
+        "common/Switch.svelte",
+        "icons/GlobeAlt.svelte"
+      ],
+      "keywords": [
+        "more",
+        "global",
+        "edit",
+        "share",
+        "clone",
+        "export",
+        "delete",
+        "admin",
+        "functions"
+      ],
+      "fileSize": 4080,
+      "lineCount": 139
+    },
+    {
+      "name": "Functions",
+      "path": "lib/components/admin/Functions.svelte",
+      "directory": "admin",
+      "imports": [
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "{$i18n.t('functions')}",
+        "{$webui_name}",
+        "redirecting you to open webui community",
+        "function deleted successfully",
+        "filter is now globally enabled",
+        "function is now globally enabled",
+        "filter is now globally disabled",
+        "function is now globally disabled",
+        "functions",
+        "search functions",
+        "delete",
+        "support",
+        "valves",
+        "enabled",
+        "disabled",
+        "import functions",
+        "export functions",
+        "made by open webui community",
+        "discover a function",
+        "discover, download, and explore custom functions",
+        "delete function?",
+        "this will delete",
+        "functions imported successfully",
+        "functions allow arbitrary code execution.",
+        "do not install functions from sources you do not fully trust.",
+        "admin"
+      ],
+      "fileSize": 17385,
+      "lineCount": 571
+    },
+    {
+      "name": "Audio",
+      "path": "lib/components/admin/Settings/Audio.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/SensitiveInput.svelte"
+      ],
+      "keywords": [
+        "stt settings",
+        "speech-to-text engine",
+        "whisper (local)",
+        "web api",
+        "api base url",
+        "api key",
+        "stt model",
+        "leave model field empty to use the default model.",
+        "click here to see available models.",
+        "azure region",
+        "language locales",
+        "e.g., en-us,ja-jp (leave blank for auto-detect)",
+        "set whisper model",
+        "tts settings",
+        "text-to-speech engine",
+        "transformers",
+        "local",
+        "openai",
+        "elevenlabs",
+        "azure ai speech",
+        "tts voice",
+        "default",
+        "tts model",
+        "output format",
+        "available list",
+        "response splitting",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 21641,
+      "lineCount": 681
+    },
+    {
+      "name": "CodeExecution",
+      "path": "lib/components/admin/Settings/CodeExecution.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/SensitiveInput.svelte",
+        "common/Tooltip.svelte",
+        "common/Textarea.svelte",
+        "common/Switch.svelte"
+      ],
+      "keywords": [
+        "general",
+        "enable code execution",
+        "code execution engine",
+        "select a engine",
+        "jupyter url",
+        "enter jupyter url",
+        "jupyter auth",
+        "select an auth method",
+        "none",
+        "token",
+        "password",
+        "enter jupyter password",
+        "enter jupyter token",
+        "code execution timeout",
+        "enter timeout in seconds",
+        "e.g. 60",
+        "code interpreter",
+        "enable code interpreter",
+        "code interpreter engine",
+        "code interpreter prompt template",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 10537,
+      "lineCount": 328
+    },
+    {
+      "name": "ManageOllamaModal",
+      "path": "lib/components/admin/Settings/Connections/ManageOllamaModal.svelte",
+      "directory": "admin/Settings/Connections",
+      "imports": [
+        "common/Modal.svelte"
+      ],
+      "keywords": [
+        "manage ollama",
+        "admin",
+        "settings",
+        "connections"
+      ],
+      "fileSize": 1240,
+      "lineCount": 47
+    },
+    {
+      "name": "OllamaConnection",
+      "path": "lib/components/admin/Settings/Connections/OllamaConnection.svelte",
+      "directory": "admin/Settings/Connections",
+      "imports": [
+        "common/Tooltip.svelte",
+        "common/SensitiveInput.svelte",
+        "AddConnectionModal.svelte",
+        "common/ConfirmDialog.svelte",
+        "icons/Cog6.svelte",
+        "icons/Wrench.svelte",
+        "icons/ArrowDownTray.svelte"
+      ],
+      "keywords": [
+        "enter url (e.g. http://localhost:11434)",
+        "manage",
+        "configure",
+        "admin",
+        "settings",
+        "connections"
+      ],
+      "fileSize": 2592,
+      "lineCount": 103
+    },
+    {
+      "name": "OpenAIConnection",
+      "path": "lib/components/admin/Settings/Connections/OpenAIConnection.svelte",
+      "directory": "admin/Settings/Connections",
+      "imports": [
+        "common/Tooltip.svelte",
+        "common/SensitiveInput.svelte",
+        "icons/Cog6.svelte",
+        "AddConnectionModal.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "api base url",
+        "api key",
+        "configure",
+        "admin",
+        "settings",
+        "connections"
+      ],
+      "fileSize": 3138,
+      "lineCount": 120
+    },
+    {
+      "name": "Connections",
+      "path": "lib/components/admin/Settings/Connections.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Spinner.svelte",
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte",
+        "AddConnectionModal.svelte"
+      ],
+      "keywords": [
+        "openai api settings updated",
+        "ollama api settings updated",
+        "direct connections settings updated",
+        "openai api",
+        "manage openai api connections",
+        "ollama api",
+        "manage ollama api connections",
+        "trouble accessing ollama?",
+        "click here for help.",
+        "direct connections",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 11807,
+      "lineCount": 405
+    },
+    {
+      "name": "Database",
+      "path": "lib/components/admin/Settings/Database.svelte",
+      "directory": "admin/Settings",
+      "imports": [],
+      "keywords": [
+        "<div class=\" self-center text-xs font-medium\">{$i18n.t('allow chat deletion')}</div>",
+        "database",
+        "import config from json file",
+        "export config to json file",
+        "allow chat deletion",
+        "download database",
+        "export all chats (all users)",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 5998,
+      "lineCount": 197
+    },
+    {
+      "name": "Documents",
+      "path": "lib/components/admin/Settings/Documents.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/ConfirmDialog.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/SensitiveInput.svelte",
+        "common/Tooltip.svelte",
+        "common/Switch.svelte",
+        "common/Textarea.svelte",
+        "common/Spinner.svelte"
+      ],
+      "keywords": [
+        "openai url/key required.",
+        "embedding model set to ",
+        "reranking model disabled",
+        "reranking model set to ",
+        "tika server url required.",
+        "docling server url required.",
+        "document intelligence endpoint and key required.",
+        "mistral ocr api key required.",
+        "success",
+        "general",
+        "content extraction engine",
+        "default",
+        "tika",
+        "docling",
+        "document intelligence",
+        "mistral ocr",
+        "pdf extract images (ocr)",
+        "enter tika server url",
+        "enter docling server url",
+        "enter document intelligence endpoint",
+        "enter document intelligence key",
+        "enter mistral api key",
+        "full context mode",
+        "bypass embedding and retrieval",
+        "text splitter",
+        "character",
+        "token",
+        "tiktoken",
+        "chunk size",
+        "enter chunk size",
+        "chunk overlap",
+        "enter chunk overlap",
+        "embedding",
+        "embedding model engine",
+        "default (sentencetransformers)",
+        "ollama",
+        "openai",
+        "api base url",
+        "api key",
+        "embedding model",
+        "set embedding model",
+        "set embedding model (e.g. {{model}})",
+        "embedding batch size",
+        "retrieval",
+        "hybrid search",
+        "reranking model",
+        "set reranking model (e.g. {{model}})",
+        "top k",
+        "enter top k",
+        "top k reranker",
+        "enter top k reranker",
+        "relevance threshold",
+        "enter score",
+        "rag template",
+        "files",
+        "max upload size",
+        "leave empty for unlimited",
+        "max upload count",
+        "integration",
+        "google drive",
+        "onedrive",
+        "danger zone",
+        "reset upload directory",
+        "reset",
+        "reset vector storage/knowledge",
+        "reindex knowledge base vectors",
+        "reindex",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 30010,
+      "lineCount": 924
+    },
+    {
+      "name": "ArenaModelModal",
+      "path": "lib/components/admin/Settings/Evaluations/ArenaModelModal.svelte",
+      "directory": "admin/Settings/Evaluations",
+      "imports": [
+        "common/Modal.svelte",
+        "icons/Plus.svelte",
+        "icons/Minus.svelte",
+        "icons/PencilSolid.svelte",
+        "workspace/common/AccessControl.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "edit arena model",
+        "add arena model",
+        "name",
+        "model name",
+        "model id",
+        "description",
+        "enter description",
+        "models",
+        "include",
+        "exclude",
+        "leave empty to include all models or select specific models",
+        "select a model",
+        "delete",
+        "save",
+        "admin",
+        "settings",
+        "evaluations"
+      ],
+      "fileSize": 12375,
+      "lineCount": 441
+    },
+    {
+      "name": "Model",
+      "path": "lib/components/admin/Settings/Evaluations/Model.svelte",
+      "directory": "admin/Settings/Evaluations",
+      "imports": [
+        "icons/Cog6.svelte"
+      ],
+      "keywords": [
+        "admin",
+        "settings",
+        "evaluations"
+      ],
+      "fileSize": 1491,
+      "lineCount": 64
+    },
+    {
+      "name": "Evaluations",
+      "path": "lib/components/admin/Settings/Evaluations.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Spinner.svelte",
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte"
+      ],
+      "keywords": [
+        "general",
+        "arena models",
+        "manage",
+        "add arena model",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 5166,
+      "lineCount": 186
+    },
+    {
+      "name": "General",
+      "path": "lib/components/admin/Settings/General.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/SensitiveInput.svelte",
+        "common/Switch.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "https://docs.openwebui.com/getting-started/advanced-topics/api-endpoints",
+        "ldap server updated",
+        "general",
+        "version",
+        "checking for updates...",
+        "available!",
+        "(latest)",
+        "see what",
+        "check for updates",
+        "help",
+        "discover how to use open webui and seek support from the community.",
+        "documentation",
+        "license",
+        "activate",
+        "authentication",
+        "default user role",
+        "pending",
+        "user",
+        "admin",
+        "enable new sign ups",
+        "show admin details in account pending overlay",
+        "enable api key",
+        "api key endpoint restrictions",
+        "allowed endpoints",
+        "to learn more about available endpoints, visit our documentation.",
+        "jwt expiration",
+        "valid time units:",
+        "ldap",
+        "label",
+        "enter server label",
+        "host",
+        "enter server host",
+        "port",
+        "default to 389 or 636 if tls is enabled",
+        "enter server port",
+        "application dn",
+        "the application account dn you bind with for search",
+        "enter application dn",
+        "application dn password",
+        "enter application dn password",
+        "attribute for mail",
+        "example: mail",
+        "attribute for username",
+        "search base",
+        "the base to search for users",
+        "example: ou=users,dc=foo,dc=example",
+        "search filters",
+        "example: (&(objectclass=inetorgperson)(uid=%s))",
+        "click here for filter guides.",
+        "tls",
+        "certificate path",
+        "enter certificate path",
+        "ciphers",
+        "default to all",
+        "example: all",
+        "features",
+        "enable community sharing",
+        "enable message rating",
+        "channels",
+        "beta",
+        "user webhooks",
+        "webui url",
+        "webhook url",
+        "save",
+        "settings"
+      ],
+      "fileSize": 21263,
+      "lineCount": 669
+    },
+    {
+      "name": "Images",
+      "path": "lib/components/admin/Settings/Images.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/SensitiveInput.svelte",
+        "common/Switch.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "-sampler",
+        "-scheduler",
+        "-cfg scale",
+        "image settings",
+        "image generation (experimental)",
+        "automatic1111 base url is required.",
+        "comfyui base url is required.",
+        "openai api key is required.",
+        "gemini api key is required.",
+        "image prompt generation",
+        "image generation engine",
+        "select engine",
+        "default (open ai)",
+        "comfyui",
+        "automatic1111",
+        "gemini",
+        "automatic1111 base url",
+        "enter url (e.g. http://127.0.0.1:7860/)",
+        "server connection verified",
+        "include `--api` flag when running stable-diffusion-webui",
+        "(e.g. `sh webui.sh --api`)",
+        "automatic1111 api auth string",
+        "enter api auth string (e.g. username:password)",
+        "include `--api-auth` flag when running stable-diffusion-webui",
+        "set sampler",
+        "enter sampler (e.g. euler a)",
+        "set scheduler",
+        "enter scheduler (e.g. karras)",
+        "set cfg scale",
+        "enter cfg scale (e.g. 7.0)",
+        "comfyui base url",
+        "comfyui api key",
+        "sk-1234",
+        "comfyui workflow",
+        "click here to upload a workflow.json file.",
+        "make sure to export a workflow.json file as api format from comfyui.",
+        "comfyui workflow nodes",
+        "*prompt node id(s) are required for image generation",
+        "openai api config",
+        "api base url",
+        "api key",
+        "gemini api config",
+        "set default model",
+        "enter model id",
+        "set image size",
+        "enter image size (e.g. 512x512)",
+        "set steps",
+        "enter number of steps (e.g. 50)",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 22039,
+      "lineCount": 742
+    },
+    {
+      "name": "Interface",
+      "path": "lib/components/admin/Settings/Interface.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/Tooltip.svelte",
+        "common/Switch.svelte",
+        "common/Textarea.svelte"
+      ],
+      "keywords": [
+        "tasks",
+        "set task model",
+        "local models",
+        "select a model",
+        "current model",
+        "external models",
+        "title generation",
+        "title generation prompt",
+        "leave empty to use the default prompt, or enter a custom prompt",
+        "tags generation",
+        "tags generation prompt",
+        "retrieval query generation",
+        "web search query generation",
+        "query generation prompt",
+        "autocomplete generation",
+        "enable autocomplete generation for chat messages",
+        "autocomplete generation input max length",
+        "character limit for autocomplete generation input",
+        "-1 for no limit, or a positive integer for a specific limit",
+        "image prompt generation prompt",
+        "tools function calling prompt",
+        "banners",
+        "type",
+        "info",
+        "warning",
+        "error",
+        "success",
+        "content",
+        "dismissible",
+        "default prompt suggestions",
+        "title (e.g. tell me a fun fact)",
+        "subtitle (e.g. about the roman empire)",
+        "adjusting these settings will apply changes universally to all users.",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 15598,
+      "lineCount": 484
+    },
+    {
+      "name": "ConfigureModelsModal",
+      "path": "lib/components/admin/Settings/Models/ConfigureModelsModal.svelte",
+      "directory": "admin/Settings/Models",
+      "imports": [
+        "common/Modal.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/Tooltip.svelte",
+        "common/Spinner.svelte",
+        "icons/Minus.svelte",
+        "icons/Plus.svelte",
+        "icons/ChevronUp.svelte",
+        "icons/ChevronDown.svelte"
+      ],
+      "keywords": [
+        "<hr class=\" border-gray-100 dark:border-gray-700/10 my-2.5 w-full\" />",
+        "{$i18n.t('delete all models')}",
+        "models configuration saved successfully",
+        "failed to save models configuration",
+        "reset all models",
+        "this will delete all models including custom models and cannot be undone.",
+        "all models deleted successfully",
+        "settings",
+        "reorder models",
+        "default models",
+        "select a model",
+        "no models selected",
+        "this will delete all models including custom models",
+        "delete all models",
+        "save",
+        "admin",
+        "models"
+      ],
+      "fileSize": 9337,
+      "lineCount": 318
+    },
+    {
+      "name": "ManageMultipleOllama",
+      "path": "lib/components/admin/Settings/Models/Manage/ManageMultipleOllama.svelte",
+      "directory": "admin/Settings/Models/Manage",
+      "imports": [],
+      "keywords": [
+        "select an ollama instance",
+        "admin",
+        "settings",
+        "models",
+        "manage"
+      ],
+      "fileSize": 663,
+      "lineCount": 27
+    },
+    {
+      "name": "ManageOllama",
+      "path": "lib/components/admin/Settings/Models/Manage/ManageOllama.svelte",
+      "directory": "admin/Settings/Models/Manage",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Tooltip.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/Spinner.svelte"
+      ],
+      "keywords": [
+        "maximum of 3 models can be downloaded simultaneously. please try again later.",
+        "download canceled",
+        "pull a model from ollama.com",
+        "enter model tag (e.g. {{modeltag}})",
+        "to access the available model names for downloading,",
+        "click here.",
+        "cancel",
+        "delete a model",
+        "select a model",
+        "create a model",
+        "experimental",
+        "hide",
+        "show",
+        "upload a gguf model",
+        "file mode",
+        "url mode",
+        "click here to select",
+        "type hugging face resolve (download) url",
+        "modelfile content",
+        "to access the gguf models available for downloading,",
+        "upload progress",
+        "failed to fetch models",
+        "admin",
+        "settings",
+        "models",
+        "manage"
+      ],
+      "fileSize": 30102,
+      "lineCount": 1063
+    },
+    {
+      "name": "ManageModelsModal",
+      "path": "lib/components/admin/Settings/Models/ManageModelsModal.svelte",
+      "directory": "admin/Settings/Models",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Spinner.svelte"
+      ],
+      "keywords": [
+        "manage models",
+        "no inference engine with management support found",
+        "ollama",
+        "llama.cpp",
+        "admin",
+        "settings",
+        "models"
+      ],
+      "fileSize": 3044,
+      "lineCount": 111
+    },
+    {
+      "name": "ModelList",
+      "path": "lib/components/admin/Settings/Models/ModelList.svelte",
+      "directory": "admin/Settings/Models",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/EllipsisVertical.svelte"
+      ],
+      "keywords": [
+        "no models found",
+        "admin",
+        "settings",
+        "models"
+      ],
+      "fileSize": 1731,
+      "lineCount": 70
+    },
+    {
+      "name": "ModelMenu",
+      "path": "lib/components/admin/Settings/Models/ModelMenu.svelte",
+      "directory": "admin/Settings/Models",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "chat/Tags.svelte",
+        "icons/Share.svelte",
+        "icons/ArchiveBox.svelte",
+        "icons/DocumentDuplicate.svelte",
+        "icons/ArrowDownTray.svelte",
+        "icons/ArrowUpCircle.svelte"
+      ],
+      "keywords": [
+        "more",
+        "show model",
+        "hide model",
+        "export",
+        "admin",
+        "settings",
+        "models"
+      ],
+      "fileSize": 3551,
+      "lineCount": 117
+    },
+    {
+      "name": "Models",
+      "path": "lib/components/admin/Settings/Models.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "icons/Search.svelte",
+        "common/Tooltip.svelte",
+        "common/Switch.svelte",
+        "common/Spinner.svelte",
+        "workspace/Models/ModelEditor.svelte",
+        "common/ConfirmDialog.svelte",
+        "icons/Cog6.svelte",
+        "icons/Wrench.svelte",
+        "icons/ArrowDownTray.svelte",
+        "admin/Settings/Models/ModelMenu.svelte",
+        "icons/EllipsisHorizontal.svelte",
+        "icons/EyeSlash.svelte",
+        "icons/Eye.svelte"
+      ],
+      "keywords": [
+        "model updated successfully",
+        "models",
+        "manage models",
+        "settings",
+        "search models",
+        "show",
+        "hide",
+        "enabled",
+        "disabled",
+        "no models found",
+        "import presets",
+        "export presets",
+        "admin"
+      ],
+      "fileSize": 15210,
+      "lineCount": 539
+    },
+    {
+      "name": "Pipelines",
+      "path": "lib/components/admin/Settings/Pipelines.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/Spinner.svelte",
+        "common/Switch.svelte"
+      ],
+      "keywords": [
+        "{valves[property]}",
+        "valves updated successfully",
+        "no valves to update",
+        "pipeline downloaded successfully",
+        "no file selected",
+        "pipeline deleted successfully",
+        "manage pipelines",
+        "select a pipeline url",
+        "upload pipeline",
+        "click here to select a py file.",
+        "install from github url",
+        "enter github raw url",
+        "pipelines valves",
+        "select a pipeline",
+        "none",
+        "custom",
+        "pipelines not detected",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 17360,
+      "lineCount": 580
+    },
+    {
+      "name": "Tools",
+      "path": "lib/components/admin/Settings/Tools.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Spinner.svelte",
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte",
+        "chat/Settings/Tools/Connection.svelte",
+        "AddServerModal.svelte"
+      ],
+      "keywords": [
+        "failed to save connections",
+        "connections saved successfully",
+        "general",
+        "manage tool servers",
+        "connect to your own openapi compatible external tool servers.",
+        "arena models",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 3890,
+      "lineCount": 135
+    },
+    {
+      "name": "WebSearch",
+      "path": "lib/components/admin/Settings/WebSearch.svelte",
+      "directory": "admin/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/SensitiveInput.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "general",
+        "web search",
+        "web search engine",
+        "select a engine",
+        "searxng query url",
+        "enter searxng query url",
+        "google pse api key",
+        "enter google pse api key",
+        "google pse engine id",
+        "enter google pse engine id",
+        "brave search api key",
+        "enter brave search api key",
+        "kagi search api key",
+        "enter kagi search api key",
+        "mojeek search api key",
+        "enter mojeek search api key",
+        "bocha search api key",
+        "enter bocha search api key",
+        "serpstack api key",
+        "enter serpstack api key",
+        "serper api key",
+        "enter serper api key",
+        "serply api key",
+        "enter serply api key",
+        "tavily api key",
+        "enter tavily api key",
+        "searchapi api key",
+        "enter searchapi api key",
+        "searchapi engine",
+        "enter searchapi engine",
+        "serpapi api key",
+        "enter serpapi api key",
+        "serpapi engine",
+        "enter serpapi engine",
+        "jina api key",
+        "enter jina api key",
+        "bing search v7 endpoint",
+        "enter bing search v7 endpoint",
+        "bing search v7 subscription key",
+        "enter bing search v7 subscription key",
+        "exa api key",
+        "enter exa api key",
+        "perplexity api key",
+        "enter perplexity api key",
+        "sougou search api sid",
+        "enter sougou search api sid",
+        "sougou search api sk",
+        "enter sougou search api sk",
+        "search result count",
+        "concurrent requests",
+        "domain filter list",
+        "full context mode",
+        "bypass embedding and retrieval",
+        "trust proxy environment",
+        "use no proxy to fetch page contents.",
+        "loader",
+        "web loader engine",
+        "default",
+        "verify ssl certificate",
+        "playwright websocket url",
+        "enter playwright websocket url",
+        "playwright timeout (ms)",
+        "enter playwright timeout",
+        "firecrawl api base url",
+        "enter firecrawl api base url",
+        "firecrawl api key",
+        "enter firecrawl api key",
+        "tavily extract depth",
+        "enter tavily extract depth",
+        "youtube language",
+        "enter language codes",
+        "youtube proxy url",
+        "enter proxy url (e.g. https://user:password@host:port)",
+        "save",
+        "admin",
+        "settings"
+      ],
+      "fileSize": 22552,
+      "lineCount": 699
+    },
+    {
+      "name": "Settings",
+      "path": "lib/components/admin/Settings.svelte",
+      "directory": "admin",
+      "imports": [],
+      "keywords": [
+        "general",
+        "connections",
+        "models",
+        "evaluations",
+        "tools",
+        "documents",
+        "web search",
+        "code execution",
+        "interface",
+        "audio",
+        "images",
+        "pipelines",
+        "database",
+        "settings saved successfully!",
+        "admin"
+      ],
+      "fileSize": 17080,
+      "lineCount": 465
+    },
+    {
+      "name": "AddGroupModal",
+      "path": "lib/components/admin/Users/Groups/AddGroupModal.svelte",
+      "directory": "admin/Users/Groups",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Textarea.svelte"
+      ],
+      "keywords": [
+        "add user group",
+        "name",
+        "group name",
+        "description",
+        "group description",
+        "create",
+        "admin",
+        "users",
+        "groups"
+      ],
+      "fileSize": 4085,
+      "lineCount": 150
+    },
+    {
+      "name": "Display",
+      "path": "lib/components/admin/Users/Groups/Display.svelte",
+      "directory": "admin/Users/Groups",
+      "imports": [
+        "common/Textarea.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "name",
+        "group name",
+        "color",
+        "hex color - leave empty for default color",
+        "hex color",
+        "description",
+        "group description",
+        "admin",
+        "users",
+        "groups"
+      ],
+      "fileSize": 1696,
+      "lineCount": 62
+    },
+    {
+      "name": "EditGroupModal",
+      "path": "lib/components/admin/Users/Groups/EditGroupModal.svelte",
+      "directory": "admin/Users/Groups",
+      "imports": [
+        "common/Modal.svelte",
+        "icons/UserPlusSolid.svelte",
+        "icons/WrenchSolid.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "edit user group",
+        "add user group",
+        "edit default permissions",
+        "general",
+        "permissions",
+        "users",
+        "display",
+        "delete",
+        "save",
+        "admin",
+        "groups"
+      ],
+      "fileSize": 10284,
+      "lineCount": 341
+    },
+    {
+      "name": "GroupItem",
+      "path": "lib/components/admin/Users/Groups/GroupItem.svelte",
+      "directory": "admin/Users/Groups",
+      "imports": [
+        "icons/Pencil.svelte",
+        "icons/User.svelte",
+        "icons/UserCircleSolid.svelte"
+      ],
+      "keywords": [
+        "group updated successfully",
+        "group deleted successfully",
+        "admin",
+        "users",
+        "groups"
+      ],
+      "fileSize": 1867,
+      "lineCount": 85
+    },
+    {
+      "name": "Permissions",
+      "path": "lib/components/admin/Users/Groups/Permissions.svelte",
+      "directory": "admin/Users/Groups",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "model permissions",
+        "model filtering",
+        "model ids",
+        "no model ids",
+        "select a model",
+        "default model",
+        "workspace permissions",
+        "models access",
+        "knowledge access",
+        "prompts access",
+        "tools access",
+        "sharing permissions",
+        "models public sharing",
+        "knowledge public sharing",
+        "prompts public sharing",
+        "tools public sharing",
+        "chat permissions",
+        "allow file upload",
+        "allow chat controls",
+        "allow chat delete",
+        "allow chat edit",
+        "allow speech to text",
+        "allow text to speech",
+        "allow call",
+        "allow multiple models in chat",
+        "allow temporary chat",
+        "enforce temporary chat",
+        "features permissions",
+        "direct tool servers",
+        "web search",
+        "image generation",
+        "code interpreter",
+        "admin",
+        "users",
+        "groups"
+      ],
+      "fileSize": 10330,
+      "lineCount": 367
+    },
+    {
+      "name": "Users",
+      "path": "lib/components/admin/Users/Groups/Users.svelte",
+      "directory": "admin/Users/Groups",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte",
+        "common/Checkbox.svelte",
+        "common/Badge.svelte"
+      ],
+      "keywords": [
+        "search",
+        "no users were found.",
+        "admin",
+        "users",
+        "groups"
+      ],
+      "fileSize": 3603,
+      "lineCount": 123
+    },
+    {
+      "name": "Groups",
+      "path": "lib/components/admin/Users/Groups.svelte",
+      "directory": "admin/Users",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte",
+        "common/Badge.svelte",
+        "icons/UsersSolid.svelte",
+        "icons/ChevronRight.svelte",
+        "icons/EllipsisHorizontal.svelte",
+        "icons/User.svelte",
+        "icons/UserCircleSolid.svelte",
+        "icons/Pencil.svelte"
+      ],
+      "keywords": [
+        "group created successfully",
+        "default permissions updated successfully",
+        "groups",
+        "search",
+        "create group",
+        "organize your users",
+        "use groups to group your users and assign permissions.",
+        "default permissions",
+        "applies to all users with the ",
+        "admin",
+        "users"
+      ],
+      "fileSize": 7006,
+      "lineCount": 256
+    },
+    {
+      "name": "AddUserModal",
+      "path": "lib/components/admin/Users/UserList/AddUserModal.svelte",
+      "directory": "admin/Users/UserList",
+      "imports": [
+        "common/Modal.svelte"
+      ],
+      "keywords": [
+        "file not found.",
+        "add user",
+        "form",
+        "csv import",
+        "role",
+        "enter your role",
+        "pending",
+        "user",
+        "admin",
+        "name",
+        "enter your full name",
+        "email",
+        "enter your email",
+        "password",
+        "enter your password",
+        "click here to select a csv file.",
+        "click here to download user import template file.",
+        "save",
+        "users",
+        "userlist"
+      ],
+      "fileSize": 9455,
+      "lineCount": 347
+    },
+    {
+      "name": "EditUserModal",
+      "path": "lib/components/admin/Users/UserList/EditUserModal.svelte",
+      "directory": "admin/Users/UserList",
+      "imports": [
+        "common/Modal.svelte"
+      ],
+      "keywords": [
+        "edit user",
+        "created at",
+        "email",
+        "name",
+        "new password",
+        "save",
+        "admin",
+        "users",
+        "userlist"
+      ],
+      "fileSize": 4728,
+      "lineCount": 178
+    },
+    {
+      "name": "UserChatsModal",
+      "path": "lib/components/admin/Users/UserList/UserChatsModal.svelte",
+      "directory": "admin/Users/UserList",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Tooltip.svelte",
+        "common/Spinner.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "{{user}}",
+        "title",
+        "updated at",
+        "delete chat",
+        "has no conversations.",
+        "admin",
+        "users",
+        "userlist"
+      ],
+      "fileSize": 6352,
+      "lineCount": 203
+    },
+    {
+      "name": "UserList",
+      "path": "lib/components/admin/Users/UserList.svelte",
+      "directory": "admin/Users",
+      "imports": [
+        "common/Pagination.svelte",
+        "icons/ChatBubbles.svelte",
+        "common/Tooltip.svelte",
+        "admin/Users/UserList/EditUserModal.svelte",
+        "admin/Users/UserList/UserChatsModal.svelte",
+        "admin/Users/UserList/AddUserModal.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/Badge.svelte",
+        "icons/Plus.svelte",
+        "icons/ChevronUp.svelte",
+        "icons/ChevronDown.svelte",
+        "chat/Settings/About.svelte",
+        "common/Banner.svelte",
+        "chat/Messages/Markdown.svelte"
+      ],
+      "keywords": [
+        "users",
+        "search",
+        "add user",
+        "role",
+        "name",
+        "email",
+        "last active",
+        "created at",
+        "oauth id",
+        "chats",
+        "edit user",
+        "delete user",
+        "click on the user role button to change a user",
+        "admin"
+      ],
+      "fileSize": 15300,
+      "lineCount": 514
+    },
+    {
+      "name": "Users",
+      "path": "lib/components/admin/Users.svelte",
+      "directory": "admin",
+      "imports": [],
+      "keywords": [
+        "overview",
+        "groups",
+        "admin"
+      ],
+      "fileSize": 3425,
+      "lineCount": 111
+    },
+    {
+      "name": "AppSidebar",
+      "path": "lib/components/app/AppSidebar.svelte",
+      "directory": "app",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte"
+      ],
+      "keywords": [],
+      "fileSize": 1690,
+      "lineCount": 66
+    },
+    {
+      "name": "Channel",
+      "path": "lib/components/channel/Channel.svelte",
+      "directory": "channel",
+      "imports": [],
+      "keywords": [
+        "#{channel?.name",
+        "'channel'}",
+        "open",
+        "webui",
+        "channel"
+      ],
+      "fileSize": 7054,
+      "lineCount": 303
+    },
+    {
+      "name": "InputMenu",
+      "path": "lib/components/channel/MessageInput/InputMenu.svelte",
+      "directory": "channel/MessageInput",
+      "imports": [
+        "common/Dropdown.svelte",
+        "common/Tooltip.svelte",
+        "icons/DocumentArrowUpSolid.svelte",
+        "common/Switch.svelte",
+        "icons/GlobeAltSolid.svelte",
+        "icons/WrenchSolid.svelte",
+        "icons/CameraSolid.svelte"
+      ],
+      "keywords": [
+        "more",
+        "capture",
+        "upload files",
+        "channel",
+        "messageinput"
+      ],
+      "fileSize": 2217,
+      "lineCount": 78
+    },
+    {
+      "name": "MessageInput",
+      "path": "lib/components/channel/MessageInput.svelte",
+      "directory": "channel",
+      "imports": [],
+      "keywords": [
+        "send a message",
+        "you cannot upload an empty file.",
+        "is typing...",
+        "record voice",
+        "permission denied when accessing microphone",
+        "send message",
+        "channel"
+      ],
+      "fileSize": 17396,
+      "lineCount": 602
+    },
+    {
+      "name": "ProfilePreview",
+      "path": "lib/components/channel/Messages/Message/ProfilePreview.svelte",
+      "directory": "channel/Messages/Message",
+      "imports": [],
+      "keywords": [
+        "channel",
+        "messages",
+        "message"
+      ],
+      "fileSize": 2300,
+      "lineCount": 86
+    },
+    {
+      "name": "ReactionPicker",
+      "path": "lib/components/channel/Messages/Message/ReactionPicker.svelte",
+      "directory": "channel/Messages/Message",
+      "imports": [
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "virtualized emoji list",
+        "render group header",
+        "render emojis in a row",
+        "channel",
+        "messages",
+        "message"
+      ],
+      "fileSize": 4735,
+      "lineCount": 167
+    },
+    {
+      "name": "Message",
+      "path": "lib/components/channel/Messages/Message.svelte",
+      "directory": "channel/Messages",
+      "imports": [
+        "chat/Messages/Markdown.svelte",
+        "chat/Messages/ProfileImage.svelte",
+        "chat/Messages/Name.svelte",
+        "common/ConfirmDialog.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "common/Textarea.svelte",
+        "common/Image.svelte",
+        "common/FileItem.svelte",
+        "icons/ChatBubbleOvalEllipsis.svelte",
+        "icons/FaceSmile.svelte",
+        "icons/ChevronRight.svelte"
+      ],
+      "keywords": [
+        "<div class=\"w-7 h-7 rounded-full bg-transparent\" />",
+        "{$i18n.t('view replies')}",
+        "delete message",
+        "are you sure you want to delete this message?",
+        "add reaction",
+        "reply in thread",
+        "edit",
+        "delete",
+        "cancel",
+        "save",
+        "{{count}} replies",
+        "last reply",
+        "view replies",
+        "channel",
+        "messages"
+      ],
+      "fileSize": 10903,
+      "lineCount": 344
+    },
+    {
+      "name": "Messages",
+      "path": "lib/components/channel/Messages.svelte",
+      "directory": "channel",
+      "imports": [],
+      "keywords": [
+        "channel"
+      ],
+      "fileSize": 5155,
+      "lineCount": 198
+    },
+    {
+      "name": "Navbar",
+      "path": "lib/components/channel/Navbar.svelte",
+      "directory": "channel",
+      "imports": [
+        "layout/Sidebar/UserMenu.svelte"
+      ],
+      "keywords": [
+        "channel"
+      ],
+      "fileSize": 2434,
+      "lineCount": 87
+    },
+    {
+      "name": "Thread",
+      "path": "lib/components/channel/Thread.svelte",
+      "directory": "channel",
+      "imports": [
+        "icons/XMark.svelte"
+      ],
+      "keywords": [
+        "channel"
+      ],
+      "fileSize": 4649,
+      "lineCount": 205
+    },
+    {
+      "name": "Artifacts",
+      "path": "lib/components/chat/Artifacts.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "version {{selectedversion}} of {{totalversions}}",
+        "copied",
+        "copy",
+        "open in full screen",
+        "no html, css, or javascript content found.",
+        "chat"
+      ],
+      "fileSize": 10169,
+      "lineCount": 331
+    },
+    {
+      "name": "Chat",
+      "path": "lib/components/chat/Chat.svelte",
+      "directory": "chat",
+      "imports": [
+        "chat/MessageInput.svelte",
+        "chat/Messages.svelte",
+        "chat/Navbar.svelte"
+      ],
+      "keywords": [
+        "{$i18n.t('llms can make mistakes. verify important information.')}",
+        "{$chattitle",
+        "`${$chattitle.length",
+        "`${$chattitle.slice(0,",
+        "30)}...`",
+        "$chattitle}",
+        "${$webui_name}`",
+        "`${$webui_name}`}",
+        "file uploaded successfully",
+        "error uploading file: {{error}}",
+        "model not selected",
+        "please enter a prompt",
+        "model {{modelname}} is not vision capable",
+        "new chat",
+        "llms can make mistakes. verify important information.",
+        "chat"
+      ],
+      "fileSize": 56745,
+      "lineCount": 2148
+    },
+    {
+      "name": "ChatControls",
+      "path": "lib/components/chat/ChatControls.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "if $showcontrols",
+        "chat"
+      ],
+      "fileSize": 6881,
+      "lineCount": 283
+    },
+    {
+      "name": "ChatPlaceholder",
+      "path": "lib/components/chat/ChatPlaceholder.svelte",
+      "directory": "chat",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/EyeSlash.svelte"
+      ],
+      "keywords": [
+        "this chat won’t appear in history and your messages will not be saved.",
+        "temporary chat",
+        "hello, {{name}}",
+        "how can i help you today?",
+        "chat"
+      ],
+      "fileSize": 4243,
+      "lineCount": 141
+    },
+    {
+      "name": "FloatingButtons",
+      "path": "lib/components/chat/ContentRenderer/FloatingButtons.svelte",
+      "directory": "chat/ContentRenderer",
+      "imports": [
+        "icons/ChatBubble.svelte",
+        "icons/LightBlub.svelte"
+      ],
+      "keywords": [
+        "explain this section to me in more detail",
+        "ask",
+        "explain",
+        "ask a question",
+        "add",
+        "chat",
+        "contentrenderer"
+      ],
+      "fileSize": 8880,
+      "lineCount": 341
+    },
+    {
+      "name": "Controls",
+      "path": "lib/components/chat/Controls/Controls.svelte",
+      "directory": "chat/Controls",
+      "imports": [
+        "icons/XMark.svelte",
+        "chat/Controls/Valves.svelte",
+        "common/FileItem.svelte",
+        "common/Collapsible.svelte"
+      ],
+      "keywords": [
+        "chat controls",
+        "files",
+        "valves",
+        "system prompt",
+        "enter system prompt",
+        "advanced params",
+        "chat",
+        "controls"
+      ],
+      "fileSize": 2844,
+      "lineCount": 96
+    },
+    {
+      "name": "Valves",
+      "path": "lib/components/chat/Controls/Valves.svelte",
+      "directory": "chat/Controls",
+      "imports": [
+        "common/Tooltip.svelte",
+        "common/Spinner.svelte",
+        "common/Valves.svelte"
+      ],
+      "keywords": [
+        "valves updated",
+        "tools",
+        "functions",
+        "select a tool",
+        "select a function",
+        "chat",
+        "controls"
+      ],
+      "fileSize": 5274,
+      "lineCount": 214
+    },
+    {
+      "name": "VideoInputMenu",
+      "path": "lib/components/chat/MessageInput/CallOverlay/VideoInputMenu.svelte",
+      "directory": "chat/MessageInput/CallOverlay",
+      "imports": [
+        "common/Dropdown.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "messageinput",
+        "calloverlay"
+      ],
+      "fileSize": 1282,
+      "lineCount": 52
+    },
+    {
+      "name": "CallOverlay",
+      "path": "lib/components/chat/MessageInput/CallOverlay.svelte",
+      "directory": "chat/MessageInput",
+      "imports": [
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "navbar",
+        "camera",
+        "thinking...",
+        "tap to interrupt",
+        "listening...",
+        "chat",
+        "messageinput"
+      ],
+      "fileSize": 26785,
+      "lineCount": 998
+    },
+    {
+      "name": "Knowledge",
+      "path": "lib/components/chat/MessageInput/Commands/Knowledge.svelte",
+      "directory": "chat/MessageInput/Commands",
+      "imports": [],
+      "keywords": [
+        "all documents",
+        "updated",
+        "no files found.",
+        "youtube",
+        "web",
+        "chat",
+        "messageinput",
+        "commands"
+      ],
+      "fileSize": 9462,
+      "lineCount": 330
+    },
+    {
+      "name": "Models",
+      "path": "lib/components/chat/MessageInput/Commands/Models.svelte",
+      "directory": "chat/MessageInput/Commands",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messageinput",
+        "commands"
+      ],
+      "fileSize": 2619,
+      "lineCount": 107
+    },
+    {
+      "name": "Prompts",
+      "path": "lib/components/chat/MessageInput/Commands/Prompts.svelte",
+      "directory": "chat/MessageInput/Commands",
+      "imports": [],
+      "keywords": [
+        "failed to read clipboard contents",
+        "location access not allowed",
+        "chat",
+        "messageinput",
+        "commands"
+      ],
+      "fileSize": 6554,
+      "lineCount": 242
+    },
+    {
+      "name": "Commands",
+      "path": "lib/components/chat/MessageInput/Commands.svelte",
+      "directory": "chat/MessageInput",
+      "imports": [
+        "common/Spinner.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "messageinput"
+      ],
+      "fileSize": 2953,
+      "lineCount": 125
+    },
+    {
+      "name": "FilesOverlay",
+      "path": "lib/components/chat/MessageInput/FilesOverlay.svelte",
+      "directory": "chat/MessageInput",
+      "imports": [
+        "AddFilesPlaceholder.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "messageinput"
+      ],
+      "fileSize": 1007,
+      "lineCount": 36
+    },
+    {
+      "name": "InputMenu",
+      "path": "lib/components/chat/MessageInput/InputMenu.svelte",
+      "directory": "chat/MessageInput",
+      "imports": [
+        "common/Dropdown.svelte",
+        "common/Tooltip.svelte",
+        "icons/DocumentArrowUpSolid.svelte",
+        "common/Switch.svelte",
+        "icons/GlobeAltSolid.svelte",
+        "icons/WrenchSolid.svelte",
+        "icons/CameraSolid.svelte",
+        "icons/PhotoSolid.svelte",
+        "icons/CommandLineSolid.svelte"
+      ],
+      "keywords": [
+        "hidden file input used to open the camera on mobile",
+        "more",
+        "you do not have permission to upload files",
+        "capture",
+        "upload files",
+        "google drive",
+        "onedrive",
+        "chat",
+        "messageinput"
+      ],
+      "fileSize": 10128,
+      "lineCount": 324
+    },
+    {
+      "name": "VoiceRecording",
+      "path": "lib/components/chat/MessageInput/VoiceRecording.svelte",
+      "directory": "chat/MessageInput",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messageinput"
+      ],
+      "fileSize": 13059,
+      "lineCount": 522
+    },
+    {
+      "name": "MessageInput",
+      "path": "lib/components/chat/MessageInput.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "you do not have permission to upload files.",
+        "you cannot upload an empty file.",
+        "selected model(s) do not support image inputs",
+        "{{ models }}",
+        "send a message",
+        "please select a model first.",
+        "error accessing google drive: {{error}}",
+        "{{count}} available tools",
+        "search the internet",
+        "web search",
+        "generate an image",
+        "image",
+        "execute code for analysis",
+        "code interpreter",
+        "record voice",
+        "permission denied when accessing microphone",
+        "stop",
+        "call",
+        "select only one model to call",
+        "call feature is not supported when using web stt engine",
+        "permission denied when accessing media devices",
+        "send message",
+        "chat"
+      ],
+      "fileSize": 47070,
+      "lineCount": 1364
+    },
+    {
+      "name": "Citations",
+      "path": "lib/components/chat/Messages/Citations.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Collapsible.svelte",
+        "icons/ChevronDown.svelte",
+        "icons/ChevronUp.svelte"
+      ],
+      "keywords": [
+        "references from",
+        "and",
+        "more",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 6566,
+      "lineCount": 215
+    },
+    {
+      "name": "CitationsModal",
+      "path": "lib/components/chat/Messages/CitationsModal.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "citation",
+        "source",
+        "open file",
+        "page",
+        "relevance",
+        "semantic distance to query",
+        "no distance available",
+        "no source available",
+        "content",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 5906,
+      "lineCount": 190
+    },
+    {
+      "name": "CodeBlock",
+      "path": "lib/components/chat/Messages/CodeBlock.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/CodeEditor.svelte",
+        "common/SVGPanZoom.svelte",
+        "icons/ChevronUp.svelte",
+        "icons/ChevronUpDown.svelte",
+        "icons/CommandLine.svelte"
+      ],
+      "keywords": [
+        "expand",
+        "collapse",
+        "running",
+        "run",
+        "saved",
+        "save",
+        "copied",
+        "copy",
+        "{{count}} hidden lines",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 13459,
+      "lineCount": 569
+    },
+    {
+      "name": "CodeExecutionModal",
+      "path": "lib/components/chat/Messages/CodeExecutionModal.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Spinner.svelte",
+        "common/Badge.svelte"
+      ],
+      "keywords": [
+        "code execution",
+        "error",
+        "output",
+        "files",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 3546,
+      "lineCount": 119
+    },
+    {
+      "name": "CodeExecutions",
+      "path": "lib/components/chat/Messages/CodeExecutions.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Spinner.svelte",
+        "icons/Check.svelte",
+        "icons/XMark.svelte",
+        "icons/EllipsisHorizontal.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 2076,
+      "lineCount": 81
+    },
+    {
+      "name": "ContentRenderer",
+      "path": "lib/components/chat/Messages/ContentRenderer.svelte",
+      "directory": "chat/Messages",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 4994,
+      "lineCount": 189
+    },
+    {
+      "name": "Error",
+      "path": "lib/components/chat/Messages/Error.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "icons/Info.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 427,
+      "lineCount": 16
+    },
+    {
+      "name": "AlertRenderer",
+      "path": "lib/components/chat/Messages/Markdown/AlertRenderer.svelte",
+      "directory": "chat/Messages/Markdown",
+      "imports": [
+        "icons/Info.svelte",
+        "icons/Star.svelte",
+        "icons/LightBlub.svelte",
+        "icons/Bolt.svelte",
+        "icons/ArrowRightCircle.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "messages",
+        "markdown"
+      ],
+      "fileSize": 2716,
+      "lineCount": 111
+    },
+    {
+      "name": "KatexRenderer",
+      "path": "lib/components/chat/Messages/Markdown/KatexRenderer.svelte",
+      "directory": "chat/Messages/Markdown",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages",
+        "markdown"
+      ],
+      "fileSize": 274,
+      "lineCount": 11
+    },
+    {
+      "name": "MarkdownInlineTokens",
+      "path": "lib/components/chat/Messages/Markdown/MarkdownInlineTokens.svelte",
+      "directory": "chat/Messages/Markdown",
+      "imports": [
+        "common/Image.svelte"
+      ],
+      "keywords": [
+        "svelte-ignore a11y-click-events-have-key-events",
+        "svelte-ignore a11y-no-noninteractive-element-interactions",
+        "copied to clipboard",
+        "chat",
+        "messages",
+        "markdown"
+      ],
+      "fileSize": 2680,
+      "lineCount": 80
+    },
+    {
+      "name": "MarkdownTokens",
+      "path": "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
+      "directory": "chat/Messages/Markdown",
+      "imports": [
+        "chat/Messages/CodeBlock.svelte",
+        "chat/Messages/Markdown/MarkdownInlineTokens.svelte",
+        "common/Collapsible.svelte",
+        "common/Tooltip.svelte",
+        "icons/ArrowDownTray.svelte"
+      ],
+      "keywords": [
+        "{json.stringify(tokens)}",
+        "export to csv",
+        "chat",
+        "messages",
+        "markdown"
+      ],
+      "fileSize": 9588,
+      "lineCount": 328
+    },
+    {
+      "name": "Source",
+      "path": "lib/components/chat/Messages/Markdown/Source.svelte",
+      "directory": "chat/Messages/Markdown",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages",
+        "markdown"
+      ],
+      "fileSize": 1368,
+      "lineCount": 51
+    },
+    {
+      "name": "Markdown",
+      "path": "lib/components/chat/Messages/Markdown.svelte",
+      "directory": "chat/Messages",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 1181,
+      "lineCount": 57
+    },
+    {
+      "name": "Message",
+      "path": "lib/components/chat/Messages/Message.svelte",
+      "directory": "chat/Messages",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 2781,
+      "lineCount": 113
+    },
+    {
+      "name": "MultiResponseMessages",
+      "path": "lib/components/chat/Messages/MultiResponseMessages.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/Merge.svelte"
+      ],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "svelte-ignore a11y-click-events-have-key-events",
+        "merge responses",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 10295,
+      "lineCount": 341
+    },
+    {
+      "name": "Name",
+      "path": "lib/components/chat/Messages/Name.svelte",
+      "directory": "chat/Messages",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 95,
+      "lineCount": 4
+    },
+    {
+      "name": "ProfileImage",
+      "path": "lib/components/chat/Messages/ProfileImage.svelte",
+      "directory": "chat/Messages",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 548,
+      "lineCount": 22
+    },
+    {
+      "name": "RateComment",
+      "path": "lib/components/chat/Messages/RateComment.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Tags.svelte"
+      ],
+      "keywords": [
+        "<div class=\" text-sm\">{$i18n.t('tell us more:')}</div>",
+        "1-10 scale",
+        "this response was generated by ",
+        "please select a reason",
+        "thanks for your feedback!",
+        "how would you rate this response?",
+        "tell us more:",
+        "awful",
+        "amazing",
+        "why?",
+        "accurate information",
+        "followed instructions perfectly",
+        "showcased creativity",
+        "positive attitude",
+        "attention to detail",
+        "thorough explanation",
+        "don",
+        "too verbose",
+        "not helpful",
+        "not factually correct",
+        "didn",
+        "refused when it shouldn",
+        "being lazy",
+        "other",
+        "feel free to add specific details",
+        "save",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 6767,
+      "lineCount": 259
+    },
+    {
+      "name": "WebSearchResults",
+      "path": "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+      "directory": "chat/Messages/ResponseMessage",
+      "imports": [
+        "icons/ChevronDown.svelte",
+        "icons/ChevronUp.svelte",
+        "icons/MagnifyingGlass.svelte",
+        "common/Collapsible.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "messages",
+        "responsemessage"
+      ],
+      "fileSize": 2779,
+      "lineCount": 94
+    },
+    {
+      "name": "ResponseMessage",
+      "path": "lib/components/chat/Messages/ResponseMessage.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Image.svelte",
+        "common/Tooltip.svelte",
+        "common/Spinner.svelte",
+        "icons/Sparkles.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/FileItem.svelte"
+      ],
+      "keywords": [
+        "$i18n.t(\"generating search query\")",
+        "$i18n.t(\"no search query generated\")",
+        "$i18n.t('searched {{count}} sites')",
+        "$i18n.t(`searching \"{{searchquery}}\"`)",
+        "always show message contents even if there's an error",
+        "unless message.error === true which is legacy error handling, where the error message is stored in message.content",
+        "svelte-ignore a11y-no-static-element-interactions",
+        "copying to clipboard was successful!",
+        "no content to speak",
+        "delete message?",
+        "generating search query",
+        "no search query generated",
+        "searched {{count}} sites",
+        "save as copy",
+        "cancel",
+        "save",
+        "edit",
+        "copy",
+        "read aloud",
+        "generate image",
+        "good response",
+        "bad response",
+        "continue response",
+        "regenerate",
+        "delete",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 45339,
+      "lineCount": 1451
+    },
+    {
+      "name": "Skeleton",
+      "path": "lib/components/chat/Messages/Skeleton.svelte",
+      "directory": "chat/Messages",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "messages"
+      ],
+      "fileSize": 1156,
+      "lineCount": 46
+    },
+    {
+      "name": "UserMessage",
+      "path": "lib/components/chat/Messages/UserMessage.svelte",
+      "directory": "chat/Messages",
+      "imports": [
+        "common/Tooltip.svelte",
+        "common/FileItem.svelte",
+        "common/Image.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "copying to clipboard was successful!",
+        "delete message?",
+        "you",
+        "save",
+        "cancel",
+        "send",
+        "edit",
+        "copy",
+        "delete",
+        "chat",
+        "messages"
+      ],
+      "fileSize": 16729,
+      "lineCount": 523
+    },
+    {
+      "name": "Messages",
+      "path": "lib/components/chat/Messages.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "failed to read clipboard contents",
+        "chat"
+      ],
+      "fileSize": 12425,
+      "lineCount": 466
+    },
+    {
+      "name": "Selector",
+      "path": "lib/components/chat/ModelSelector/Selector.svelte",
+      "directory": "chat/ModelSelector",
+      "imports": [
+        "icons/ChevronDown.svelte",
+        "icons/Check.svelte",
+        "icons/Search.svelte",
+        "common/Tooltip.svelte",
+        "common/Switch.svelte",
+        "icons/ChatBubbleOval.svelte"
+      ],
+      "keywords": [
+        "{json.stringify(item.info)}",
+        "search a model",
+        "maximum of 3 models can be downloaded simultaneously. please try again later.",
+        "download canceled",
+        "all",
+        "local",
+        "external",
+        "direct",
+        "no results found",
+        "cancel",
+        "chat",
+        "modelselector"
+      ],
+      "fileSize": 24682,
+      "lineCount": 790
+    },
+    {
+      "name": "ModelSelector",
+      "path": "lib/components/chat/ModelSelector.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "choose a model before saving...",
+        "default model updated",
+        "select a model",
+        "add model",
+        "remove model",
+        "set as default",
+        "chat"
+      ],
+      "fileSize": 3558,
+      "lineCount": 121
+    },
+    {
+      "name": "Navbar",
+      "path": "lib/components/chat/Navbar.svelte",
+      "directory": "chat",
+      "imports": [
+        "layout/Navbar/Menu.svelte",
+        "layout/Sidebar/UserMenu.svelte"
+      ],
+      "keywords": [
+        "<div class=\"md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700\" />",
+        "controls",
+        "new chat",
+        "chat"
+      ],
+      "fileSize": 7063,
+      "lineCount": 234
+    },
+    {
+      "name": "Flow",
+      "path": "lib/components/chat/Overview/Flow.svelte",
+      "directory": "chat/Overview",
+      "imports": [],
+      "keywords": [
+        "chat",
+        "overview"
+      ],
+      "fileSize": 802,
+      "lineCount": 37
+    },
+    {
+      "name": "Node",
+      "path": "lib/components/chat/Overview/Node.svelte",
+      "directory": "chat/Overview",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/Heart.svelte"
+      ],
+      "keywords": [
+        "chat",
+        "overview"
+      ],
+      "fileSize": 2642,
+      "lineCount": 83
+    },
+    {
+      "name": "Overview",
+      "path": "lib/components/chat/Overview.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "chat overview",
+        "chat"
+      ],
+      "fileSize": 4916,
+      "lineCount": 200
+    },
+    {
+      "name": "Placeholder",
+      "path": "lib/components/chat/Placeholder.svelte",
+      "directory": "chat",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/EyeSlash.svelte"
+      ],
+      "keywords": [
+        "failed to read clipboard contents",
+        "this chat won’t appear in history and your messages will not be saved.",
+        "temporary chat",
+        "hello, {{name}}",
+        "how can i help you today?",
+        "chat"
+      ],
+      "fileSize": 6707,
+      "lineCount": 229
+    },
+    {
+      "name": "About",
+      "path": "lib/components/chat/Settings/About.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "version",
+        "checking for updates...",
+        "available!",
+        "(latest)",
+        "see what",
+        "check for updates",
+        "ollama version",
+        "created by",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 6238,
+      "lineCount": 195
+    },
+    {
+      "name": "UpdatePassword",
+      "path": "lib/components/chat/Settings/Account/UpdatePassword.svelte",
+      "directory": "chat/Settings/Account",
+      "imports": [],
+      "keywords": [
+        "successfully updated.",
+        "change password",
+        "hide",
+        "show",
+        "current password",
+        "enter your current password",
+        "new password",
+        "enter your new password",
+        "confirm password",
+        "confirm your new password",
+        "update password",
+        "chat",
+        "settings",
+        "account"
+      ],
+      "fileSize": 2971,
+      "lineCount": 113
+    },
+    {
+      "name": "Account",
+      "path": "lib/components/chat/Settings/Account.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "icons/Plus.svelte",
+        "common/Tooltip.svelte",
+        "common/SensitiveInput.svelte"
+      ],
+      "keywords": [
+        "<div class=\" text-sm font-medium\">{$i18n.t('account')}</div>",
+        "api key created.",
+        "failed to create api key.",
+        "account",
+        "profile image",
+        "use initials",
+        "use gravatar",
+        "remove",
+        "name",
+        "enter your name",
+        "notification webhook",
+        "enter your webhook url",
+        "api keys",
+        "hide",
+        "show",
+        "jwt token",
+        "api key",
+        "create new key",
+        "create new secret key",
+        "save",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 13586,
+      "lineCount": 450
+    },
+    {
+      "name": "AdvancedParams",
+      "path": "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
+      "directory": "chat/Settings/Advanced",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "stream chat response",
+        "off",
+        "default",
+        "function calling",
+        "native",
+        "seed",
+        "custom",
+        "enter seed",
+        "stop sequence",
+        "enter stop sequence",
+        "temperature",
+        "reasoning effort",
+        "enter reasoning effort",
+        "logit bias",
+        "enable mirostat sampling for controlling perplexity.",
+        "mirostat",
+        "mirostat eta",
+        "mirostat tau",
+        "top k",
+        "top p",
+        "min p",
+        "frequency penalty",
+        "presence penalty",
+        "sets how far back for the model to look back to prevent repetition.",
+        "repeat last n",
+        "tfs z",
+        "tokens to keep on context refresh (num_keep)",
+        "max tokens (num_predict)",
+        "repeat penalty (ollama)",
+        "sets the size of the context window used to generate the next token.",
+        "context length",
+        "(ollama)",
+        "batch size (num_batch)",
+        "use_mmap (ollama)",
+        "use_mlock (ollama)",
+        "num_thread (ollama)",
+        "num_gpu (ollama)",
+        "template",
+        "write your model template content here",
+        "chat",
+        "settings",
+        "advanced"
+      ],
+      "fileSize": 39678,
+      "lineCount": 1403
+    },
+    {
+      "name": "Audio",
+      "path": "lib/components/chat/Settings/Audio.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Spinner.svelte"
+      ],
+      "keywords": [
+        "stt settings",
+        "speech-to-text engine",
+        "default",
+        "web api",
+        "instant auto-send after voice transcription",
+        "off",
+        "tts settings",
+        "text-to-speech engine",
+        "kokoro.js (browser)",
+        "kokoro.js dtype",
+        "auto-playback response",
+        "speech playback speed",
+        "set voice",
+        "loading kokoro.js...",
+        "please do not close the settings page while loading the model.",
+        "allow non-local voices",
+        "save",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 11166,
+      "lineCount": 389
+    },
+    {
+      "name": "Chats",
+      "path": "lib/components/chat/Settings/Chats.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "layout/Sidebar/ArchivedChatsModal.svelte"
+      ],
+      "keywords": [
+        "import chats",
+        "export chats",
+        "archived chats",
+        "are you sure?",
+        "archive all chats",
+        "delete all chats",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 11601,
+      "lineCount": 369
+    },
+    {
+      "name": "Connection",
+      "path": "lib/components/chat/Settings/Connections/Connection.svelte",
+      "directory": "chat/Settings/Connections",
+      "imports": [
+        "common/Tooltip.svelte",
+        "common/SensitiveInput.svelte",
+        "icons/Cog6.svelte",
+        "AddConnectionModal.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "api base url",
+        "api key",
+        "configure",
+        "chat",
+        "settings",
+        "connections"
+      ],
+      "fileSize": 2251,
+      "lineCount": 97
+    },
+    {
+      "name": "Connections",
+      "path": "lib/components/chat/Settings/Connections.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Spinner.svelte",
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte",
+        "AddConnectionModal.svelte"
+      ],
+      "keywords": [
+        "manage direct connections",
+        "connect to your own openai compatible api endpoints.",
+        "save",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 4628,
+      "lineCount": 157
+    },
+    {
+      "name": "General",
+      "path": "lib/components/chat/Settings/General.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "common/Textarea.svelte"
+      ],
+      "keywords": [
+        "invalid json schema",
+        "webui settings",
+        "theme",
+        "system",
+        "dark",
+        "oled dark",
+        "light",
+        "rosé pine",
+        "rosé pine dawn",
+        "language",
+        "notifications",
+        "off",
+        "system prompt",
+        "enter system prompt here",
+        "advanced parameters",
+        "hide",
+        "show",
+        "keep alive",
+        "default",
+        "custom",
+        "e.g. ",
+        "request mode",
+        "json",
+        "save",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 14699,
+      "lineCount": 425
+    },
+    {
+      "name": "Interface",
+      "path": "lib/components/chat/Settings/Interface.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "user location successfully retrieved.",
+        "landing page mode",
+        "default",
+        "chat",
+        "chat bubble ui",
+        "off",
+        "display the username instead of you in the chat",
+        "widescreen mode",
+        "chat direction",
+        "ltr",
+        "rtl",
+        "auto",
+        "notification sound",
+        "toast notifications for new updates",
+        "title auto-generation",
+        "chat tags auto-generation",
+        "detect artifacts automatically",
+        "auto-copy response to clipboard",
+        "rich text input for chat",
+        "prompt autocompletion",
+        "paste large text as file",
+        "copy formatted text",
+        "always collapse code blocks",
+        "always expand details",
+        "chat background image",
+        "reset",
+        "upload",
+        "allow user location",
+        "haptic feedback",
+        "android",
+        "fluidly stream large external response chunks",
+        "enter key behavior",
+        "ctrl+enter to send",
+        "enter to send",
+        "scroll to bottom when switching between branches",
+        "web search in chat",
+        "always",
+        "iframe sandbox allow same origin",
+        "iframe sandbox allow forms",
+        "voice",
+        "allow voice interruption in call",
+        "display emoji in call",
+        "file",
+        "image compression",
+        "image max compression size",
+        "save",
+        "settings"
+      ],
+      "fileSize": 27452,
+      "lineCount": 1037
+    },
+    {
+      "name": "AddMemoryModal",
+      "path": "lib/components/chat/Settings/Personalization/AddMemoryModal.svelte",
+      "directory": "chat/Settings/Personalization",
+      "imports": [
+        "common/Modal.svelte"
+      ],
+      "keywords": [
+        "memory added successfully",
+        "add memory",
+        "enter a detail about yourself for your llms to recall",
+        "refer to yourself as ",
+        "add",
+        "chat",
+        "settings",
+        "personalization"
+      ],
+      "fileSize": 3475,
+      "lineCount": 127
+    },
+    {
+      "name": "EditMemoryModal",
+      "path": "lib/components/chat/Settings/Personalization/EditMemoryModal.svelte",
+      "directory": "chat/Settings/Personalization",
+      "imports": [
+        "common/Modal.svelte"
+      ],
+      "keywords": [
+        "memory updated successfully",
+        "edit memory",
+        "enter a detail about yourself for your llms to recall",
+        "refer to yourself as ",
+        "update",
+        "chat",
+        "settings",
+        "personalization"
+      ],
+      "fileSize": 3589,
+      "lineCount": 137
+    },
+    {
+      "name": "ManageModal",
+      "path": "lib/components/chat/Settings/Personalization/ManageModal.svelte",
+      "directory": "chat/Settings/Personalization",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Tooltip.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "memory cleared successfully",
+        "memory",
+        "name",
+        "last modified",
+        "memory deleted successfully",
+        "memories accessible by llms will be shown here.",
+        "add memory",
+        "no memories to clear",
+        "clear memory",
+        "are you sure you want to clear all memories? this action cannot be undone.",
+        "chat",
+        "settings",
+        "personalization"
+      ],
+      "fileSize": 7807,
+      "lineCount": 231
+    },
+    {
+      "name": "Personalization",
+      "path": "lib/components/chat/Settings/Personalization.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "memory",
+        "experimental",
+        "manage",
+        "save",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 2812,
+      "lineCount": 99
+    },
+    {
+      "name": "Connection",
+      "path": "lib/components/chat/Settings/Tools/Connection.svelte",
+      "directory": "chat/Settings/Tools",
+      "imports": [
+        "common/Tooltip.svelte",
+        "common/SensitiveInput.svelte",
+        "icons/Cog6.svelte",
+        "common/ConfirmDialog.svelte",
+        "AddServerModal.svelte"
+      ],
+      "keywords": [
+        "api base url",
+        "api key",
+        "configure",
+        "chat",
+        "settings",
+        "tools"
+      ],
+      "fileSize": 2240,
+      "lineCount": 91
+    },
+    {
+      "name": "Tools",
+      "path": "lib/components/chat/Settings/Tools.svelte",
+      "directory": "chat/Settings",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Spinner.svelte",
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte",
+        "AddServerModal.svelte"
+      ],
+      "keywords": [
+        "manage tool servers",
+        "connect to your own openapi compatible external tool servers.",
+        "learn more about openapi tool servers.",
+        "save",
+        "chat",
+        "settings"
+      ],
+      "fileSize": 3488,
+      "lineCount": 128
+    },
+    {
+      "name": "SettingsModal",
+      "path": "lib/components/chat/SettingsModal.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "settings",
+        "search",
+        "general",
+        "interface",
+        "connections",
+        "tools",
+        "personalization",
+        "audio",
+        "chats",
+        "account",
+        "about",
+        "admin settings",
+        "no results found",
+        "settings saved successfully!",
+        "chat"
+      ],
+      "fileSize": 22463,
+      "lineCount": 757
+    },
+    {
+      "name": "ShareChatModal",
+      "path": "lib/components/chat/ShareChatModal.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "redirecting you to open webui community",
+        "share chat",
+        "you have shared this chat",
+        "before",
+        "click here to",
+        "delete this link",
+        "and create a new shared link.",
+        "share to open webui community",
+        "copied shared chat url to clipboard!",
+        "update and copy link",
+        "copy link",
+        "chat"
+      ],
+      "fileSize": 5579,
+      "lineCount": 203
+    },
+    {
+      "name": "ShortcutsModal",
+      "path": "lib/components/chat/ShortcutsModal.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "keyboard shortcuts",
+        "open new chat",
+        "focus chat input",
+        "copy last code block",
+        "copy last response",
+        "generate prompt pair",
+        "toggle settings",
+        "toggle sidebar",
+        "delete chat",
+        "show shortcuts",
+        "input commands",
+        "attach file from knowledge",
+        "add custom prompt",
+        "talk to model",
+        "accept autocomplete generation / jump to prompt variable",
+        "chat"
+      ],
+      "fileSize": 10714,
+      "lineCount": 326
+    },
+    {
+      "name": "Suggestions",
+      "path": "lib/components/chat/Suggestions.svelte",
+      "directory": "chat",
+      "imports": [
+        "icons/Bolt.svelte"
+      ],
+      "keywords": [
+        "keine vorschläge",
+        "suggested",
+        "prompt",
+        "chat"
+      ],
+      "fileSize": 3651,
+      "lineCount": 137
+    },
+    {
+      "name": "TagChatModal",
+      "path": "lib/components/chat/TagChatModal.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "chat"
+      ],
+      "fileSize": 537,
+      "lineCount": 29
+    },
+    {
+      "name": "Tags",
+      "path": "lib/components/chat/Tags.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "chat"
+      ],
+      "fileSize": 1574,
+      "lineCount": 83
+    },
+    {
+      "name": "ToolServersModal",
+      "path": "lib/components/chat/ToolServersModal.svelte",
+      "directory": "chat",
+      "imports": [],
+      "keywords": [
+        "available tools",
+        "tools",
+        "tool servers",
+        "open webui can use tools provided by any openapi server.",
+        "learn more about openapi tool servers.",
+        "chat"
+      ],
+      "fileSize": 3744,
+      "lineCount": 128
+    },
+    {
+      "name": "Badge",
+      "path": "lib/components/common/Badge.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 592,
+      "lineCount": 20
+    },
+    {
+      "name": "Banner",
+      "path": "lib/components/common/Banner.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 3678,
+      "lineCount": 130
+    },
+    {
+      "name": "Checkbox",
+      "path": "lib/components/common/Checkbox.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "{checked}",
+        "common"
+      ],
+      "fileSize": 1779,
+      "lineCount": 78
+    },
+    {
+      "name": "CodeEditor",
+      "path": "lib/components/common/CodeEditor.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "code formatted successfully",
+        "common"
+      ],
+      "fileSize": 5695,
+      "lineCount": 246
+    },
+    {
+      "name": "Collapsible",
+      "path": "lib/components/common/Collapsible.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "svelte-ignore a11y-click-events-have-key-events",
+        "thought for {{duration}} seconds",
+        "thought for {{duration}}",
+        "thinking...",
+        "analyzed",
+        "analyzing...",
+        "view result from **{{name}}**",
+        "executing **{{name}}**...",
+        "common"
+      ],
+      "fileSize": 6538,
+      "lineCount": 256
+    },
+    {
+      "name": "ConfirmDialog",
+      "path": "lib/components/common/ConfirmDialog.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-click-events-have-key-events",
+        "svelte-ignore a11y-no-static-element-interactions",
+        "cancel",
+        "confirm",
+        "confirm your action",
+        "this action cannot be undone. do you wish to continue?",
+        "enter your message",
+        "common"
+      ],
+      "fileSize": 3682,
+      "lineCount": 152
+    },
+    {
+      "name": "DragGhost",
+      "path": "lib/components/common/DragGhost.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-click-events-have-key-events",
+        "svelte-ignore a11y-no-static-element-interactions",
+        "common"
+      ],
+      "fileSize": 705,
+      "lineCount": 31
+    },
+    {
+      "name": "Drawer",
+      "path": "lib/components/common/Drawer.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-click-events-have-key-events",
+        "svelte-ignore a11y-no-static-element-interactions",
+        "common"
+      ],
+      "fileSize": 2252,
+      "lineCount": 95
+    },
+    {
+      "name": "Dropdown",
+      "path": "lib/components/common/Dropdown.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 1245,
+      "lineCount": 47
+    },
+    {
+      "name": "FileItem",
+      "path": "lib/components/common/FileItem.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "file",
+        "document",
+        "collection",
+        "common"
+      ],
+      "fileSize": 4529,
+      "lineCount": 159
+    },
+    {
+      "name": "FileItemModal",
+      "path": "lib/components/common/FileItemModal.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 3388,
+      "lineCount": 132
+    },
+    {
+      "name": "Folder",
+      "path": "lib/components/common/Folder.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "common"
+      ],
+      "fileSize": 4599,
+      "lineCount": 177
+    },
+    {
+      "name": "Image",
+      "path": "lib/components/common/Image.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 657,
+      "lineCount": 28
+    },
+    {
+      "name": "ImagePreview",
+      "path": "lib/components/common/ImagePreview.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-click-events-have-key-events",
+        "svelte-ignore a11y-no-static-element-interactions",
+        "common"
+      ],
+      "fileSize": 3813,
+      "lineCount": 144
+    },
+    {
+      "name": "Loader",
+      "path": "lib/components/common/Loader.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 943,
+      "lineCount": 47
+    },
+    {
+      "name": "Marquee",
+      "path": "lib/components/common/Marquee.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 544,
+      "lineCount": 31
+    },
+    {
+      "name": "Modal",
+      "path": "lib/components/common/Modal.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-click-events-have-key-events",
+        "svelte-ignore a11y-no-static-element-interactions",
+        "common"
+      ],
+      "fileSize": 2360,
+      "lineCount": 105
+    },
+    {
+      "name": "Overlay",
+      "path": "lib/components/common/Overlay.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 640,
+      "lineCount": 34
+    },
+    {
+      "name": "Pagination",
+      "path": "lib/components/common/Pagination.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 2076,
+      "lineCount": 43
+    },
+    {
+      "name": "RichTextInput",
+      "path": "lib/components/common/RichTextInput.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 10738,
+      "lineCount": 391
+    },
+    {
+      "name": "SVGPanZoom",
+      "path": "lib/components/common/SVGPanZoom.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "download as svg",
+        "reset view",
+        "copy to clipboard",
+        "copied to clipboard",
+        "common"
+      ],
+      "fileSize": 2589,
+      "lineCount": 95
+    },
+    {
+      "name": "Selector",
+      "path": "lib/components/common/Selector.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 2870,
+      "lineCount": 96
+    },
+    {
+      "name": "SensitiveInput",
+      "path": "lib/components/common/SensitiveInput.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 1869,
+      "lineCount": 65
+    },
+    {
+      "name": "Sidebar",
+      "path": "lib/components/common/Sidebar.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "common"
+      ],
+      "fileSize": 842,
+      "lineCount": 31
+    },
+    {
+      "name": "SlideShow",
+      "path": "lib/components/common/SlideShow.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 976,
+      "lineCount": 40
+    },
+    {
+      "name": "Spinner",
+      "path": "lib/components/common/Spinner.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 750,
+      "lineCount": 26
+    },
+    {
+      "name": "Switch",
+      "path": "lib/components/common/Switch.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 733,
+      "lineCount": 21
+    },
+    {
+      "name": "TagInput",
+      "path": "lib/components/common/Tags/TagInput.svelte",
+      "directory": "common/Tags",
+      "imports": [],
+      "keywords": [
+        "add a tag",
+        "save tag",
+        "add tag",
+        "common",
+        "tags"
+      ],
+      "fileSize": 2358,
+      "lineCount": 89
+    },
+    {
+      "name": "TagList",
+      "path": "lib/components/common/Tags/TagList.svelte",
+      "directory": "common/Tags",
+      "imports": [
+        "icons/XMark.svelte"
+      ],
+      "keywords": [
+        "common",
+        "tags"
+      ],
+      "fileSize": 1033,
+      "lineCount": 33
+    },
+    {
+      "name": "Tags",
+      "path": "lib/components/common/Tags.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "add tags",
+        "common"
+      ],
+      "fileSize": 558,
+      "lineCount": 27
+    },
+    {
+      "name": "Textarea",
+      "path": "lib/components/common/Textarea.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 1055,
+      "lineCount": 52
+    },
+    {
+      "name": "Tooltip",
+      "path": "lib/components/common/Tooltip.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "common"
+      ],
+      "fileSize": 1217,
+      "lineCount": 53
+    },
+    {
+      "name": "Valves",
+      "path": "lib/components/common/Valves.svelte",
+      "directory": "common",
+      "imports": [],
+      "keywords": [
+        "{valves[property]}",
+        "none",
+        "default",
+        "custom",
+        "common"
+      ],
+      "fileSize": 3681,
+      "lineCount": 121
+    },
+    {
+      "name": "AdjustmentsHorizontal",
+      "path": "lib/components/icons/AdjustmentsHorizontal.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 835,
+      "lineCount": 18
+    },
+    {
+      "name": "ArchiveBox",
+      "path": "lib/components/icons/ArchiveBox.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 577,
+      "lineCount": 20
+    },
+    {
+      "name": "ArrowDownTray",
+      "path": "lib/components/icons/ArrowDownTray.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 428,
+      "lineCount": 20
+    },
+    {
+      "name": "ArrowLeft",
+      "path": "lib/components/icons/ArrowLeft.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 348,
+      "lineCount": 16
+    },
+    {
+      "name": "ArrowPath",
+      "path": "lib/components/icons/ArrowPath.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 487,
+      "lineCount": 20
+    },
+    {
+      "name": "ArrowRight",
+      "path": "lib/components/icons/ArrowRight.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 348,
+      "lineCount": 16
+    },
+    {
+      "name": "ArrowRightCircle",
+      "path": "lib/components/icons/ArrowRightCircle.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 387,
+      "lineCount": 20
+    },
+    {
+      "name": "ArrowUpCircle",
+      "path": "lib/components/icons/ArrowUpCircle.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 386,
+      "lineCount": 20
+    },
+    {
+      "name": "ArrowsPointingOut",
+      "path": "lib/components/icons/ArrowsPointingOut.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 469,
+      "lineCount": 20
+    },
+    {
+      "name": "BarsArrowUp",
+      "path": "lib/components/icons/BarsArrowUp.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 394,
+      "lineCount": 20
+    },
+    {
+      "name": "Bolt",
+      "path": "lib/components/icons/Bolt.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 379,
+      "lineCount": 20
+    },
+    {
+      "name": "BookOpen",
+      "path": "lib/components/icons/BookOpen.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 560,
+      "lineCount": 20
+    },
+    {
+      "name": "Bookmark",
+      "path": "lib/components/icons/Bookmark.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 451,
+      "lineCount": 20
+    },
+    {
+      "name": "BookmarkSlash",
+      "path": "lib/components/icons/BookmarkSlash.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 514,
+      "lineCount": 20
+    },
+    {
+      "name": "CameraSolid",
+      "path": "lib/components/icons/CameraSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 725,
+      "lineCount": 13
+    },
+    {
+      "name": "ChartBar",
+      "path": "lib/components/icons/ChartBar.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 670,
+      "lineCount": 11
+    },
+    {
+      "name": "ChatBubble",
+      "path": "lib/components/icons/ChatBubble.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 741,
+      "lineCount": 20
+    },
+    {
+      "name": "ChatBubbleOval",
+      "path": "lib/components/icons/ChatBubbleOval.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 546,
+      "lineCount": 20
+    },
+    {
+      "name": "ChatBubbleOvalEllipsis",
+      "path": "lib/components/icons/ChatBubbleOvalEllipsis.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 741,
+      "lineCount": 20
+    },
+    {
+      "name": "ChatBubbles",
+      "path": "lib/components/icons/ChatBubbles.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 838,
+      "lineCount": 20
+    },
+    {
+      "name": "Check",
+      "path": "lib/components/icons/Check.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 335,
+      "lineCount": 16
+    },
+    {
+      "name": "ChevronDown",
+      "path": "lib/components/icons/ChevronDown.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 340,
+      "lineCount": 16
+    },
+    {
+      "name": "ChevronLeft",
+      "path": "lib/components/icons/ChevronLeft.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 341,
+      "lineCount": 16
+    },
+    {
+      "name": "ChevronRight",
+      "path": "lib/components/icons/ChevronRight.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 339,
+      "lineCount": 16
+    },
+    {
+      "name": "ChevronUp",
+      "path": "lib/components/icons/ChevronUp.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 340,
+      "lineCount": 16
+    },
+    {
+      "name": "ChevronUpDown",
+      "path": "lib/components/icons/ChevronUpDown.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 370,
+      "lineCount": 20
+    },
+    {
+      "name": "Clipboard",
+      "path": "lib/components/icons/Clipboard.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 686,
+      "lineCount": 20
+    },
+    {
+      "name": "CloudArrowUp",
+      "path": "lib/components/icons/CloudArrowUp.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 468,
+      "lineCount": 20
+    },
+    {
+      "name": "Cog6",
+      "path": "lib/components/icons/Cog6.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 1417,
+      "lineCount": 21
+    },
+    {
+      "name": "Cog6Solid",
+      "path": "lib/components/icons/Cog6Solid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 955,
+      "lineCount": 13
+    },
+    {
+      "name": "CommandLine",
+      "path": "lib/components/icons/CommandLine.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 470,
+      "lineCount": 20
+    },
+    {
+      "name": "CommandLineSolid",
+      "path": "lib/components/icons/CommandLineSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 498,
+      "lineCount": 12
+    },
+    {
+      "name": "Cube",
+      "path": "lib/components/icons/Cube.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 401,
+      "lineCount": 20
+    },
+    {
+      "name": "Document",
+      "path": "lib/components/icons/Document.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 577,
+      "lineCount": 20
+    },
+    {
+      "name": "DocumentArrowDown",
+      "path": "lib/components/icons/DocumentArrowDown.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 604,
+      "lineCount": 20
+    },
+    {
+      "name": "DocumentArrowUpSolid",
+      "path": "lib/components/icons/DocumentArrowUpSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 730,
+      "lineCount": 15
+    },
+    {
+      "name": "DocumentChartBar",
+      "path": "lib/components/icons/DocumentChartBar.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 815,
+      "lineCount": 16
+    },
+    {
+      "name": "DocumentDuplicate",
+      "path": "lib/components/icons/DocumentDuplicate.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 790,
+      "lineCount": 20
+    },
+    {
+      "name": "Download",
+      "path": "lib/components/icons/Download.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 428,
+      "lineCount": 20
+    },
+    {
+      "name": "EllipsisHorizontal",
+      "path": "lib/components/icons/EllipsisHorizontal.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 464,
+      "lineCount": 20
+    },
+    {
+      "name": "EllipsisVertical",
+      "path": "lib/components/icons/EllipsisVertical.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 461,
+      "lineCount": 20
+    },
+    {
+      "name": "Eye",
+      "path": "lib/components/icons/Eye.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 602,
+      "lineCount": 21
+    },
+    {
+      "name": "EyeSlash",
+      "path": "lib/components/icons/EyeSlash.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 653,
+      "lineCount": 20
+    },
+    {
+      "name": "FaceSmile",
+      "path": "lib/components/icons/FaceSmile.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 618,
+      "lineCount": 20
+    },
+    {
+      "name": "FloppyDisk",
+      "path": "lib/components/icons/FloppyDisk.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 553,
+      "lineCount": 21
+    },
+    {
+      "name": "FolderOpen",
+      "path": "lib/components/icons/FolderOpen.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 656,
+      "lineCount": 20
+    },
+    {
+      "name": "GarbageBin",
+      "path": "lib/components/icons/GarbageBin.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 728,
+      "lineCount": 20
+    },
+    {
+      "name": "GlobeAlt",
+      "path": "lib/components/icons/GlobeAlt.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 796,
+      "lineCount": 20
+    },
+    {
+      "name": "GlobeAltSolid",
+      "path": "lib/components/icons/GlobeAltSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 1275,
+      "lineCount": 10
+    },
+    {
+      "name": "Headphone",
+      "path": "lib/components/icons/Headphone.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 542,
+      "lineCount": 21
+    },
+    {
+      "name": "Heart",
+      "path": "lib/components/icons/Heart.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 477,
+      "lineCount": 20
+    },
+    {
+      "name": "Home",
+      "path": "lib/components/icons/Home.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 484,
+      "lineCount": 24
+    },
+    {
+      "name": "Info",
+      "path": "lib/components/icons/Info.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 472,
+      "lineCount": 20
+    },
+    {
+      "name": "Keyboard",
+      "path": "lib/components/icons/Keyboard.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 668,
+      "lineCount": 20
+    },
+    {
+      "name": "Lifebuoy",
+      "path": "lib/components/icons/Lifebuoy.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 1319,
+      "lineCount": 20
+    },
+    {
+      "name": "LightBlub",
+      "path": "lib/components/icons/LightBlub.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 567,
+      "lineCount": 20
+    },
+    {
+      "name": "Link",
+      "path": "lib/components/icons/Link.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 636,
+      "lineCount": 17
+    },
+    {
+      "name": "LockClosed",
+      "path": "lib/components/icons/LockClosed.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 495,
+      "lineCount": 20
+    },
+    {
+      "name": "MagnifyingGlass",
+      "path": "lib/components/icons/MagnifyingGlass.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 395,
+      "lineCount": 20
+    },
+    {
+      "name": "Map",
+      "path": "lib/components/icons/Map.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 642,
+      "lineCount": 20
+    },
+    {
+      "name": "MenuLines",
+      "path": "lib/components/icons/MenuLines.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 360,
+      "lineCount": 20
+    },
+    {
+      "name": "Merge",
+      "path": "lib/components/icons/Merge.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 451,
+      "lineCount": 20
+    },
+    {
+      "name": "Mic",
+      "path": "lib/components/icons/Mic.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 442,
+      "lineCount": 11
+    },
+    {
+      "name": "Minus",
+      "path": "lib/components/icons/Minus.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 322,
+      "lineCount": 16
+    },
+    {
+      "name": "Pencil",
+      "path": "lib/components/icons/Pencil.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 479,
+      "lineCount": 20
+    },
+    {
+      "name": "PencilSolid",
+      "path": "lib/components/icons/PencilSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 470,
+      "lineCount": 11
+    },
+    {
+      "name": "PencilSquare",
+      "path": "lib/components/icons/PencilSquare.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 576,
+      "lineCount": 20
+    },
+    {
+      "name": "Photo",
+      "path": "lib/components/icons/Photo.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 480,
+      "lineCount": 22
+    },
+    {
+      "name": "PhotoSolid",
+      "path": "lib/components/icons/PhotoSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 590,
+      "lineCount": 12
+    },
+    {
+      "name": "Plus",
+      "path": "lib/components/icons/Plus.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 334,
+      "lineCount": 16
+    },
+    {
+      "name": "QuestionMarkCircle",
+      "path": "lib/components/icons/QuestionMarkCircle.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 518,
+      "lineCount": 20
+    },
+    {
+      "name": "Reset",
+      "path": "lib/components/icons/Reset.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 485,
+      "lineCount": 20
+    },
+    {
+      "name": "Search",
+      "path": "lib/components/icons/Search.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 398,
+      "lineCount": 20
+    },
+    {
+      "name": "Share",
+      "path": "lib/components/icons/Share.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 398,
+      "lineCount": 12
+    },
+    {
+      "name": "Sparkles",
+      "path": "lib/components/icons/Sparkles.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 932,
+      "lineCount": 20
+    },
+    {
+      "name": "SparklesSolid",
+      "path": "lib/components/icons/SparklesSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 1193,
+      "lineCount": 13
+    },
+    {
+      "name": "Star",
+      "path": "lib/components/icons/Star.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 688,
+      "lineCount": 20
+    },
+    {
+      "name": "User",
+      "path": "lib/components/icons/User.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 418,
+      "lineCount": 12
+    },
+    {
+      "name": "UserCircleSolid",
+      "path": "lib/components/icons/UserCircleSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 410,
+      "lineCount": 12
+    },
+    {
+      "name": "UserPlusSolid",
+      "path": "lib/components/icons/UserPlusSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 480,
+      "lineCount": 10
+    },
+    {
+      "name": "UsersSolid",
+      "path": "lib/components/icons/UsersSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 645,
+      "lineCount": 10
+    },
+    {
+      "name": "Wrench",
+      "path": "lib/components/icons/Wrench.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 680,
+      "lineCount": 21
+    },
+    {
+      "name": "WrenchSolid",
+      "path": "lib/components/icons/WrenchSolid.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 670,
+      "lineCount": 12
+    },
+    {
+      "name": "XMark",
+      "path": "lib/components/icons/XMark.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 333,
+      "lineCount": 16
+    },
+    {
+      "name": "HelpMenu",
+      "path": "lib/components/layout/Help/HelpMenu.svelte",
+      "directory": "layout/Help",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/QuestionMarkCircle.svelte",
+        "icons/Lifebuoy.svelte",
+        "icons/Keyboard.svelte"
+      ],
+      "keywords": [
+        "documentation",
+        "keyboard shortcuts",
+        "layout",
+        "help"
+      ],
+      "fileSize": 1839,
+      "lineCount": 61
+    },
+    {
+      "name": "Help",
+      "path": "lib/components/layout/Help.svelte",
+      "directory": "layout",
+      "imports": [],
+      "keywords": [
+        "help",
+        "layout"
+      ],
+      "fileSize": 943,
+      "lineCount": 41
+    },
+    {
+      "name": "Menu",
+      "path": "lib/components/layout/Navbar/Menu.svelte",
+      "directory": "layout/Navbar",
+      "imports": [
+        "common/Dropdown.svelte",
+        "chat/Tags.svelte",
+        "icons/Map.svelte",
+        "icons/Clipboard.svelte",
+        "icons/AdjustmentsHorizontal.svelte",
+        "icons/Cube.svelte"
+      ],
+      "keywords": [
+        "settings",
+        "controls",
+        "share",
+        "overview",
+        "artifacts",
+        "download",
+        "export chat (.json)",
+        "plain text (.txt)",
+        "pdf document (.pdf)",
+        "copied to clipboard",
+        "copy",
+        "layout",
+        "navbar"
+      ],
+      "fileSize": 11360,
+      "lineCount": 346
+    },
+    {
+      "name": "Navbar",
+      "path": "lib/components/layout/Navbar.svelte",
+      "directory": "layout",
+      "imports": [],
+      "keywords": [
+        "<div class=\"md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700\" />",
+        "controls",
+        "new chat",
+        "layout"
+      ],
+      "fileSize": 5792,
+      "lineCount": 196
+    },
+    {
+      "name": "AccountPending",
+      "path": "lib/components/layout/Overlay/AccountPending.svelte",
+      "directory": "layout/Overlay",
+      "imports": [],
+      "keywords": [
+        "account activation pending",
+        "contact admin for webui access",
+        "your account status is currently pending activation.",
+        "admin",
+        "check again",
+        "sign out",
+        "layout",
+        "overlay"
+      ],
+      "fileSize": 1889,
+      "lineCount": 63
+    },
+    {
+      "name": "ArchivedChatsModal",
+      "path": "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "common/Modal.svelte",
+        "common/Tooltip.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "archived-chat-export",
+        "are you sure you want to unarchive all archived chats?",
+        "unarchive all",
+        "archived chats",
+        "search chats",
+        "name",
+        "created at",
+        "unarchive chat",
+        "delete chat",
+        "unarchive all archived chats",
+        "export all archived chats",
+        "you have no archived conversations.",
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 8545,
+      "lineCount": 256
+    },
+    {
+      "name": "ChannelItem",
+      "path": "lib/components/layout/Sidebar/ChannelItem.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "icons/Cog6.svelte"
+      ],
+      "keywords": [
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 2546,
+      "lineCount": 95
+    },
+    {
+      "name": "ChannelModal",
+      "path": "lib/components/layout/Sidebar/ChannelModal.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "common/Modal.svelte",
+        "workspace/common/AccessControl.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "edit channel",
+        "create channel",
+        "channel name",
+        "new-channel",
+        "delete",
+        "update",
+        "create",
+        "are you sure you want to delete this channel?",
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 5427,
+      "lineCount": 201
+    },
+    {
+      "name": "ChatItem",
+      "path": "lib/components/layout/Sidebar/ChatItem.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "common/ConfirmDialog.svelte",
+        "chat/ShareChatModal.svelte",
+        "icons/GarbageBin.svelte",
+        "common/Tooltip.svelte",
+        "icons/ArchiveBox.svelte",
+        "common/DragGhost.svelte",
+        "icons/Check.svelte",
+        "icons/XMark.svelte",
+        "icons/Document.svelte"
+      ],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "shortcut support using \"delete-chat-button\" id",
+        "title cannot be an empty string.",
+        "clone of {{title}}",
+        "delete chat?",
+        "this will delete",
+        "confirm",
+        "cancel",
+        "archive",
+        "delete",
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 11152,
+      "lineCount": 460
+    },
+    {
+      "name": "ChatMenu",
+      "path": "lib/components/layout/Sidebar/ChatMenu.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "chat/Tags.svelte",
+        "icons/Share.svelte",
+        "icons/ArchiveBox.svelte",
+        "icons/DocumentDuplicate.svelte",
+        "icons/Bookmark.svelte",
+        "icons/BookmarkSlash.svelte",
+        "icons/Download.svelte"
+      ],
+      "keywords": [
+        "more",
+        "unpin",
+        "pin",
+        "rename",
+        "clone",
+        "archive",
+        "share",
+        "download",
+        "export chat (.json)",
+        "plain text (.txt)",
+        "pdf document (.pdf)",
+        "delete",
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 9650,
+      "lineCount": 326
+    },
+    {
+      "name": "FolderMenu",
+      "path": "lib/components/layout/Sidebar/Folders/FolderMenu.svelte",
+      "directory": "layout/Sidebar/Folders",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "icons/Download.svelte"
+      ],
+      "keywords": [
+        "more",
+        "rename",
+        "export",
+        "delete",
+        "layout",
+        "sidebar",
+        "folders"
+      ],
+      "fileSize": 2025,
+      "lineCount": 71
+    },
+    {
+      "name": "Folders",
+      "path": "lib/components/layout/Sidebar/Folders.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [],
+      "keywords": [
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 825,
+      "lineCount": 36
+    },
+    {
+      "name": "RecursiveFolder",
+      "path": "lib/components/layout/Sidebar/RecursiveFolder.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "common/DragGhost.svelte",
+        "icons/FolderOpen.svelte",
+        "icons/EllipsisHorizontal.svelte",
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "folder deleted successfully",
+        "folder name cannot be empty",
+        "folder name updated successfully",
+        "delete folder?",
+        "this will delete <strong>{{name}}</strong> and <strong>all its contents</strong>.",
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 13124,
+      "lineCount": 509
+    },
+    {
+      "name": "SearchInput",
+      "path": "lib/components/layout/Sidebar/SearchInput.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "icons/XMark.svelte"
+      ],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "search for tags",
+        "untagged",
+        "search",
+        "search options",
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 6536,
+      "lineCount": 245
+    },
+    {
+      "name": "UserMenu",
+      "path": "lib/components/layout/Sidebar/UserMenu.svelte",
+      "directory": "layout/Sidebar",
+      "imports": [
+        "icons/ArchiveBox.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "settings",
+        "archived chats",
+        "playground",
+        "admin panel",
+        "sign out",
+        "running",
+        "active users",
+        "layout",
+        "sidebar"
+      ],
+      "fileSize": 7498,
+      "lineCount": 226
+    },
+    {
+      "name": "Sidebar",
+      "path": "lib/components/layout/Sidebar.svelte",
+      "directory": "layout",
+      "imports": [],
+      "keywords": [
+        "svelte-ignore a11y-no-static-element-interactions",
+        "folder name cannot be empty.",
+        "new chat",
+        "home",
+        "workspace",
+        "search",
+        "channels",
+        "create channel",
+        "chats",
+        "new folder",
+        "pinned",
+        "today",
+        "yesterday",
+        "previous 7 days",
+        "previous 30 days",
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+        "layout"
+      ],
+      "fileSize": 24862,
+      "lineCount": 935
+    },
+    {
+      "name": "UpdateInfoToast",
+      "path": "lib/components/layout/UpdateInfoToast.svelte",
+      "directory": "layout",
+      "imports": [],
+      "keywords": [
+        "update for the latest features and improvements.",
+        "layout"
+      ],
+      "fileSize": 1073,
+      "lineCount": 40
+    },
+    {
+      "name": "Message",
+      "path": "lib/components/playground/Chat/Message.svelte",
+      "directory": "playground/Chat",
+      "imports": [],
+      "keywords": [
+        "$i18n.t('a user')",
+        "$i18n.t('an assistant')",
+        "a user",
+        "an assistant",
+        "playground",
+        "chat"
+      ],
+      "fileSize": 1888,
+      "lineCount": 77
+    },
+    {
+      "name": "Messages",
+      "path": "lib/components/playground/Chat/Messages.svelte",
+      "directory": "playground/Chat",
+      "imports": [],
+      "keywords": [
+        "playground",
+        "chat"
+      ],
+      "fileSize": 402,
+      "lineCount": 21
+    },
+    {
+      "name": "Chat",
+      "path": "lib/components/playground/Chat.svelte",
+      "directory": "playground",
+      "imports": [
+        "playground/Chat/Messages.svelte"
+      ],
+      "keywords": [
+        "$i18n.t('a user')",
+        "$i18n.t('an assistant')",
+        "please select a model.",
+        "system instructions",
+        "you",
+        "a user",
+        "an assistant",
+        "user",
+        "assistant",
+        "add",
+        "run",
+        "cancel",
+        "playground"
+      ],
+      "fileSize": 10365,
+      "lineCount": 400
+    },
+    {
+      "name": "Completions",
+      "path": "lib/components/playground/Completions.svelte",
+      "directory": "playground",
+      "imports": [
+        "chat/ModelSelector/Selector.svelte"
+      ],
+      "keywords": [
+        "select a model",
+        "you",
+        "run",
+        "cancel",
+        "playground"
+      ],
+      "fileSize": 4696,
+      "lineCount": 198
+    },
+    {
+      "name": "Notes",
+      "path": "lib/components/playground/Notes.svelte",
+      "directory": "playground",
+      "imports": [],
+      "keywords": [
+        "title",
+        "write something...",
+        "voice input",
+        "permission denied when accessing microphone",
+        "playground"
+      ],
+      "fileSize": 3382,
+      "lineCount": 123
+    },
+    {
+      "name": "CreateKnowledgeBase",
+      "path": "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
+      "directory": "workspace/Knowledge",
+      "imports": [],
+      "keywords": [
+        "please fill in all fields.",
+        "knowledge created successfully.",
+        "back",
+        "create a knowledge base",
+        "what are you working on?",
+        "name your knowledge base",
+        "what are you trying to achieve?",
+        "describe your knowledge base and objectives",
+        "create knowledge",
+        "workspace",
+        "knowledge"
+      ],
+      "fileSize": 4450,
+      "lineCount": 166
+    },
+    {
+      "name": "ItemMenu",
+      "path": "lib/components/workspace/Knowledge/ItemMenu.svelte",
+      "directory": "workspace/Knowledge",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "chat/Tags.svelte",
+        "icons/Share.svelte",
+        "icons/ArchiveBox.svelte",
+        "icons/DocumentDuplicate.svelte",
+        "icons/ArrowDownTray.svelte",
+        "icons/ArrowUpCircle.svelte",
+        "icons/EllipsisHorizontal.svelte"
+      ],
+      "keywords": [
+        "more",
+        "delete",
+        "workspace",
+        "knowledge"
+      ],
+      "fileSize": 2220,
+      "lineCount": 70
+    },
+    {
+      "name": "AddContentMenu",
+      "path": "lib/components/workspace/Knowledge/KnowledgeBase/AddContentMenu.svelte",
+      "directory": "workspace/Knowledge/KnowledgeBase",
+      "imports": [
+        "common/Dropdown.svelte",
+        "common/Tooltip.svelte",
+        "icons/ArrowUpCircle.svelte",
+        "icons/BarsArrowUp.svelte",
+        "icons/FolderOpen.svelte",
+        "icons/ArrowPath.svelte"
+      ],
+      "keywords": [
+        "add content",
+        "upload files",
+        "upload directory",
+        "sync directory",
+        "add text content",
+        "workspace",
+        "knowledge",
+        "knowledgebase"
+      ],
+      "fileSize": 3309,
+      "lineCount": 108
+    },
+    {
+      "name": "AddTextContentModal",
+      "path": "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
+      "directory": "workspace/Knowledge/KnowledgeBase",
+      "imports": [
+        "common/Modal.svelte",
+        "common/RichTextInput.svelte",
+        "icons/XMark.svelte",
+        "icons/Mic.svelte",
+        "common/Tooltip.svelte",
+        "chat/MessageInput/VoiceRecording.svelte"
+      ],
+      "keywords": [
+        "please fill in all fields.",
+        "title",
+        "write something...",
+        "voice input",
+        "permission denied when accessing microphone",
+        "save",
+        "workspace",
+        "knowledge",
+        "knowledgebase"
+      ],
+      "fileSize": 4549,
+      "lineCount": 170
+    },
+    {
+      "name": "Files",
+      "path": "lib/components/workspace/Knowledge/KnowledgeBase/Files.svelte",
+      "directory": "workspace/Knowledge/KnowledgeBase",
+      "imports": [
+        "common/FileItem.svelte"
+      ],
+      "keywords": [
+        "workspace",
+        "knowledge",
+        "knowledgebase"
+      ],
+      "fileSize": 1044,
+      "lineCount": 46
+    },
+    {
+      "name": "KnowledgeBase",
+      "path": "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
+      "directory": "workspace/Knowledge",
+      "imports": [
+        "common/Spinner.svelte",
+        "AddFilesPlaceholder.svelte",
+        "common/RichTextInput.svelte",
+        "icons/EllipsisVertical.svelte",
+        "common/Drawer.svelte",
+        "icons/ChevronLeft.svelte",
+        "icons/LockClosed.svelte"
+      ],
+      "keywords": [
+        "you cannot upload an empty file.",
+        "failed to upload file.",
+        "knowledge reset successfully.",
+        "file added successfully.",
+        "failed to add file.",
+        "file removed successfully.",
+        "file content updated successfully.",
+        "please fill in all fields.",
+        "knowledge updated successfully",
+        "access",
+        "save",
+        "add content here",
+        "drag and drop a file to upload or select a file to view",
+        "search collection",
+        "no content found",
+        "workspace",
+        "knowledge"
+      ],
+      "fileSize": 23932,
+      "lineCount": 888
+    },
+    {
+      "name": "Knowledge",
+      "path": "lib/components/workspace/Knowledge.svelte",
+      "directory": "workspace",
+      "imports": [],
+      "keywords": [
+        "{$i18n.t('knowledge')}",
+        "{$webui_name}",
+        "knowledge deleted successfully.",
+        "knowledge",
+        "search knowledge",
+        "create knowledge",
+        "document",
+        "collection",
+        "deleted user",
+        "by {{name}}",
+        "updated",
+        "use ",
+        "workspace"
+      ],
+      "fileSize": 5316,
+      "lineCount": 198
+    },
+    {
+      "name": "ActionsSelector",
+      "path": "lib/components/workspace/Models/ActionsSelector.svelte",
+      "directory": "workspace/Models",
+      "imports": [
+        "common/Checkbox.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "actions",
+        "to select actions here, add them to the ",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 1594,
+      "lineCount": 60
+    },
+    {
+      "name": "Capabilities",
+      "path": "lib/components/workspace/Models/Capabilities.svelte",
+      "directory": "workspace/Models",
+      "imports": [
+        "common/Checkbox.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "model accepts image inputs",
+        "displays citations in the response",
+        "capabilities",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 1303,
+      "lineCount": 47
+    },
+    {
+      "name": "FiltersSelector",
+      "path": "lib/components/workspace/Models/FiltersSelector.svelte",
+      "directory": "workspace/Models",
+      "imports": [
+        "common/Checkbox.svelte",
+        "common/Tooltip.svelte"
+      ],
+      "keywords": [
+        "todo: filer order matters",
+        "filters",
+        "to select filters here, add them to the ",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 1812,
+      "lineCount": 68
+    },
+    {
+      "name": "Selector",
+      "path": "lib/components/workspace/Models/Knowledge/Selector.svelte",
+      "directory": "workspace/Models/Knowledge",
+      "imports": [
+        "common/Dropdown.svelte"
+      ],
+      "keywords": [
+        "all documents",
+        "search knowledge",
+        "no knowledge found",
+        "workspace",
+        "models",
+        "knowledge"
+      ],
+      "fileSize": 4615,
+      "lineCount": 168
+    },
+    {
+      "name": "Knowledge",
+      "path": "lib/components/workspace/Models/Knowledge.svelte",
+      "directory": "workspace/Models",
+      "imports": [
+        "common/FileItem.svelte"
+      ],
+      "keywords": [
+        "{knowledge}",
+        "knowledge",
+        "to attach knowledge base here, add them to the ",
+        "select knowledge",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 1681,
+      "lineCount": 64
+    },
+    {
+      "name": "ModelEditor",
+      "path": "lib/components/workspace/Models/ModelEditor.svelte",
+      "directory": "workspace/Models",
+      "imports": [
+        "chat/Settings/Advanced/AdvancedParams.svelte",
+        "common/Tags.svelte",
+        "workspace/Models/Knowledge.svelte",
+        "workspace/Models/ToolsSelector.svelte",
+        "workspace/Models/FiltersSelector.svelte",
+        "workspace/Models/ActionsSelector.svelte",
+        "workspace/Models/Capabilities.svelte",
+        "common/Textarea.svelte"
+      ],
+      "keywords": [
+        "model name",
+        "model id",
+        "base model (from)",
+        "select a base model",
+        "description",
+        "default",
+        "custom",
+        "add a short description about what this model does",
+        "model params",
+        "system prompt",
+        "advanced params",
+        "hide",
+        "show",
+        "prompt suggestions",
+        "write a prompt suggestion (e.g. who are you?)",
+        "json preview",
+        "save & update",
+        "save & create",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 22129,
+      "lineCount": 802
+    },
+    {
+      "name": "ModelMenu",
+      "path": "lib/components/workspace/Models/ModelMenu.svelte",
+      "directory": "workspace/Models",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "chat/Tags.svelte",
+        "icons/Share.svelte",
+        "icons/ArchiveBox.svelte",
+        "icons/DocumentDuplicate.svelte",
+        "icons/ArrowDownTray.svelte",
+        "icons/ArrowUpCircle.svelte"
+      ],
+      "keywords": [
+        "more",
+        "share",
+        "clone",
+        "export",
+        "delete",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 3079,
+      "lineCount": 103
+    },
+    {
+      "name": "ToolsSelector",
+      "path": "lib/components/workspace/Models/ToolsSelector.svelte",
+      "directory": "workspace/Models",
+      "imports": [
+        "common/Checkbox.svelte"
+      ],
+      "keywords": [
+        "tools",
+        "to select toolkits here, add them to the ",
+        "workspace",
+        "models"
+      ],
+      "fileSize": 1402,
+      "lineCount": 58
+    },
+    {
+      "name": "Models",
+      "path": "lib/components/workspace/Models.svelte",
+      "directory": "workspace",
+      "imports": [],
+      "keywords": [
+        "{$i18n.t('models')}",
+        "{$webui_name}",
+        "redirecting you to open webui community",
+        "models",
+        "search models",
+        "deleted user",
+        "by {{name}}",
+        "delete",
+        "enabled",
+        "disabled",
+        "import models",
+        "export models",
+        "made by open webui community",
+        "discover a model",
+        "discover, download, and explore model presets",
+        "workspace"
+      ],
+      "fileSize": 15207,
+      "lineCount": 539
+    },
+    {
+      "name": "PromptEditor",
+      "path": "lib/components/workspace/Prompts/PromptEditor.svelte",
+      "directory": "workspace/Prompts",
+      "imports": [
+        "common/Textarea.svelte",
+        "common/Tooltip.svelte",
+        "icons/LockClosed.svelte"
+      ],
+      "keywords": [
+        "only alphanumeric characters and hyphens are allowed in the command string.",
+        "only alphanumeric characters and hyphens are allowed",
+        "title",
+        "access",
+        "command",
+        "prompt content",
+        "write a summary in 50 words that summarizes [topic or keyword].",
+        "format your variables using brackets like this:",
+        "variable",
+        "make sure to enclose them with",
+        "and",
+        "utilize",
+        "variable to have them replaced with clipboard content.",
+        "save & create",
+        "workspace",
+        "prompts"
+      ],
+      "fileSize": 6084,
+      "lineCount": 213
+    },
+    {
+      "name": "PromptMenu",
+      "path": "lib/components/workspace/Prompts/PromptMenu.svelte",
+      "directory": "workspace/Prompts",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "chat/Tags.svelte",
+        "icons/Share.svelte",
+        "icons/ArchiveBox.svelte",
+        "icons/DocumentDuplicate.svelte",
+        "icons/ArrowDownTray.svelte"
+      ],
+      "keywords": [
+        "more",
+        "share",
+        "clone",
+        "export",
+        "delete",
+        "workspace",
+        "prompts"
+      ],
+      "fileSize": 2930,
+      "lineCount": 96
+    },
+    {
+      "name": "Prompts",
+      "path": "lib/components/workspace/Prompts.svelte",
+      "directory": "workspace",
+      "imports": [
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "{$i18n.t('prompts')}",
+        "{$webui_name}",
+        "redirecting you to open webui community",
+        "prompts",
+        "delete prompt?",
+        "this will delete",
+        "search prompts",
+        "deleted user",
+        "by {{name}}",
+        "import prompts",
+        "export prompts",
+        "made by open webui community",
+        "discover a prompt",
+        "discover, download, and explore custom prompts",
+        "workspace"
+      ],
+      "fileSize": 10531,
+      "lineCount": 353
+    },
+    {
+      "name": "ToolMenu",
+      "path": "lib/components/workspace/Tools/ToolMenu.svelte",
+      "directory": "workspace/Tools",
+      "imports": [
+        "common/Dropdown.svelte",
+        "icons/GarbageBin.svelte",
+        "icons/Pencil.svelte",
+        "common/Tooltip.svelte",
+        "chat/Tags.svelte",
+        "icons/Share.svelte",
+        "icons/ArchiveBox.svelte",
+        "icons/DocumentDuplicate.svelte",
+        "icons/ArrowDownTray.svelte"
+      ],
+      "keywords": [
+        "more",
+        "edit",
+        "share",
+        "clone",
+        "export",
+        "delete",
+        "workspace",
+        "tools"
+      ],
+      "fileSize": 3687,
+      "lineCount": 121
+    },
+    {
+      "name": "ToolkitEditor",
+      "path": "lib/components/workspace/Tools/ToolkitEditor.svelte",
+      "directory": "workspace/Tools",
+      "imports": [
+        "common/CodeEditor.svelte",
+        "common/ConfirmDialog.svelte",
+        "common/Badge.svelte",
+        "icons/ChevronLeft.svelte",
+        "common/Tooltip.svelte",
+        "icons/LockClosed.svelte"
+      ],
+      "keywords": [
+        "back",
+        "e.g. my tools",
+        "tool name",
+        "access",
+        "e.g. my_tools",
+        "tool id",
+        "e.g. tools for performing various operations",
+        "tool description",
+        "warning:",
+        "tools are a function calling system with arbitrary code execution",
+        "save",
+        "please carefully review the following warnings:",
+        "tools have a function calling system that allows arbitrary code execution.",
+        "do not install tools from sources you do not fully trust.",
+        "workspace",
+        "tools"
+      ],
+      "fileSize": 9970,
+      "lineCount": 353
+    },
+    {
+      "name": "Tools",
+      "path": "lib/components/workspace/Tools.svelte",
+      "directory": "workspace",
+      "imports": [
+        "common/ConfirmDialog.svelte"
+      ],
+      "keywords": [
+        "{$i18n.t('tools')}",
+        "{$webui_name}",
+        "redirecting you to open webui community",
+        "tool deleted successfully",
+        "tools",
+        "search tools",
+        "deleted user",
+        "by {{name}}",
+        "delete",
+        "valves",
+        "import tools",
+        "export tools",
+        "made by open webui community",
+        "discover a tool",
+        "discover, download, and explore custom tools",
+        "delete tool?",
+        "this will delete",
+        "tool imported successfully",
+        "please carefully review the following warnings:",
+        "tools have a function calling system that allows arbitrary code execution",
+        "do not install tools from sources you do not fully trust.",
+        "workspace"
+      ],
+      "fileSize": 16208,
+      "lineCount": 524
+    },
+    {
+      "name": "AccessControl",
+      "path": "lib/components/workspace/common/AccessControl.svelte",
+      "directory": "workspace/common",
+      "imports": [
+        "common/Tooltip.svelte",
+        "icons/Plus.svelte",
+        "icons/UserCircleSolid.svelte",
+        "icons/XMark.svelte",
+        "common/Badge.svelte"
+      ],
+      "keywords": [
+        "visibility",
+        "private",
+        "public",
+        "only select users and groups with permission can access",
+        "accessible to all users",
+        "groups",
+        "select a group",
+        "add group",
+        "write",
+        "read",
+        "no groups with access, add a group to grant access",
+        "workspace",
+        "common"
+      ],
+      "fileSize": 8006,
+      "lineCount": 277
+    },
+    {
+      "name": "AccessControlModal",
+      "path": "lib/components/workspace/common/AccessControlModal.svelte",
+      "directory": "workspace/common",
+      "imports": [
+        "common/Modal.svelte"
+      ],
+      "keywords": [
+        "access control",
+        "workspace",
+        "common"
+      ],
+      "fileSize": 1181,
+      "lineCount": 46
+    },
+    {
+      "name": "ManifestModal",
+      "path": "lib/components/workspace/common/ManifestModal.svelte",
+      "directory": "workspace/common",
+      "imports": [],
+      "keywords": [
+        "show your support!",
+        "support this plugin:",
+        "done",
+        "workspace",
+        "common"
+      ],
+      "fileSize": 2951,
+      "lineCount": 105
+    },
+    {
+      "name": "ValvesModal",
+      "path": "lib/components/workspace/common/ValvesModal.svelte",
+      "directory": "workspace/common",
+      "imports": [
+        "common/Switch.svelte",
+        "common/Valves.svelte"
+      ],
+      "keywords": [
+        "valves",
+        "save",
+        "workspace",
+        "common"
+      ],
+      "fileSize": 5383,
+      "lineCount": 203
+    }
+  ],
+  "apis": [
+    {
+      "path": "lib/apis/audio/index.ts",
+      "module": "audio",
+      "functions": [
+        "getAudioConfig",
+        "updateAudioConfig",
+        "transcribeAudio",
+        "synthesizeOpenAISpeech",
+        "getModels",
+        "getVoices"
+      ],
+      "fileSize": 3486,
+      "lineCount": 194
+    },
+    {
+      "path": "lib/apis/auths/index.ts",
+      "module": "auths",
+      "functions": [
+        "getAdminDetails",
+        "getAdminConfig",
+        "updateAdminConfig",
+        "getSessionUser",
+        "ldapUserSignIn",
+        "getLdapConfig",
+        "updateLdapConfig",
+        "getLdapServer",
+        "updateLdapServer",
+        "userSignIn",
+        "userSignUp",
+        "userSignOut",
+        "addUser",
+        "updateUserProfile",
+        "updateUserPassword",
+        "getSignUpEnabledStatus",
+        "getDefaultUserRole",
+        "updateDefaultUserRole",
+        "toggleSignUpEnabledStatus",
+        "getJWTExpiresDuration",
+        "updateJWTExpiresDuration",
+        "createAPIKey",
+        "getAPIKey",
+        "deleteAPIKey"
+      ],
+      "fileSize": 13062,
+      "lineCount": 695
+    },
+    {
+      "path": "lib/apis/channels/index.ts",
+      "module": "channels",
+      "functions": [
+        "createNewChannel",
+        "getChannels",
+        "getChannelById",
+        "updateChannelById",
+        "deleteChannelById",
+        "getChannelMessages",
+        "getChannelThreadMessages",
+        "sendMessage",
+        "updateMessage",
+        "addReaction",
+        "removeReaction",
+        "deleteMessage"
+      ],
+      "fileSize": 8234,
+      "lineCount": 443
+    },
+    {
+      "path": "lib/apis/chats/index.ts",
+      "module": "chats",
+      "functions": [
+        "createNewChat",
+        "importChat",
+        "getChatList",
+        "getChatListByUserId",
+        "getArchivedChatList",
+        "getAllChats",
+        "getChatListBySearchText",
+        "getChatsByFolderId",
+        "getAllArchivedChats",
+        "getAllUserChats",
+        "getAllTags",
+        "getPinnedChatList",
+        "getChatListByTagName",
+        "getChatById",
+        "getChatByShareId",
+        "getChatPinnedStatusById",
+        "toggleChatPinnedStatusById",
+        "cloneChatById",
+        "cloneSharedChatById",
+        "shareChatById",
+        "updateChatFolderIdById",
+        "archiveChatById",
+        "deleteSharedChatById",
+        "updateChatById",
+        "deleteChatById",
+        "getTagsById",
+        "addTagById",
+        "deleteTagById",
+        "deleteTagsById",
+        "deleteAllChats",
+        "archiveAllChats"
+      ],
+      "fileSize": 19778,
+      "lineCount": 1055
+    },
+    {
+      "path": "lib/apis/configs/index.ts",
+      "module": "configs",
+      "functions": [
+        "importConfig",
+        "exportConfig",
+        "getDirectConnectionsConfig",
+        "setDirectConnectionsConfig",
+        "getToolServerConnections",
+        "setToolServerConnections",
+        "verifyToolServerConnection",
+        "getCodeExecutionConfig",
+        "setCodeExecutionConfig",
+        "getModelsConfig",
+        "setModelsConfig",
+        "setDefaultPromptSuggestions",
+        "getBanners",
+        "setBanners"
+      ],
+      "fileSize": 7610,
+      "lineCount": 405
+    },
+    {
+      "path": "lib/apis/evaluations/index.ts",
+      "module": "evaluations",
+      "functions": [
+        "getConfig",
+        "updateConfig",
+        "getAllFeedbacks",
+        "exportAllFeedbacks",
+        "createNewFeedback",
+        "getFeedbackById",
+        "updateFeedbackById",
+        "deleteFeedbackById"
+      ],
+      "fileSize": 4735,
+      "lineCount": 247
+    },
+    {
+      "path": "lib/apis/files/index.ts",
+      "module": "files",
+      "functions": [
+        "uploadFile",
+        "uploadDir",
+        "getFiles",
+        "getFileById",
+        "updateFileDataContentById",
+        "getFileContentById",
+        "deleteFileById",
+        "deleteAllFiles"
+      ],
+      "fileSize": 4445,
+      "lineCount": 244
+    },
+    {
+      "path": "lib/apis/folders/index.ts",
+      "module": "folders",
+      "functions": [
+        "createNewFolder",
+        "getFolders",
+        "getFolderById",
+        "updateFolderNameById",
+        "updateFolderIsExpandedById",
+        "updateFolderParentIdById",
+        "updateFolderItemsById",
+        "deleteFolderById"
+      ],
+      "fileSize": 5014,
+      "lineCount": 270
+    },
+    {
+      "path": "lib/apis/functions/index.ts",
+      "module": "functions",
+      "functions": [
+        "createNewFunction",
+        "getFunctions",
+        "exportFunctions",
+        "getFunctionById",
+        "updateFunctionById",
+        "deleteFunctionById",
+        "toggleFunctionById",
+        "toggleGlobalById",
+        "getFunctionValvesById",
+        "getFunctionValvesSpecById",
+        "updateFunctionValvesById",
+        "getUserValvesById",
+        "getUserValvesSpecById",
+        "updateUserValvesById"
+      ],
+      "fileSize": 8439,
+      "lineCount": 456
+    },
+    {
+      "path": "lib/apis/groups/index.ts",
+      "module": "groups",
+      "functions": [
+        "createNewGroup",
+        "getGroups",
+        "getGroupById",
+        "updateGroupById",
+        "deleteGroupById"
+      ],
+      "fileSize": 2971,
+      "lineCount": 163
+    },
+    {
+      "path": "lib/apis/images/index.ts",
+      "module": "images",
+      "functions": [
+        "getConfig",
+        "updateConfig",
+        "verifyConfigUrl",
+        "getImageGenerationConfig",
+        "updateImageGenerationConfig",
+        "getImageGenerationModels",
+        "imageGenerations"
+      ],
+      "fileSize": 4627,
+      "lineCount": 233
+    },
+    {
+      "path": "lib/apis/index.ts",
+      "module": "root",
+      "functions": [
+        "getModels",
+        "chatCompleted",
+        "chatAction",
+        "stopTask",
+        "getTaskIdsByChatId",
+        "getToolServerData",
+        "getToolServersData",
+        "executeToolServer",
+        "getTaskConfig",
+        "updateTaskConfig",
+        "generateTitle",
+        "generateTags",
+        "generateEmoji",
+        "generateQueries",
+        "generateAutoCompletion",
+        "generateMoACompletion",
+        "getPipelinesList",
+        "uploadPipeline",
+        "downloadPipeline",
+        "deletePipeline",
+        "getPipelines",
+        "getPipelineValves",
+        "getPipelineValvesSpec",
+        "updatePipelineValves",
+        "getBackendConfig",
+        "getChangelog",
+        "getVersionUpdates",
+        "getModelFilterConfig",
+        "updateModelFilterConfig",
+        "getWebhookUrl",
+        "updateWebhookUrl",
+        "getCommunitySharingEnabledStatus",
+        "toggleCommunitySharingEnabledStatus",
+        "getModelConfig",
+        "updateModelConfig"
+      ],
+      "fileSize": 31693,
+      "lineCount": 1493
+    },
+    {
+      "path": "lib/apis/knowledge/index.ts",
+      "module": "knowledge",
+      "functions": [
+        "createNewKnowledge",
+        "getKnowledgeBases",
+        "getKnowledgeBaseList",
+        "getKnowledgeById",
+        "updateKnowledgeById",
+        "addFileToKnowledgeById",
+        "updateFileFromKnowledgeById",
+        "removeFileFromKnowledgeById",
+        "resetKnowledgeById",
+        "deleteKnowledgeById",
+        "reindexKnowledgeFiles"
+      ],
+      "fileSize": 7102,
+      "lineCount": 376
+    },
+    {
+      "path": "lib/apis/memories/index.ts",
+      "module": "memories",
+      "functions": [
+        "getMemories",
+        "addNewMemory",
+        "updateMemoryById",
+        "queryMemory",
+        "deleteMemoryById",
+        "deleteMemoriesByUserId"
+      ],
+      "fileSize": 3486,
+      "lineCount": 187
+    },
+    {
+      "path": "lib/apis/models/index.ts",
+      "module": "models",
+      "functions": [
+        "getModels",
+        "getBaseModels",
+        "createNewModel",
+        "getModelById",
+        "toggleModelById",
+        "updateModelById",
+        "deleteModelById",
+        "deleteAllModels"
+      ],
+      "fileSize": 5019,
+      "lineCount": 266
+    },
+    {
+      "path": "lib/apis/ollama/index.ts",
+      "module": "ollama",
+      "functions": [
+        "verifyOllamaConnection",
+        "getOllamaConfig",
+        "updateOllamaConfig",
+        "getOllamaUrls",
+        "updateOllamaUrls",
+        "getOllamaVersion",
+        "getOllamaModels",
+        "generatePrompt",
+        "generateEmbeddings",
+        "generateTextCompletion",
+        "generateChatCompletion",
+        "createModel",
+        "deleteModel",
+        "pullModel",
+        "downloadModel",
+        "uploadModel",
+        "pullModel"
+      ],
+      "fileSize": 11094,
+      "lineCount": 542
+    },
+    {
+      "path": "lib/apis/openai/index.ts",
+      "module": "openai",
+      "functions": [
+        "getOpenAIConfig",
+        "updateOpenAIConfig",
+        "getOpenAIUrls",
+        "updateOpenAIUrls",
+        "getOpenAIKeys",
+        "updateOpenAIKeys",
+        "getOpenAIModelsDirect",
+        "getOpenAIModels",
+        "verifyOpenAIConnection",
+        "chatCompletion",
+        "generateOpenAIChatCompletion",
+        "synthesizeOpenAISpeech"
+      ],
+      "fileSize": 8340,
+      "lineCount": 423
+    },
+    {
+      "path": "lib/apis/prompts/index.ts",
+      "module": "prompts",
+      "functions": [
+        "createNewPrompt",
+        "getPrompts",
+        "getPromptList",
+        "getPromptByCommand",
+        "updatePromptByCommand",
+        "deletePromptByCommand"
+      ],
+      "fileSize": 3848,
+      "lineCount": 205
+    },
+    {
+      "path": "lib/apis/retrieval/index.ts",
+      "module": "retrieval",
+      "functions": [
+        "getRAGConfig",
+        "updateRAGConfig",
+        "getQuerySettings",
+        "updateQuerySettings",
+        "getEmbeddingConfig",
+        "updateEmbeddingConfig",
+        "getRerankingConfig",
+        "updateRerankingConfig",
+        "processFile",
+        "processYoutubeVideo",
+        "processWeb",
+        "processWebSearch",
+        "queryDoc",
+        "queryCollection",
+        "resetUploadDir",
+        "resetVectorDB"
+      ],
+      "fileSize": 10284,
+      "lineCount": 550
+    },
+    {
+      "path": "lib/apis/streaming/index.ts",
+      "module": "streaming",
+      "functions": [
+        "createOpenAITextStream"
+      ],
+      "fileSize": 3881,
+      "lineCount": 143
+    },
+    {
+      "path": "lib/apis/tools/index.ts",
+      "module": "tools",
+      "functions": [
+        "createNewTool",
+        "getTools",
+        "getToolList",
+        "exportTools",
+        "getToolById",
+        "updateToolById",
+        "deleteToolById",
+        "getToolValvesById",
+        "getToolValvesSpecById",
+        "updateToolValvesById",
+        "getUserValvesById",
+        "getUserValvesSpecById",
+        "updateUserValvesById"
+      ],
+      "fileSize": 7732,
+      "lineCount": 423
+    },
+    {
+      "path": "lib/apis/users/index.ts",
+      "module": "users",
+      "functions": [
+        "getUserGroups",
+        "getUserDefaultPermissions",
+        "updateUserDefaultPermissions",
+        "updateUserRole",
+        "getUsers",
+        "getUserSettings",
+        "updateUserSettings",
+        "getUserById",
+        "getUserInfo",
+        "updateUserInfo",
+        "getAndUpdateUserLocation",
+        "deleteUserById",
+        "updateUserById"
+      ],
+      "fileSize": 6981,
+      "lineCount": 366
+    },
+    {
+      "path": "lib/apis/utils/index.ts",
+      "module": "utils",
+      "functions": [
+        "getGravatarUrl",
+        "executeCode",
+        "formatPythonCode",
+        "downloadChatAsPDF",
+        "getHTMLFromMarkdown",
+        "downloadDatabase",
+        "downloadLiteLLMConfig"
+      ],
+      "fileSize": 4292,
+      "lineCount": 218
+    }
+  ]
+}

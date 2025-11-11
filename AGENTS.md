@@ -41,7 +41,8 @@ agent-portal/
 │   │   │   ├── chat.py        # Chat API (Stage 2 ✅)
 │   │   │   ├── observability.py  # Observability API (Stage 2 ✅)
 │   │   │   ├── embed.py       # Embed 프록시
-│   │   │   └── kong_admin.py # Kong Admin 프록시
+│   │   │   ├── kong_admin.py # Kong Admin 프록시
+│   │   │   └── proxy.py       # 리버스 프록시 (Langflow/Flowise/AutoGen/Perplexica/Notebook)
 │   │   ├── services/          # 비즈니스 로직 레이어
 │   │   │   ├── litellm_service.py  # LiteLLM 게이트웨이 (Stage 2 ✅)
 │   │   │   └── langfuse_service.py # Langfuse 관측성 (Stage 2 ✅)
@@ -54,6 +55,18 @@ agent-portal/
 ├── webui/                      # Open-WebUI 포크 (AGPL)
 │   └── src/routes/(app)/admin/
 │       └── monitoring/        # Monitoring 대시보드 (Stage 2 ✅)
+│
+├── autogen-studio/             # AutoGen Studio UI (임베드)
+│   └── Dockerfile
+│
+├── autogen-api/                # AutoGen Studio 백엔드(프록시/어댑터)
+│   └── Dockerfile
+│
+├── perplexica/                 # Perplexica (iframe 임베드)
+│   └── Dockerfile
+│
+├── open-notebook/              # Open Notebook (iframe 임베드)
+│   └── Dockerfile
 │
 ├── config/                     # 설정 파일
 │   ├── litellm.yaml           # LiteLLM 게이트웨이 설정
@@ -80,8 +93,12 @@ agent-portal/
 | **Kong** | 8002/8443 | API Gateway, 보안/라우팅 | ✅ 실행 중 |
 | **Konga** | 1337 | Kong Admin UI | ✅ 실행 중 |
 | **LiteLLM** | 4000 | LLM 게이트웨이 | ⚠️ 설정 필요 |
-| **Langfuse** | 3000 | LLM 관측성 | ⚠️ 설정 필요 |
+| **Langfuse** | 3001 | LLM 관측성 | ⚠️ 설정 필요 |
 | **Helicone** | 8787 | LLM 프록시/비용 추적 | ⚠️ 설정 필요 |
+| **AutoGen Studio** | 5050 | 대화형 워크플로 UI | ❌ 미구현 |
+| **AutoGen API** | 5051 | Studio 백엔드 | ❌ 미구현 |
+| **Perplexica** | 5173 | 검색 포털(iframe 임베드) | ❌ 미구현 |
+| **Open-Notebook** | 3030 | AI 노트북(iframe 임베드) | ❌ 미구현 |
 
 ### 현재 진행 상황
 
@@ -94,6 +111,13 @@ agent-portal/
 - Observability API (`/observability/health`, `/observability/usage`, `/observability/models`)
 - Open-WebUI Monitoring 페이지
 - Embed 프록시
+
+**Stage 3**: ❌ 미시작
+- 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
+- Export → LangGraph 변환
+
+**Stage 8**: ❌ 미시작
+- Perplexica + Open-Notebook 임베드 (iframe, 리버스 프록시)
 
 **상세 진행 상황**: [PROGRESS.md](./PROGRESS.md) 참조
 
@@ -364,11 +388,25 @@ trace.end()
 - [ ] Langfuse 서비스 실행 및 연동 (환경 설정 필요)
 - [ ] 프론트엔드-백엔드 데이터 연동 (BFF API 호출)
 
-### Stage 3: 문서 인텔리전스 및 통합
-- [ ] 문서 인텔리전스 파이프라인
-- [ ] LangGraph 서버 연동
-- [ ] Open Notebook 통합
-- [ ] Perplexica 통합
+### Stage 3: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
+- [ ] Langflow 컨테이너 설정 (포트 7860)
+- [ ] Flowise 컨테이너 설정 (포트 3002)
+- [ ] AutoGen Studio/API 컨테이너 설정 (로컬 빌드, 포트 5050/5051)
+- [ ] 에이전트 빌더 페이지 추가 (`/builder/langflow`, `/builder/flowise`, `/builder/autogen`)
+- [ ] 리버스 프록시 구현 (`/proxy/langflow`, `/proxy/flowise`, `/proxy/autogen`)
+- [ ] Langflow/Flowise 플로우 → LangGraph JSON 변환
+- [ ] AutoGen YAML/JSON → LangGraph 변환기 구현
+- [ ] 에이전트 버전/리비전 관리 시스템
+
+### Stage 8: Perplexica + Open-Notebook 임베드
+- [ ] Perplexica 포크 및 컨테이너 설정 (포트 5173)
+- [ ] Open-Notebook 포크 및 컨테이너 설정 (포트 3030)
+- [ ] FastAPI BFF 리버스 프록시 구현 (`/proxy/perplexica/{path:path}`, `/proxy/notebook/{path:path}`)
+- [ ] 프록시 헤더 변환 (X-Frame-Options 제거, CSP frame-ancestors 'self' 추가)
+- [ ] Open-WebUI overrides에 Apps 탭 추가 (`/apps/perplexica`, `/apps/notebook`)
+- [ ] iframe 컴포넌트 구현 (전체 화면 높이, 로딩 스켈레톤, 에러 처리)
+- [ ] LiteLLM Base URL 연동 (Notebook/Perplexica 모델 호출 일원화)
+- [ ] (선택) Kong response-transformer 플러그인으로 헤더 정규화
 
 **상세 진행 상황**: [PROGRESS.md](./PROGRESS.md) 참조
 

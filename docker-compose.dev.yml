@@ -1,0 +1,49 @@
+# 개발 모드 오버라이드 설정
+# 사용법: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up webui
+
+version: "3.8"
+
+services:
+  # Portal Shell (Open-WebUI fork) - 개발 모드
+  webui:
+    build:
+      context: ./webui
+      dockerfile: Dockerfile.dev
+    volumes:
+      # 소스 코드 실시간 마운트 (Hot reload)
+      - ./webui:/app
+      # node_modules는 볼륨으로 분리하여 성능 최적화
+      - webui_node_modules:/app/node_modules
+      # 백엔드 데이터 볼륨
+      - webui_backend_data:/app/backend/data
+      # 기존 볼륨 유지
+      - ./webui/plugins:/app/plugins
+      - ./webui/overrides:/app/overrides
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+    ports:
+      - "3001:5173"  # Vite dev server 포트 (프론트엔드) - 3000 포트 충돌로 3001 사용
+      - "8080:8080"  # 백엔드 API 포트 (내부용)
+    # 포트 충돌 시 강제 재시작
+    restart: unless-stopped
+    # dev-start.sh가 프론트엔드와 백엔드를 함께 실행
+    command: bash dev-start.sh
+    # 개발 모드에서는 depends_on 제거하여 독립 실행 가능
+    # depends_on:
+    #   - backend
+
+  # Backend BFF - 개발 모드
+  backend:
+    volumes:
+      # 개발 중 로컬 파일 직접 마운트 (이미 설정됨)
+      - ./backend/app:/app/app:ro
+    # 개발 모드 실행은 start.sh에서 dev.sh를 호출하도록 수정 필요
+    # 또는 command로 직접 오버라이드
+
+volumes:
+  webui_node_modules:
+    driver: local
+  webui_backend_data:
+    driver: local
+

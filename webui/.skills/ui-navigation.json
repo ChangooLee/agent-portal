@@ -1,0 +1,230 @@
+{
+  "metadata": {
+    "generatedAt": "2025-11-07T06:49:02.513Z",
+    "maxDepth": 2,
+    "totalMenuItems": 10
+  },
+  "sidebar": {
+    "component": "Sidebar.svelte",
+    "componentPath": "lib/components/layout/Sidebar.svelte",
+    "menuItems": [
+      {
+        "href": "/",
+        "label": "New Chat",
+        "type": "link",
+        "depth": 1,
+        "index": 0
+      },
+      {
+        "href": "/home",
+        "label": "Home",
+        "type": "link",
+        "depth": 1,
+        "index": 1
+      },
+      {
+        "href": "/workspace",
+        "label": "Workspace",
+        "type": "link",
+        "depth": 1,
+        "index": 2
+      },
+      {
+        "href": "/workspace",
+        "label": "Workspace",
+        "type": "link",
+        "depth": 1
+      }
+    ],
+    "menuStructure": [
+      {
+        "href": "/",
+        "label": "New Chat",
+        "type": "link",
+        "depth": 1,
+        "index": 0
+      },
+      {
+        "href": "/home",
+        "label": "Home",
+        "type": "link",
+        "depth": 1,
+        "index": 1
+      },
+      {
+        "href": "/workspace",
+        "label": "Workspace",
+        "type": "link",
+        "depth": 1,
+        "index": 2
+      }
+    ],
+    "folders": [
+      {
+        "name": "Channels)",
+        "type": "folder",
+        "depth": 1,
+        "items": [],
+        "itemCount": 0
+      },
+      {
+        "name": "Chats)",
+        "type": "folder",
+        "depth": 1,
+        "items": [],
+        "itemCount": 0
+      }
+    ],
+    "hasSearch": true,
+    "hasChannels": true,
+    "hasChats": true,
+    "maxDepth": 2,
+    "totalMenuItems": 4
+  },
+  "tabNavigation": [
+    {
+      "path": "(app)/+layout.svelte",
+      "routePath": "(app)/",
+      "tabs": [
+        {
+          "label": "{\n\t\t\t\t\t\t\t\t\t\tlet blob = new Blob([JSON.stringify(localDBChats)], {\n\t\t\t\t\t\t\t\t\t\t\ttype: 'application/json'\n\t\t\t\t\t\t\t\t\t\t});\n\t\t\t\t\t\t\t\t\t\tsaveAs(blob, `chat-export-${Date.now()}.json`);\n\n\t\t\t\t\t\t\t\t\t\tconst tx = DB.transaction('chats', 'readwrite');\n\t\t\t\t\t\t\t\t\t\tawait Promise.all([tx.store.clear(), tx.done]);\n\t\t\t\t\t\t\t\t\t\tawait deleteDB('Chats');\n\n\t\t\t\t\t\t\t\t\t\tlocalDBChats = [];\n\t\t\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\tDownload & Delete",
+          "type": "tab"
+        }
+      ],
+      "i18nKeys": [
+        "Settings",
+        "Chats",
+        "Import Chats",
+        "Close"
+      ],
+      "hasTabNavigation": true
+    },
+    {
+      "path": "+layout.svelte",
+      "routePath": "/",
+      "tabs": [
+        {
+          "href": "{WEBUI_BASE_URL}/static/favicon.png",
+          "type": "tab"
+        },
+        {
+          "href": "/themes/rosepine.css",
+          "type": "tab"
+        },
+        {
+          "href": "/themes/rosepine-dawn.css",
+          "type": "tab"
+        }
+      ],
+      "i18nKeys": [],
+      "hasTabNavigation": true
+    }
+  ],
+  "adminNavigation": {
+    "layout": "admin/+layout.svelte",
+    "tabs": [],
+    "i18nKeys": [
+      "Admin Panel",
+      "Users",
+      "Evaluations",
+      "Functions",
+      "Monitoring",
+      "Settings",
+      "Gateway"
+    ],
+    "depth": 1
+  },
+  "workspaceNavigation": {
+    "layout": "workspace/+layout.svelte",
+    "navItems": [
+      {
+        "href": "/workspace/models",
+        "type": "workspace-nav"
+      },
+      {
+        "href": "/workspace/knowledge",
+        "type": "workspace-nav"
+      },
+      {
+        "href": "/workspace/prompts",
+        "type": "workspace-nav"
+      },
+      {
+        "href": "/workspace/tools",
+        "type": "workspace-nav"
+      }
+    ],
+    "depth": 1
+  },
+  "hierarchy": {
+    "level1": [
+      {
+        "href": "/",
+        "label": "New Chat",
+        "type": "link",
+        "depth": 1,
+        "index": 0
+      },
+      {
+        "href": "/home",
+        "label": "Home",
+        "type": "link",
+        "depth": 1,
+        "index": 1
+      },
+      {
+        "href": "/workspace",
+        "label": "Workspace",
+        "type": "link",
+        "depth": 1,
+        "index": 2
+      },
+      {
+        "href": "/workspace",
+        "label": "Workspace",
+        "type": "link",
+        "depth": 1
+      }
+    ],
+    "level2": [
+      {
+        "path": "(app)/+layout.svelte",
+        "routePath": "(app)/",
+        "tabs": [
+          {
+            "label": "{\n\t\t\t\t\t\t\t\t\t\tlet blob = new Blob([JSON.stringify(localDBChats)], {\n\t\t\t\t\t\t\t\t\t\t\ttype: 'application/json'\n\t\t\t\t\t\t\t\t\t\t});\n\t\t\t\t\t\t\t\t\t\tsaveAs(blob, `chat-export-${Date.now()}.json`);\n\n\t\t\t\t\t\t\t\t\t\tconst tx = DB.transaction('chats', 'readwrite');\n\t\t\t\t\t\t\t\t\t\tawait Promise.all([tx.store.clear(), tx.done]);\n\t\t\t\t\t\t\t\t\t\tawait deleteDB('Chats');\n\n\t\t\t\t\t\t\t\t\t\tlocalDBChats = [];\n\t\t\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\tDownload & Delete",
+            "type": "tab"
+          }
+        ],
+        "i18nKeys": [
+          "Settings",
+          "Chats",
+          "Import Chats",
+          "Close"
+        ],
+        "hasTabNavigation": true
+      },
+      {
+        "path": "+layout.svelte",
+        "routePath": "/",
+        "tabs": [
+          {
+            "href": "{WEBUI_BASE_URL}/static/favicon.png",
+            "type": "tab"
+          },
+          {
+            "href": "/themes/rosepine.css",
+            "type": "tab"
+          },
+          {
+            "href": "/themes/rosepine-dawn.css",
+            "type": "tab"
+          }
+        ],
+        "i18nKeys": [],
+        "hasTabNavigation": true
+      }
+    ],
+    "level3": []
+  }
+}

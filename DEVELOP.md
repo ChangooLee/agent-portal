@@ -41,6 +41,10 @@ repo/
 - Python 3.10+ (backend 개발용)
 - (선택) NVIDIA 드라이버/CUDA (vLLM 사용 시)
 
+**AutoGen Studio 관련**:
+- AutoGen Studio는 로컬 빌드 방식 사용 (라이선스 충돌 회피 및 커스터마이즈 용이)
+- `autogen-studio/`, `autogen-api/` 디렉토리에 Dockerfile 포함 필요
+
 ### 0.3 초기 저장소 설정
 
 ```bash
@@ -57,6 +61,48 @@ node_modules/
 .DS_Store
 .env.local" > .gitignore
 ```
+
+### 0.4 WebUI 개발 모드 (Hot Reload)
+
+UI 코드 수정 시 전체 재빌드 없이 즉시 반영되도록 개발 모드를 사용할 수 있습니다.
+
+#### 개발 모드 실행
+
+```bash
+# 개발 모드 시작 (Hot Reload 지원)
+./scripts/dev-webui.sh
+
+# 또는 직접 docker-compose 실행
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build webui
+```
+
+#### 개발 모드 특징
+
+- **Hot Reload**: `webui/src/` 디렉토리의 파일 변경 시 자동으로 브라우저에 반영
+- **빠른 반복**: 전체 이미지 재빌드 불필요
+- **기존 포트 사용**: 포트 3000을 그대로 사용 (프로덕션과 동일)
+- **볼륨 마운트**: 소스 코드가 실시간으로 컨테이너에 마운트됨
+
+#### 개발 모드 vs 프로덕션 모드
+
+| 항목 | 개발 모드 | 프로덕션 모드 |
+|:---|:---|:---|
+| 실행 방법 | `docker-compose.dev.yml` 사용 | `docker-compose.yml` 사용 |
+| 빌드 시간 | 즉시 시작 (의존성만 설치) | 전체 빌드 필요 (5-10분) |
+| Hot Reload | 지원 | 미지원 |
+| 포트 | 3000 (기존과 동일) | 3000 (빌드된 정적 파일) |
+| 소스 코드 | 볼륨 마운트 (실시간 반영) | 이미지에 포함 (재빌드 필요) |
+
+#### 개발 모드 접속
+
+- **프론트엔드**: http://localhost:3001 (Vite dev server, 백엔드 API 자동 프록시)
+- **백엔드 API 직접 접근**: http://localhost:8080 (내부용, 프록시를 통해 사용)
+
+#### 주의사항
+
+- 개발 모드에서는 `node_modules`가 볼륨으로 분리되어 성능이 최적화됩니다
+- 의존성 추가 시 컨테이너를 재시작해야 할 수 있습니다
+- 프로덕션 배포 전에는 반드시 프로덕션 빌드로 테스트하세요
 
 ---
 
@@ -359,22 +405,27 @@ services:
 
 ---
 
-### 2.3 3단계: 에이전트 빌더 (Langflow + Flowise)
+### 2.3 3단계: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
 
-**목표**: Langflow와 Flowise를 임베드하고, Export → LangGraph 변환 기능 구현
+**목표**: Langflow, Flowise, AutoGen Studio를 임베드하고, Export → LangGraph 변환 기능 구현
 
 #### 작업 내용
 
-1. **Langflow/Flowise 컨테이너 설정**
-   - 각각 별도 컨테이너로 실행
+1. **Langflow/Flowise/AutoGen Studio 컨테이너 설정**
+   - Langflow: 포트 7860
+   - Flowise: 포트 3002
+   - AutoGen Studio: 포트 5050 (UI)
+   - AutoGen API: 포트 5051 (백엔드)
+   - 각각 별도 컨테이너로 실행 (AutoGen은 로컬 빌드)
    - 리버스 프록시 설정
 
 2. **Open-WebUI 에이전트 빌더 페이지 추가**
-   - `/builder/langflow`, `/builder/flowise` 라우트 생성
+   - `/builder/langflow`, `/builder/flowise`, `/builder/autogen` 라우트 생성
    - iframe 임베드
 
 3. **Export → LangGraph 변환**
-   - 플로우 정의를 LangGraph JSON으로 변환
+   - Langflow/Flowise 플로우 정의를 LangGraph JSON으로 변환
+   - AutoGen YAML/JSON → LangGraph 변환기 구현
    - 버전/리비전 관리
 
 #### 구현 작업
@@ -385,15 +436,25 @@ services:
 backend/
 └─ app/
    ├─ routes/
-   │  └─ agents.py            # /agents/*
+   │  ├─ agents.py            # /agents/*
+   │  └─ proxy.py              # /proxy/langflow, /proxy/flowise, /proxy/autogen
    └─ services/
-      └─ langgraph_export.py  # 플로우 → LangGraph 변환
+      └─ langgraph_export.py  # 플로우 → LangGraph 변환 (Langflow/Flowise/AutoGen)
+
+autogen-studio/              # AutoGen Studio UI (임베드)
+├─ Dockerfile
+└─ ...
+
+autogen-api/                 # AutoGen Studio 백엔드(프록시/어댑터)
+├─ Dockerfile
+└─ ...
 
 webui/
 └─ overrides/
    └─ pages/
       ├─ BuilderLangflow.tsx  # Langflow 임베드
-      └─ BuilderFlowise.tsx   # Flowise 임베드
+      ├─ BuilderFlowise.tsx   # Flowise 임베드
+      └─ BuilderAutogen.tsx   # AutoGen Studio 임베드
 ```
 
 #### docker-compose 설정
@@ -406,38 +467,74 @@ services:
       - "7860:7860"
     environment:
       - LANGFLOW_DATABASE_URL=sqlite:///./langflow.db
+    volumes:
+      - langflow_data:/data
 
   flowise:
     image: flowiseai/flowise:latest
     ports:
-      - "3000:3000"
+      - "3002:3000"  # Langfuse UI(3001)와 포트 충돌 방지
     environment:
-      - FLOWISE_USERNAME=admin
-      - FLOWISE_PASSWORD=admin123
+      - PORT=3000
+    volumes:
+      - flowise_data:/root/.flowise
+
+  # AutoGen Studio
+  autogen-studio:
+    build: ./autogen-studio   # (repo 서브폴더) Dockerfile 포함
+    ports: ["${AUTOGEN_STUDIO_PORT:-5050}:5050"]
+    environment:
+      - LITELLM_BASE_URL=http://litellm:4000
+    depends_on: [litellm]
+
+  autogen-api:
+    build: ./autogen-api
+    ports: ["${AUTOGEN_API_PORT:-5051}:5051"]
+    environment:
+      - LITELLM_BASE_URL=http://litellm:4000
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+    depends_on: [litellm, langfuse]
+
+volumes:
+  langflow_data:
+  flowise_data:
 ```
 
 #### 테스트 절차
 
 1. **구동 테스트**
    ```bash
-   docker-compose up -d langflow flowise
+   docker-compose up -d langflow flowise autogen-studio autogen-api
    ```
 
 2. **빌더 접근 확인**
    - [ ] `/builder/langflow` 접근 가능
    - [ ] `/builder/flowise` 접근 가능
+   - [ ] `/builder/autogen` 접근 가능
    - [ ] iframe 임베드 정상 동작
 
 3. **플로우 생성 및 Export**
    - [ ] Langflow에서 간단한 플로우 생성
-   - [ ] Export 버튼 클릭 시 LangGraph JSON 생성
+   - [ ] Flowise에서 간단한 플로우 생성
+   - [ ] AutoGen Studio에서 그룹챗 시나리오 생성
+   - [ ] 각 빌더에서 Export 버튼 클릭 시 LangGraph JSON 생성
    - [ ] 저장된 에이전트 정의 확인
+
+4. **리버스 프록시 확인**
+   - [ ] `/proxy/langflow` 프록시 동작
+   - [ ] `/proxy/flowise` 프록시 동작
+   - [ ] `/proxy/autogen` 프록시 동작
+   - [ ] `/autogen/api/*` Kong 보호 하에 프록시 동작
 
 #### 완료 기준
 
-- [ ] Langflow/Flowise 임베드 접근 가능
+- [ ] Langflow/Flowise/AutoGen Studio 임베드 접근 가능
 - [ ] 플로우 생성 및 저장 기능 동작
-- [ ] Export → LangGraph 변환 완료
+- [ ] Export → LangGraph 변환 완료 (Langflow/Flowise/AutoGen 모두)
+- [ ] AutoGen 그룹챗 시나리오 → LangGraph 등록 파이프라인 완료
+- [ ] 리버스 프록시 동작 확인
 
 ---
 
@@ -529,6 +626,19 @@ services:
         config:
           minute: 120
           hour: 1000
+
+  - name: autogen-api
+    url: http://autogen-api:5051
+    routes:
+      - name: autogen-api-route
+        paths: ["/autogen/api"]
+        protocols: ["http", "https"]
+    plugins:
+      - name: key-auth
+      - name: rate-limiting
+        config:
+          minute: 600
+
 consumers:
   - username: agent-portal-user
     keyauth_credentials:
@@ -793,93 +903,153 @@ webui/
 
 ---
 
-### 2.8 8단계: Open Notebook + Perplexica 통합
+### 2.8 8단계: Perplexica + Open-Notebook 임베드
 
-**목표**: Open Notebook과 Perplexica를 통합하고, DB 통합 시작 (공통 사용자/워크스페이스)
+**목표**: Perplexica와 Open-Notebook을 Open-WebUI 포털 쉘에 iframe으로 임베드
 
 #### 작업 내용
 
-1. **Open Notebook 포크 및 설정**
+1. **Perplexica 포크 및 컨테이너 설정**
    - 포크 완료 (1단계에서 수행)
-   - Docker 설정 및 LiteLLM 연동
+   - Docker 설정 (포트 5173)
+   - LiteLLM 연동
 
-2. **Perplexica 포크 및 설정**
+2. **Open-Notebook 포크 및 컨테이너 설정**
    - 포크 완료 (1단계에서 수행)
-   - Docker 설정 및 LiteLLM 연동
+   - Docker 설정 (포트 3030)
+   - LiteLLM Base URL 연동
 
-3. **SSO 전파**
-   - Open-WebUI에서 인증 후 JWT 생성
-   - 하위 포털에 JWT 전파
+3. **FastAPI BFF 리버스 프록시 구현**
+   - `/proxy/perplexica/{path:path}` 프록시 라우트
+   - `/proxy/notebook/{path:path}` 프록시 라우트
+   - 헤더 변환 (X-Frame-Options 제거, CSP frame-ancestors 'self' 추가)
 
-4. **DB 통합 시작**
-   - 공통 사용자/워크스페이스 테이블 참조
-   - 각 포털별 별도 테이블 유지
+4. **Open-WebUI Apps 탭 추가**
+   - `/apps/perplexica` 라우트 (iframe 임베드)
+   - `/apps/notebook` 라우트 (iframe 임베드)
+   - iframe 컴포넌트 구현 (전체 화면 높이, 로딩 스켈레톤, 에러 처리)
+
+5. **Kong 헤더 정규화 (선택)**
+   - response-transformer 플러그인으로 X-Frame-Options 제거
+   - CSP frame-ancestors 'self' 추가
 
 #### 구현 작업
 
 **파일 구조:**
 
 ```
-open-notebook/
+perplexica/
 ├─ Dockerfile
 └─ .env.example
 
-perplexica/
+open-notebook/
 ├─ Dockerfile
 └─ .env.example
 
 backend/
 └─ app/
+   ├─ routes/
+   │  └─ proxy.py              # /proxy/perplexica, /proxy/notebook 추가
    └─ services/
-      └─ sso_jwt.py           # JWT 생성/검증
+      └─ proxy_service.py      # 프록시 헤더 변환 로직
+
+webui/
+└─ overrides/
+   └─ pages/
+      ├─ AppsPerplexica.tsx    # Perplexica iframe 페이지
+      └─ AppsNotebook.tsx       # Open-Notebook iframe 페이지
 ```
 
 #### docker-compose 설정
 
 ```yaml
 services:
-  open-notebook:
-    build: ./open-notebook
-    ports:
-      - "3100:3000"
-    env_file: .env
+  # Perplexica (검색 포털, iframe 임베드)
+  perplexica:
+    build: ./perplexica        # 리포지토리 서브모듈/복제 후 Dockerfile로 빌드
     environment:
-      - API_BASE_URL=http://litellm:4000
-      - SSO_JWT_SECRET=${JWT_SECRET}
+      - PORT=${PERPLEXICA_PORT}
+    ports: ["${PERPLEXICA_PORT:-5173}:5173"]
     depends_on:
       - litellm
 
-  perplexica:
-    build: ./perplexica
-    ports:
-      - "3210:3000"
-    env_file: .env
+  # Open-Notebook (AI 노트북, iframe 임베드)
+  notebook:
+    build: ./open-notebook     # lfnovo/open-notebook 소스 빌드
     environment:
-      - API_BASE_URL=http://litellm:4000
-      - SSO_JWT_SECRET=${JWT_SECRET}
+      - PORT=${NOTEBOOK_PORT}
+      # Notebook이 외부 모델을 직접 쓰지 않고 LiteLLM을 경유하도록 선택 가능
+      - LITELLM_BASE_URL=http://litellm:4000
+    ports: ["${NOTEBOOK_PORT:-3030}:3030"]
     depends_on:
       - litellm
 ```
 
+#### Kong 설정 (`config/kong.yml`) - 선택사항
+
+```yaml
+# (선택) Perplexica/Notebook 직접 접근 차단 및 헤더 정규화
+- name: perplexica-svc
+  url: http://perplexica:5173
+  routes:
+  - name: perplexica-route
+    paths: ["/perplexica/"]
+    protocols: ["http","https"]
+  plugins:
+  - name: response-transformer
+    config:
+      remove: { headers: ["X-Frame-Options"] }
+      add:
+        headers:
+          - "Content-Security-Policy: frame-ancestors 'self'"
+
+- name: notebook-svc
+  url: http://notebook:3030
+  routes:
+  - name: notebook-route
+    paths: ["/notebook/"]
+    protocols: ["http","https"]
+  plugins:
+  - name: response-transformer
+    config:
+      remove: { headers: ["X-Frame-Options"] }
+      add:
+        headers:
+          - "Content-Security-Policy: frame-ancestors 'self'"
+```
+
 #### 테스트 절차
 
-1. **각 포털 접근 확인**
-   - [ ] Open Notebook (`http://localhost:3100`) 접근
-   - [ ] Perplexica (`http://localhost:3210`) 접근
+1. **구동 테스트**
+   ```bash
+   docker-compose up -d perplexica notebook backend
+   ```
 
-2. **SSO 전파 확인**
-   - [ ] Open-WebUI 로그인 → JWT 생성
-   - [ ] Open Notebook/Perplexica에서 JWT 검증 성공
+2. **Apps 탭 접근 확인**
+   - [ ] `/apps/perplexica` 접근 가능
+   - [ ] `/apps/notebook` 접근 가능
+   - [ ] iframe 임베드 정상 동작
 
-3. **데이터 공유 확인**
-   - [ ] 공통 사용자 정보 조회
-   - [ ] 워크스페이스 정보 공유
+3. **리버스 프록시 확인**
+   - [ ] `/proxy/perplexica` 프록시 동작
+   - [ ] `/proxy/notebook` 프록시 동작
+   - [ ] 동일 도메인 접근 (CORS/XFO 이슈 없음)
+
+4. **LiteLLM 연동 확인**
+   - [ ] Perplexica에서 모델 호출 시 LiteLLM 경유
+   - [ ] Open-Notebook에서 모델 호출 시 LiteLLM 경유
+   - [ ] 관측성 통합 확인 (Langfuse/Helicone)
+
+5. **헤더 변환 확인**
+   - [ ] X-Frame-Options 제거 확인
+   - [ ] CSP frame-ancestors 'self' 추가 확인
 
 #### 완료 기준
 
-- [ ] Open Notebook 및 Perplexica 통합 완료
-- [ ] SSO JWT 전파 동작
-- [ ] 공통 사용자/워크스페이스 데이터 공유 시작
+- [ ] Perplexica 및 Open-Notebook이 포털 Apps 탭에서 iframe으로 정상 표시
+- [ ] 리버스 프록시를 통한 동일 도메인 접근 (CORS/XFO 이슈 없음)
+- [ ] LiteLLM을 통한 모델 호출 및 관측성 통합
+- [ ] (옵션) SSO 인증 전파 동작
 
 ---
 
@@ -1202,9 +1372,11 @@ repo/
 - **이슈**: 뷰 전환 시 상태 유지 안 됨
   - **해결**: 상태 관리 로직 확인, React 상태 훅 확인
 
-#### 8단계: 포털 통합
-- **이슈**: SSO JWT 검증 실패
-  - **해결**: JWT 시크릿 키 일치 확인, 만료 시간 확인
+#### 8단계: Perplexica + Open-Notebook 임베드
+- **이슈**: iframe CORS/X-Frame-Options 에러
+  - **해결**: 리버스 프록시 헤더 변환 확인, Kong response-transformer 플러그인 확인
+- **이슈**: 프록시 경로 매칭 실패
+  - **해결**: FastAPI 경로 패턴 확인 (`{path:path}` 사용), 프록시 서비스 로직 확인
 
 #### 9단계: 가드레일
 - **이슈**: PII 감지 성능 저하
