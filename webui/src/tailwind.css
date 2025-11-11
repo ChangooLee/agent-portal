@@ -74,6 +74,42 @@
 	textarea::placeholder {
 		color: theme(--color-gray-400);
 	}
+
+	/* SFN Portal Color Palette */
+	:root {
+		--samsung-blue: #0072CE;
+		--samsung-blue-light: #E6F2FF;
+		--samsung-blue-lighter: #F0F7FF;
+		--text-primary: #1F2937; /* gray-800 */
+		--text-secondary: #4B5563; /* gray-600 */
+		--text-tertiary: #9CA3AF; /* gray-400 */
+		--bg-primary: #FFFFFF;
+		--bg-secondary: #F9FAFB; /* gray-50 */
+		--bg-hover: #F3F4F6; /* gray-100 */
+		--border-color: #E5E7EB; /* gray-200 */
+	}
+
+	/* Typography improvements */
+	h1, h2, h3, h4, h5, h6 {
+		@apply font-semibold text-gray-800;
+		line-height: 1.2;
+	}
+
+	p {
+		@apply text-gray-700;
+		line-height: 1.6;
+	}
+
+	/* Consistent spacing */
+	.container {
+		@apply px-4 md:px-6;
+	}
+
+	/* Focus states */
+	*:focus-visible {
+		@apply outline-none ring-2;
+		--tw-ring-color: rgb(0 114 206 / 0.2);
+	}
 }
 
 @custom-variant hover (&:hover);

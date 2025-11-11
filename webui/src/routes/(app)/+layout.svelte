@@ -40,6 +40,7 @@
 	} from '$lib/stores';
 
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
+	import TopNavbar from '$lib/components/layout/TopNavbar.svelte';
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
 	import ChangelogModal from '$lib/components/ChangelogModal.svelte';
 	import AccountPending from '$lib/components/layout/Overlay/AccountPending.svelte';
@@ -314,13 +315,21 @@
 
 		<Sidebar />
 
-		{#if loaded}
-			<slot />
-		{:else}
-			<div class="w-full flex-1 h-full flex items-center justify-center">
-				<Spinner />
-			</div>
-		{/if}
+		<div class="flex-1 flex flex-col overflow-hidden">
+			{#if !$page.url.pathname.startsWith('/admin')}
+				<TopNavbar />
+			{/if}
+			
+			{#if loaded}
+				<div class="flex-1 overflow-auto">
+					<slot />
+				</div>
+			{:else}
+				<div class="w-full flex-1 h-full flex items-center justify-center">
+					<Spinner />
+				</div>
+			{/if}
+		</div>
 	</div>
 </div>
 

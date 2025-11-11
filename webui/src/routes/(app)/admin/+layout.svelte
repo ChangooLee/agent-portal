@@ -30,12 +30,12 @@
 			? 'md:max-w-[calc(100%-260px)]'
 			: ''} max-w-full"
 	>
-		<nav class="   px-2.5 pt-1 backdrop-blur-xl drag-region bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-			<div class=" flex items-center gap-1">
-				<div class="{$showSidebar ? 'md:hidden' : ''} flex flex-none items-center self-end">
+		<nav class="sticky top-0 z-30 w-full py-2 flex flex-col items-center drag-region bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200">
+			<div class="flex items-center w-full px-1.5">
+				<div class="{$showSidebar ? 'md:hidden' : ''} mr-1 self-start flex flex-none items-center text-gray-600">
 					<button
 						id="sidebar-toggle-button"
-						class="cursor-pointer p-1.5 flex rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+						class="cursor-pointer px-3 py-2 flex rounded-lg hover:bg-gray-100 transition-all duration-200 ease-in-out text-gray-600"
 						on:click={() => {
 							showSidebar.set(!$showSidebar);
 						}}
@@ -47,58 +47,68 @@
 					</button>
 				</div>
 
-				<div class=" flex w-full">
-					<div
-						class="flex gap-1 scrollbar-none overflow-x-auto w-fit text-center text-sm font-medium rounded-full bg-transparent pt-1"
-					>
+				<div class="flex-1 overflow-hidden max-w-full py-0.5">
+					<div class="flex items-center gap-2 overflow-x-auto scrollbar-none">
 						<a
-							class="min-w-fit rounded-lg px-3 py-1.5 text-sm font-medium {['/admin/users'].includes($page.url.pathname)
-								? 'text-white'
-								: 'text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800'} transition-colors"
-							style={['/admin/users'].includes($page.url.pathname) ? 'background-color: #0066CC !important;' : ''}
-							href="/admin">{$i18n.t('Users')}</a
+							href="/admin/users"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {['/admin', '/admin/users'].includes($page.url.pathname)
+								? 'bg-[#0072CE] text-white shadow-sm'
+								: 'text-gray-600 hover:bg-gray-50'}"
+							title="사용자관리"
 						>
+							<span>사용자관리</span>
+						</a>
 
 						<a
-							class="min-w-fit rounded-lg px-3 py-1.5 text-sm font-medium {$page.url.pathname.includes('/admin/evaluations')
-								? 'text-white'
-								: 'text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800'} transition-colors"
-							style={$page.url.pathname.includes('/admin/evaluations') ? 'background-color: #0066CC !important;' : ''}
-							href="/admin/evaluations">{$i18n.t('Evaluations')}</a
+							href="/admin/monitoring"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {$page.url.pathname.includes('/admin/monitoring')
+								? 'bg-[#0072CE] text-white shadow-sm'
+								: 'text-gray-600 hover:bg-gray-50'}"
+							title="사용량"
 						>
+							<span>사용량</span>
+						</a>
 
-					<a
-						class="min-w-fit rounded-lg px-3 py-1.5 text-sm font-medium {$page.url.pathname.includes('/admin/functions')
-							? 'text-white'
-							: 'text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800'} transition-colors"
-						style={$page.url.pathname.includes('/admin/functions') ? 'background-color: #0066CC !important;' : ''}
-						href="/admin/functions">{$i18n.t('Functions')}</a
-					>
+						<a
+							href="/admin/mcp"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {$page.url.pathname.includes('/admin/mcp')
+								? 'bg-[#0072CE] text-white shadow-sm'
+								: 'text-gray-600 hover:bg-gray-50'}"
+							title="MCP"
+						>
+							<span>MCP</span>
+						</a>
 
-					<a
-						class="min-w-fit rounded-lg px-3 py-1.5 text-sm font-medium {$page.url.pathname.includes('/admin/monitoring')
-							? 'text-white'
-							: 'text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800'} transition-colors"
-						style={$page.url.pathname.includes('/admin/monitoring') ? 'background-color: #0066CC !important;' : ''}
-						href="/admin/monitoring">{$i18n.t('Monitoring')}</a
-					>
+						<a
+							href="/admin/gateway"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {$page.url.pathname.includes('/admin/gateway')
+								? 'bg-[#0072CE] text-white shadow-sm'
+								: 'text-gray-600 hover:bg-gray-50'}"
+							title="Gateway"
+						>
+							<span>Gateway</span>
+						</a>
 
-					<a
-						class="min-w-fit rounded-lg px-3 py-1.5 text-sm font-medium {$page.url.pathname.includes('/admin/settings')
-							? 'text-white'
-							: 'text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800'} transition-colors"
-						style={$page.url.pathname.includes('/admin/settings') ? 'background-color: #0066CC !important;' : ''}
-						href="/admin/settings">{$i18n.t('Settings')}</a
-					>
+						<a
+							href="/admin/guardrails"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {$page.url.pathname.includes('/admin/guardrails')
+								? 'bg-[#0072CE] text-white shadow-sm'
+								: 'text-gray-600 hover:bg-gray-50'}"
+							title="가드레일"
+						>
+							<span>가드레일</span>
+						</a>
 
-					<a
-						class="min-w-fit rounded-lg px-3 py-1.5 text-sm font-medium {$page.url.pathname.includes('/admin/gateway')
-							? 'text-white'
-							: 'text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-800'} transition-colors"
-						style={$page.url.pathname.includes('/admin/gateway') ? 'background-color: #0066CC !important;' : ''}
-						href="/admin/gateway">{$i18n.t('Gateway')}</a
-					>
-				</div>
+						<a
+							href="/admin/evaluations"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {$page.url.pathname.includes('/admin/evaluations')
+								? 'bg-[#0072CE] text-white shadow-sm'
+								: 'text-gray-600 hover:bg-gray-50'}"
+							title="리더보드"
+						>
+							<span>리더보드</span>
+						</a>
+					</div>
 				</div>
 			</div>
 		</nav>

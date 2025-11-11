@@ -249,12 +249,12 @@
 >
 	{#if confirmEdit}
 		<div
-			class=" w-full flex justify-between rounded-lg px-[11px] py-[6px] {id === $chatId ||
+			class=" w-full flex justify-between rounded-lg px-3 py-2 transition-all duration-200 ease-in-out {id === $chatId ||
 			confirmEdit
-				? 'bg-gray-200 dark:bg-gray-900'
+				? 'bg-blue-100'
 				: selected
-					? 'bg-gray-100 dark:bg-gray-950'
-					: 'group-hover:bg-gray-100 dark:group-hover:bg-gray-950'}  whitespace-nowrap text-ellipsis"
+					? 'bg-blue-50'
+					: 'group-hover:bg-gray-100'}  whitespace-nowrap text-ellipsis"
 		>
 			<input
 				use:focusEdit
@@ -266,12 +266,12 @@
 		</div>
 	{:else}
 		<a
-			class=" w-full flex justify-between rounded-lg px-[11px] py-[6px] {id === $chatId ||
+			class=" w-full flex justify-between rounded-lg px-3 py-2 transition-all duration-200 ease-in-out text-gray-700 {id === $chatId ||
 			confirmEdit
-				? 'bg-gray-200 dark:bg-gray-900'
+				? 'bg-blue-100'
 				: selected
-					? 'bg-gray-100 dark:bg-gray-950'
-					: ' group-hover:bg-gray-100 dark:group-hover:bg-gray-950'}  whitespace-nowrap text-ellipsis"
+					? 'bg-blue-50'
+					: ' group-hover:bg-gray-100'}  whitespace-nowrap text-ellipsis"
 			href="/c/{id}"
 			on:click={() => {
 				dispatch('select');

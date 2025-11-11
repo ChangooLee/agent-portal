@@ -88,7 +88,7 @@
 	onMount(() => {});
 </script>
 
-<div class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-6 py-24 text-center">
+<div class="w-full px-8 translate-y-6 py-24 text-center">
 	{#if $temporaryChatEnabled}
 		<Tooltip
 			content={$i18n.t('This chat won’t appear in history and your messages will not be saved.')}
@@ -102,10 +102,10 @@
 	{/if}
 
 	<div
-		class="w-full text-3xl text-gray-900 dark:text-gray-100 text-center flex items-center gap-4 font-primary"
+		class="w-full text-center flex items-center gap-4 font-primary"
 	>
 		<div class="w-full flex flex-col justify-center items-center">
-			<div class="flex flex-row justify-center gap-3 @sm:gap-3.5 w-fit px-5">
+			<div class="flex flex-row justify-center gap-4 @sm:gap-5 w-fit px-5 mb-4">
 				<div class="flex shrink-0 justify-center">
 					<div class="flex -space-x-4 mb-0.5" in:fade={{ duration: 100 }}>
 						{#each models as model, modelIdx}
@@ -126,7 +126,7 @@
 											($i18n.language === 'dg-DG'
 												? `/doge.png`
 												: `${WEBUI_BASE_URL}/static/favicon.png`)}
-										class=" size-9 @sm:size-10 rounded-full border-[1px] border-gray-100 dark:border-none"
+										class=" size-10 @sm:size-12 rounded-full border-2 border-gray-200 shadow-sm"
 										alt="logo"
 										draggable="false"
 									/>
@@ -136,11 +136,11 @@
 					</div>
 				</div>
 
-				<div class=" text-3xl @sm:text-4xl line-clamp-1" in:fade={{ duration: 100 }}>
+				<div class=" text-[2.5rem] @sm:text-[3rem] font-semibold text-gray-800 line-clamp-1 leading-tight" in:fade={{ duration: 100 }}>
 					{#if models[selectedModelIdx]?.name}
 						{models[selectedModelIdx]?.name}
 					{:else}
-						{$i18n.t('Hello, {{name}}', { name: $user?.name })}
+						반갑습니다, {$user?.name || '사용자'}님! 무엇을 도와드릴까요?
 					{/if}
 				</div>
 			</div>
@@ -156,7 +156,7 @@
 							placement="top"
 						>
 							<div
-								class="mt-0.5 px-2 text-sm font-normal text-gray-500 dark:text-gray-400 line-clamp-2 max-w-xl markdown"
+								class="mt-0.5 px-2 text-sm font-normal text-gray-600 line-clamp-2 max-w-xl markdown"
 							>
 								{@html marked.parse(
 									sanitizeResponseContent(models[selectedModelIdx]?.info?.meta?.description)
@@ -165,7 +165,7 @@
 						</Tooltip>
 
 						{#if models[selectedModelIdx]?.info?.meta?.user}
-							<div class="mt-0.5 text-sm font-normal text-gray-400 dark:text-gray-500">
+							<div class="mt-0.5 text-sm font-normal text-gray-500">
 								By
 								{#if models[selectedModelIdx]?.info?.meta?.user.community}
 									<a
@@ -184,7 +184,7 @@
 				</div>
 			</div>
 
-			<div class="text-base font-normal @md:max-w-3xl w-full py-3 {atSelectedModel ? 'mt-2' : ''}">
+			<div class="text-base font-normal w-full py-3 {atSelectedModel ? 'mt-2' : ''}">
 				<MessageInput
 					{history}
 					{selectedModels}
@@ -211,7 +211,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="mx-auto max-w-2xl font-primary" in:fade={{ duration: 200, delay: 200 }}>
+	<div class="mx-auto w-full font-primary" in:fade={{ duration: 200, delay: 200 }}>
 		<div class="mx-5">
 			<Suggestions
 				suggestionPrompts={atSelectedModel?.info?.meta?.suggestion_prompts ??

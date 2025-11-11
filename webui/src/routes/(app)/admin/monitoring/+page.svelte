@@ -140,19 +140,19 @@
 		</div>
 	{:else}
 		<!-- Tab Navigation -->
-		<div class="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
+		<div class="flex gap-2 mb-4">
 			<button
-				class="px-4 py-2 font-medium transition-colors {activeTab === 'summary'
-					? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-					: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}"
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'summary'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50'}"
 				on:click={() => (activeTab = 'summary')}
 			>
 				{$i18n.t('Summary')}
 			</button>
 			<button
-				class="px-4 py-2 font-medium transition-colors {activeTab === 'langfuse'
-					? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-					: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}"
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'langfuse'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50'}"
 				on:click={() => {
 					activeTab = 'langfuse';
 					loading = true;
@@ -161,9 +161,9 @@
 				Langfuse
 			</button>
 			<button
-				class="px-4 py-2 font-medium transition-colors {activeTab === 'helicone'
-					? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-					: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}"
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'helicone'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50'}"
 				on:click={() => {
 					activeTab = 'helicone';
 					loading = true;

@@ -33,11 +33,11 @@
 </svelte:head>
 
 <div class="flex flex-col w-full h-full">
-	<div class="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-800">
+	<div class="flex gap-2 mb-4">
 		<button
-			class="px-4 py-2 text-sm font-medium transition {activeTab === 'kong-admin'
-				? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-				: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+			class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'kong-admin'
+				? 'bg-[#0072CE] text-white shadow-sm'
+				: 'text-gray-600 hover:bg-gray-50'}"
 			on:click={() => {
 				activeTab = 'kong-admin';
 			}}
@@ -45,9 +45,9 @@
 			Kong Admin
 		</button>
 		<button
-			class="px-4 py-2 text-sm font-medium transition {activeTab === 'security'
-				? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-				: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
+			class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'security'
+				? 'bg-[#0072CE] text-white shadow-sm'
+				: 'text-gray-600 hover:bg-gray-50'}"
 			on:click={() => {
 				activeTab = 'security';
 			}}

@@ -480,25 +480,25 @@
 								{@const displayDesc = (item.model?.info?.meta?.description || '').replace(/MoAI/gi, 'ChanAI')}
 								{@const isSelected = value === item.value}
 								{@const itemIndex = allItems.findIndex((i) => i.value === item.value)}
-								<button
-									aria-label="model-item"
+					<button
+						aria-label="model-item"
 									class="relative cursor-default select-none rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 flex items-center gap-2 w-full {itemIndex === selectedModelIdx || isSelected
 										? 'bg-accent text-accent-foreground'
-										: ''}"
+							: ''}"
 									data-arrow-selected={itemIndex === selectedModelIdx}
-									data-value={item.value}
+						data-value={item.value}
 									data-selected={isSelected}
-									on:click={() => {
-										value = item.value;
+						on:click={() => {
+							value = item.value;
 										selectedModelIdx = itemIndex;
-										show = false;
-									}}
-								>
+							show = false;
+						}}
+					>
 									<span class="relative flex shrink-0 overflow-hidden rounded-full h-6 w-6">
 										<img
 											class="aspect-square h-full w-full object-cover object-center"
 											alt={displayName}
-											src={item.model?.info?.meta?.profile_image_url ?? '/static/favicon.png'}
+													src={item.model?.info?.meta?.profile_image_url ?? '/static/favicon.png'}
 										/>
 									</span>
 									<div class="flex flex-col">
@@ -509,10 +509,10 @@
 											<span class="text-xs text-muted-foreground">OpenAI</span>
 										{:else if item.model?.owned_by === 'ollama'}
 											<span class="text-xs text-muted-foreground">Ollama</span>
-										{/if}
+													{/if}
 									</div>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
 										width="24"
 										height="24"
 										viewBox="0 0 24 24"
@@ -524,16 +524,16 @@
 										class="lucide lucide-check ml-auto h-4 w-4 {isSelected ? 'opacity-100' : 'opacity-0'}"
 									>
 										<path d="M20 6 9 17l-5-5"></path>
-									</svg>
+											</svg>
 								</button>
 							{/each}
-						</div>
-					</div>
+										</div>
+										</div>
 					{#if modelItems.length > 0}
 						<div class="-mx-1 h-px bg-border" role="separator"></div>
 					{/if}
-				{/if}
-				
+								{/if}
+
 				{#if modelItems.length > 0}
 					<div class="overflow-hidden p-1 text-foreground">
 						<div class="px-2 py-1.5 text-xs font-medium text-muted-foreground" role="group-heading">사용 가능한 모델</div>
@@ -568,25 +568,25 @@
 										<span>{displayName}</span>
 										<span class="text-xs text-muted-foreground">{providerName}</span>
 									</div>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
 										width="24"
 										height="24"
 										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
+												fill="none"
+												stroke="currentColor"
 										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
+													stroke-linecap="round"
+													stroke-linejoin="round"
 										class="lucide lucide-check ml-auto h-4 w-4 {isSelected ? 'opacity-100' : 'opacity-0'}"
 									>
 										<path d="M20 6 9 17l-5-5"></path>
 									</svg>
 								</button>
-							{/each}
+										{/each}
 						</div>
-					</div>
-				{/if}
+							</div>
+						{/if}
 				
 				{#if filteredItems.length === 0}
 					<div class="">

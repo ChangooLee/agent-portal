@@ -473,7 +473,7 @@
 		? 'md:relative w-[260px] max-w-[260px]'
 		: '-translate-x-[260px] w-[0px]'} {$isApp
 		? `ml-[4.5rem] md:ml-0 `
-		: 'transition-width duration-200 ease-in-out'}  shrink-0 bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-200 text-sm fixed z-50 top-0 left-0 overflow-x-hidden border-r border-gray-200 dark:border-gray-800
+		: 'transition-width duration-200 ease-in-out'}  shrink-0 bg-gray-50 text-gray-800 text-sm fixed z-50 top-0 left-0 overflow-x-hidden border-r border-gray-200
         "
 	data-state={$showSidebar}
 >
@@ -482,9 +482,9 @@
 			? ''
 			: 'invisible'}"
 	>
-		<div class="px-1.5 flex justify-between space-x-1 text-gray-600 dark:text-gray-400">
+		<div class="px-1.5 flex justify-between space-x-1 text-gray-600">
 			<button
-				class=" cursor-pointer p-[7px] flex rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+				class=" cursor-pointer p-[7px] flex rounded-lg hover:bg-gray-200 transition-all duration-200 ease-in-out"
 				on:click={() => {
 					showSidebar.set(!$showSidebar);
 				}}
@@ -509,7 +509,7 @@
 
 			<a
 				id="sidebar-new-chat-button"
-				class="flex justify-between items-center flex-1 rounded-lg px-2 py-1 h-full text-right hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors no-drag-region"
+				class="flex justify-between items-center flex-1 rounded-lg px-2 py-1 h-full text-right hover:bg-blue-50 transition-all duration-200 ease-in-out no-drag-region"
 				style="--hover-bg: #e6f2ff;"
 				href="/"
 				draggable="false"
@@ -534,7 +534,7 @@
 							alt="logo"
 						/>
 					</div>
-					<div class=" self-center font-medium text-sm text-gray-800 dark:text-white font-primary">
+					<div class=" self-center font-medium text-sm text-gray-800 font-primary">
 						{$i18n.t('New Chat')}
 					</div>
 				</div>
@@ -543,6 +543,51 @@
 					<PencilSquare className=" size-5" strokeWidth="2" />
 				</div>
 			</a>
+		</div>
+
+		<!-- 모델/에이전트 선택 버튼 -->
+		<div class="px-1.5 flex justify-center text-gray-800 mt-2">
+			<button
+				class="grow flex items-center space-x-3 rounded-lg px-2 py-[7px] hover:bg-gray-200 transition-all duration-200 ease-in-out"
+				on:click={() => {
+					// 메인 영역의 모델 선택 드롭다운 열기
+					const modelSelectorButton = document.querySelector('#model-selector-0-button');
+					if (modelSelectorButton) {
+						modelSelectorButton.click();
+					} else {
+						// 대체 방법: data 속성으로 찾기
+						const altButton = document.querySelector('[data-melt-dropdown-menu-trigger]');
+						if (altButton) {
+							altButton.click();
+						}
+					}
+					if ($mobile) {
+						showSidebar.set(false);
+					}
+				}}
+				draggable="false"
+			>
+				<div class="self-center">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="2"
+						stroke="currentColor"
+						class="size-[1.1rem]"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
+						/>
+					</svg>
+				</div>
+
+				<div class="flex self-center translate-y-[0.5px]">
+					<div class="self-center font-medium text-sm font-primary">모델/에이전트</div>
+				</div>
+			</button>
 		</div>
 
 		<!-- {#if $user?.role === 'admin'}
@@ -571,45 +616,6 @@
 			</div>
 		{/if} -->
 
-		{#if $user?.role === 'admin' || $user?.permissions?.workspace?.models || $user?.permissions?.workspace?.knowledge || $user?.permissions?.workspace?.prompts || $user?.permissions?.workspace?.tools}
-			<div class="px-1.5 flex justify-center text-gray-800 dark:text-gray-200">
-				<a
-					class="grow flex items-center space-x-3 rounded-lg px-2 py-[7px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-					href="/workspace"
-					on:click={() => {
-						selectedChatId = null;
-						chatId.set('');
-
-						if ($mobile) {
-							showSidebar.set(false);
-						}
-					}}
-					draggable="false"
-				>
-					<div class="self-center">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="2"
-							stroke="currentColor"
-							class="size-[1.1rem]"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"
-							/>
-						</svg>
-					</div>
-
-					<div class="flex self-center translate-y-[0.5px]">
-						<div class=" self-center font-medium text-sm font-primary">{$i18n.t('Workspace')}</div>
-					</div>
-				</a>
-			</div>
-		{/if}
-
 		<div class="relative {$temporaryChatEnabled ? 'opacity-20' : ''}">
 			{#if $temporaryChatEnabled}
 				<div class="absolute z-40 w-full h-full flex justify-center"></div>
@@ -618,7 +624,7 @@
 			<SearchInput
 				bind:value={search}
 				on:input={searchDebounceHandler}
-				placeholder={$i18n.t('Search')}
+				placeholder="채팅 검색"
 				showClearButton={true}
 			/>
 		</div>
@@ -628,6 +634,21 @@
 				? 'opacity-20'
 				: ''}"
 		>
+			{#if !search}
+				<Folder
+					className="px-2 mt-0.5"
+					name="에이전트"
+					collapsible={true}
+					dragAndDrop={false}
+					open={false}
+				>
+					<!-- 에이전트 목록은 추후 추가 예정 -->
+					<div class="px-2 py-2 text-sm text-gray-500 dark:text-gray-400">
+						에이전트 목록이 여기에 표시됩니다.
+					</div>
+				</Folder>
+			{/if}
+
 			{#if $config?.features?.enable_channels && ($user?.role === 'admin' || $channels.length > 0) && !search}
 				<Folder
 					className="px-2 mt-0.5"

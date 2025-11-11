@@ -88,8 +88,8 @@
 </script>
 
 <div class="px-1 mb-1 flex justify-center space-x-2 relative z-10" id="search-container">
-	<div class="flex w-full rounded-xl" id="chat-search">
-		<div class="self-center pl-3 py-2 rounded-l-xl bg-transparent">
+	<div class="flex w-full rounded-lg border border-gray-200 bg-white shadow-sm" id="chat-search">
+		<div class="self-center pl-3 py-2 rounded-l-lg bg-transparent">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 20 20"
@@ -105,7 +105,7 @@
 		</div>
 
 		<input
-			class="w-full rounded-r-xl py-1.5 pl-2.5 text-sm bg-transparent dark:text-gray-300 outline-hidden"
+			class="w-full rounded-r-lg py-1.5 pl-2.5 text-sm bg-transparent text-gray-800 outline-hidden focus:outline-none focus:ring-2 focus:ring-[#0072CE]/20 transition-all duration-200"
 			placeholder={placeholder ? placeholder : $i18n.t('Search')}
 			bind:value
 			on:input={() => {
@@ -149,9 +149,9 @@
 		/>
 
 		{#if showClearButton && value}
-			<div class="self-center pr-2 pl-1.5 translate-y-[0.5px] rounded-l-xl bg-transparent">
+			<div class="self-center pr-2 pl-1.5 translate-y-[0.5px] rounded-l-lg bg-transparent">
 				<button
-					class="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+					class="p-0.5 rounded-full hover:bg-gray-100 transition-all duration-200 ease-in-out"
 					on:click={clearSearchInput}
 				>
 					<XMark className="size-3" strokeWidth="2" />
@@ -163,7 +163,7 @@
 	{#if focused && (filteredOptions.length > 0 || filteredTags.length > 0)}
 		<!-- svelte-ignore a11y-no-static-element-interactions -->
 		<div
-			class="absolute top-0 mt-8 left-0 right-1 border border-gray-100 dark:border-gray-900 bg-gray-50 dark:bg-gray-950 rounded-lg z-10 shadow-lg"
+			class="absolute top-0 mt-8 left-0 right-1 border border-gray-200 bg-white rounded-lg z-10 shadow-lg"
 			in:fade={{ duration: 50 }}
 			on:mouseenter={() => {
 				selectedIdx = null;
@@ -174,14 +174,14 @@
 		>
 			<div class="px-2 py-2 text-xs group">
 				{#if filteredTags.length > 0}
-					<div class="px-1 font-medium dark:text-gray-300 text-gray-700 mb-1">Tags</div>
+					<div class="px-1 font-medium text-gray-700 mb-1">Tags</div>
 
 					<div class="max-h-60 overflow-auto">
 						{#each filteredTags as tag, tagIdx}
 							<button
-								class=" px-1.5 py-0.5 flex gap-1 hover:bg-gray-100 dark:hover:bg-gray-900 w-full rounded {selectedIdx ===
+								class=" px-1.5 py-0.5 flex gap-1 hover:bg-gray-100 w-full rounded transition-all duration-200 ease-in-out {selectedIdx ===
 								tagIdx
-									? 'bg-gray-100 dark:bg-gray-900'
+									? 'bg-gray-100'
 									: ''}"
 								id="search-tag-{tagIdx}"
 								on:click|stopPropagation={async () => {
@@ -195,7 +195,7 @@
 									dispatch('input');
 								}}
 							>
-								<div class="dark:text-gray-300 text-gray-700 font-medium line-clamp-1 shrink-0">
+								<div class="text-gray-700 font-medium line-clamp-1 shrink-0">
 									{tag.name}
 								</div>
 
@@ -206,16 +206,16 @@
 						{/each}
 					</div>
 				{:else if filteredOptions.length > 0}
-					<div class="px-1 font-medium dark:text-gray-300 text-gray-700 mb-1">
+					<div class="px-1 font-medium text-gray-700 mb-1">
 						{$i18n.t('Search options')}
 					</div>
 
 					<div class=" max-h-60 overflow-auto">
 						{#each filteredOptions as option, optionIdx}
 							<button
-								class=" px-1.5 py-0.5 flex gap-1 hover:bg-gray-100 dark:hover:bg-gray-900 w-full rounded {selectedIdx ===
+								class=" px-1.5 py-0.5 flex gap-1 hover:bg-gray-100 w-full rounded transition-all duration-200 ease-in-out {selectedIdx ===
 								optionIdx
-									? 'bg-gray-100 dark:bg-gray-900'
+									? 'bg-gray-100'
 									: ''}"
 								id="search-option-{optionIdx}"
 								on:click|stopPropagation={async () => {
@@ -229,7 +229,7 @@
 									dispatch('input');
 								}}
 							>
-								<div class="dark:text-gray-300 text-gray-700 font-medium">{option.name}</div>
+								<div class="text-gray-700 font-medium">{option.name}</div>
 
 								<div class=" text-gray-500 line-clamp-1">
 									{option.description}

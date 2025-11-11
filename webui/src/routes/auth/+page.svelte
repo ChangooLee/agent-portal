@@ -266,9 +266,9 @@
 		>
 			<!-- Logo at top -->
 			<div class="mb-8">
-				<img
-					id="logo"
-					crossorigin="anonymous"
+					<img
+						id="logo"
+						crossorigin="anonymous"
 					src="/samsung-financial-networks-logo.webp"
 					class="h-16 w-auto"
 					alt="Samsung Financial Networks"
@@ -281,15 +281,15 @@
 					class="transition-opacity duration-1000 ease-in-out"
 					style="opacity: {heroOpacity};"
 				>
-					<h1 class="text-3xl md:text-4xl font-extrabold leading-snug mb-4">
+					<h1 class="text-3xl md:text-4xl font-extrabold leading-snug mb-4 text-white">
 						{heroSets[heroSetIndex].title}
 					</h1>
-					<p class="text-lg md:text-xl opacity-90 max-w-2xl mx-auto">
+					<p class="text-lg md:text-xl opacity-90 max-w-2xl mx-auto text-white">
 						{heroSets[heroSetIndex].text[0]}<br />
 						{heroSets[heroSetIndex].text[1]}
 					</p>
-				</div>
 			</div>
+		</div>
 
 			<div class="w-full max-w-[400px]">
 				{#if ($config?.features.auth_trusted_header ?? false) || $config?.features.auth === false}
@@ -307,7 +307,7 @@
 						</div>
 					</div>
 				{:else}
-					<div class="w-full bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 p-8 transition-all duration-300 text-white {transitioning ? 'opacity-50' : 'opacity-100'}">
+					<div class="w-full bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 transition-all duration-300 text-white {transitioning ? 'opacity-50' : 'opacity-100'}">
 						{#if $config?.features.enable_signup && !($config?.onboarding ?? false) && !$config?.features.enable_ldap}
 							<!-- Tab Switcher - Stripe style -->
 							<div class="flex mb-8 border-b border-gray-600">
@@ -339,7 +339,7 @@
 								submitHandler();
 							}}
 						>
-							{#if $config?.onboarding ?? false}
+									{#if $config?.onboarding ?? false}
 								<div class="mb-6 text-center">
 									<div class="text-sm text-gray-300">
 										ⓘ {$WEBUI_NAME}
@@ -347,8 +347,8 @@
 											'does not make any external connections, and your data stays securely on your locally hosted server.'
 										)}
 									</div>
-								</div>
-							{/if}
+									</div>
+								{/if}
 
 							{#if $config?.features.enable_login_form || $config?.features.enable_ldap}
 								<div class="flex flex-col space-y-5">
@@ -360,7 +360,7 @@
 											<input
 												bind:value={name}
 												type="text"
-												class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
+												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
 												autocomplete="name"
 												placeholder={$i18n.t('Enter Your Full Name')}
 												required
@@ -376,7 +376,7 @@
 											<input
 												bind:value={ldapUsername}
 												type="text"
-												class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
+												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
 												autocomplete="username"
 												name="username"
 												placeholder={$i18n.t('Enter Your Username')}
@@ -391,7 +391,7 @@
 											<input
 												bind:value={email}
 												type="email"
-												class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
+												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
 												autocomplete="email"
 												name="email"
 												placeholder={$i18n.t('Enter Your Email')}
@@ -407,7 +407,7 @@
 										<input
 											bind:value={password}
 											type="password"
-											class="w-full px-4 py-3.5 text-base border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200"
+											class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
 											placeholder={$i18n.t('Enter Your Password')}
 											autocomplete="current-password"
 											name="current-password"

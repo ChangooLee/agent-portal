@@ -451,6 +451,13 @@
 			}
 		});
 
+		// Close ChatControls when Placeholder is shown
+		$: if (history && !($settings?.landingPageMode === 'chat' || createMessagesList(history, history.currentId).length > 0)) {
+			if (controlPane && $showControls) {
+				showControls.set(false);
+			}
+		}
+
 		const chatInput = document.getElementById('chat-input');
 		chatInput?.focus();
 
@@ -1951,44 +1958,32 @@
 		: ' '} w-full max-w-full flex flex-col"
 	id="chat-container"
 >
-	{#if !loading}
-		{#if $settings?.backgroundImageUrl ?? null}
-			<div
-				class="absolute {$showSidebar
-					? 'md:max-w-[calc(100%-260px)] md:translate-x-[260px]'
-					: ''} top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat"
-				style="background-image: url({$settings.backgroundImageUrl})  "
-			/>
+	{#if $settings?.backgroundImageUrl ?? null}
+		<div
+			class="absolute {$showSidebar
+				? 'md:max-w-[calc(100%-260px)] md:translate-x-[260px]'
+				: ''} top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat"
+			style="background-image: url({$settings.backgroundImageUrl})  "
+		/>
 
-			<div
-				class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-white to-white/85 z-0"
-			/>
-		{/if}
+		<div
+			class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-white to-white/85 z-0"
+		/>
+	{/if}
 
-		<PaneGroup direction="horizontal" class="w-full h-full">
-			<Pane defaultSize={50} class="h-full flex relative max-w-full flex-col">
-				<Navbar
-					bind:this={navbarElement}
-					chat={{
-						id: $chatId,
-						chat: {
-							title: $chatTitle,
-							models: selectedModels,
-							system: $settings.system ?? undefined,
-							params: params,
-							history: history,
-							timestamp: Date.now()
-						}
-					}}
-					{history}
-					title={$chatTitle}
-					bind:selectedModels
-					shareEnabled={!!history.currentId}
-					{initNewChat}
-				/>
+	{#if loading}
+		<div class=" flex items-center justify-center h-full w-full">
+			<div class="m-auto">
+				<Spinner />
+			</div>
+		</div>
+	{:else if $settings?.landingPageMode === 'chat' || createMessagesList(history, history.currentId).length > 0}
+			<PaneGroup direction="horizontal" class="w-full h-full">
+				<Pane defaultSize={50} class="h-full flex relative max-w-full flex-col">
+					<!-- Navbar is now in the common layout (TopNavbar) -->
+					<!-- Chat-specific controls can be added here if needed -->
 
-				<div class="flex flex-col flex-auto z-10 w-full @container">
-					{#if $settings?.landingPageMode === 'chat' || createMessagesList(history, history.currentId).length > 0}
+					<div class="flex flex-col flex-auto z-10 w-full @container">
 						<div
 							class=" pb-2.5 flex flex-col justify-between w-full flex-auto overflow-auto h-0 max-w-full z-10 scrollbar-hidden"
 							id="messages-container"
@@ -2073,47 +2068,8 @@
 								<!-- {$i18n.t('LLMs can make mistakes. Verify important information.')} -->
 							</div>
 						</div>
-					{:else}
-						<div class="overflow-auto w-full h-full flex items-center">
-							<Placeholder
-								{history}
-								{selectedModels}
-								bind:files
-								bind:prompt
-								bind:autoScroll
-								bind:selectedToolIds
-								bind:imageGenerationEnabled
-								bind:codeInterpreterEnabled
-								bind:webSearchEnabled
-								bind:atSelectedModel
-								transparentBackground={$settings?.backgroundImageUrl ?? false}
-								toolServers={$toolServers}
-								{stopResponse}
-								{createMessagePair}
-								on:upload={async (e) => {
-									const { type, data } = e.detail;
-
-									if (type === 'web') {
-										await uploadWeb(data);
-									} else if (type === 'youtube') {
-										await uploadYoutubeTranscription(data);
-									}
-								}}
-								on:submit={async (e) => {
-									if (e.detail || files.length > 0) {
-										await tick();
-										submitPrompt(
-											($settings?.richTextInput ?? true)
-												? e.detail.replaceAll('\n\n', '\n')
-												: e.detail
-										);
-									}
-								}}
-							/>
-						</div>
-					{/if}
-				</div>
-			</Pane>
+					</div>
+				</Pane>
 
 			<ChatControls
 				bind:this={controlPaneComponent}
@@ -2137,11 +2093,41 @@
 				{eventTarget}
 			/>
 		</PaneGroup>
-	{:else if loading}
-		<div class=" flex items-center justify-center h-full w-full">
-			<div class="m-auto">
-				<Spinner />
-			</div>
-		</div>
-	{/if}
+		{:else}
+			<Placeholder
+								{history}
+								{selectedModels}
+								bind:files
+								bind:prompt
+								bind:autoScroll
+								bind:selectedToolIds
+								bind:imageGenerationEnabled
+								bind:codeInterpreterEnabled
+								bind:webSearchEnabled
+								bind:atSelectedModel
+								transparentBackground={$settings?.backgroundImageUrl ?? false}
+								toolServers={$toolServers}
+								{stopResponse}
+								{createMessagePair}
+								on:upload={async (e) => {
+									const { type, data } = e.detail;
+
+									if (type === 'web') {
+										await uploadWeb(data);
+									} else if (type === 'youtube') {
+										await uploadYoutubeTranscription(data);
+									}
+								}}
+							on:submit={async (e) => {
+								if (e.detail || files.length > 0) {
+									await tick();
+									submitPrompt(
+										($settings?.richTextInput ?? true)
+											? e.detail.replaceAll('\n\n', '\n')
+											: e.detail
+									);
+								}
+							}}
+						/>
+		{/if}
 </div>
