@@ -451,28 +451,24 @@
 			</div>
 		</div>
 
-		<div class="{transparentBackground ? 'bg-transparent' : 'bg-white'} ">
-			<div
-				class="w-full px-2.5 mx-auto inset-x-0"
-			>
-				<div class="">
-					<input
-						bind:this={filesInputElement}
-						bind:files={inputFiles}
-						type="file"
-						hidden
-						multiple
-						on:change={async () => {
-							if (inputFiles && inputFiles.length > 0) {
-								const _inputFiles = Array.from(inputFiles);
-								inputFilesHandler(_inputFiles);
-							} else {
-								toast.error($i18n.t(`File not found.`));
-							}
+	<div class="{transparentBackground ? 'bg-transparent' : 'bg-white'} ">
+		<input
+			bind:this={filesInputElement}
+			bind:files={inputFiles}
+			type="file"
+			hidden
+			multiple
+			on:change={async () => {
+				if (inputFiles && inputFiles.length > 0) {
+					const _inputFiles = Array.from(inputFiles);
+					inputFilesHandler(_inputFiles);
+				} else {
+					toast.error($i18n.t(`File not found.`));
+				}
 
-							filesInputElement.value = '';
-						}}
-					/>
+				filesInputElement.value = '';
+			}}
+		/>
 
 					{#if recording}
 						<VoiceRecording
@@ -1352,8 +1348,5 @@
 							</div>
 						</form>
 					{/if}
-				</div>
-			</div>
-		</div>
 	</div>
 {/if}
