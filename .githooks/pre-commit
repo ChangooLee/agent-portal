@@ -1,0 +1,50 @@
+#!/bin/bash
+# Pre-commit hook: 문서 일관성 체크 및 린트
+
+echo "🔍 Pre-commit checks..."
+
+# 1. UI 파일 변경 시 Skills 시스템 업데이트 확인
+UI_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^webui/src/(routes|lib/components)/.*\.(svelte|ts)$')
+
+if [ -n "$UI_FILES" ]; then
+    echo "  ⚠️  UI files changed. Consider running: ./scripts/update-ui-skills.sh"
+    echo "     Changed files:"
+    echo "$UI_FILES" | sed 's/^/     - /'
+fi
+
+# 2. 핵심 문서 동기화 체크
+CORE_DOCS=("CLAUDE.md" "AGENTS.md" "README.md" "DEVELOP.md")
+DOCS_CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(CLAUDE|AGENTS|README|DEVELOP)\.md$')
+
+if [ -n "$DOCS_CHANGED" ]; then
+    echo "  📝 Core documents changed:"
+    echo "$DOCS_CHANGED" | sed 's/^/     - /'
+    echo "     Ensure all core documents are synchronized."
+fi
+
+# 3. Python 파일 린트 (backend 변경 시)
+PYTHON_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
+
+if [ -n "$PYTHON_FILES" ]; then
+    echo "  🐍 Linting Python files..."
+    # flake8가 설치되어 있으면 실행
+    if command -v flake8 &> /dev/null; then
+        echo "$PYTHON_FILES" | xargs flake8 --max-line-length=100 || true
+    fi
+fi
+
+# 4. Svelte 파일 체크 (webui 변경 시)
+SVELTE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.svelte$')
+
+if [ -n "$SVELTE_FILES" ]; then
+    echo "  🎨 Checking Svelte files..."
+    # svelte-check가 설치되어 있으면 실행
+    if command -v svelte-check &> /dev/null; then
+        cd webui && svelte-check --threshold warning --fail-on-warnings || true
+        cd ..
+    fi
+fi
+
+echo "✅ Pre-commit checks completed"
+exit 0
+

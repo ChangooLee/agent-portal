@@ -1,0 +1,459 @@
+---
+description: Backend API 개발 규칙
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# Backend API Development Rules
+
+Agent Portal의 Backend API 개발 시 반드시 따라야 하는 규칙입니다.
+
+## 코딩 표준
+
+### Python 스타일
+
+- **PEP 8** 준수
+- **Type hints** 필수
+- **Docstring** 사용 (Google 스타일)
+- **비동기 메서드** 사용 (`async def`)
+
+### 서비스 레이어 패턴 (ALWAYS)
+
+**Singleton 패턴** (모듈 레벨 인스턴스):
+```python
+# backend/app/services/example_service.py
+from typing import Optional, Dict, Any
+import httpx
+
+class ExampleService:
+    """External API 호출을 담당하는 서비스 클래스.
+    
+    Attributes:
+        base_url: 외부 API의 기본 URL
+    """
+    
+    def __init__(self):
+        self.base_url = "http://example-service:8080"
+    
+    async def get_data(self, id: str) -> Dict[str, Any]:
+        """특정 ID의 데이터를 조회.
+        
+        Args:
+            id: 조회할 데이터의 ID
+            
+        Returns:
+            데이터 딕셔너리
+            
+        Raises:
+            HTTPException: API 호출 실패 시
+        """
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(f"{self.base_url}/data/{id}")
+            response.raise_for_status()
+            return response.json()
+
+# Singleton 인스턴스
+example_service = ExampleService()
+```
+
+### 에러 핸들링 (ALWAYS)
+
+**외부 호출 시 타임아웃 설정** (기본 30초):
+```python
+from fastapi import HTTPException
+import httpx
+
+async def call_external_api(endpoint: str) -> Dict[str, Any]:
+    """외부 API 호출.
+    
+    Args:
+        endpoint: API 엔드포인트 경로
+        
+    Returns:
+        API 응답 데이터
+        
+    Raises:
+        HTTPException: API 호출 실패 시
+    """
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(f"https://api.example.com/{endpoint}")
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail=f"External API timeout: {endpoint}"
+        )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"External API error: {e.response.text}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error: {str(e)}"
+        )
+```
+
+### 선택적 Import 패턴 (권장)
+
+**의존성 미설치 시 Graceful Degradation**:
+```python
+# backend/app/services/langfuse_service.py
+try:
+    from langfuse import Langfuse
+    LANGFUSE_AVAILABLE = True
+except ImportError:
+    LANGFUSE_AVAILABLE = False
+    Langfuse = None
+
+class LangfuseService:
+    def __init__(self):
+        if LANGFUSE_AVAILABLE:
+            self.client = Langfuse()
+        else:
+            self.client = None
+    
+    def create_trace(self, name: str):
+        """트레이스 생성 (Langfuse 사용 가능 시).
+        
+        Args:
+            name: 트레이스 이름
+            
+        Returns:
+            트레이스 객체 또는 None
+        """
+        if self.client is not None:
+            return self.client.trace(name=name)
+        return None  # Graceful degradation
+
+langfuse_service = LangfuseService()
+```
+
+## FastAPI 라우터 패턴
+
+### 라우터 생성
+
+```python
+# backend/app/routes/example.py
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
+
+# 라우터 인스턴스 생성
+router = APIRouter(
+    prefix="/example",
+    tags=["example"]
+)
+
+# Request/Response 모델 정의
+class ExampleRequest(BaseModel):
+    """요청 모델.
+    
+    Attributes:
+        field: 필드 설명
+    """
+    field: str
+
+class ExampleResponse(BaseModel):
+    """응답 모델.
+    
+    Attributes:
+        result: 결과 설명
+    """
+    result: str
+
+# 엔드포인트 정의
+@router.post("/", response_model=ExampleResponse)
+async def create_example(request: ExampleRequest) -> ExampleResponse:
+    """Example 생성.
+    
+    Args:
+        request: Example 요청 데이터
+        
+    Returns:
+        생성된 Example 응답
+        
+    Raises:
+        HTTPException: 생성 실패 시
+    """
+    # 비즈니스 로직
+    result = await process_example(request.field)
+    return ExampleResponse(result=result)
+```
+
+### 라우터 등록
+
+```python
+# backend/app/main.py
+from fastapi import FastAPI
+from app.routes import example
+
+app = FastAPI(
+    title="Agent Portal API",
+    description="Backend for Frontend API",
+    version="1.0.0"
+)
+
+# 라우터 등록
+app.include_router(example.router)
+```
+
+## Pydantic 모델 패턴
+
+### Request 모델
+
+```python
+from pydantic import BaseModel, Field, validator
+from typing import Optional
+
+class CreateUserRequest(BaseModel):
+    """사용자 생성 요청.
+    
+    Attributes:
+        username: 사용자 이름 (3-50자)
+        email: 이메일 주소
+        role: 사용자 역할 (선택, 기본값: user)
+    """
+    username: str = Field(..., min_length=3, max_length=50, description="사용자 이름")
+    email: str = Field(..., description="이메일 주소")
+    role: Optional[str] = Field("user", description="사용자 역할")
+    
+    @validator('email')
+    def email_must_be_valid(cls, v):
+        """이메일 주소 검증."""
+        if '@' not in v:
+            raise ValueError('invalid email address')
+        return v.lower()
+```
+
+### Response 모델
+
+```python
+from pydantic import BaseModel
+from typing import List
+from datetime import datetime
+
+class UserResponse(BaseModel):
+    """사용자 응답.
+    
+    Attributes:
+        id: 사용자 ID
+        username: 사용자 이름
+        email: 이메일 주소
+        created_at: 생성 일시
+    """
+    id: str
+    username: str
+    email: str
+    created_at: datetime
+    
+    class Config:
+        """Pydantic 설정."""
+        orm_mode = True  # ORM 모델과 호환
+```
+
+## Observability 통합
+
+### Langfuse 트레이싱
+
+```python
+from app.services.langfuse_service import langfuse_service
+
+@router.post("/chat")
+async def chat(request: ChatRequest) -> ChatResponse:
+    """채팅 API.
+    
+    Args:
+        request: 채팅 요청
+        
+    Returns:
+        채팅 응답
+    """
+    # 트레이스 생성
+    trace = langfuse_service.create_trace(name="chat_api")
+    
+    try:
+        # 스팬 생성
+        span = trace.span(name="llm_call") if trace else None
+        
+        # LLM 호출
+        result = await litellm_service.chat_completion(
+            model=request.model,
+            messages=request.messages
+        )
+        
+        # 스팬 종료
+        if span:
+            span.end(output={"result": result})
+        
+        # 트레이스 종료
+        if trace:
+            trace.end()
+        
+        return ChatResponse(result=result)
+    except Exception as e:
+        # 에러 기록
+        if trace:
+            trace.end(status="error", output={"error": str(e)})
+        raise
+```
+
+## 미들웨어 패턴
+
+### RBAC 미들웨어 (TODO)
+
+```python
+# backend/app/middleware/rbac.py
+from fastapi import Request, HTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class RBACMiddleware(BaseHTTPMiddleware):
+    """RBAC (Role-Based Access Control) 미들웨어."""
+    
+    async def dispatch(self, request: Request, call_next):
+        """요청 처리.
+        
+        Args:
+            request: HTTP 요청
+            call_next: 다음 미들웨어/핸들러
+            
+        Returns:
+            HTTP 응답
+            
+        Raises:
+            HTTPException: 권한 없음 시
+        """
+        # 사용자 인증 확인
+        user = await get_current_user(request)
+        
+        # 관리자 전용 경로 확인
+        if request.url.path.startswith("/admin"):
+            if user.role != "admin":
+                raise HTTPException(status_code=403, detail="Admin access required")
+        
+        response = await call_next(request)
+        return response
+```
+
+## 리버스 프록시 패턴
+
+### Perplexica/Open-Notebook 프록시
+
+```python
+# backend/app/routes/proxy.py
+from fastapi import APIRouter, Request, Response
+import httpx
+
+router = APIRouter(prefix="/proxy", tags=["proxy"])
+
+@router.api_route("/perplexica/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def proxy_perplexica(path: str, request: Request) -> Response:
+    """Perplexica 리버스 프록시.
+    
+    Args:
+        path: Perplexica API 경로
+        request: FastAPI 요청
+        
+    Returns:
+        Perplexica 응답
+    """
+    # 헤더 변환
+    headers = dict(request.headers)
+    headers.pop("host", None)  # Host 헤더 제거
+    
+    # Perplexica API 호출
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.request(
+            method=request.method,
+            url=f"http://perplexica:5173/{path}",
+            headers=headers,
+            content=await request.body()
+        )
+    
+    # 헤더 정규화 (iframe 허용)
+    response_headers = dict(response.headers)
+    response_headers.pop("x-frame-options", None)
+    response_headers["content-security-policy"] = "frame-ancestors 'self'"
+    
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=response_headers
+    )
+```
+
+## 테스트 및 검증
+
+### 작업 완료 후 반드시 확인
+
+- [ ] OpenAPI 문서 확인 (`http://localhost:8000/docs`)
+- [ ] API 엔드포인트 직접 호출 테스트 (curl/Postman)
+- [ ] 컨테이너 로그 확인 (`docker-compose logs backend`)
+- [ ] 타임아웃 및 에러 핸들링 테스트
+- [ ] Type hints 및 Docstring 확인
+
+### 컨테이너 재빌드
+
+**코드 변경 시**:
+```bash
+# 캐시 없이 재빌드
+docker-compose build --no-cache backend
+docker-compose restart backend
+
+# 또는 개발 환경에서 볼륨 마운트 사용
+# docker-compose.yml:
+#   volumes:
+#     - ./backend/app:/app/app:ro
+```
+
+## 학습 내용 기록
+
+### 작업 완료 후
+
+```bash
+# API 패턴 학습 내용 기록
+./scripts/record-learning.sh "API" "외부 호출 시 타임아웃 30초 설정 필수"
+
+# 또는 수동으로 기록
+echo "## $(date +%Y-%m-%d): 외부 API 호출 패턴
+
+**요청**: LiteLLM API 호출 시 타임아웃 설정
+**적용**: httpx.AsyncClient(timeout=30.0)
+**피드백**: ✅ 잘 잡았어 (안정성 향상)
+**재사용**: 모든 외부 호출에 타임아웃 설정
+" >> .cursor/learnings/api-patterns.md
+```
+
+## 금지 사항
+
+### ❌ 절대 하지 말 것
+
+1. **기존 패턴 무시**:
+   - ❌ 비슷한 API인데 새로운 서비스 레이어 패턴 사용
+   - ✅ `backend/app/services/` 기존 패턴 재사용
+
+2. **에러 핸들링 누락**:
+   - ❌ 외부 호출 시 try/except 생략
+   - ✅ 모든 외부 호출에 에러 핸들링 적용
+
+3. **타임아웃 미설정**:
+   - ❌ `httpx.AsyncClient()` (기본 타임아웃 5초)
+   - ✅ `httpx.AsyncClient(timeout=30.0)` (명시적 타임아웃)
+
+4. **Type hints 누락**:
+   - ❌ `def get_data(id): ...`
+   - ✅ `async def get_data(id: str) -> Dict[str, Any]: ...`
+
+5. **동기 메서드 사용**:
+   - ❌ `def get_data(): ...`
+   - ✅ `async def get_data(): ...`
+
+## 참고 자료
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Pydantic Documentation](https://docs.pydantic.dev/)
+- [HTTPX Documentation](https://www.python-httpx.org/)
+- [PEP 8 Style Guide](https://pep8.org/)

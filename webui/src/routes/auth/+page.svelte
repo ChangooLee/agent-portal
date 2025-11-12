@@ -272,8 +272,8 @@
 					src="/samsung-financial-networks-logo.webp"
 					class="h-16 w-auto"
 					alt="Samsung Financial Networks"
-				/>
-			</div>
+					/>
+				</div>
 
 			<!-- Hero Section -->
 			<div class="w-full max-w-3xl mb-12 text-center text-white">

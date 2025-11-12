@@ -1,0 +1,531 @@
+---
+description: 8가지 계획 전략 상세
+globs: **/*
+alwaysApply: true
+---
+
+# Planning Strategies
+
+Agent Portal 프로젝트에서 사용하는 8가지 계획 전략입니다.
+
+## 개요
+
+**핵심 원칙**: 코드 작성 전 15-20분 투자하여 수 시간의 디버깅 방지
+
+**작업 복잡도에 따라 적절한 전략 선택**:
+- 간단한 작업: 전략 2-3개 조합 (5-10분)
+- 중간 작업: 전략 3-5개 조합 (10-15분)
+- 복잡한 작업: 전략 5-8개 모두 활용 (15-20분)
+
+---
+
+## 전략 1: 버그 재현 및 문서화
+
+### 목적
+
+- 수정 전 버그를 재현하고 단계별 가이드 생성
+- 재현 과정에서 근본 원인 파악
+- 체크리스트 업데이트로 반복 방지
+
+### 절차
+
+1. **버그 재현 환경 구축**:
+   ```bash
+   # 버그 발생 환경 확인
+   git log --all --grep="버그 키워드"
+   
+   # 해당 버전으로 체크아웃
+   git checkout <commit-hash>
+   ```
+
+2. **단계별 재현 가이드 작성**:
+   ```markdown
+   ## 버그 재현 단계
+   
+   1. 브라우저에서 http://localhost:3001/admin/monitoring 접속
+   2. "Summary" 탭 클릭
+   3. API 호출 실패 에러 발생 확인
+   4. 브라우저 콘솔 에러 메시지: "Failed to load usage summary: TypeError: Failed to fetch"
+   ```
+
+3. **근본 원인 파악**:
+   ```markdown
+   ## 근본 원인
+   
+   - API 호출 시 타임아웃 미설정
+   - 에러 핸들링 미적용
+   - 네트워크 오류 시 사용자에게 에러 메시지 노출
+   ```
+
+4. **학습 내용 기록**:
+   ```bash
+   # 버그 수정 후 학습 내용 기록
+   ./scripts/record-learning.sh "BUG" "API 호출 시 타임아웃 및 에러 핸들링 필수"
+   ```
+
+5. **체크리스트 업데이트**:
+   ```markdown
+   ## API 개발 체크리스트
+   
+   - [ ] 타임아웃 설정 (기본 30초)
+   - [ ] 에러 핸들링 (try/catch)
+   - [ ] 사용자 친화적 에러 메시지
+   - [ ] 네트워크 오류 시 graceful degradation
+   ```
+
+---
+
+## 전략 2: 베스트 프랙티스 조사
+
+### 목적
+
+- 웹 검색으로 유사 문제 해결 사례 확인
+- 공식 업그레이드 가이드 및 블로그 포스트 참조
+- 발견한 패턴을 `.cursor/learnings/` 디렉토리에 저장
+
+### 절차
+
+1. **웹 검색**:
+   ```
+   # 검색 쿼리 예시
+   - "SvelteKit API error handling best practices"
+   - "FastAPI timeout configuration"
+   - "Tailwind CSS tab component modern design"
+   ```
+
+2. **공식 문서 확인**:
+   - SvelteKit: https://kit.svelte.dev/docs
+   - FastAPI: https://fastapi.tiangolo.com/
+   - Tailwind CSS: https://tailwindcss.com/docs
+
+3. **커뮤니티 참조**:
+   - GitHub Issues (유사한 문제 해결 사례)
+   - Stack Overflow (검증된 답변)
+   - Reddit/HackerNews (실무 경험 공유)
+
+4. **학습 내용 성문화**:
+   ```bash
+   # 발견한 패턴 기록
+   echo "## $(date +%Y-%m-%d): SvelteKit API 에러 핸들링
+
+   **출처**: https://kit.svelte.dev/docs/errors
+   **패턴**: throw error() 사용
+   **장점**: SvelteKit이 자동으로 에러 페이지 렌더링
+   **적용**: load() 함수 내에서 사용
+   " >> .cursor/learnings/api-patterns.md
+   ```
+
+---
+
+## 전략 3: 코드베이스 조사
+
+### 목적
+
+- **UI 작업**: Skills 시스템 우선 활용
+- **Backend 작업**: `backend/app/services/`의 기존 패턴 확인
+- 기존 패턴 재사용으로 호환성 유지
+- 중복 구현 방지
+
+### 절차 (UI 작업)
+
+1. **자연어 검색 인덱스 조회**:
+   ```bash
+   # 키워드로 경로 찾기
+   cat webui/.skills/ui-search-index.json | jq '.keywordIndex["monitoring"]'
+   ```
+
+2. **구조 파일에서 상세 정보 확인**:
+   ```bash
+   # 컴포넌트 구조 확인
+   cat webui/.skills/ui-structure.json | jq '.routes[] | select(.path | contains("monitoring"))'
+   ```
+
+3. **패턴 파일에서 스타일 확인**:
+   ```bash
+   # 탭 버튼 패턴 확인
+   cat webui/.skills/ui-patterns.json | jq '.buttonPatterns[] | select(.type == "tab")'
+   ```
+
+4. **기존 패턴 재사용**:
+   ```svelte
+   <!-- 기존 패턴 복사 후 수정 -->
+   <button 
+     class="px-4 py-2 rounded-lg {activeTab === 'summary' ? 'bg-[#0072CE] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'} transition-all duration-200"
+   >
+     탭
+   </button>
+   ```
+
+### 절차 (Backend 작업)
+
+1. **기존 서비스 확인**:
+   ```bash
+   # 유사한 서비스 찾기
+   find backend/app/services -name "*_service.py" | xargs grep -l "AsyncClient"
+   ```
+
+2. **패턴 분석**:
+   ```python
+   # 기존 패턴 확인
+   cat backend/app/services/litellm_service.py
+   ```
+
+3. **패턴 재사용**:
+   ```python
+   # 동일한 패턴 적용
+   async with httpx.AsyncClient(timeout=30.0) as client:
+       response = await client.get(url)
+       response.raise_for_status()
+       return response.json()
+   ```
+
+---
+
+## 전략 4: 라이브러리 소스코드 조사
+
+### 목적
+
+- 문서가 부족한 라이브러리는 소스 직접 확인
+- GitHub 레포지토리의 예제 및 테스트 코드 참조
+- 발견한 사용법을 `.cursor/learnings/api-patterns.md`에 기록
+
+### 절차
+
+1. **GitHub 레포지토리 확인**:
+   ```bash
+   # 예시: paneforge (리사이즈 가능한 패널 컴포넌트)
+   # https://github.com/huntabyte/paneforge
+   ```
+
+2. **예제 코드 확인**:
+   - `examples/` 디렉토리
+   - `README.md` 예제
+   - `tests/` 디렉토리
+
+3. **소스코드 분석**:
+   ```bash
+   # 주요 컴포넌트 소스 확인
+   # src/lib/components/PaneGroup.svelte
+   # src/lib/components/Pane.svelte
+   ```
+
+4. **사용법 성문화**:
+   ```bash
+   echo "## $(date +%Y-%m-%d): paneforge 사용법
+
+   **출처**: https://github.com/huntabyte/paneforge
+   **사용법**:
+   \`\`\`svelte
+   <PaneGroup direction=\"horizontal\">
+     <Pane defaultSize={50}>좌측 패널</Pane>
+     <Pane defaultSize={50}>우측 패널</Pane>
+   </PaneGroup>
+   \`\`\`
+   **주의사항**: direction 속성 필수, defaultSize 합계 100
+   " >> .cursor/learnings/ui-patterns.md
+   ```
+
+---
+
+## 전략 5: Git 히스토리 조사
+
+### 목적
+
+- 유사한 기능의 커밋 히스토리 확인
+- 과거 해결 방법 및 의사결정 이유 파악
+- `git log --all --grep="keyword"` 활용
+
+### 절차
+
+1. **키워드로 커밋 검색**:
+   ```bash
+   # 예시: "monitoring" 관련 커밋
+   git log --all --grep="monitoring" --oneline
+   
+   # 예시: "API error handling" 관련 커밋
+   git log --all --grep="error handling" --oneline
+   ```
+
+2. **커밋 상세 확인**:
+   ```bash
+   # 특정 커밋의 변경 내역
+   git show <commit-hash>
+   
+   # 특정 파일의 변경 히스토리
+   git log -p -- backend/app/routes/chat.py
+   ```
+
+3. **의사결정 이유 파악**:
+   ```bash
+   # 커밋 메시지에서 이유 확인
+   git log --all --grep="monitoring" --format="%H %s %b"
+   ```
+
+4. **학습 내용 기록**:
+   ```bash
+   echo "## $(date +%Y-%m-%d): API 에러 핸들링 패턴
+
+   **출처**: Git 히스토리 (commit abc123)
+   **과거 해결 방법**: try/except + HTTPException
+   **의사결정 이유**: FastAPI 표준 패턴
+   **재사용**: 모든 API 엔드포인트에 적용
+   " >> .cursor/learnings/api-patterns.md
+   ```
+
+---
+
+## 전략 6: 프로토타이핑
+
+### 목적
+
+- 복잡한 기능은 작은 단위로 먼저 프로토타입 작성
+- 동작 확인 후 본 코드에 통합
+- 임시 파일은 작업 완료 후 삭제
+
+### 절차
+
+1. **프로토타입 파일 생성**:
+   ```bash
+   # 임시 디렉토리에 프로토타입 작성
+   mkdir -p /tmp/prototype
+   ```
+
+2. **작은 단위로 테스트**:
+   ```python
+   # /tmp/prototype/test_api.py
+   import httpx
+   import asyncio
+   
+   async def test_api():
+       async with httpx.AsyncClient(timeout=30.0) as client:
+           response = await client.get("http://localhost:8000/api/test")
+           print(response.json())
+   
+   asyncio.run(test_api())
+   ```
+
+3. **동작 확인**:
+   ```bash
+   # 프로토타입 실행
+   python /tmp/prototype/test_api.py
+   ```
+
+4. **본 코드에 통합**:
+   ```python
+   # backend/app/routes/example.py
+   # 프로토타입에서 검증된 패턴 적용
+   async with httpx.AsyncClient(timeout=30.0) as client:
+       response = await client.get(url)
+       response.raise_for_status()
+       return response.json()
+   ```
+
+5. **임시 파일 삭제**:
+   ```bash
+   # 작업 완료 후 임시 파일 삭제
+   rm -rf /tmp/prototype
+   ```
+
+---
+
+## 전략 7: 옵션 종합
+
+### 목적
+
+- 2-3가지 접근법 비교
+- 각 옵션의 장단점 명시 (트레이드오프)
+- 선택 이유를 커밋 메시지에 기록
+
+### 절차
+
+1. **옵션 나열**:
+   ```markdown
+   ## API 에러 핸들링 옵션
+   
+   ### 옵션 1: FastAPI HTTPException
+   - 장점: FastAPI 표준 패턴, OpenAPI 문서 자동 생성
+   - 단점: 커스텀 에러 응답 제한
+   
+   ### 옵션 2: 커스텀 Exception + Exception Handler
+   - 장점: 유연한 에러 응답 구조
+   - 단점: 추가 코드 필요, 표준에서 벗어남
+   
+   ### 옵션 3: Response 직접 반환
+   - 장점: 완전한 제어
+   - 단점: OpenAPI 문서 미반영, FastAPI 장점 상실
+   ```
+
+2. **트레이드오프 분석**:
+   ```markdown
+   ## 트레이드오프 분석
+   
+   | 기준 | 옵션 1 | 옵션 2 | 옵션 3 |
+   |------|--------|--------|--------|
+   | 표준 준수 | ✅ | ⚠️ | ❌ |
+   | OpenAPI 문서 | ✅ | ⚠️ | ❌ |
+   | 유연성 | ⚠️ | ✅ | ✅ |
+   | 코드 복잡도 | ✅ | ⚠️ | ⚠️ |
+   ```
+
+3. **선택 및 이유**:
+   ```markdown
+   ## 선택: 옵션 1 (FastAPI HTTPException)
+   
+   **이유**:
+   - FastAPI 표준 패턴 준수로 팀 내 일관성 유지
+   - OpenAPI 문서 자동 생성으로 API 문서화 자동화
+   - 코드 복잡도 최소화
+   
+   **트레이드오프**:
+   - 커스텀 에러 응답 제한 수용
+   - 필요 시 Exception Handler로 확장 가능
+   ```
+
+4. **커밋 메시지에 기록**:
+   ```bash
+   git commit -m "feat(api): API 에러 핸들링 개선
+
+   - FastAPI HTTPException 패턴 적용
+   - 타임아웃 30초 설정
+   - OpenAPI 문서 자동 생성
+   
+   **선택 이유**:
+   - FastAPI 표준 패턴 준수 (팀 내 일관성)
+   - OpenAPI 문서 자동 생성 (문서화 자동화)
+   - 코드 복잡도 최소화
+   
+   **트레이드오프**:
+   - 커스텀 에러 응답 제한 수용
+   - 필요 시 Exception Handler로 확장 가능
+   "
+   ```
+
+---
+
+## 전략 8: 스타일 리뷰
+
+### 목적
+
+- **UI 작업**: Skills 시스템 기반 스타일 일관성 체크
+- **Backend 작업**: 서비스 레이어 패턴 준수 확인
+- 기존 코드 스타일과 일관성 유지
+
+### 절차 (UI 작업)
+
+1. **스타일 패턴 확인**:
+   ```bash
+   # 탭 버튼 패턴
+   cat webui/.skills/ui-patterns.json | jq '.buttonPatterns[] | select(.type == "tab")'
+   
+   # 색상 사용 패턴
+   cat webui/.skills/ui-patterns.json | jq '.colorFileMapping["border-blue-500"]'
+   ```
+
+2. **기존 스타일과 비교**:
+   ```svelte
+   <!-- 기존 스타일 -->
+   <button class="px-4 py-2 rounded-lg bg-[#0072CE] text-white">
+     버튼
+   </button>
+   
+   <!-- 새 스타일 (일관성 유지) -->
+   <button class="px-4 py-2 rounded-lg bg-[#0072CE] text-white">
+     새 버튼
+   </button>
+   ```
+
+3. **스타일 일관성 체크리스트**:
+   - [ ] 색상 팔레트 일치 (`#0072CE` 등)
+   - [ ] 간격 패턴 일치 (`px-4 py-2` 등)
+   - [ ] 반응형 브레이크포인트 일치 (`@md:` 등)
+   - [ ] 다크 모드 스타일 일치 (`dark:` 클래스)
+   - [ ] 트랜지션 효과 일치 (`transition-all duration-200` 등)
+
+### 절차 (Backend 작업)
+
+1. **서비스 레이어 패턴 확인**:
+   ```bash
+   # 기존 서비스 패턴
+   cat backend/app/services/litellm_service.py
+   ```
+
+2. **패턴 준수 체크리스트**:
+   - [ ] Singleton 패턴 (모듈 레벨 인스턴스)
+   - [ ] 비동기 메서드 (`async def`)
+   - [ ] Type hints (`from typing import ...`)
+   - [ ] Docstring (Google 스타일)
+   - [ ] 에러 핸들링 (try/except)
+   - [ ] 타임아웃 설정 (기본 30초)
+
+3. **코드 스타일 확인**:
+   ```bash
+   # PEP 8 체크
+   flake8 backend/app/routes/example.py
+   
+   # Type hints 체크
+   mypy backend/app/routes/example.py
+   ```
+
+---
+
+## 전략 조합 예시
+
+### 간단한 작업 (5-10분)
+
+**예시**: "monitoring 페이지 탭 버튼 색상 변경"
+
+**전략 조합**:
+- 전략 3: 코드베이스 조사 (Skills 시스템)
+- 전략 8: 스타일 리뷰 (기존 패턴 확인)
+
+### 중간 작업 (10-15분)
+
+**예시**: "Chat API 엔드포인트 추가"
+
+**전략 조합**:
+- 전략 2: 베스트 프랙티스 조사 (FastAPI 공식 문서)
+- 전략 3: 코드베이스 조사 (기존 API 패턴)
+- 전략 7: 옵션 종합 (에러 핸들링 방법 비교)
+- 전략 8: 스타일 리뷰 (서비스 레이어 패턴)
+
+### 복잡한 작업 (15-20분)
+
+**예시**: "대규모 UI 리팩토링 (전체 탭 스타일 변경)"
+
+**전략 조합**:
+- 전략 1: 버그 재현 (현재 스타일 문제 파악)
+- 전략 2: 베스트 프랙티스 조사 (모던 탭 디자인 패턴)
+- 전략 3: 코드베이스 조사 (Skills 시스템으로 전체 탭 위치 확인)
+- 전략 4: 라이브러리 소스코드 조사 (Tailwind CSS 예제)
+- 전략 5: Git 히스토리 조사 (과거 스타일 변경 이력)
+- 전략 6: 프로토타이핑 (새 스타일 작은 단위로 테스트)
+- 전략 7: 옵션 종합 (3가지 스타일 옵션 비교)
+- 전략 8: 스타일 리뷰 (일관성 체크)
+
+---
+
+## 학습 내용 기록
+
+### 전략 적용 후 학습 내용 성문화
+
+```bash
+# 학습 내용 기록
+./scripts/record-learning.sh "PLANNING" "복잡한 작업은 전략 5-8개 조합으로 15-20분 투자하면 수 시간 디버깅 방지"
+
+# 또는 수동으로 기록
+echo "## $(date +%Y-%m-%d): 계획 전략 적용
+
+**작업**: 대규모 UI 리팩토링
+**전략**: 전략 1-8 모두 활용 (15분 투자)
+**결과**: 버그 없이 1회 성공
+**피드백**: ✅ 잘 잡았어 (계획 중심 접근)
+**재사용**: 복잡한 작업은 항상 계획 전략 조합
+" >> .cursor/learnings/preferences.md
+```
+
+---
+
+## 참고 자료
+
+- [Planning-Centric AI Coding](https://news.hada.io/topic?id=24266) — AI에게 시니어 엔지니어처럼 생각하도록 가르치기
+- [Cursor AI 사용 가이드](https://news.hada.io/topic?id=24099) — "Shoot and Forget" 방법론

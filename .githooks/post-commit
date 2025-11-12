@@ -1,0 +1,51 @@
+#!/bin/bash
+# Post-commit hook: 학습 내용 추출 및 주간 리뷰 알림
+
+echo "📚 Post-commit: Learning extraction..."
+
+# 1. 커밋 메시지에서 "Learning:" 키워드 추출
+COMMIT_MSG=$(git log -1 --pretty=%B)
+LEARNING=$(echo "$COMMIT_MSG" | grep -i "^Learning:" | sed 's/^Learning://g' | xargs)
+
+if [ -n "$LEARNING" ]; then
+    DATE=$(date +%Y-%m-%d)
+    COMMIT_HASH=$(git log -1 --pretty=%h)
+    
+    # 학습 내용 분류 (키워드 기반)
+    if echo "$COMMIT_MSG" | grep -qi "ui\|svelte\|component\|style"; then
+        LEARNING_FILE=".cursor/learnings/ui-patterns.md"
+        CATEGORY="UI"
+    elif echo "$COMMIT_MSG" | grep -qi "api\|backend\|fastapi\|route"; then
+        LEARNING_FILE=".cursor/learnings/api-patterns.md"
+        CATEGORY="API"
+    elif echo "$COMMIT_MSG" | grep -qi "bug\|fix\|error"; then
+        LEARNING_FILE=".cursor/learnings/bug-fixes.md"
+        CATEGORY="BUG"
+    else
+        LEARNING_FILE=".cursor/learnings/preferences.md"
+        CATEGORY="GENERAL"
+    fi
+    
+    # 학습 내용 추가
+    echo "" >> "$LEARNING_FILE"
+    echo "## $DATE: Auto-extracted from commit $COMMIT_HASH" >> "$LEARNING_FILE"
+    echo "" >> "$LEARNING_FILE"
+    echo "**내용**: $LEARNING" >> "$LEARNING_FILE"
+    echo "**커밋**: $COMMIT_HASH" >> "$LEARNING_FILE"
+    echo "" >> "$LEARNING_FILE"
+    echo "---" >> "$LEARNING_FILE"
+    
+    echo "  ✅ Learning extracted to $LEARNING_FILE"
+fi
+
+# 2. 주간 리뷰 알림 (매주 금요일)
+DAY_OF_WEEK=$(date +%u)  # 1=Monday, 5=Friday
+if [ "$DAY_OF_WEEK" -eq 5 ]; then
+    echo ""
+    echo "🗓️  Weekly Review Reminder (Friday):"
+    echo "     Run: ./scripts/weekly-review.sh"
+    echo "     Review learnings and update core documents."
+fi
+
+exit 0
+

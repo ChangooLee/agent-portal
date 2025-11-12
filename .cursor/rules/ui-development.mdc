@@ -1,0 +1,340 @@
+---
+description: UI 개발 전용 규칙 (Skills 시스템 활용)
+globs: webui/src/**/*.svelte, webui/src/**/*.ts, webui/src/**/*.css
+alwaysApply: false
+---
+
+# UI Development Rules
+
+Agent Portal의 UI 개발 시 반드시 따라야 하는 규칙입니다.
+
+## Skills 시스템 우선 활용 (ALWAYS)
+
+### 작업 시작 전
+
+**절대적인 순서**:
+1. `webui/.skills/ui-search-index.json` — 자연어 검색 인덱스로 경로 찾기
+2. `webui/.skills/ui-structure.json` — UI 구조 매핑으로 상세 정보 확인
+3. `webui/.skills/ui-patterns.json` — 스타일 패턴 확인
+4. `webui/.skills/ui-layouts.json` — 레이아웃 계층 구조 확인
+5. **직접 파일 검색은 마지막 수단으로만 사용**
+
+### 자연어 요청 처리 절차
+
+**사용자 요청 예시**: "monitoring 페이지의 탭 버튼 스타일 변경"
+
+**처리 단계**:
+```javascript
+// 1. 키워드 추출
+const keywords = ["monitoring", "탭", "버튼", "스타일"];
+
+// 2. 검색 인덱스 조회
+const searchIndex = require('./webui/.skills/ui-search-index.json');
+const routes = searchIndex.keywordIndex['monitoring'].routes;
+
+// 3. 구조 파일에서 상세 정보 확인
+const structure = require('./webui/.skills/ui-structure.json');
+const route = structure.routes.find(r => r.path.includes('monitoring'));
+
+// 4. 정확한 위치 파악
+// route.components, route.apis, route.keywords 활용
+
+// 5. 패턴 확인
+const patterns = require('./webui/.skills/ui-patterns.json');
+const tabPatterns = patterns.buttonPatterns.filter(p => p.type === 'tab');
+
+// 6. 수정 수행
+```
+
+## 대규모 UI 개편 작업
+
+### 전체 색상 변경
+
+**예시**: "전체 탭 스타일을 파란색에서 초록색으로 변경"
+
+**절차**:
+```bash
+# 1. 색상 사용 위치 확인
+cat webui/.skills/ui-patterns.json | jq '.colorFileMapping["border-blue-500"]'
+
+# 2. 라우트 페이지와 컴포넌트 모두 확인
+jq '.colorFileMapping["border-blue-500"].routes[]' webui/.skills/ui-patterns.json
+jq '.colorFileMapping["border-blue-500"].components[]' webui/.skills/ui-patterns.json
+
+# 3. 매핑 가이드 참조
+cat webui/.skills/ui-class-mapping-guide.json | jq '.colorMappings.blue'
+
+# 4. 스타일 매핑 적용
+# border-blue-500 → border-green-500
+# text-blue-600 → text-green-600
+# bg-blue-50 → bg-green-50
+# dark:border-blue-400 → dark:border-green-400
+
+# 5. 일괄 수정 (모든 파일에 적용)
+```
+
+### 레이아웃 구조 변경
+
+**예시**: "사이드바 메뉴를 2단계에서 3단계로 확장"
+
+**절차**:
+```bash
+# 1. 현재 구조 확인
+cat webui/.skills/ui-navigation.json | jq '.sidebar'
+
+# 2. 메뉴 컴포넌트 위치
+cat webui/.skills/ui-structure.json | jq '.routes[] | select(.path | contains("Sidebar"))'
+
+# 3. 스타일 패턴 확인
+cat webui/.skills/ui-patterns.json | jq '.buttonPatterns[] | select(.type == "menu")'
+
+# 4. 수정 수행
+```
+
+## UI 구조 변경 시 업데이트
+
+### 자동 업데이트 (권장)
+
+```bash
+# 모든 분석 스크립트 실행
+./scripts/update-ui-skills.sh
+```
+
+### 개별 분석 스크립트
+
+```bash
+# 기본 구조 분석
+node scripts/analyze-ui-structure.js
+
+# 스타일 패턴 분석
+node scripts/analyze-ui-patterns.js
+
+# 레이아웃 계층 분석
+node scripts/analyze-layout-hierarchy.js
+
+# 네비게이션 구조 분석
+node scripts/analyze-navigation-structure.js
+
+# 글로벌 스타일 분석
+node scripts/analyze-global-styles.js
+
+# 검색 인덱스 강화
+node scripts/enhance-search-index.js
+```
+
+## SvelteKit 규칙
+
+### 파일명 규칙
+
+- `+page.svelte` — 페이지 라우트
+- `+layout.svelte` — 레이아웃
+- `+server.ts` — 서버 API 엔드포인트
+- `+page.ts` — 페이지 로드 함수
+
+### 라우트 그룹
+
+- `(app)/` — 메인 앱 라우트
+- `admin/` — 관리자 전용 페이지
+- `workspace/` — 작업 공간 페이지
+- `c/[id]/` — 동적 라우트 (채팅 상세)
+
+## Tailwind CSS 규칙
+
+### 반응형 디자인
+
+**브레이크포인트**:
+- 모바일: 기본 (< 640px)
+- 태블릿: `@md:` (≥ 768px)
+- 데스크톱: `@lg:` (≥ 1024px)
+- 와이드: `@2xl:` (≥ 1536px)
+
+**컨테이너 쿼리**:
+- `@container` 사용 시 `@sm:`, `@md:`, `@lg:` 프리픽스 사용
+
+### 다크 모드
+
+**조건부 클래스**:
+```svelte
+<div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+  콘텐츠
+</div>
+```
+
+**테마 강제**:
+- 프로젝트는 라이트 테마를 기본으로 사용 (Samsung Life 브랜딩)
+- 다크 모드 클래스는 유지하되, 테마 강제 적용
+
+## 스타일 일관성
+
+### 버튼 스타일 패턴
+
+**기본 버튼**:
+```svelte
+<button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200">
+  버튼
+</button>
+```
+
+**탭 버튼** (모던 스타일):
+```svelte
+<button 
+  class="px-4 py-2 rounded-lg {activeTab === 'summary' ? 'bg-[#0072CE] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'} transition-all duration-200"
+>
+  탭
+</button>
+```
+
+**구식 탭 스타일 (사용 금지)**:
+```svelte
+<!-- ❌ 사용하지 말 것 -->
+<button class="border-b-2 {activeTab === 'summary' ? 'border-blue-500' : 'border-transparent'}">
+  탭
+</button>
+```
+
+### 카드 스타일 패턴
+
+```svelte
+<div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+  카드 콘텐츠
+</div>
+```
+
+### 입력 필드 스타일 패턴
+
+```svelte
+<input 
+  type="text"
+  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0072CE]/20 focus:border-[#0072CE] transition-all"
+  placeholder="입력하세요"
+/>
+```
+
+## 성능 최적화
+
+### 이미지 최적화
+
+```svelte
+<img 
+  src="/path/to/image.webp" 
+  alt="설명"
+  loading="lazy"
+  width="500"
+  height="300"
+/>
+```
+
+### 코드 스플리팅
+
+```javascript
+// 동적 import
+const HeavyComponent = lazy(() => import('./HeavyComponent.svelte'));
+```
+
+## 접근성 (a11y)
+
+### 필수 속성
+
+```svelte
+<!-- 버튼 -->
+<button 
+  type="button"
+  aria-label="닫기"
+  aria-pressed={isActive}
+>
+  버튼
+</button>
+
+<!-- 링크 -->
+<a href="/path" aria-current={isActive ? 'page' : undefined}>
+  링크
+</a>
+
+<!-- 이미지 -->
+<img src="/path" alt="의미 있는 설명" />
+```
+
+### 키보드 네비게이션
+
+```svelte
+<div
+  role="button"
+  tabindex="0"
+  on:keydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      handleClick();
+    }
+  }}
+  on:click={handleClick}
+>
+  클릭 가능 요소
+</div>
+```
+
+## 테스트 및 검증
+
+### 작업 완료 후 반드시 확인
+
+- [ ] 브라우저에서 실제 화면 확인
+- [ ] 다크/라이트 모드 전환 테스트
+- [ ] 모바일/태블릿/데스크톱 반응형 테스트 (Chrome DevTools)
+- [ ] 브라우저 콘솔 에러 확인
+- [ ] 접근성 체크 (Lighthouse)
+
+### Skills 시스템 업데이트
+
+```bash
+# UI 구조 변경 시 반드시 실행
+./scripts/update-ui-skills.sh
+
+# Git commit 전에 확인
+git diff webui/.skills/
+```
+
+## 학습 내용 기록
+
+### 작업 완료 후
+
+```bash
+# UI 패턴 학습 내용 기록
+./scripts/record-learning.sh "UI" "탭 스타일은 border-b-2 대신 rounded-lg 버튼으로 변경하는 것이 더 모던함"
+
+# 또는 수동으로 기록
+echo "## $(date +%Y-%m-%d): 탭 스타일 변경
+
+**요청**: monitoring 페이지의 탭 버튼 스타일 변경
+**적용**: border-b-2 → rounded-lg 버튼
+**피드백**: ✅ 잘 잡았어 (모던한 디자인)
+**재사용**: 향후 모든 탭 네비게이션에 동일 패턴 적용
+" >> .cursor/learnings/ui-patterns.md
+```
+
+## 금지 사항
+
+### ❌ 절대 하지 말 것
+
+1. **Skills 시스템 무시**:
+   - ❌ UI 작업 시 직접 파일 검색부터 시작
+   - ✅ `ui-search-index.json`으로 정확한 경로 먼저 찾기
+
+2. **기존 패턴 무시**:
+   - ❌ 비슷한 컴포넌트인데 새로운 스타일로 구현
+   - ✅ `ui-patterns.json`에서 기존 패턴 재사용
+
+3. **반응형 디자인 미적용**:
+   - ❌ 데스크톱 화면만 고려
+   - ✅ 모바일, 태블릿, 데스크톱 모두 테스트
+
+4. **다크 모드 미고려**:
+   - ❌ 라이트 모드만 테스트
+   - ✅ 다크 모드 전환 테스트 (프로젝트는 라이트 테마 강제지만 스타일은 유지)
+
+5. **접근성 무시**:
+   - ❌ `aria-*` 속성 생략
+   - ✅ 접근성 속성 필수 포함
+
+## 참고 자료
+
+- [SvelteKit Documentation](https://kit.svelte.dev/docs)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Svelte Accessibility](https://svelte.dev/docs/accessibility-warnings)

@@ -1,0 +1,457 @@
+# Agent Portal — AI 코딩 가이드라인
+
+> **목적**: Cursor AI가 Agent Portal 프로젝트에서 효율적으로 작업할 수 있도록 하는 규칙  
+> **철학**: 계획 중심 개발(Planning-First Development) — 코드 작성 전 깊게 생각하기
+
+---
+
+## 🎯 핵심 원칙
+
+### 1. 계획 중심 접근 (ALWAYS)
+
+**코드 작성 전 15-20분 투자**:
+- 베스트 프랙티스 조사 (웹 검색)
+- 코드베이스 조사 (Skills 시스템 활용)
+- 라이브러리 소스코드 조사 (필요 시)
+- 2-3가지 접근법 비교 (트레이드오프 명시)
+
+**작업 완료 후 5-10분 투자**:
+- 학습 내용 `.cursor/learnings/` 디렉토리에 기록
+- Skills 시스템 업데이트 (UI 작업 시)
+- 문서 동기화 확인
+
+### 2. 필수 참조 문서 (ALWAYS)
+
+작업 시작 전 **4개 핵심 문서** 확인:
+1. `CLAUDE.md` — 프로젝트 가이드 (주요 가이드)
+2. `AGENTS.md` — 에이전트 워크플로우 (복잡한 작업 시)
+3. `README.md` — 프로젝트 개요 및 아키텍처
+4. `DEVELOP.md` — 개발 가이드 및 환경 설정
+
+### 3. Skills 시스템 우선 활용 (UI 작업 시 ALWAYS)
+
+**UI 관련 작업**:
+- `webui/.skills/ui-search-index.json` — 자연어 검색 인덱스
+- `webui/.skills/ui-structure.json` — UI 구조 매핑
+- `webui/.skills/ui-patterns.json` — 스타일 패턴 분석
+- `webui/.skills/ui-layouts.json` — 레이아웃 계층 구조
+- `webui/.skills/ui-class-mapping-guide.json` — 클래스 매핑 가이드
+
+**절차**:
+1. 자연어 요청 분석 (키워드 추출)
+2. `ui-search-index.json`에서 관련 경로 찾기
+3. `ui-structure.json`에서 상세 정보 확인
+4. 정확한 위치 파악 후 수정 수행
+
+**직접 파일 검색은 마지막 수단으로만 사용**
+
+---
+
+## 📋 8가지 계획 전략
+
+작업 복잡도에 따라 적절한 전략 선택:
+
+### 전략 1: 버그 재현 및 문서화
+- 수정 전 버그를 재현하고 단계별 가이드 생성
+- 재현 과정에서 근본 원인 파악
+- `.cursor/learnings/bug-fixes.md`에 기록
+
+### 전략 2: 베스트 프랙티스 조사
+- 웹 검색으로 유사 문제 해결 사례 확인
+- 공식 업그레이드 가이드 및 블로그 포스트 참조
+- 발견한 패턴을 `.cursor/learnings/` 디렉토리에 저장
+
+### 전략 3: 코드베이스 조사
+- **UI 작업**: Skills 시스템 우선 활용
+- **Backend 작업**: `backend/app/services/`의 기존 패턴 확인
+- 기존 패턴 재사용으로 호환성 유지
+- 중복 구현 방지
+
+### 전략 4: 라이브러리 소스코드 조사
+- 문서가 부족한 라이브러리는 소스 직접 확인
+- GitHub 레포지토리의 예제 및 테스트 코드 참조
+- 발견한 사용법을 `.cursor/learnings/api-patterns.md`에 기록
+
+### 전략 5: Git 히스토리 조사
+- 유사한 기능의 커밋 히스토리 확인
+- 과거 해결 방법 및 의사결정 이유 파악
+- `git log --all --grep="keyword"` 활용
+
+### 전략 6: 프로토타이핑
+- 복잡한 기능은 작은 단위로 먼저 프로토타입 작성
+- 동작 확인 후 본 코드에 통합
+- 임시 파일은 작업 완료 후 삭제
+
+### 전략 7: 옵션 종합
+- 2-3가지 접근법 비교
+- 각 옵션의 장단점 명시 (트레이드오프)
+- 선택 이유를 커밋 메시지에 기록
+
+### 전략 8: 스타일 리뷰
+- **UI 작업**: Skills 시스템 기반 스타일 일관성 체크
+- **Backend 작업**: 서비스 레이어 패턴 준수 확인
+- 기존 코드 스타일과 일관성 유지
+
+---
+
+## 🔍 작업별 체크리스트
+
+### UI 개발 작업
+
+**시작 전**:
+- [ ] `ui-search-index.json`에서 관련 키워드로 경로 검색
+- [ ] `ui-structure.json`에서 컴포넌트 구조 확인
+- [ ] `ui-patterns.json`에서 스타일 패턴 확인
+- [ ] 대규모 개편 시 `ui-class-mapping-guide.json` 참조
+
+**작업 중**:
+- [ ] 기존 스타일 패턴 재사용
+- [ ] 레이아웃 영향 범위 확인 (`ui-layouts.json`)
+- [ ] 반응형 디자인 고려 (모바일, 태블릿, 데스크톱)
+
+**완료 후**:
+- [ ] `./scripts/update-ui-skills.sh` 실행 (UI 구조 변경 시)
+- [ ] `.cursor/learnings/ui-patterns.md`에 학습 내용 기록
+- [ ] 브라우저에서 다크/라이트 모드 테스트
+
+### Backend API 개발
+
+**시작 전**:
+- [ ] `backend/app/services/` 기존 패턴 확인
+- [ ] 비슷한 API 엔드포인트 참조
+- [ ] 에러 핸들링 패턴 확인
+
+**작업 중**:
+- [ ] 비동기 메서드 사용 (`async def`)
+- [ ] Type hints 필수 (`from typing import ...`)
+- [ ] 외부 호출 시 타임아웃 설정 (기본 30초)
+- [ ] 선택적 import 패턴 (의존성 미설치 시 graceful degradation)
+
+**완료 후**:
+- [ ] OpenAPI 문서 확인 (`http://localhost:8000/docs`)
+- [ ] `.cursor/learnings/api-patterns.md`에 학습 내용 기록
+- [ ] 컨테이너 재시작 테스트
+
+### 대규모 리팩토링
+
+**시작 전**:
+- [ ] 2-3가지 접근법 비교 (트레이드오프 명시)
+- [ ] 영향 범위 파악 (Skills 시스템 활용)
+- [ ] Git 브랜치 생성 (안전한 작업)
+
+**작업 중**:
+- [ ] 단계별 커밋 (롤백 가능하도록)
+- [ ] 각 단계마다 테스트
+- [ ] 의존성 변경 최소화
+
+**완료 후**:
+- [ ] 전체 테스트 실행
+- [ ] 문서 업데이트 (CLAUDE.md, AGENTS.md 등)
+- [ ] PR 생성 전 최종 리뷰
+
+---
+
+## 🚨 가드레일 (실패 사례 기반)
+
+### 금지 사항
+
+1. **Skills 시스템 무시**:
+   - ❌ UI 작업 시 직접 파일 검색부터 시작
+   - ✅ `ui-search-index.json`으로 정확한 경로 먼저 찾기
+
+2. **계획 없이 코드 작성**:
+   - ❌ 요청 받자마자 바로 코드 수정
+   - ✅ 15-20분 투자하여 베스트 프랙티스 조사 및 계획 수립
+
+3. **기존 패턴 무시**:
+   - ❌ 비슷한 기능인데 새로운 방식으로 구현
+   - ✅ 코드베이스 조사로 기존 패턴 재사용
+
+4. **학습 내용 미기록**:
+   - ❌ 작업 완료 후 바로 다음 작업으로 이동
+   - ✅ 5-10분 투자하여 학습 내용을 `.cursor/learnings/`에 기록
+
+5. **문서 미동기화**:
+   - ❌ 코드만 수정하고 문서 방치
+   - ✅ 중요한 변경 시 `CLAUDE.md`, `AGENTS.md` 업데이트
+
+### 대안 제시 (항상)
+
+**예시 1: 라우터가 등록되지 않음**
+- ❌ "등록이 안 됩니다"로 끝내기
+- ✅ 3가지 해결 방법 제시:
+  1. `main.py`에서 import 및 `app.include_router()` 호출 확인
+  2. 컨테이너 내부 파일 확인 (`docker-compose exec backend cat /app/app/main.py`)
+  3. 컨테이너 재시작 또는 재빌드
+
+**예시 2: 의존성 오류**
+- ❌ "모듈을 찾을 수 없습니다"로 끝내기
+- ✅ 2가지 해결 방법 제시:
+  1. 선택적 import 패턴 사용 (권장)
+  2. `requirements.txt`에 의존성 추가 후 재빌드
+
+---
+
+## 📚 학습 축적 시스템
+
+### 자동 학습 기록
+
+**Git hook 활용** (설치 후):
+- `post-commit`: 커밋 메시지에서 학습 내용 추출
+- `.cursor/learnings/` 디렉토리에 자동 분류 저장
+
+**수동 기록**:
+```bash
+# 학습 내용 즉시 기록
+./scripts/record-learning.sh "UI" "탭 스타일은 border-b-2 대신 rounded-lg 버튼으로 변경하는 것이 더 모던함"
+```
+
+### 선호도 기록
+
+**피드백 즉시 기록** (`.cursor/learnings/preferences.md`):
+- "이거 싫어함": 사용자가 특정 패턴을 싫어하는 경우
+- "잘 잡았어": 사용자가 만족한 해결 방법
+- AI가 다음 유사 결정 시 참조
+
+**예시**:
+```markdown
+## 2025-11-12: 탭 스타일 변경
+
+**요청**: "monitoring 페이지의 탭 버튼 스타일 변경"
+**적용**: border-b-2 → rounded-lg 버튼
+**피드백**: ✅ 잘 잡았어 (모던한 디자인)
+**재사용**: 향후 모든 탭 네비게이션에 동일 패턴 적용
+```
+
+---
+
+## 🎨 UI 개발 특화 규칙
+
+### 대규모 UI 개편 (Skills 시스템 필수)
+
+**예시 1: "전체 탭 스타일을 파란색에서 초록색으로 변경"**
+
+1. **색상 사용 위치 확인**:
+   ```bash
+   cat webui/.skills/ui-patterns.json | jq '.colorFileMapping["border-blue-500"]'
+   ```
+
+2. **라우트 페이지 포함 확인**:
+   - `colorFileMapping.border-blue-500.routes` (페이지 파일)
+   - `colorFileMapping.border-blue-500.components` (컴포넌트 파일)
+
+3. **매핑 가이드 참조**:
+   ```bash
+   cat webui/.skills/ui-class-mapping-guide.json | jq '.colorMappings.blue'
+   ```
+
+4. **스타일 매핑 적용**:
+   - `border-blue-500` → `border-green-500`
+   - `text-blue-600` → `text-green-600`
+   - `bg-blue-50` → `bg-green-50`
+   - 다크 모드: `dark:border-blue-400` → `dark:border-green-400`
+
+5. **일괄 수정**: `colorFileMapping`에 나열된 모든 파일에 적용
+
+**예시 2: "사이드바 메뉴 구조 변경"**
+
+1. **현재 구조 확인**:
+   ```bash
+   cat webui/.skills/ui-navigation.json | jq '.sidebar'
+   ```
+
+2. **메뉴 컴포넌트 위치**:
+   ```bash
+   cat webui/.skills/ui-structure.json | jq '.routes[] | select(.path | contains("Sidebar"))'
+   ```
+
+3. **스타일 패턴 확인**:
+   ```bash
+   cat webui/.skills/ui-patterns.json | jq '.buttonPatterns[] | select(.type == "menu")'
+   ```
+
+4. **수정 수행**: 메뉴 구조 및 스타일 수정
+
+### 반응형 디자인
+
+**Tailwind CSS 브레이크포인트**:
+- 모바일: 기본 (< 640px)
+- 태블릿: `@md:` (≥ 768px)
+- 데스크톱: `@lg:` (≥ 1024px)
+- 와이드: `@2xl:` (≥ 1536px)
+
+**테스트 필수**:
+- Chrome DevTools 모바일 시뮬레이터
+- 다크/라이트 모드 전환
+- 다양한 해상도 (375px, 768px, 1920px)
+
+---
+
+## 🔧 Backend API 특화 규칙
+
+### 서비스 레이어 패턴
+
+**Singleton 패턴** (모듈 레벨 인스턴스):
+```python
+# app/services/example_service.py
+from typing import Optional, Dict, Any
+import httpx
+
+class ExampleService:
+    def __init__(self):
+        self.base_url = "http://example-service:8080"
+    
+    async def get_data(self, id: str) -> Dict[str, Any]:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(f"{self.base_url}/data/{id}")
+            response.raise_for_status()
+            return response.json()
+
+# Singleton
+example_service = ExampleService()
+```
+
+### 에러 핸들링 패턴
+
+**외부 호출 시 타임아웃 설정**:
+```python
+from fastapi import HTTPException
+import httpx
+
+async def call_external_api():
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get("https://api.example.com/data")
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="External API timeout")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+```
+
+### Observability 통합
+
+**Langfuse 선택적 import**:
+```python
+try:
+    from langfuse import Langfuse
+    LANGFUSE_AVAILABLE = True
+except ImportError:
+    LANGFUSE_AVAILABLE = False
+    Langfuse = None
+
+def create_trace(name: str):
+    if LANGFUSE_AVAILABLE:
+        return langfuse_service.create_trace(name=name)
+    return None  # Graceful degradation
+```
+
+---
+
+## 🧪 테스트 및 검증
+
+### 코드 작성 후 반드시 확인
+
+**UI 작업**:
+1. 브라우저에서 실제 화면 확인
+2. 다크/라이트 모드 전환 테스트
+3. 모바일/태블릿/데스크톱 반응형 테스트
+4. 브라우저 콘솔 에러 확인
+
+**Backend 작업**:
+1. OpenAPI 문서 확인 (`http://localhost:8000/docs`)
+2. API 엔드포인트 직접 호출 테스트
+3. 컨테이너 로그 확인 (`docker-compose logs backend`)
+4. 타임아웃 및 에러 핸들링 테스트
+
+---
+
+## 📝 커밋 메시지 규칙
+
+**Conventional Commits** 준수:
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**타입**:
+- `feat`: 새로운 기능
+- `fix`: 버그 수정
+- `refactor`: 리팩토링
+- `docs`: 문서 변경
+- `style`: 코드 스타일 변경 (기능 변경 없음)
+- `test`: 테스트 추가/수정
+- `chore`: 빌드/도구 변경
+
+**예시**:
+```
+feat(ui): monitoring 페이지 탭 스타일 변경
+
+- border-b-2 → rounded-lg 버튼으로 변경
+- bg-[#0072CE] 활성 상태 스타일 적용
+- ui-patterns.json 업데이트 완료
+
+Closes #123
+```
+
+---
+
+## 🔄 문서 동기화
+
+### 중요한 변경 시 문서 업데이트
+
+**언제 업데이트하나?**
+- 새로운 서비스/컴포넌트 추가
+- 아키텍처 변경
+- 새로운 패턴 도입
+- 가드레일 추가 (실패 사례 발견 시)
+
+**어떤 문서를 업데이트하나?**
+- `CLAUDE.md`: 가드레일, 코딩 표준, 주요 작업 가이드
+- `AGENTS.md`: 에이전트 워크플로우, 프로젝트 구조
+- `README.md`: 프로젝트 개요, 아키텍처
+- `DEVELOP.md`: 개발 가이드, 환경 설정
+
+**자동 동기화**:
+```bash
+# Git hook을 통한 자동 동기화 (설치 후)
+git add . && git commit -m "..."
+
+# 수동 동기화
+./scripts/sync-docs.sh
+```
+
+---
+
+## 📊 주간 리뷰
+
+**매주 금요일** (자동 알림):
+```bash
+./scripts/weekly-review.sh
+```
+
+**리뷰 항목**:
+1. `.cursor/learnings/` 디렉토리의 학습 내용 확인
+2. 반복되는 패턴을 핵심 문서에 통합
+3. 가드레일 업데이트 (새로운 실패 사례 발견 시)
+4. 선호도 기록 검토 및 반영
+
+---
+
+## 🎓 참고 자료
+
+- [Planning-Centric AI Coding](https://news.hada.io/topic?id=24266) — AI에게 시니어 엔지니어처럼 생각하도록 가르치기
+- [Cursor AI 사용 가이드](https://news.hada.io/topic?id=24099) — "Shoot and Forget" 방법론
+- `.cursor/rules/` — 추가 규칙 파일 (폴더별 특화 규칙)
+
+---
+
+**마지막 업데이트**: 2025-11-12  
+**버전**: 1.0
+
