@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { user } from '$lib/stores';
+	import { user, WEBUI_NAME } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 

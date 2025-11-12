@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { page } from '$app/stores';
-	import { user } from '$lib/stores';
+	import { user, WEBUI_NAME } from '$lib/stores';
 	import { onMount } from 'svelte';
 
 	const i18n = getContext('i18n');

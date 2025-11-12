@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { getContext } from 'svelte';
 	import { page } from '$app/stores';
+	import { WEBUI_NAME } from '$lib/stores';
 	
 	const i18n = getContext('i18n');
 
