@@ -91,11 +91,11 @@
 <div class="w-full px-8 translate-y-6 py-24 text-center">
 	{#if $temporaryChatEnabled}
 		<Tooltip
-			content={$i18n.t('This chat won’t appear in history and your messages will not be saved.')}
+			content={$i18n.t('This chat won't appear in history and your messages will not be saved.')}
 			className="w-full flex justify-center mb-0.5"
 			placement="top"
 		>
-			<div class="flex items-center gap-2 text-gray-500 font-medium text-lg my-2 w-fit">
+			<div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium text-lg my-2 w-fit">
 				<EyeSlash strokeWidth="2.5" className="size-5" />{$i18n.t('Temporary Chat')}
 			</div>
 		</Tooltip>
@@ -116,6 +116,7 @@
 								placement="top"
 							>
 								<button
+									class="transform hover:scale-110 hover:z-10 transition-all duration-300 ease-out"
 									on:click={() => {
 										selectedModelIdx = modelIdx;
 									}}
@@ -126,7 +127,7 @@
 											($i18n.language === 'dg-DG'
 												? `/doge.png`
 												: `${WEBUI_BASE_URL}/static/favicon.png`)}
-										class=" size-10 @sm:size-12 rounded-full border-2 border-gray-200 shadow-sm"
+										class=" size-10 @sm:size-12 rounded-full border-2 border-white/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl"
 										alt="logo"
 										draggable="false"
 									/>
@@ -136,7 +137,7 @@
 					</div>
 				</div>
 
-				<div class=" text-[2.5rem] @sm:text-[3rem] font-semibold text-gray-800 line-clamp-1 leading-tight" in:fade={{ duration: 100 }}>
+				<div class=" text-[2.5rem] @sm:text-[3rem] font-semibold bg-gradient-to-r from-primary via-secondary to-accent dark:from-primary-light dark:via-secondary-light dark:to-accent-light bg-clip-text text-transparent line-clamp-1 leading-tight animate-fade-in" in:fade={{ duration: 100 }}>
 					{#if models[selectedModelIdx]?.name}
 						{models[selectedModelIdx]?.name}
 					{:else}
@@ -156,7 +157,7 @@
 							placement="top"
 						>
 							<div
-								class="mt-0.5 px-2 text-sm font-normal text-gray-600 line-clamp-2 max-w-xl markdown"
+								class="mt-0.5 px-2 text-sm font-normal text-gray-600 dark:text-gray-300 line-clamp-2 max-w-xl markdown"
 							>
 								{@html marked.parse(
 									sanitizeResponseContent(models[selectedModelIdx]?.info?.meta?.description)
@@ -165,12 +166,13 @@
 						</Tooltip>
 
 						{#if models[selectedModelIdx]?.info?.meta?.user}
-							<div class="mt-0.5 text-sm font-normal text-gray-500">
+							<div class="mt-0.5 text-sm font-normal text-gray-500 dark:text-gray-400">
 								By
 								{#if models[selectedModelIdx]?.info?.meta?.user.community}
 									<a
 										href="https://openwebui.com/m/{models[selectedModelIdx]?.info?.meta?.user
 											.username}"
+										class="hover:text-primary dark:hover:text-primary-light transition-colors"
 										>{models[selectedModelIdx]?.info?.meta?.user.name
 											? models[selectedModelIdx]?.info?.meta?.user.name
 											: `@${models[selectedModelIdx]?.info?.meta?.user.username}`}</a

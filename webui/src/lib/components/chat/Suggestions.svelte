@@ -84,8 +84,11 @@
 		{#each filteredPrompts as prompt, idx (prompt.id || prompt.content)}
 			<button
 				class="waterfall flex flex-col flex-1 shrink-0 w-full justify-between
-				       px-3 py-2 rounded-xl bg-transparent hover:bg-black/5
-				       dark:hover:bg-white/5 transition group"
+				       px-3 py-2 rounded-xl bg-white/40 dark:bg-gray-800/40
+				       hover:bg-white/60 dark:hover:bg-gray-800/60
+				       backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30
+				       hover:shadow-md hover:scale-[1.02]
+				       transition-all duration-300 ease-out group"
 				style="animation-delay: {idx * 60}ms"
 				on:click={() => dispatch('select', prompt.content)}
 			>
