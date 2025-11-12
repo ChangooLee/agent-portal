@@ -473,7 +473,7 @@
 		? 'md:relative w-[260px] max-w-[260px]'
 		: '-translate-x-[260px] w-[0px]'} {$isApp
 		? `ml-[4.5rem] md:ml-0 `
-		: 'transition-width duration-200 ease-in-out'}  shrink-0 bg-gray-50 text-gray-800 text-sm fixed z-50 top-0 left-0 overflow-x-hidden border-r border-gray-200
+		: 'transition-width duration-200 ease-in-out'}  shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-gray-800 dark:text-gray-100 text-sm fixed z-50 top-0 left-0 overflow-x-hidden border-r border-white/20 dark:border-gray-700/20 shadow-xl
         "
 	data-state={$showSidebar}
 >

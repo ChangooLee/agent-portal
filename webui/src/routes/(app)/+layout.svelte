@@ -259,8 +259,20 @@
 {/if} -->
 
 <div class="app relative">
+	<!-- 그라데이션 배경 -->
+	<div class="fixed inset-0 -z-10 overflow-hidden">
+		<!-- 라이트 모드 그라데이션 -->
+		<div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:hidden" />
+		
+		<!-- 다크 모드 그라데이션 -->
+		<div class="hidden dark:block absolute inset-0 bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/30" />
+		
+		<!-- 애니메이션 레이어 -->
+		<div class="absolute inset-0 bg-animated-samsung opacity-20 dark:opacity-10" />
+	</div>
+	
 	<div
-		class=" text-gray-800 bg-white h-screen max-h-[100dvh] overflow-auto flex flex-row justify-end"
+		class=" text-gray-800 dark:text-gray-100 bg-transparent h-screen max-h-[100dvh] overflow-auto flex flex-row justify-end"
 	>
 		{#if !['user', 'admin'].includes($user?.role)}
 			<AccountPending />
