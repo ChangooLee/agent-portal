@@ -484,7 +484,7 @@
 	>
 		<div class="px-1.5 flex items-center space-x-1 text-gray-600">
 			<button
-				class=" cursor-pointer p-[7px] flex rounded-lg hover:bg-gray-200 transition-all duration-200 ease-in-out"
+				class=" cursor-pointer p-[7px] flex rounded-xl bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 backdrop-blur-md border border-gray-200/30 dark:border-gray-700/30 shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 ease-out"
 				on:click={() => {
 					showSidebar.set(!$showSidebar);
 				}}
@@ -524,7 +524,7 @@
 		<!-- 모델/에이전트 선택 버튼 -->
 		<div class="px-1.5 flex justify-center text-gray-800 mt-2">
 			<button
-				class="grow flex items-center space-x-3 rounded-lg px-2 py-[7px] hover:bg-gray-200 transition-all duration-200 ease-in-out"
+				class="grow flex items-center space-x-3 rounded-xl px-2 py-[7px] bg-white/40 dark:bg-gray-800/40 hover:bg-white/60 dark:hover:bg-gray-800/60 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md transition-all duration-300 ease-out"
 				on:click={() => {
 					// 메인 영역의 모델 선택 드롭다운 열기
 					const modelSelectorButton = document.querySelector('#model-selector-0-button');
@@ -608,7 +608,7 @@
 		<!-- 새 채팅 버튼 (검색바 아래) -->
 		<div class="px-1.5 flex justify-center text-gray-800 mt-2">
 			<button
-				class="grow flex items-center justify-center gap-2 rounded-lg px-2 py-[7px] hover:bg-gray-200 transition-all duration-200 ease-in-out"
+				class="grow flex items-center justify-center gap-2 rounded-xl px-2 py-[7px] bg-white/40 dark:bg-gray-800/40 hover:bg-white/60 dark:hover:bg-gray-800/60 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md transition-all duration-300 ease-out"
 				on:click={async () => {
 					selectedChatId = null;
 					await goto('/');

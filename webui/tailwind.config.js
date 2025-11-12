@@ -37,6 +37,29 @@ export default {
 					light: '#e6f2ff',
 					dark: '#0052A3'
 				},
+				// Glassmorphism 색상 팔레트
+				glass: {
+					light: 'rgba(255, 255, 255, 0.8)',
+					'light-hover': 'rgba(255, 255, 255, 0.9)',
+					dark: 'rgba(30, 41, 59, 0.8)',
+					'dark-hover': 'rgba(30, 41, 59, 0.9)',
+				},
+				// 새로운 그라데이션 색상
+				primary: {
+					DEFAULT: '#3478f6',
+					light: '#5b8def',
+					dark: '#1e5fd9',
+				},
+				secondary: {
+					DEFAULT: '#9a7ac9',
+					light: '#b48eda',
+					dark: '#7d5fac',
+				},
+				accent: {
+					DEFAULT: '#49b59c',
+					light: '#5dd4bd',
+					dark: '#3a9680',
+				},
 				// 삼성생명 스타일 그레이 스케일 (더 깔끔하고 전문적인 톤)
 				gray: {
 					50: 'var(--color-gray-50, #f8f9fa)',
@@ -103,6 +126,43 @@ export default {
 			},
 			padding: {
 				'safe-bottom': 'env(safe-area-inset-bottom)'
+			},
+			animation: {
+				'gradient': 'gradient 30s ease-in-out infinite',
+				'shimmer': 'shimmer 12s ease-in-out infinite alternate',
+				'fade-in': 'fade-in 0.6s ease-out',
+				'scale-in': 'scale-in 0.3s ease-out',
+				'slide-up': 'slide-up 0.4s ease-out',
+				'ripple': 'ripple 0.6s ease-out',
+			},
+			keyframes: {
+				gradient: {
+					'0%, 100%': { backgroundPosition: '0% 50%' },
+					'50%': { backgroundPosition: '100% 50%' }
+				},
+				shimmer: {
+					'0%': { transform: 'translateX(0px) translateY(0px)', opacity: '0.7' },
+					'100%': { transform: 'translateX(40px) translateY(-40px)', opacity: '0.4' }
+				},
+				'fade-in': {
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				'scale-in': {
+					'0%': { opacity: '0', transform: 'scale(0.9)' },
+					'100%': { opacity: '1', transform: 'scale(1)' }
+				},
+				'slide-up': {
+					'0%': { opacity: '0', transform: 'translateY(20px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				ripple: {
+					'0%': { transform: 'scale(0)', opacity: '1' },
+					'100%': { transform: 'scale(4)', opacity: '0' }
+				}
+			},
+			backdropBlur: {
+				xs: '2px',
 			}
 		}
 	},

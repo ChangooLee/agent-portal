@@ -87,6 +87,34 @@
 		--bg-secondary: #F9FAFB; /* gray-50 */
 		--bg-hover: #F3F4F6; /* gray-100 */
 		--border-color: #E5E7EB; /* gray-200 */
+		
+		/* Glassmorphism 색상 */
+		--glass-light: rgba(255, 255, 255, 0.8);
+		--glass-light-hover: rgba(255, 255, 255, 0.9);
+		--glass-border-light: rgba(229, 231, 235, 0.3);
+		
+		/* 새로운 그라데이션 색상 */
+		--primary: #3478f6;
+		--primary-light: #5b8def;
+		--secondary: #9a7ac9;
+		--secondary-light: #b48eda;
+		--accent: #49b59c;
+		--accent-light: #5dd4bd;
+	}
+	
+	.dark {
+		--text-primary: #F9FAFB; /* gray-50 */
+		--text-secondary: #E5E7EB; /* gray-200 */
+		--text-tertiary: #9CA3AF; /* gray-400 */
+		--bg-primary: #0f172a;
+		--bg-secondary: #1e293b; /* slate-800 */
+		--bg-hover: #334155; /* slate-700 */
+		--border-color: #374151; /* gray-700 */
+		
+		/* Glassmorphism 다크 모드 */
+		--glass-dark: rgba(30, 41, 59, 0.8);
+		--glass-dark-hover: rgba(30, 41, 59, 0.9);
+		--glass-border-dark: rgba(55, 65, 81, 0.3);
 	}
 
 	/* Typography improvements */
@@ -230,4 +258,81 @@
 
 .animate-fade-in {
 	animation: fade-in 1s ease-out;
+}
+
+/* Glassmorphism 스크롤바 */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(10px);
+	border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+	border-radius: 10px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+}
+
+.dark ::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+	background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary-light) 100%);
+}
+
+/* Glassmorphism 유틸리티 클래스 */
+.glass-light {
+	background: var(--glass-light);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
+.glass-dark {
+	background: var(--glass-dark);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
+/* 리플 효과 */
+.ripple-container {
+	position: relative;
+	overflow: hidden;
+}
+
+.ripple {
+	position: absolute;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.6);
+	transform: scale(0);
+	animation: ripple-animation 0.6s ease-out;
+	pointer-events: none;
+}
+
+@keyframes ripple-animation {
+	to {
+		transform: scale(4);
+		opacity: 0;
+	}
+}
+
+/* 성능 최적화: prefers-reduced-motion 지원 */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }

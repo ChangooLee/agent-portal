@@ -38,6 +38,8 @@
 		temporaryChatEnabled,
 		toolServers
 	} from '$lib/stores';
+	
+	import { theme } from '$lib/stores/theme';
 
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import TopNavbar from '$lib/components/layout/TopNavbar.svelte';
@@ -57,6 +59,9 @@
 	let version;
 
 	onMount(async () => {
+		// 테마 초기화
+		theme.init();
+		
 		if ($user === undefined || $user === null) {
 			await goto('/auth');
 		} else if (['user', 'admin'].includes($user?.role)) {
