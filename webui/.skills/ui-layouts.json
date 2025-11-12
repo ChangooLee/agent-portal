@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "generatedAt": "2025-11-07T06:49:02.489Z",
+    "generatedAt": "2025-11-12T04:29:25.443Z",
     "layoutCount": 7,
-    "pageCount": 34
+    "pageCount": 42
   },
   "layouts": [
     {
@@ -163,7 +163,9 @@
         "$lib/apis/users",
         "$lib/constants",
         "$lib/utils",
+        "$lib/stores/theme",
         "$lib/components/layout/Sidebar.svelte",
+        "$lib/components/layout/TopNavbar.svelte",
         "$lib/components/chat/SettingsModal.svelte",
         "$lib/components/ChangelogModal.svelte",
         "$lib/components/layout/Overlay/AccountPending.svelte",
@@ -173,6 +175,7 @@
       ],
       "components": [
         "$lib/components/layout/Sidebar.svelte",
+        "$lib/components/layout/TopNavbar.svelte",
         "$lib/components/chat/SettingsModal.svelte",
         "$lib/components/ChangelogModal.svelte",
         "$lib/components/layout/Overlay/AccountPending.svelte",
@@ -440,6 +443,70 @@
         "+layout.svelte"
       ]
     },
+    "(app)/admin/guardrails/": {
+      "page": "(app)/admin/guardrails/+page.svelte",
+      "routePath": "(app)/admin/guardrails/",
+      "layouts": [
+        {
+          "layout": "(app)/admin/+layout.svelte",
+          "routePath": "(app)/admin/",
+          "type": "svelte"
+        },
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
+        "(app)/admin/+layout.svelte",
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
+    "(app)/admin/mcp/": {
+      "page": "(app)/admin/mcp/+page.svelte",
+      "routePath": "(app)/admin/mcp/",
+      "layouts": [
+        {
+          "layout": "(app)/admin/+layout.svelte",
+          "routePath": "(app)/admin/",
+          "type": "svelte"
+        },
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
+        "(app)/admin/+layout.svelte",
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
     "(app)/admin/monitoring/": {
       "page": "(app)/admin/monitoring/+page.svelte",
       "routePath": "(app)/admin/monitoring/",
@@ -536,6 +603,32 @@
         "+layout.svelte"
       ]
     },
+    "(app)/agent/": {
+      "page": "(app)/agent/+page.svelte",
+      "routePath": "(app)/agent/",
+      "layouts": [
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
     "(app)/c/:id/": {
       "page": "(app)/c/[id]/+page.svelte",
       "routePath": "(app)/c/:id/",
@@ -615,6 +708,32 @@
       ],
       "layoutChain": [
         "(app)/home/+layout.svelte",
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
+    "(app)/notebook/": {
+      "page": "(app)/notebook/+page.svelte",
+      "routePath": "(app)/notebook/",
+      "layouts": [
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
         "(app)/+layout.svelte",
         "+layout.js",
         "+layout.svelte"
@@ -711,6 +830,110 @@
       ],
       "layoutChain": [
         "(app)/playground/+layout.svelte",
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
+    "(app)/report/": {
+      "page": "(app)/report/+page.svelte",
+      "routePath": "(app)/report/",
+      "layouts": [
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
+    "(app)/schedule/": {
+      "page": "(app)/schedule/+page.svelte",
+      "routePath": "(app)/schedule/",
+      "layouts": [
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
+    "(app)/search/": {
+      "page": "(app)/search/+page.svelte",
+      "routePath": "(app)/search/",
+      "layouts": [
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
+        "(app)/+layout.svelte",
+        "+layout.js",
+        "+layout.svelte"
+      ]
+    },
+    "(app)/usage/": {
+      "page": "(app)/usage/+page.svelte",
+      "routePath": "(app)/usage/",
+      "layouts": [
+        {
+          "layout": "(app)/+layout.svelte",
+          "routePath": "(app)/",
+          "type": "svelte"
+        },
+        {
+          "layout": "+layout.js",
+          "routePath": "/",
+          "type": "js"
+        },
+        {
+          "layout": "+layout.svelte",
+          "routePath": "/",
+          "type": "svelte"
+        }
+      ],
+      "layoutChain": [
         "(app)/+layout.svelte",
         "+layout.js",
         "+layout.svelte"

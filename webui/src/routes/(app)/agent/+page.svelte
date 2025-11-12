@@ -45,7 +45,7 @@
 </svelte:head>
 
 {#if loaded}
-	<div class="flex flex-col w-full h-screen max-h-[100dvh]">
+	<div class="flex flex-col w-full min-h-full">
 		<div class="flex-1 overflow-y-auto p-8">
 			<div class="w-full">
 				<h1 class="text-3xl font-bold mb-2">에이전트 빌더</h1>

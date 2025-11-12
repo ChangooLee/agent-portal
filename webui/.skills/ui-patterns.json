@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "generatedAt": "2025-11-07T06:49:02.463Z",
-    "totalPatterns": 4325,
-    "buttonCount": 391,
+    "generatedAt": "2025-11-12T04:29:25.405Z",
+    "totalPatterns": 4545,
+    "buttonCount": 393,
     "tabCount": 10,
-    "cardCount": 142,
+    "cardCount": 168,
     "modalCount": 2
   },
   "colorUsage": {
@@ -15,7 +15,11 @@
       "indigo-500",
       "red-600",
       "red-50",
-      "red-900"
+      "red-900",
+      "blue-50",
+      "blue-500",
+      "blue-600",
+      "blue-700"
     ],
     "secondary": [],
     "accent": [],
@@ -52,20 +56,22 @@
       "blue-950",
       "blue-900",
       "blue-300",
+      "gray-50",
       "blue-400",
-      "red-400"
+      "red-400",
+      "blue-600"
     ],
     "border": [
       "gray-100",
       "gray-850",
       "gray-900",
-      "gray-50",
-      "gray-800",
+      "gray-200",
+      "gray-700",
       "red-600",
       "gray-300",
-      "gray-700",
       "gray-600",
-      "gray-200",
+      "gray-50",
+      "gray-800",
       "blue-500"
     ]
   },
@@ -104,7 +110,6 @@
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Overview.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/SettingsModal.svelte",
         "lib/components/chat/ShortcutsModal.svelte",
@@ -115,16 +120,22 @@
         "lib/components/common/FileItemModal.svelte",
         "lib/components/common/Overlay.svelte",
         "lib/components/common/Selector.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/common/AccessControlModal.svelte",
         "lib/components/workspace/common/ManifestModal.svelte",
         "routes/(app)/+layout.svelte",
-        "routes/auth/+page.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "routes": [
         "routes/(app)/+layout.svelte",
-        "routes/auth/+page.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "components": [
@@ -160,7 +171,6 @@
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Overview.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/SettingsModal.svelte",
         "lib/components/chat/ShortcutsModal.svelte",
@@ -171,6 +181,10 @@
         "lib/components/common/FileItemModal.svelte",
         "lib/components/common/Overlay.svelte",
         "lib/components/common/Selector.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/common/AccessControlModal.svelte",
         "lib/components/workspace/common/ManifestModal.svelte"
@@ -210,7 +224,6 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Personalization/AddMemoryModal.svelte",
         "lib/components/chat/Settings/Personalization/EditMemoryModal.svelte",
@@ -224,7 +237,9 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
@@ -235,10 +250,14 @@
         "lib/components/workspace/common/ManifestModal.svelte",
         "lib/components/workspace/common/ValvesModal.svelte",
         "routes/(app)/+layout.svelte",
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/auth/+page.svelte"
       ],
       "routes": [
         "routes/(app)/+layout.svelte",
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/auth/+page.svelte"
       ],
       "components": [
@@ -274,7 +293,6 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Personalization/AddMemoryModal.svelte",
         "lib/components/chat/Settings/Personalization/EditMemoryModal.svelte",
@@ -288,7 +306,9 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
@@ -350,7 +370,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
@@ -377,8 +396,12 @@
         "lib/components/layout/Sidebar/ChatItem.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat/Message.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Knowledge.svelte",
         "lib/components/workspace/Models/ActionsSelector.svelte",
@@ -394,11 +417,19 @@
         "lib/components/workspace/Tools.svelte",
         "lib/components/workspace/common/AccessControl.svelte",
         "routes/(app)/admin/gateway/+page.svelte",
-        "routes/auth/+page.svelte"
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte"
       ],
       "routes": [
         "routes/(app)/admin/gateway/+page.svelte",
-        "routes/auth/+page.svelte"
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte"
       ],
       "components": [
         "lib/components/AddConnectionModal.svelte",
@@ -449,7 +480,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
@@ -476,8 +506,12 @@
         "lib/components/layout/Sidebar/ChatItem.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat/Message.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Knowledge.svelte",
         "lib/components/workspace/Models/ActionsSelector.svelte",
@@ -535,6 +569,7 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/CodeExecutions.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -559,8 +594,8 @@
         "lib/components/layout/Sidebar/ChannelItem.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/playground/Chat/Message.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Knowledge/ItemMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
@@ -573,10 +608,14 @@
         "lib/components/workspace/Tools.svelte",
         "lib/components/workspace/common/ManifestModal.svelte",
         "lib/components/workspace/common/ValvesModal.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/+error.svelte",
         "routes/auth/+page.svelte"
       ],
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/+error.svelte",
         "routes/auth/+page.svelte"
       ],
@@ -620,6 +659,7 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/CodeExecutions.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -644,8 +684,8 @@
         "lib/components/layout/Sidebar/ChannelItem.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/playground/Chat/Message.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Knowledge/ItemMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
@@ -698,14 +738,19 @@
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte",
         "lib/components/workspace/Tools.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "components": [
@@ -745,6 +790,7 @@
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
@@ -791,6 +837,7 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
+        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -823,21 +870,17 @@
         "lib/components/workspace/Tools.svelte",
         "lib/components/workspace/common/AccessControl.svelte",
         "routes/(app)/+layout.svelte",
-        "routes/(app)/admin/+layout.svelte",
         "routes/(app)/home/+layout.svelte",
         "routes/(app)/playground/+layout.svelte",
         "routes/(app)/workspace/+layout.svelte",
-        "routes/auth/+page.svelte",
         "routes/error/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "routes": [
         "routes/(app)/+layout.svelte",
-        "routes/(app)/admin/+layout.svelte",
         "routes/(app)/home/+layout.svelte",
         "routes/(app)/playground/+layout.svelte",
         "routes/(app)/workspace/+layout.svelte",
-        "routes/auth/+page.svelte",
         "routes/error/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
@@ -879,6 +922,7 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
+        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -966,13 +1010,17 @@
         "lib/components/common/Folder.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
         "routes/(app)/+layout.svelte",
         "routes/(app)/admin/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/(app)/workspace/+layout.svelte",
         "routes/s/[id]/+page.svelte"
       ],
@@ -980,6 +1028,7 @@
         "routes/(app)/+layout.svelte",
         "routes/(app)/admin/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/(app)/workspace/+layout.svelte",
         "routes/s/[id]/+page.svelte"
       ],
@@ -1036,9 +1085,12 @@
         "lib/components/common/Folder.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte"
       ]
     },
@@ -1080,7 +1132,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
@@ -1152,7 +1203,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
@@ -1215,13 +1265,11 @@
         "lib/components/chat/Messages/Markdown/Source.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/common/Drawer.svelte",
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Navbar.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
@@ -1234,11 +1282,9 @@
         "lib/components/workspace/Prompts.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
         "lib/components/workspace/Tools.svelte",
-        "routes/(app)/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "routes": [
-        "routes/(app)/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [
@@ -1273,13 +1319,11 @@
         "lib/components/chat/Messages/Markdown/Source.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/common/Drawer.svelte",
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Navbar.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
@@ -1302,7 +1346,6 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ],
@@ -1314,7 +1357,6 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ]
@@ -1333,9 +1375,11 @@
         "lib/components/chat/ShareChatModal.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
         "routes/error/+page.svelte"
       ],
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
         "routes/error/+page.svelte"
       ],
       "components": [
@@ -1375,9 +1419,11 @@
         "lib/components/workspace/Models.svelte",
         "lib/components/workspace/Prompts.svelte",
         "lib/components/workspace/Tools.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
         "routes/auth/+page.svelte"
       ],
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
         "routes/auth/+page.svelte"
       ],
       "components": [
@@ -1425,7 +1471,6 @@
         "lib/components/common/Valves.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
@@ -1456,7 +1501,6 @@
         "lib/components/common/Valves.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
@@ -1480,7 +1524,6 @@
         "lib/components/chat/MessageInput/Commands/Models.svelte",
         "lib/components/chat/MessageInput/Commands/Prompts.svelte",
         "lib/components/chat/MessageInput/Commands.svelte",
-        "lib/components/chat/MessageInput.svelte",
         "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
         "lib/components/chat/Messages/RateComment.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
@@ -1508,7 +1551,6 @@
         "lib/components/chat/MessageInput/Commands/Models.svelte",
         "lib/components/chat/MessageInput/Commands/Prompts.svelte",
         "lib/components/chat/MessageInput/Commands.svelte",
-        "lib/components/chat/MessageInput.svelte",
         "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
         "lib/components/chat/Messages/RateComment.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
@@ -1548,8 +1590,6 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -1563,6 +1603,9 @@
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
@@ -1570,12 +1613,16 @@
         "routes/(app)/+layout.svelte",
         "routes/(app)/admin/gateway/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/auth/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "routes": [
         "routes/(app)/+layout.svelte",
         "routes/(app)/admin/gateway/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/auth/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "components": [
@@ -1605,8 +1652,6 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -1620,6 +1665,9 @@
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
@@ -1640,9 +1688,8 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Navbar.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
         "lib/components/chat/Settings/Personalization.svelte",
         "lib/components/chat/Settings/Tools.svelte",
@@ -1656,11 +1703,31 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte",
-        "routes/(app)/admin/monitoring/+page.svelte"
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
+        "routes/(app)/usage/+page.svelte"
       ],
       "routes": [
-        "routes/(app)/admin/monitoring/+page.svelte"
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
+        "routes/(app)/usage/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Feedbacks.svelte",
@@ -1675,9 +1742,8 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Navbar.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
         "lib/components/chat/Settings/Personalization.svelte",
         "lib/components/chat/Settings/Tools.svelte",
@@ -1691,6 +1757,8 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte"
       ]
     },
@@ -1704,10 +1772,15 @@
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/playground/Chat/Message.svelte",
         "lib/components/playground/Chat.svelte",
-        "routes/auth/+page.svelte"
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte"
       ],
       "routes": [
-        "routes/auth/+page.svelte"
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Feedbacks.svelte",
@@ -1717,7 +1790,10 @@
         "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/playground/Chat/Message.svelte",
-        "lib/components/playground/Chat.svelte"
+        "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte"
       ]
     },
     "bg-gray-800": {
@@ -1752,7 +1828,10 @@
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddContentMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte",
@@ -1763,14 +1842,18 @@
         "lib/components/workspace/Tools.svelte",
         "routes/(app)/admin/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/(app)/workspace/+layout.svelte",
-        "routes/+error.svelte"
+        "routes/+error.svelte",
+        "routes/auth/+page.svelte"
       ],
       "routes": [
         "routes/(app)/admin/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/(app)/workspace/+layout.svelte",
-        "routes/+error.svelte"
+        "routes/+error.svelte",
+        "routes/auth/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Feedbacks.svelte",
@@ -1803,7 +1886,10 @@
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddContentMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte",
@@ -1830,17 +1916,23 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/ShareChatModal.svelte",
         "lib/components/chat/ToolServersModal.svelte",
         "lib/components/common/Banner.svelte",
         "lib/components/common/ConfirmDialog.svelte",
+        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte",
-        "routes/(app)/+layout.svelte"
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "routes/(app)/+layout.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte"
       ],
       "routes": [
-        "routes/(app)/+layout.svelte"
+        "routes/(app)/+layout.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Leaderboard.svelte",
@@ -1857,13 +1949,15 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/ShareChatModal.svelte",
         "lib/components/chat/ToolServersModal.svelte",
         "lib/components/common/Banner.svelte",
         "lib/components/common/ConfirmDialog.svelte",
-        "lib/components/layout/Sidebar.svelte"
+        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte"
       ]
     },
     "text-green-500": {
@@ -1882,10 +1976,14 @@
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
         "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "routes": [
         "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [
@@ -1947,7 +2045,6 @@
         "lib/components/channel/Messages/Message/ProfilePreview.svelte",
         "lib/components/channel/Messages/Message.svelte",
         "lib/components/chat/MessageInput/Commands/Knowledge.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/common/Tags/TagList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Tools.svelte"
@@ -1959,7 +2056,6 @@
         "lib/components/channel/Messages/Message/ProfilePreview.svelte",
         "lib/components/channel/Messages/Message.svelte",
         "lib/components/chat/MessageInput/Commands/Knowledge.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/common/Tags/TagList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Tools.svelte"
@@ -1971,9 +2067,12 @@
         "lib/components/channel/Messages/Message/ProfilePreview.svelte",
         "lib/components/chat/MessageInput/Commands/Knowledge.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
-        "lib/components/workspace/Models/Knowledge/Selector.svelte"
+        "lib/components/workspace/Models/Knowledge/Selector.svelte",
+        "routes/(app)/search/+page.svelte"
       ],
-      "routes": [],
+      "routes": [
+        "routes/(app)/search/+page.svelte"
+      ],
       "components": [
         "lib/components/admin/Settings/Images.svelte",
         "lib/components/channel/Messages/Message/ProfilePreview.svelte",
@@ -2013,9 +2112,12 @@
         "lib/components/admin/Settings/Models/Manage/ManageOllama.svelte",
         "lib/components/channel/MessageInput.svelte",
         "lib/components/chat/Messages/Skeleton.svelte",
-        "lib/components/workspace/Models/ModelEditor.svelte"
+        "lib/components/workspace/Models/ModelEditor.svelte",
+        "routes/auth/+page.svelte"
       ],
-      "routes": [],
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
       "components": [
         "lib/components/admin/Settings/Models/Manage/ManageOllama.svelte",
         "lib/components/channel/MessageInput.svelte",
@@ -2028,7 +2130,6 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte"
       ],
       "routes": [],
@@ -2036,19 +2137,16 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte"
       ]
     },
     "bg-gray-400": {
       "files": [
-        "lib/components/channel/MessageInput.svelte",
-        "lib/components/chat/MessageInput.svelte"
+        "lib/components/channel/MessageInput.svelte"
       ],
       "routes": [],
       "components": [
-        "lib/components/channel/MessageInput.svelte",
-        "lib/components/chat/MessageInput.svelte"
+        "lib/components/channel/MessageInput.svelte"
       ]
     },
     "bg-green-400": {
@@ -2080,35 +2178,62 @@
         "lib/components/chat/MessageInput/VoiceRecording.svelte"
       ]
     },
-    "border-gray-50": {
+    "border-gray-200": {
       "files": [
         "lib/components/chat/MessageInput.svelte",
-        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
-        "lib/components/common/FileItem.svelte",
-        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
-      ],
-      "routes": [],
-      "components": [
-        "lib/components/chat/MessageInput.svelte",
-        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
-        "lib/components/common/FileItem.svelte",
-        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
-      ]
-    },
-    "border-gray-800": {
-      "files": [
-        "lib/components/chat/MessageInput.svelte",
+        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
         "routes/(app)/workspace/+layout.svelte"
       ],
       "routes": [
         "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
         "routes/(app)/workspace/+layout.svelte"
       ],
       "components": [
-        "lib/components/chat/MessageInput.svelte"
+        "lib/components/chat/MessageInput.svelte",
+        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte"
+      ]
+    },
+    "border-gray-700": {
+      "files": [
+        "lib/components/chat/MessageInput.svelte",
+        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Messages/ResponseMessage.svelte",
+        "lib/components/chat/Messages/UserMessage.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/report/+page.svelte"
+      ],
+      "routes": [
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/report/+page.svelte"
+      ],
+      "components": [
+        "lib/components/chat/MessageInput.svelte",
+        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Messages/ResponseMessage.svelte",
+        "lib/components/chat/Messages/UserMessage.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte"
       ]
     },
     "border-red-600": {
@@ -2131,27 +2256,14 @@
     },
     "border-gray-300": {
       "files": [
-        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte"
-      ],
-      "routes": [],
-      "components": [
-        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte"
-      ]
-    },
-    "border-gray-700": {
-      "files": [
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
-        "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/Messages/UserMessage.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [
-        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
-        "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/Messages/UserMessage.svelte"
+        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte"
       ]
     },
     "bg-gray-300": {
@@ -2174,12 +2286,30 @@
     "border-gray-600": {
       "files": [
         "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
-        "lib/components/common/Tags/TagInput.svelte"
+        "lib/components/common/Tags/TagInput.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/auth/+page.svelte"
       ],
-      "routes": [],
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/auth/+page.svelte"
+      ],
       "components": [
         "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
         "lib/components/common/Tags/TagInput.svelte"
+      ]
+    },
+    "border-gray-50": {
+      "files": [
+        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
+        "lib/components/common/FileItem.svelte",
+        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
+      ],
+      "routes": [],
+      "components": [
+        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
+        "lib/components/common/FileItem.svelte",
+        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
       ]
     },
     "text-blue-900": {
@@ -2202,6 +2332,29 @@
         "lib/components/workspace/common/ManifestModal.svelte"
       ]
     },
+    "border-gray-800": {
+      "files": [
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "routes/(app)/workspace/+layout.svelte"
+      ],
+      "routes": [
+        "routes/(app)/workspace/+layout.svelte"
+      ],
+      "components": [
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte"
+      ]
+    },
+    "text-gray-50": {
+      "files": [
+        "lib/components/report/ReportTemplateList.svelte"
+      ],
+      "routes": [],
+      "components": [
+        "lib/components/report/ReportTemplateList.svelte"
+      ]
+    },
     "text-blue-400": {
       "files": [
         "lib/components/workspace/common/ManifestModal.svelte"
@@ -2211,27 +2364,14 @@
         "lib/components/workspace/common/ManifestModal.svelte"
       ]
     },
-    "border-gray-200": {
-      "files": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/gateway/+page.svelte",
-        "routes/(app)/admin/monitoring/+page.svelte",
-        "routes/(app)/workspace/+layout.svelte"
-      ],
-      "routes": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/gateway/+page.svelte",
-        "routes/(app)/admin/monitoring/+page.svelte",
-        "routes/(app)/workspace/+layout.svelte"
-      ],
-      "components": []
-    },
     "border-blue-500": {
       "files": [
-        "routes/(app)/admin/gateway/+page.svelte"
+        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/agent/+page.svelte"
       ],
       "routes": [
-        "routes/(app)/admin/gateway/+page.svelte"
+        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/agent/+page.svelte"
       ],
       "components": []
     },
@@ -2259,6 +2399,51 @@
       ],
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": []
+    },
+    "text-blue-600": {
+      "files": [
+        "routes/(app)/agent/+page.svelte"
+      ],
+      "routes": [
+        "routes/(app)/agent/+page.svelte"
+      ],
+      "components": []
+    },
+    "bg-blue-50": {
+      "files": [
+        "routes/(app)/agent/+page.svelte"
+      ],
+      "routes": [
+        "routes/(app)/agent/+page.svelte"
+      ],
+      "components": []
+    },
+    "bg-blue-500": {
+      "files": [
+        "routes/(app)/notebook/+page.svelte"
+      ],
+      "routes": [
+        "routes/(app)/notebook/+page.svelte"
+      ],
+      "components": []
+    },
+    "bg-blue-600": {
+      "files": [
+        "routes/auth/+page.svelte"
+      ],
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": []
+    },
+    "bg-blue-700": {
+      "files": [
+        "routes/auth/+page.svelte"
+      ],
+      "routes": [
+        "routes/auth/+page.svelte"
       ],
       "components": []
     }
@@ -2297,7 +2482,7 @@
     "card": {
       "background": "hover:bg-gray-100",
       "borderRadius": "rounded-lg",
-      "shadow": "shadow-xl",
+      "shadow": "shadow-sm",
       "padding": "p-1",
       "files": [
         "lib/components/AddConnectionModal.svelte",

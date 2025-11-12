@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "generatedAt": "2025-11-07T06:49:02.379Z",
+    "generatedAt": "2025-11-12T04:29:25.307Z",
     "webuiDir": "/Users/lchangoo/Workspace/agent-portal/webui/src",
-    "routeCount": 40,
-    "componentCount": 295,
+    "routeCount": 48,
+    "componentCount": 300,
     "apiModuleCount": 23
   },
   "routes": [
@@ -13,6 +13,7 @@
       "description": "Layout",
       "components": [
         "layout/Sidebar.svelte",
+        "layout/TopNavbar.svelte",
         "chat/SettingsModal.svelte",
         "ChangelogModal.svelte",
         "layout/Overlay/AccountPending.svelte",
@@ -106,33 +107,46 @@
           "name": "deleteDB"
         }
       ],
-      "stores": [],
+      "stores": [
+        "stores"
+      ],
       "keywords": [
+        "version update notification disabled",
+        "그라데이션 배경",
+        "라이트 모드 그라데이션",
+        "다크 모드 그라데이션",
+        "애니메이션 레이어",
+        "chat log storage update notification disabled",
         "settings",
         "chats",
         "import chats",
         "close",
         "(app)"
       ],
-      "fileSize": 10650,
-      "lineCount": 369
+      "fileSize": 11630,
+      "lineCount": 399
     },
     {
       "path": "routes/(app)/+page.svelte",
       "routePath": "/",
-      "description": "Page",
+      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
       "components": [
         "chat/Chat.svelte",
         "layout/Help.svelte"
       ],
       "apis": [],
       "apiCalls": [],
-      "stores": [],
+      "stores": [
+        "stores"
+      ],
       "keywords": [
+        "{$webui_name",
+        "'sfn",
+        "portal'}",
         "(app)"
       ],
-      "fileSize": 158,
-      "lineCount": 8
+      "fileSize": 280,
+      "lineCount": 13
     },
     {
       "path": "routes/(app)/admin/+layout.svelte",
@@ -156,17 +170,11 @@
         "panel')}",
         "{$webui_name}",
         "admin panel",
-        "users",
-        "evaluations",
-        "functions",
-        "monitoring",
-        "settings",
-        "gateway",
         "(app)",
         "admin"
       ],
-      "fileSize": 3914,
-      "lineCount": 105
+      "fileSize": 7403,
+      "lineCount": 127
     },
     {
       "path": "routes/(app)/admin/+page.svelte",
@@ -318,7 +326,7 @@
     {
       "path": "routes/(app)/admin/gateway/+page.svelte",
       "routePath": "admin/gateway",
-      "description": "{$i18n.t('Gateway')} | Admin Panel",
+      "description": "{$i18n.t('Gateway')} | {$WEBUI_NAME}",
       "components": [],
       "apis": [],
       "apiCalls": [
@@ -327,21 +335,76 @@
           "name": "getContext"
         }
       ],
-      "stores": [],
+      "stores": [
+        "stores"
+      ],
       "keywords": [
         "{$i18n.t('gateway')}",
-        "admin",
-        "panel",
+        "{$webui_name}",
         "gateway",
-        "(app)"
+        "(app)",
+        "admin"
       ],
-      "fileSize": 2917,
-      "lineCount": 104
+      "fileSize": 2850,
+      "lineCount": 105
+    },
+    {
+      "path": "routes/(app)/admin/guardrails/+page.svelte",
+      "routePath": "admin/guardrails",
+      "description": "가드레일 | {$WEBUI_NAME}",
+      "components": [],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "가드레일 관리 기능은 추후 구현 예정",
+        "가드레일",
+        "{$webui_name}",
+        "access denied: only administrators can view this page.",
+        "(app)",
+        "admin",
+        "guardrails"
+      ],
+      "fileSize": 778,
+      "lineCount": 34
+    },
+    {
+      "path": "routes/(app)/admin/mcp/+page.svelte",
+      "routePath": "admin/mcp",
+      "description": "MCP | {$WEBUI_NAME}",
+      "components": [],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "mcp 관리 기능은 추후 구현 예정",
+        "mcp",
+        "{$webui_name}",
+        "access denied: only administrators can view this page.",
+        "(app)",
+        "admin"
+      ],
+      "fileSize": 793,
+      "lineCount": 34
     },
     {
       "path": "routes/(app)/admin/monitoring/+page.svelte",
       "routePath": "admin/monitoring",
-      "description": "{$i18n.t('Monitoring')} | Admin Panel",
+      "description": "{$i18n.t('Monitoring')} | {$WEBUI_NAME}",
       "components": [],
       "apis": [],
       "apiCalls": [
@@ -368,23 +431,42 @@
       "keywords": [
         "tab navigation",
         "content area",
-        "langfuse summary",
-        "helicone summary",
-        "status card",
+        "show sample data (api data will be used when available)",
+        "header with period selector",
+        "stats cards",
+        "total tokens",
+        "average response time",
+        "input tokens",
+        "output tokens",
+        "channel interaction analysis",
+        "simple pie chart using svg",
+        "daily usage trend",
+        "simple line chart using svg",
+        "grid lines",
+        "y-axis labels (tokens)",
+        "x-axis labels",
+        "token line",
+        "cost line (dashed)",
+        "dots for tokens",
+        "dots for cost",
+        "legend",
+        "model usage and feature usage",
+        "model usage",
+        "model token usage bar",
+        "feature usage",
         "{$i18n.t('monitoring')}",
-        "admin",
-        "panel",
+        "{$webui_name}",
         "monitoring",
         "access denied: only administrators can view this page.",
         "summary",
         "loading usage summary...",
-        "error loading usage summary. please check the backend service.",
         "loading...",
         "error loading {activetab}. please check the backend service.",
-        "(app)"
+        "(app)",
+        "admin"
       ],
-      "fileSize": 7065,
-      "lineCount": 217
+      "fileSize": 22405,
+      "lineCount": 607
     },
     {
       "path": "routes/(app)/admin/settings/+page.svelte",
@@ -421,6 +503,32 @@
       ],
       "fileSize": 87,
       "lineCount": 6
+    },
+    {
+      "path": "routes/(app)/agent/+page.svelte",
+      "routePath": "agent",
+      "description": "에이전트 빌더 | {$WEBUI_NAME}",
+      "components": [
+        "icons/Cube.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "에이전트",
+        "{$webui_name}",
+        "(app)",
+        "agent"
+      ],
+      "fileSize": 2220,
+      "lineCount": 86
     },
     {
       "path": "routes/(app)/c/[id]/+page.svelte",
@@ -483,8 +591,8 @@
         "calendar",
         "(app)"
       ],
-      "fileSize": 1938,
-      "lineCount": 66
+      "fileSize": 1826,
+      "lineCount": 62
     },
     {
       "path": "routes/(app)/home/+page.svelte",
@@ -500,6 +608,32 @@
       ],
       "fileSize": 0,
       "lineCount": 1
+    },
+    {
+      "path": "routes/(app)/notebook/+page.svelte",
+      "routePath": "notebook",
+      "description": "노트북 | {$WEBUI_NAME}",
+      "components": [
+        "icons/BookOpen.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "노트북",
+        "{$webui_name}",
+        "(app)",
+        "notebook"
+      ],
+      "fileSize": 1272,
+      "lineCount": 50
     },
     {
       "path": "routes/(app)/playground/+layout.svelte",
@@ -527,8 +661,8 @@
         "completions",
         "(app)"
       ],
-      "fileSize": 2272,
-      "lineCount": 77
+      "fileSize": 2160,
+      "lineCount": 73
     },
     {
       "path": "routes/(app)/playground/+page.svelte",
@@ -584,6 +718,105 @@
       "lineCount": 6
     },
     {
+      "path": "routes/(app)/report/+page.svelte",
+      "routePath": "report",
+      "description": "보고서 | {$WEBUI_NAME}",
+      "components": [
+        "report/ReportTemplateList.svelte",
+        "report/ReportChatPanel.svelte",
+        "report/ReportPreview.svelte",
+        "report/types"
+      ],
+      "apis": [],
+      "apiCalls": [],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "보고서",
+        "{$webui_name}",
+        "(app)",
+        "report"
+      ],
+      "fileSize": 6482,
+      "lineCount": 196
+    },
+    {
+      "path": "routes/(app)/schedule/+page.svelte",
+      "routePath": "schedule",
+      "description": "일정관리 | {$WEBUI_NAME}",
+      "components": [
+        "icons/Calendar.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "일정관리",
+        "{$webui_name}",
+        "(app)",
+        "schedule"
+      ],
+      "fileSize": 1235,
+      "lineCount": 50
+    },
+    {
+      "path": "routes/(app)/search/+page.svelte",
+      "routePath": "search",
+      "description": "검색 | {$WEBUI_NAME}",
+      "components": [
+        "icons/Search.svelte"
+      ],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "{$webui_name}",
+        "(app)",
+        "search"
+      ],
+      "fileSize": 1255,
+      "lineCount": 50
+    },
+    {
+      "path": "routes/(app)/usage/+page.svelte",
+      "routePath": "usage",
+      "description": "사용량 | {$WEBUI_NAME}",
+      "components": [],
+      "apis": [],
+      "apiCalls": [
+        {
+          "type": "function",
+          "name": "getContext"
+        }
+      ],
+      "stores": [
+        "stores"
+      ],
+      "keywords": [
+        "사용량",
+        "{$webui_name}",
+        "(app)",
+        "usage"
+      ],
+      "fileSize": 740,
+      "lineCount": 33
+    },
+    {
       "path": "routes/(app)/workspace/+layout.svelte",
       "routePath": "workspace",
       "description": "{$i18n.t('Workspace')} | {$WEBUI_NAME}",
@@ -609,7 +842,7 @@
         "tools",
         "(app)"
       ],
-      "fileSize": 4361,
+      "fileSize": 4552,
       "lineCount": 136
     },
     {
@@ -1010,7 +1243,7 @@
     {
       "path": "routes/+layout.svelte",
       "routePath": "/",
-      "description": "{$WEBUI_NAME}",
+      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
       "components": [
         "NotificationToast.svelte",
         "app/AppSidebar.svelte"
@@ -1070,15 +1303,17 @@
       "keywords": [
         "rosepine themes have been disabled as it's not up to date with our latest version.",
         "feel free to make a pr to fix if anyone wants to see it return",
-        "{$webui_name}"
+        "{$webui_name",
+        "'sfn",
+        "portal'}"
       ],
-      "fileSize": 16498,
-      "lineCount": 643
+      "fileSize": 16947,
+      "lineCount": 655
     },
     {
       "path": "routes/auth/+page.svelte",
       "routePath": "/auth",
-      "description": "{`${$WEBUI_NAME}`}",
+      "description": "SFN AI Portal",
       "components": [
         "common/Spinner.svelte",
         "OnBoarding.svelte"
@@ -1108,8 +1343,16 @@
         "stores"
       ],
       "keywords": [
-        "{`${$webui_name}`}",
-        "signing in to {{webui_name}}",
+        "subtle reflective light layer",
+        "animated samsung blue multi-layer gradient background",
+        "logo at top",
+        "hero section",
+        "tab switcher - stripe style",
+        "sfn",
+        "portal",
+        "signing in...",
+        "sign in",
+        "sign up",
         "name",
         "enter your full name",
         "username",
@@ -1119,19 +1362,15 @@
         "password",
         "enter your password",
         "authenticate",
-        "sign in",
         "create admin account",
         "create account",
-        "don",
-        "already have an account?",
-        "sign up",
         "continue with {{provider}}",
         "continue with email",
         "continue with ldap",
         "auth"
       ],
-      "fileSize": 16450,
-      "lineCount": 485
+      "fileSize": 18985,
+      "lineCount": 580
     },
     {
       "path": "routes/error/+page.svelte",
@@ -2796,11 +3035,12 @@
       "keywords": [
         "#{channel?.name",
         "'channel'}",
-        "open",
-        "webui",
+        "{$webui_name",
+        "'sfn",
+        "portal'}",
         "channel"
       ],
-      "fileSize": 7054,
+      "fileSize": 7088,
       "lineCount": 303
     },
     {
@@ -2976,6 +3216,8 @@
         "chat/Navbar.svelte"
       ],
       "keywords": [
+        "navbar is now in the common layout (topnavbar)",
+        "chat-specific controls can be added here if needed",
         "{$i18n.t('llms can make mistakes. verify important information.')}",
         "{$chattitle",
         "`${$chattitle.length",
@@ -2993,8 +3235,8 @@
         "llms can make mistakes. verify important information.",
         "chat"
       ],
-      "fileSize": 56745,
-      "lineCount": 2148
+      "fileSize": 56425,
+      "lineCount": 2132
     },
     {
       "name": "ChatControls",
@@ -3019,12 +3261,10 @@
       "keywords": [
         "this chat won’t appear in history and your messages will not be saved.",
         "temporary chat",
-        "hello, {{name}}",
-        "how can i help you today?",
         "chat"
       ],
-      "fileSize": 4243,
-      "lineCount": 141
+      "fileSize": 4077,
+      "lineCount": 137
     },
     {
       "name": "FloatingButtons",
@@ -3269,8 +3509,8 @@
         "send message",
         "chat"
       ],
-      "fileSize": 47070,
-      "lineCount": 1364
+      "fileSize": 46761,
+      "lineCount": 1354
     },
     {
       "name": "Citations",
@@ -3721,8 +3961,6 @@
         "icons/ChatBubbleOval.svelte"
       ],
       "keywords": [
-        "{json.stringify(item.info)}",
-        "search a model",
         "maximum of 3 models can be downloaded simultaneously. please try again later.",
         "download canceled",
         "all",
@@ -3734,8 +3972,8 @@
         "chat",
         "modelselector"
       ],
-      "fileSize": 24682,
-      "lineCount": 790
+      "fileSize": 24133,
+      "lineCount": 745
     },
     {
       "name": "ModelSelector",
@@ -3745,14 +3983,10 @@
       "keywords": [
         "choose a model before saving...",
         "default model updated",
-        "select a model",
-        "add model",
-        "remove model",
-        "set as default",
         "chat"
       ],
-      "fileSize": 3558,
-      "lineCount": 121
+      "fileSize": 1767,
+      "lineCount": 59
     },
     {
       "name": "Navbar",
@@ -3763,13 +3997,14 @@
         "layout/Sidebar/UserMenu.svelte"
       ],
       "keywords": [
+        "navigation menu buttons",
         "<div class=\"md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700\" />",
         "controls",
         "new chat",
         "chat"
       ],
-      "fileSize": 7063,
-      "lineCount": 234
+      "fileSize": 10475,
+      "lineCount": 323
     },
     {
       "name": "Flow",
@@ -3820,14 +4055,13 @@
       ],
       "keywords": [
         "failed to read clipboard contents",
-        "this chat won’t appear in history and your messages will not be saved.",
+        "this chat won",
         "temporary chat",
-        "hello, {{name}}",
         "how can i help you today?",
         "chat"
       ],
-      "fileSize": 6707,
-      "lineCount": 229
+      "fileSize": 7046,
+      "lineCount": 231
     },
     {
       "name": "About",
@@ -4096,8 +4330,8 @@
         "chat",
         "settings"
       ],
-      "fileSize": 14699,
-      "lineCount": 425
+      "fileSize": 14360,
+      "lineCount": 421
     },
     {
       "name": "Interface",
@@ -4374,8 +4608,8 @@
         "prompt",
         "chat"
       ],
-      "fileSize": 3651,
-      "lineCount": 137
+      "fileSize": 3834,
+      "lineCount": 140
     },
     {
       "name": "TagChatModal",
@@ -4978,6 +5212,17 @@
       ],
       "fileSize": 514,
       "lineCount": 20
+    },
+    {
+      "name": "Calendar",
+      "path": "lib/components/icons/Calendar.svelte",
+      "directory": "icons",
+      "imports": [],
+      "keywords": [
+        "icons"
+      ],
+      "fileSize": 546,
+      "lineCount": 21
     },
     {
       "name": "CameraSolid",
@@ -5937,7 +6182,7 @@
         "layout",
         "sidebar"
       ],
-      "fileSize": 11152,
+      "fileSize": 11100,
       "lineCount": 460
     },
     {
@@ -6050,7 +6295,7 @@
         "layout",
         "sidebar"
       ],
-      "fileSize": 6536,
+      "fileSize": 6547,
       "lineCount": 245
     },
     {
@@ -6072,8 +6317,8 @@
         "layout",
         "sidebar"
       ],
-      "fileSize": 7498,
-      "lineCount": 226
+      "fileSize": 8600,
+      "lineCount": 256
     },
     {
       "name": "Sidebar",
@@ -6082,11 +6327,12 @@
       "imports": [],
       "keywords": [
         "svelte-ignore a11y-no-static-element-interactions",
+        "상단 로고/타이틀 영역",
+        "모델/에이전트 선택 버튼",
+        "새 채팅 버튼 (검색바 아래)",
+        "에이전트 목록은 추후 추가 예정",
         "folder name cannot be empty.",
-        "new chat",
         "home",
-        "workspace",
-        "search",
         "channels",
         "create channel",
         "chats",
@@ -6110,8 +6356,20 @@
         "december",
         "layout"
       ],
-      "fileSize": 24862,
-      "lineCount": 935
+      "fileSize": 26016,
+      "lineCount": 960
+    },
+    {
+      "name": "TopNavbar",
+      "path": "lib/components/layout/TopNavbar.svelte",
+      "directory": "layout",
+      "imports": [],
+      "keywords": [
+        "navigation menu buttons",
+        "layout"
+      ],
+      "fileSize": 10192,
+      "lineCount": 205
     },
     {
       "name": "UpdateInfoToast",
@@ -6209,6 +6467,39 @@
       ],
       "fileSize": 3382,
       "lineCount": 123
+    },
+    {
+      "name": "ReportChatPanel",
+      "path": "lib/components/report/ReportChatPanel.svelte",
+      "directory": "report",
+      "imports": [],
+      "keywords": [
+        "report"
+      ],
+      "fileSize": 4273,
+      "lineCount": 147
+    },
+    {
+      "name": "ReportPreview",
+      "path": "lib/components/report/ReportPreview.svelte",
+      "directory": "report",
+      "imports": [],
+      "keywords": [
+        "report"
+      ],
+      "fileSize": 2209,
+      "lineCount": 53
+    },
+    {
+      "name": "ReportTemplateList",
+      "path": "lib/components/report/ReportTemplateList.svelte",
+      "directory": "report",
+      "imports": [],
+      "keywords": [
+        "report"
+      ],
+      "fileSize": 3986,
+      "lineCount": 109
     },
     {
       "name": "CreateKnowledgeBase",

@@ -15,7 +15,7 @@
 	</title>
 </svelte:head>
 
-<div class="flex flex-col w-full h-screen max-h-[100dvh]">
+<div class="flex flex-col w-full min-h-full">
 	<nav class="   px-2.5 pt-1 backdrop-blur-xl w-full drag-region">
 		<div class=" flex items-center">
 			<div class="{$showSidebar ? 'md:hidden' : ''} flex flex-none items-center self-end">

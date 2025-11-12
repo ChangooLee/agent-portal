@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2025-11-07T06:49:02.546Z"
+    "generatedAt": "2025-11-12T04:29:25.565Z"
   },
   "tailwind": {
     "colors": {},
@@ -20,6 +20,22 @@
   "globalCSS": {
     "fonts": [
       {
+        "name": "Samsung Gothic",
+        "file": "app.css"
+      },
+      {
+        "name": "Samsung Gothic",
+        "file": "app.css"
+      },
+      {
+        "name": "Samsung Gothic",
+        "file": "app.css"
+      },
+      {
+        "name": "Samsung Gothic",
+        "file": "app.css"
+      },
+      {
         "name": "Inter",
         "file": "app.css"
       },
@@ -34,6 +50,22 @@
       {
         "name": "InstrumentSerif",
         "file": "app.css"
+      },
+      {
+        "name": "Samsung Gothic",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "Samsung Gothic",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "Samsung Gothic",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "Samsung Gothic",
+        "file": "tailwind.css"
       }
     ],
     "customClasses": [
@@ -73,7 +105,18 @@
       "page-container",
       "btn-primary",
       "btn-secondary",
-      "input-field"
+      "input-field",
+      "dark",
+      "container",
+      "bg-animated-samsung",
+      "bg-light-overlay",
+      "animate-samsung-gradient",
+      "animate-shimmer",
+      "animate-fade-in",
+      "glass-light",
+      "glass-dark",
+      "ripple-container",
+      "ripple"
     ],
     "cssVariables": [
       {
@@ -135,9 +178,169 @@
         "name": "tw-border-opacity",
         "value": "1",
         "file": "app.css"
+      },
+      {
+        "name": "tw-ring-color",
+        "value": "#0066CC",
+        "file": "app.css"
+      },
+      {
+        "name": "samsung-blue",
+        "value": "#0072CE",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "samsung-blue-light",
+        "value": "#E6F2FF",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "samsung-blue-lighter",
+        "value": "#F0F7FF",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "text-primary",
+        "value": "#1F2937",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "text-secondary",
+        "value": "#4B5563",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "text-tertiary",
+        "value": "#9CA3AF",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "bg-primary",
+        "value": "#FFFFFF",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "bg-secondary",
+        "value": "#F9FAFB",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "bg-hover",
+        "value": "#F3F4F6",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "border-color",
+        "value": "#E5E7EB",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "glass-light",
+        "value": "rgba(255, 255, 255, 0.8)",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "glass-light-hover",
+        "value": "rgba(255, 255, 255, 0.9)",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "glass-border-light",
+        "value": "rgba(229, 231, 235, 0.3)",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "primary",
+        "value": "#3478f6",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "primary-light",
+        "value": "#5b8def",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "secondary",
+        "value": "#9a7ac9",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "secondary-light",
+        "value": "#b48eda",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "accent",
+        "value": "#49b59c",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "accent-light",
+        "value": "#5dd4bd",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "text-primary",
+        "value": "#F9FAFB",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "text-secondary",
+        "value": "#E5E7EB",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "text-tertiary",
+        "value": "#9CA3AF",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "bg-primary",
+        "value": "#0f172a",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "bg-secondary",
+        "value": "#1e293b",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "bg-hover",
+        "value": "#334155",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "border-color",
+        "value": "#374151",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "glass-dark",
+        "value": "rgba(30, 41, 59, 0.8)",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "glass-dark-hover",
+        "value": "rgba(30, 41, 59, 0.9)",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "glass-border-dark",
+        "value": "rgba(55, 65, 81, 0.3)",
+        "file": "tailwind.css"
+      },
+      {
+        "name": "tw-ring-color",
+        "value": "rgb(0 114 206 / 0.2)",
+        "file": "tailwind.css"
       }
     ],
-    "mediaQueries": []
+    "mediaQueries": [
+      {
+        "query": "@media (prefers-reduced-motion: reduce) {\n\t*,\n\t*::before,\n\t*::after {\n\t\tanimation-duration: 0.01ms !",
+        "file": "tailwind.css"
+      }
+    ]
   },
   "themeSystem": {
     "available": [
@@ -149,23 +352,17 @@
       "rose-pine dark",
       "rose-pine-dawn light"
     ],
-    "default": "system",
+    "default": "light",
     "storageKey": "theme",
-    "applyMethod": "class",
-    "colorVariables": {
-      "gray-800": "#101010",
-      "gray-850": "#050505",
-      "gray-900": "#000000",
-      "gray-950": "#000000"
-    }
+    "applyMethod": "class"
   },
   "responsive": {
     "breakpointUsage": {
-      "sm": 64,
-      "md": 141,
-      "lg": 55,
-      "xl": 11,
-      "2xl": 1
+      "sm": 77,
+      "md": 145,
+      "lg": 57,
+      "xl": 12,
+      "2xl": 0
     },
     "mostUsed": "md"
   }

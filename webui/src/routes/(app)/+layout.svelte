@@ -272,7 +272,7 @@
 	</div>
 	
 	<div
-		class=" text-gray-800 dark:text-gray-100 bg-transparent h-screen max-h-[100dvh] overflow-auto flex flex-row justify-end"
+		class=" text-gray-800 dark:text-gray-100 bg-transparent min-h-screen overflow-auto flex flex-row justify-end"
 	>
 		{#if !['user', 'admin'].includes($user?.role)}
 			<AccountPending />

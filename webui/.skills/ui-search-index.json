@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2025-11-07T06:49:02.572Z",
+    "generatedAt": "2025-11-12T04:29:25.606Z",
     "version": "2.0.0",
     "enhanced": true
   },
@@ -10,6 +10,12 @@
       "routePath": "/",
       "description": "Layout",
       "keywords": [
+        "version update notification disabled",
+        "그라데이션 배경",
+        "라이트 모드 그라데이션",
+        "다크 모드 그라데이션",
+        "애니메이션 레이어",
+        "chat log storage update notification disabled",
         "settings",
         "chats",
         "import chats",
@@ -18,6 +24,7 @@
       ],
       "components": [
         "layout/Sidebar.svelte",
+        "layout/TopNavbar.svelte",
         "chat/SettingsModal.svelte",
         "ChangelogModal.svelte",
         "layout/Overlay/AccountPending.svelte",
@@ -37,8 +44,11 @@
     {
       "path": "routes/(app)/+page.svelte",
       "routePath": "/",
-      "description": "Page",
+      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
       "keywords": [
+        "{$webui_name",
+        "'sfn",
+        "portal'}",
         "(app)"
       ],
       "components": [
@@ -56,12 +66,6 @@
         "panel')}",
         "{$webui_name}",
         "admin panel",
-        "users",
-        "evaluations",
-        "functions",
-        "monitoring",
-        "settings",
-        "gateway",
         "(app)",
         "admin"
       ],
@@ -151,13 +155,44 @@
     {
       "path": "routes/(app)/admin/gateway/+page.svelte",
       "routePath": "admin/gateway",
-      "description": "{$i18n.t('Gateway')} | Admin Panel",
+      "description": "{$i18n.t('Gateway')} | {$WEBUI_NAME}",
       "keywords": [
         "{$i18n.t('gateway')}",
-        "admin",
-        "panel",
+        "{$webui_name}",
         "gateway",
-        "(app)"
+        "(app)",
+        "admin"
+      ],
+      "components": [],
+      "apis": []
+    },
+    {
+      "path": "routes/(app)/admin/guardrails/+page.svelte",
+      "routePath": "admin/guardrails",
+      "description": "가드레일 | {$WEBUI_NAME}",
+      "keywords": [
+        "가드레일 관리 기능은 추후 구현 예정",
+        "가드레일",
+        "{$webui_name}",
+        "access denied: only administrators can view this page.",
+        "(app)",
+        "admin",
+        "guardrails"
+      ],
+      "components": [],
+      "apis": []
+    },
+    {
+      "path": "routes/(app)/admin/mcp/+page.svelte",
+      "routePath": "admin/mcp",
+      "description": "MCP | {$WEBUI_NAME}",
+      "keywords": [
+        "mcp 관리 기능은 추후 구현 예정",
+        "mcp",
+        "{$webui_name}",
+        "access denied: only administrators can view this page.",
+        "(app)",
+        "admin"
       ],
       "components": [],
       "apis": []
@@ -165,24 +200,43 @@
     {
       "path": "routes/(app)/admin/monitoring/+page.svelte",
       "routePath": "admin/monitoring",
-      "description": "{$i18n.t('Monitoring')} | Admin Panel",
+      "description": "{$i18n.t('Monitoring')} | {$WEBUI_NAME}",
       "keywords": [
         "tab navigation",
         "content area",
-        "langfuse summary",
-        "helicone summary",
-        "status card",
+        "show sample data (api data will be used when available)",
+        "header with period selector",
+        "stats cards",
+        "total tokens",
+        "average response time",
+        "input tokens",
+        "output tokens",
+        "channel interaction analysis",
+        "simple pie chart using svg",
+        "daily usage trend",
+        "simple line chart using svg",
+        "grid lines",
+        "y-axis labels (tokens)",
+        "x-axis labels",
+        "token line",
+        "cost line (dashed)",
+        "dots for tokens",
+        "dots for cost",
+        "legend",
+        "model usage and feature usage",
+        "model usage",
+        "model token usage bar",
+        "feature usage",
         "{$i18n.t('monitoring')}",
-        "admin",
-        "panel",
+        "{$webui_name}",
         "monitoring",
         "access denied: only administrators can view this page.",
         "summary",
         "loading usage summary...",
-        "error loading usage summary. please check the backend service.",
         "loading...",
         "error loading {activetab}. please check the backend service.",
-        "(app)"
+        "(app)",
+        "admin"
       ],
       "components": [],
       "apis": []
@@ -212,6 +266,21 @@
       ],
       "components": [
         "admin/Users.svelte"
+      ],
+      "apis": []
+    },
+    {
+      "path": "routes/(app)/agent/+page.svelte",
+      "routePath": "agent",
+      "description": "에이전트 빌더 | {$WEBUI_NAME}",
+      "keywords": [
+        "에이전트",
+        "{$webui_name}",
+        "(app)",
+        "agent"
+      ],
+      "components": [
+        "icons/Cube.svelte"
       ],
       "apis": []
     },
@@ -272,6 +341,21 @@
       "apis": []
     },
     {
+      "path": "routes/(app)/notebook/+page.svelte",
+      "routePath": "notebook",
+      "description": "노트북 | {$WEBUI_NAME}",
+      "keywords": [
+        "노트북",
+        "{$webui_name}",
+        "(app)",
+        "notebook"
+      ],
+      "components": [
+        "icons/BookOpen.svelte"
+      ],
+      "apis": []
+    },
+    {
       "path": "routes/(app)/playground/+layout.svelte",
       "routePath": "playground",
       "description": "{$i18n.t('Playground')} | {$WEBUI_NAME}",
@@ -328,6 +412,66 @@
       "components": [
         "playground/Notes.svelte"
       ],
+      "apis": []
+    },
+    {
+      "path": "routes/(app)/report/+page.svelte",
+      "routePath": "report",
+      "description": "보고서 | {$WEBUI_NAME}",
+      "keywords": [
+        "보고서",
+        "{$webui_name}",
+        "(app)",
+        "report"
+      ],
+      "components": [
+        "report/ReportTemplateList.svelte",
+        "report/ReportChatPanel.svelte",
+        "report/ReportPreview.svelte",
+        "report/types"
+      ],
+      "apis": []
+    },
+    {
+      "path": "routes/(app)/schedule/+page.svelte",
+      "routePath": "schedule",
+      "description": "일정관리 | {$WEBUI_NAME}",
+      "keywords": [
+        "일정관리",
+        "{$webui_name}",
+        "(app)",
+        "schedule"
+      ],
+      "components": [
+        "icons/Calendar.svelte"
+      ],
+      "apis": []
+    },
+    {
+      "path": "routes/(app)/search/+page.svelte",
+      "routePath": "search",
+      "description": "검색 | {$WEBUI_NAME}",
+      "keywords": [
+        "{$webui_name}",
+        "(app)",
+        "search"
+      ],
+      "components": [
+        "icons/Search.svelte"
+      ],
+      "apis": []
+    },
+    {
+      "path": "routes/(app)/usage/+page.svelte",
+      "routePath": "usage",
+      "description": "사용량 | {$WEBUI_NAME}",
+      "keywords": [
+        "사용량",
+        "{$webui_name}",
+        "(app)",
+        "usage"
+      ],
+      "components": [],
       "apis": []
     },
     {
@@ -574,11 +718,13 @@
     {
       "path": "routes/+layout.svelte",
       "routePath": "/",
-      "description": "{$WEBUI_NAME}",
+      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
       "keywords": [
         "rosepine themes have been disabled as it's not up to date with our latest version.",
         "feel free to make a pr to fix if anyone wants to see it return",
-        "{$webui_name}"
+        "{$webui_name",
+        "'sfn",
+        "portal'}"
       ],
       "components": [
         "NotificationToast.svelte",
@@ -593,10 +739,18 @@
     {
       "path": "routes/auth/+page.svelte",
       "routePath": "/auth",
-      "description": "{`${$WEBUI_NAME}`}",
+      "description": "SFN AI Portal",
       "keywords": [
-        "{`${$webui_name}`}",
-        "signing in to {{webui_name}}",
+        "subtle reflective light layer",
+        "animated samsung blue multi-layer gradient background",
+        "logo at top",
+        "hero section",
+        "tab switcher - stripe style",
+        "sfn",
+        "portal",
+        "signing in...",
+        "sign in",
+        "sign up",
         "name",
         "enter your full name",
         "username",
@@ -606,12 +760,8 @@
         "password",
         "enter your password",
         "authenticate",
-        "sign in",
         "create admin account",
         "create account",
-        "don",
-        "already have an account?",
-        "sign up",
         "continue with {{provider}}",
         "continue with email",
         "continue with ldap",
@@ -1851,8 +2001,9 @@
       "keywords": [
         "#{channel?.name",
         "'channel'}",
-        "open",
-        "webui",
+        "{$webui_name",
+        "'sfn",
+        "portal'}",
         "channel"
       ]
     },
@@ -1969,6 +2120,8 @@
       "path": "lib/components/chat/Chat.svelte",
       "directory": "chat",
       "keywords": [
+        "navbar is now in the common layout (topnavbar)",
+        "chat-specific controls can be added here if needed",
         "{$i18n.t('llms can make mistakes. verify important information.')}",
         "{$chattitle",
         "`${$chattitle.length",
@@ -2003,8 +2156,6 @@
       "keywords": [
         "this chat won’t appear in history and your messages will not be saved.",
         "temporary chat",
-        "hello, {{name}}",
-        "how can i help you today?",
         "chat"
       ]
     },
@@ -2497,8 +2648,6 @@
       "path": "lib/components/chat/ModelSelector/Selector.svelte",
       "directory": "chat/ModelSelector",
       "keywords": [
-        "{json.stringify(item.info)}",
-        "search a model",
         "maximum of 3 models can be downloaded simultaneously. please try again later.",
         "download canceled",
         "all",
@@ -2518,10 +2667,6 @@
       "keywords": [
         "choose a model before saving...",
         "default model updated",
-        "select a model",
-        "add model",
-        "remove model",
-        "set as default",
         "chat"
       ]
     },
@@ -2530,6 +2675,7 @@
       "path": "lib/components/chat/Navbar.svelte",
       "directory": "chat",
       "keywords": [
+        "navigation menu buttons",
         "<div class=\"md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700\" />",
         "controls",
         "new chat",
@@ -2569,9 +2715,8 @@
       "directory": "chat",
       "keywords": [
         "failed to read clipboard contents",
-        "this chat won’t appear in history and your messages will not be saved.",
+        "this chat won",
         "temporary chat",
-        "hello, {{name}}",
         "how can i help you today?",
         "chat"
       ]
@@ -3460,6 +3605,14 @@
       ]
     },
     {
+      "name": "Calendar",
+      "path": "lib/components/icons/Calendar.svelte",
+      "directory": "icons",
+      "keywords": [
+        "icons"
+      ]
+    },
+    {
       "name": "CameraSolid",
       "path": "lib/components/icons/CameraSolid.svelte",
       "directory": "icons",
@@ -4246,11 +4399,12 @@
       "directory": "layout",
       "keywords": [
         "svelte-ignore a11y-no-static-element-interactions",
+        "상단 로고/타이틀 영역",
+        "모델/에이전트 선택 버튼",
+        "새 채팅 버튼 (검색바 아래)",
+        "에이전트 목록은 추후 추가 예정",
         "folder name cannot be empty.",
-        "new chat",
         "home",
-        "workspace",
-        "search",
         "channels",
         "create channel",
         "chats",
@@ -4272,6 +4426,15 @@
         "october",
         "november",
         "december",
+        "layout"
+      ]
+    },
+    {
+      "name": "TopNavbar",
+      "path": "lib/components/layout/TopNavbar.svelte",
+      "directory": "layout",
+      "keywords": [
+        "navigation menu buttons",
         "layout"
       ]
     },
@@ -4348,6 +4511,30 @@
         "voice input",
         "permission denied when accessing microphone",
         "playground"
+      ]
+    },
+    {
+      "name": "ReportChatPanel",
+      "path": "lib/components/report/ReportChatPanel.svelte",
+      "directory": "report",
+      "keywords": [
+        "report"
+      ]
+    },
+    {
+      "name": "ReportPreview",
+      "path": "lib/components/report/ReportPreview.svelte",
+      "directory": "report",
+      "keywords": [
+        "report"
+      ]
+    },
+    {
+      "name": "ReportTemplateList",
+      "path": "lib/components/report/ReportTemplateList.svelte",
+      "directory": "report",
+      "keywords": [
+        "report"
       ]
     },
     {
@@ -5203,10 +5390,51 @@
     }
   ],
   "keywordIndex": {
+    "version update notification disabled": {
+      "routes": [
+        "routes/(app)/+layout.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "그라데이션 배경": {
+      "routes": [
+        "routes/(app)/+layout.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "라이트 모드 그라데이션": {
+      "routes": [
+        "routes/(app)/+layout.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "다크 모드 그라데이션": {
+      "routes": [
+        "routes/(app)/+layout.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "애니메이션 레이어": {
+      "routes": [
+        "routes/(app)/+layout.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "chat log storage update notification disabled": {
+      "routes": [
+        "routes/(app)/+layout.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
     "settings": {
       "routes": [
         "routes/(app)/+layout.svelte",
-        "routes/(app)/admin/+layout.svelte",
         "routes/(app)/admin/settings/+page.svelte"
       ],
       "components": [
@@ -5294,17 +5522,25 @@
         "routes/(app)/admin/functions/create/+page.svelte",
         "routes/(app)/admin/functions/edit/+page.svelte",
         "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
         "routes/(app)/admin/settings/+page.svelte",
         "routes/(app)/admin/users/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
         "routes/(app)/c/[id]/+page.svelte",
         "routes/(app)/channels/[id]/+page.svelte",
         "routes/(app)/home/+layout.svelte",
         "routes/(app)/home/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
         "routes/(app)/playground/+layout.svelte",
         "routes/(app)/playground/+page.svelte",
         "routes/(app)/playground/completions/+page.svelte",
         "routes/(app)/playground/notes/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
+        "routes/(app)/usage/+page.svelte",
         "routes/(app)/workspace/+layout.svelte",
         "routes/(app)/workspace/+page.svelte",
         "routes/(app)/workspace/functions/create/+page.svelte",
@@ -5324,6 +5560,36 @@
       "components": [],
       "apis": []
     },
+    "{$webui_name": {
+      "routes": [
+        "routes/(app)/+page.svelte",
+        "routes/+layout.svelte"
+      ],
+      "components": [
+        "lib/components/channel/Channel.svelte"
+      ],
+      "apis": []
+    },
+    "'sfn": {
+      "routes": [
+        "routes/(app)/+page.svelte",
+        "routes/+layout.svelte"
+      ],
+      "components": [
+        "lib/components/channel/Channel.svelte"
+      ],
+      "apis": []
+    },
+    "portal'}": {
+      "routes": [
+        "routes/(app)/+page.svelte",
+        "routes/+layout.svelte"
+      ],
+      "components": [
+        "lib/components/channel/Channel.svelte"
+      ],
+      "apis": []
+    },
     "{$i18n.t('admin": {
       "routes": [
         "routes/(app)/admin/+layout.svelte"
@@ -5341,10 +5607,19 @@
     "{$webui_name}": {
       "routes": [
         "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
         "routes/(app)/home/+layout.svelte",
+        "routes/(app)/notebook/+page.svelte",
         "routes/(app)/playground/+layout.svelte",
-        "routes/(app)/workspace/+layout.svelte",
-        "routes/+layout.svelte"
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
+        "routes/(app)/usage/+page.svelte",
+        "routes/(app)/workspace/+layout.svelte"
       ],
       "components": [
         "lib/components/admin/Functions.svelte",
@@ -5364,73 +5639,6 @@
       ],
       "apis": []
     },
-    "users": {
-      "routes": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/users/+page.svelte"
-      ],
-      "components": [
-        "lib/components/admin/Users/Groups/AddGroupModal.svelte",
-        "lib/components/admin/Users/Groups/Display.svelte",
-        "lib/components/admin/Users/Groups/EditGroupModal.svelte",
-        "lib/components/admin/Users/Groups/GroupItem.svelte",
-        "lib/components/admin/Users/Groups/Permissions.svelte",
-        "lib/components/admin/Users/Groups/Users.svelte",
-        "lib/components/admin/Users/Groups.svelte",
-        "lib/components/admin/Users/UserList/AddUserModal.svelte",
-        "lib/components/admin/Users/UserList/EditUserModal.svelte",
-        "lib/components/admin/Users/UserList/UserChatsModal.svelte",
-        "lib/components/admin/Users/UserList.svelte"
-      ],
-      "apis": []
-    },
-    "evaluations": {
-      "routes": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/evaluations/+page.svelte"
-      ],
-      "components": [
-        "lib/components/admin/Evaluations/FeedbackMenu.svelte",
-        "lib/components/admin/Evaluations/Feedbacks.svelte",
-        "lib/components/admin/Evaluations/Leaderboard.svelte",
-        "lib/components/admin/Settings/Evaluations/ArenaModelModal.svelte",
-        "lib/components/admin/Settings/Evaluations/Model.svelte",
-        "lib/components/admin/Settings.svelte"
-      ],
-      "apis": []
-    },
-    "functions": {
-      "routes": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/functions/+page.svelte",
-        "routes/(app)/admin/functions/create/+page.svelte",
-        "routes/(app)/admin/functions/edit/+page.svelte",
-        "routes/(app)/workspace/functions/create/+page.svelte"
-      ],
-      "components": [
-        "lib/components/admin/Functions/FunctionEditor.svelte",
-        "lib/components/admin/Functions/FunctionMenu.svelte",
-        "lib/components/admin/Functions.svelte",
-        "lib/components/chat/Controls/Valves.svelte"
-      ],
-      "apis": []
-    },
-    "monitoring": {
-      "routes": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/monitoring/+page.svelte"
-      ],
-      "components": [],
-      "apis": []
-    },
-    "gateway": {
-      "routes": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/gateway/+page.svelte"
-      ],
-      "components": [],
-      "apis": []
-    },
     "admin": {
       "routes": [
         "routes/(app)/admin/+layout.svelte",
@@ -5440,6 +5648,8 @@
         "routes/(app)/admin/functions/create/+page.svelte",
         "routes/(app)/admin/functions/edit/+page.svelte",
         "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
         "routes/(app)/admin/settings/+page.svelte",
         "routes/(app)/admin/users/+page.svelte"
@@ -5490,6 +5700,35 @@
         "lib/components/admin/Users/UserList.svelte",
         "lib/components/admin/Users.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte"
+      ],
+      "apis": []
+    },
+    "evaluations": {
+      "routes": [
+        "routes/(app)/admin/evaluations/+page.svelte"
+      ],
+      "components": [
+        "lib/components/admin/Evaluations/FeedbackMenu.svelte",
+        "lib/components/admin/Evaluations/Feedbacks.svelte",
+        "lib/components/admin/Evaluations/Leaderboard.svelte",
+        "lib/components/admin/Settings/Evaluations/ArenaModelModal.svelte",
+        "lib/components/admin/Settings/Evaluations/Model.svelte",
+        "lib/components/admin/Settings.svelte"
+      ],
+      "apis": []
+    },
+    "functions": {
+      "routes": [
+        "routes/(app)/admin/functions/+page.svelte",
+        "routes/(app)/admin/functions/create/+page.svelte",
+        "routes/(app)/admin/functions/edit/+page.svelte",
+        "routes/(app)/workspace/functions/create/+page.svelte"
+      ],
+      "components": [
+        "lib/components/admin/Functions/FunctionEditor.svelte",
+        "lib/components/admin/Functions/FunctionMenu.svelte",
+        "lib/components/admin/Functions.svelte",
+        "lib/components/chat/Controls/Valves.svelte"
       ],
       "apis": []
     },
@@ -5545,10 +5784,53 @@
       "components": [],
       "apis": []
     },
-    "panel": {
+    "gateway": {
       "routes": [
-        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/admin/gateway/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "가드레일 관리 기능은 추후 구현 예정": {
+      "routes": [
+        "routes/(app)/admin/guardrails/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "가드레일": {
+      "routes": [
+        "routes/(app)/admin/guardrails/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "access denied: only administrators can view this page.": {
+      "routes": [
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "guardrails": {
+      "routes": [
+        "routes/(app)/admin/guardrails/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "mcp 관리 기능은 추후 구현 예정": {
+      "routes": [
+        "routes/(app)/admin/mcp/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "mcp": {
+      "routes": [
+        "routes/(app)/admin/mcp/+page.svelte"
       ],
       "components": [],
       "apis": []
@@ -5567,21 +5849,161 @@
       "components": [],
       "apis": []
     },
-    "langfuse summary": {
+    "show sample data (api data will be used when available)": {
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [],
       "apis": []
     },
-    "helicone summary": {
+    "header with period selector": {
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [],
       "apis": []
     },
-    "status card": {
+    "stats cards": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "total tokens": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "average response time": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "input tokens": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "output tokens": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "channel interaction analysis": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "simple pie chart using svg": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "daily usage trend": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "simple line chart using svg": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "grid lines": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "y-axis labels (tokens)": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "x-axis labels": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "token line": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "cost line (dashed)": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "dots for tokens": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "dots for cost": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "legend": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "model usage and feature usage": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "model usage": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "model token usage bar": {
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "feature usage": {
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
@@ -5595,7 +6017,7 @@
       "components": [],
       "apis": []
     },
-    "access denied: only administrators can view this page.": {
+    "monitoring": {
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
@@ -5616,13 +6038,6 @@
       "components": [],
       "apis": []
     },
-    "error loading usage summary. please check the backend service.": {
-      "routes": [
-        "routes/(app)/admin/monitoring/+page.svelte"
-      ],
-      "components": [],
-      "apis": []
-    },
     "loading...": {
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
@@ -5633,6 +6048,39 @@
     "error loading {activetab}. please check the backend service.": {
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "users": {
+      "routes": [
+        "routes/(app)/admin/users/+page.svelte"
+      ],
+      "components": [
+        "lib/components/admin/Users/Groups/AddGroupModal.svelte",
+        "lib/components/admin/Users/Groups/Display.svelte",
+        "lib/components/admin/Users/Groups/EditGroupModal.svelte",
+        "lib/components/admin/Users/Groups/GroupItem.svelte",
+        "lib/components/admin/Users/Groups/Permissions.svelte",
+        "lib/components/admin/Users/Groups/Users.svelte",
+        "lib/components/admin/Users/Groups.svelte",
+        "lib/components/admin/Users/UserList/AddUserModal.svelte",
+        "lib/components/admin/Users/UserList/EditUserModal.svelte",
+        "lib/components/admin/Users/UserList/UserChatsModal.svelte",
+        "lib/components/admin/Users/UserList.svelte"
+      ],
+      "apis": []
+    },
+    "에이전트": {
+      "routes": [
+        "routes/(app)/agent/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "agent": {
+      "routes": [
+        "routes/(app)/agent/+page.svelte"
       ],
       "components": [],
       "apis": []
@@ -5686,6 +6134,20 @@
     "calendar": {
       "routes": [
         "routes/(app)/home/+layout.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "노트북": {
+      "routes": [
+        "routes/(app)/notebook/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "notebook": {
+      "routes": [
+        "routes/(app)/notebook/+page.svelte"
       ],
       "components": [],
       "apis": []
@@ -5802,6 +6264,66 @@
       "components": [],
       "apis": []
     },
+    "보고서": {
+      "routes": [
+        "routes/(app)/report/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "report": {
+      "routes": [
+        "routes/(app)/report/+page.svelte"
+      ],
+      "components": [
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte"
+      ],
+      "apis": []
+    },
+    "일정관리": {
+      "routes": [
+        "routes/(app)/schedule/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "schedule": {
+      "routes": [
+        "routes/(app)/schedule/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "search": {
+      "routes": [
+        "routes/(app)/search/+page.svelte"
+      ],
+      "components": [
+        "lib/components/admin/Evaluations/Leaderboard.svelte",
+        "lib/components/admin/Users/Groups/Users.svelte",
+        "lib/components/admin/Users/Groups.svelte",
+        "lib/components/admin/Users/UserList.svelte",
+        "lib/components/chat/SettingsModal.svelte",
+        "lib/components/layout/Sidebar/SearchInput.svelte"
+      ],
+      "apis": []
+    },
+    "사용량": {
+      "routes": [
+        "routes/(app)/usage/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "usage": {
+      "routes": [
+        "routes/(app)/usage/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
     "<div class=\"flex items-center text-xl font-semibold\">{$i18n.t('workspace')}</div>": {
       "routes": [
         "routes/(app)/workspace/+layout.svelte"
@@ -5835,7 +6357,6 @@
         "routes/(app)/workspace/tools/edit/+page.svelte"
       ],
       "components": [
-        "lib/components/layout/Sidebar.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Knowledge/ItemMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddContentMenu.svelte",
@@ -6007,14 +6528,70 @@
       "components": [],
       "apis": []
     },
-    "{`${$webui_name}`}": {
+    "subtle reflective light layer": {
       "routes": [
         "routes/auth/+page.svelte"
       ],
       "components": [],
       "apis": []
     },
-    "signing in to {{webui_name}}": {
+    "animated samsung blue multi-layer gradient background": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "logo at top": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "hero section": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "tab switcher - stripe style": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "sfn": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "portal": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "signing in...": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "sign in": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "apis": []
+    },
+    "sign up": {
       "routes": [
         "routes/auth/+page.svelte"
       ],
@@ -6107,13 +6684,6 @@
       "components": [],
       "apis": []
     },
-    "sign in": {
-      "routes": [
-        "routes/auth/+page.svelte"
-      ],
-      "components": [],
-      "apis": []
-    },
     "create admin account": {
       "routes": [
         "routes/auth/+page.svelte"
@@ -6122,29 +6692,6 @@
       "apis": []
     },
     "create account": {
-      "routes": [
-        "routes/auth/+page.svelte"
-      ],
-      "components": [],
-      "apis": []
-    },
-    "don": {
-      "routes": [
-        "routes/auth/+page.svelte"
-      ],
-      "components": [
-        "lib/components/chat/Messages/RateComment.svelte"
-      ],
-      "apis": []
-    },
-    "already have an account?": {
-      "routes": [
-        "routes/auth/+page.svelte"
-      ],
-      "components": [],
-      "apis": []
-    },
-    "sign up": {
       "routes": [
         "routes/auth/+page.svelte"
       ],
@@ -6794,19 +7341,6 @@
       "routes": [],
       "components": [
         "lib/components/admin/Evaluations/Leaderboard.svelte"
-      ],
-      "apis": []
-    },
-    "search": {
-      "routes": [],
-      "components": [
-        "lib/components/admin/Evaluations/Leaderboard.svelte",
-        "lib/components/admin/Users/Groups/Users.svelte",
-        "lib/components/admin/Users/Groups.svelte",
-        "lib/components/admin/Users/UserList.svelte",
-        "lib/components/chat/SettingsModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
-        "lib/components/layout/Sidebar.svelte"
       ],
       "apis": []
     },
@@ -8107,7 +8641,6 @@
         "lib/components/admin/Settings/Models/ConfigureModelsModal.svelte",
         "lib/components/admin/Settings/Models/Manage/ManageOllama.svelte",
         "lib/components/admin/Users/Groups/Permissions.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/playground/Completions.svelte"
       ],
       "apis": []
@@ -10596,20 +11129,6 @@
       ],
       "apis": []
     },
-    "open": {
-      "routes": [],
-      "components": [
-        "lib/components/channel/Channel.svelte"
-      ],
-      "apis": []
-    },
-    "webui": {
-      "routes": [],
-      "components": [
-        "lib/components/channel/Channel.svelte"
-      ],
-      "apis": []
-    },
     "channel": {
       "routes": [],
       "components": [
@@ -10871,6 +11390,20 @@
       ],
       "apis": []
     },
+    "navbar is now in the common layout (topnavbar)": {
+      "routes": [],
+      "components": [
+        "lib/components/chat/Chat.svelte"
+      ],
+      "apis": []
+    },
+    "chat-specific controls can be added here if needed": {
+      "routes": [],
+      "components": [
+        "lib/components/chat/Chat.svelte"
+      ],
+      "apis": []
+    },
     "{$i18n.t('llms can make mistakes. verify important information.')}": {
       "routes": [],
       "components": [
@@ -10946,8 +11479,7 @@
       "components": [
         "lib/components/chat/Chat.svelte",
         "lib/components/chat/Navbar.svelte",
-        "lib/components/layout/Navbar.svelte",
-        "lib/components/layout/Sidebar.svelte"
+        "lib/components/layout/Navbar.svelte"
       ],
       "apis": []
     },
@@ -10968,28 +11500,11 @@
     "this chat won’t appear in history and your messages will not be saved.": {
       "routes": [],
       "components": [
-        "lib/components/chat/ChatPlaceholder.svelte",
-        "lib/components/chat/Placeholder.svelte"
+        "lib/components/chat/ChatPlaceholder.svelte"
       ],
       "apis": []
     },
     "temporary chat": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/ChatPlaceholder.svelte",
-        "lib/components/chat/Placeholder.svelte"
-      ],
-      "apis": []
-    },
-    "hello, {{name}}": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/ChatPlaceholder.svelte",
-        "lib/components/chat/Placeholder.svelte"
-      ],
-      "apis": []
-    },
-    "how can i help you today?": {
       "routes": [],
       "components": [
         "lib/components/chat/ChatPlaceholder.svelte",
@@ -11647,6 +12162,13 @@
       ],
       "apis": []
     },
+    "don": {
+      "routes": [],
+      "components": [
+        "lib/components/chat/Messages/RateComment.svelte"
+      ],
+      "apis": []
+    },
     "too verbose": {
       "routes": [],
       "components": [
@@ -11861,20 +12383,6 @@
       ],
       "apis": []
     },
-    "{json.stringify(item.info)}": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/ModelSelector/Selector.svelte"
-      ],
-      "apis": []
-    },
-    "search a model": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/ModelSelector/Selector.svelte"
-      ],
-      "apis": []
-    },
     "all": {
       "routes": [],
       "components": [
@@ -11925,24 +12433,11 @@
       ],
       "apis": []
     },
-    "add model": {
+    "navigation menu buttons": {
       "routes": [],
       "components": [
-        "lib/components/chat/ModelSelector.svelte"
-      ],
-      "apis": []
-    },
-    "remove model": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/ModelSelector.svelte"
-      ],
-      "apis": []
-    },
-    "set as default": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/ModelSelector.svelte"
+        "lib/components/chat/Navbar.svelte",
+        "lib/components/layout/TopNavbar.svelte"
       ],
       "apis": []
     },
@@ -11958,6 +12453,20 @@
       "routes": [],
       "components": [
         "lib/components/chat/Overview.svelte"
+      ],
+      "apis": []
+    },
+    "this chat won": {
+      "routes": [],
+      "components": [
+        "lib/components/chat/Placeholder.svelte"
+      ],
+      "apis": []
+    },
+    "how can i help you today?": {
+      "routes": [],
+      "components": [
+        "lib/components/chat/Placeholder.svelte"
       ],
       "apis": []
     },
@@ -13477,6 +13986,7 @@
         "lib/components/icons/BookOpen.svelte",
         "lib/components/icons/Bookmark.svelte",
         "lib/components/icons/BookmarkSlash.svelte",
+        "lib/components/icons/Calendar.svelte",
         "lib/components/icons/CameraSolid.svelte",
         "lib/components/icons/ChartBar.svelte",
         "lib/components/icons/ChatBubble.svelte",
@@ -13569,6 +14079,7 @@
         "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/layout/UpdateInfoToast.svelte"
       ],
       "apis": []
@@ -13881,6 +14392,34 @@
       "routes": [],
       "components": [
         "lib/components/layout/Sidebar/UserMenu.svelte"
+      ],
+      "apis": []
+    },
+    "상단 로고/타이틀 영역": {
+      "routes": [],
+      "components": [
+        "lib/components/layout/Sidebar.svelte"
+      ],
+      "apis": []
+    },
+    "모델/에이전트 선택 버튼": {
+      "routes": [],
+      "components": [
+        "lib/components/layout/Sidebar.svelte"
+      ],
+      "apis": []
+    },
+    "새 채팅 버튼 (검색바 아래)": {
+      "routes": [],
+      "components": [
+        "lib/components/layout/Sidebar.svelte"
+      ],
+      "apis": []
+    },
+    "에이전트 목록은 추후 추가 예정": {
+      "routes": [],
+      "components": [
+        "lib/components/layout/Sidebar.svelte"
       ],
       "apis": []
     },
@@ -14947,7 +15486,6 @@
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Overview.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/SettingsModal.svelte",
         "lib/components/chat/ShortcutsModal.svelte",
@@ -14958,6 +15496,10 @@
         "lib/components/common/FileItemModal.svelte",
         "lib/components/common/Overlay.svelte",
         "lib/components/common/Selector.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/common/AccessControlModal.svelte",
         "lib/components/workspace/common/ManifestModal.svelte"
@@ -14999,7 +15541,6 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Personalization/AddMemoryModal.svelte",
         "lib/components/chat/Settings/Personalization/EditMemoryModal.svelte",
@@ -15013,7 +15554,9 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
@@ -15077,7 +15620,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
@@ -15104,8 +15646,12 @@
         "lib/components/layout/Sidebar/ChatItem.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat/Message.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Knowledge.svelte",
         "lib/components/workspace/Models/ActionsSelector.svelte",
@@ -15165,6 +15711,7 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/CodeExecutions.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -15189,8 +15736,8 @@
         "lib/components/layout/Sidebar/ChannelItem.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/playground/Chat/Message.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Knowledge/ItemMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
@@ -15245,6 +15792,7 @@
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
@@ -15293,6 +15841,7 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
+        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -15382,9 +15931,12 @@
         "lib/components/common/Folder.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte"
       ],
       "apis": []
@@ -15428,7 +15980,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
@@ -15493,13 +16044,11 @@
         "lib/components/chat/Messages/Markdown/Source.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/common/Drawer.svelte",
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Navbar.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
@@ -15524,7 +16073,6 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ],
@@ -15597,7 +16145,6 @@
         "lib/components/common/Valves.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
@@ -15623,7 +16170,6 @@
         "lib/components/chat/MessageInput/Commands/Models.svelte",
         "lib/components/chat/MessageInput/Commands/Prompts.svelte",
         "lib/components/chat/MessageInput/Commands.svelte",
-        "lib/components/chat/MessageInput.svelte",
         "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
         "lib/components/chat/Messages/RateComment.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
@@ -15665,8 +16211,6 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -15680,6 +16224,9 @@
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
@@ -15702,9 +16249,8 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Navbar.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
         "lib/components/chat/Settings/Personalization.svelte",
         "lib/components/chat/Settings/Tools.svelte",
@@ -15718,6 +16264,8 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte"
       ],
       "apis": []
@@ -15732,7 +16280,10 @@
         "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/playground/Chat/Message.svelte",
-        "lib/components/playground/Chat.svelte"
+        "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte"
       ],
       "apis": []
     },
@@ -15769,7 +16320,10 @@
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddContentMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte",
@@ -15798,13 +16352,15 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/ShareChatModal.svelte",
         "lib/components/chat/ToolServersModal.svelte",
         "lib/components/common/Banner.svelte",
         "lib/components/common/ConfirmDialog.svelte",
-        "lib/components/layout/Sidebar.svelte"
+        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte"
       ],
       "apis": []
     },
@@ -15863,7 +16419,6 @@
         "lib/components/channel/Messages/Message/ProfilePreview.svelte",
         "lib/components/channel/Messages/Message.svelte",
         "lib/components/chat/MessageInput/Commands/Knowledge.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/common/Tags/TagList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Tools.svelte"
@@ -15915,7 +16470,6 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte"
       ],
       "apis": []
@@ -15923,8 +16477,7 @@
     "bg-gray-400": {
       "routes": [],
       "components": [
-        "lib/components/channel/MessageInput.svelte",
-        "lib/components/chat/MessageInput.svelte"
+        "lib/components/channel/MessageInput.svelte"
       ],
       "apis": []
     },
@@ -15950,20 +16503,28 @@
       ],
       "apis": []
     },
-    "border-gray-50": {
+    "border-gray-200": {
       "routes": [],
       "components": [
         "lib/components/chat/MessageInput.svelte",
-        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
-        "lib/components/common/FileItem.svelte",
-        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
+        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte"
       ],
       "apis": []
     },
-    "border-gray-800": {
+    "border-gray-700": {
       "routes": [],
       "components": [
-        "lib/components/chat/MessageInput.svelte"
+        "lib/components/chat/MessageInput.svelte",
+        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Messages/ResponseMessage.svelte",
+        "lib/components/chat/Messages/UserMessage.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte"
       ],
       "apis": []
     },
@@ -15988,15 +16549,6 @@
       ],
       "apis": []
     },
-    "border-gray-700": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
-        "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/Messages/UserMessage.svelte"
-      ],
-      "apis": []
-    },
     "bg-gray-300": {
       "routes": [],
       "components": [
@@ -16016,6 +16568,15 @@
       ],
       "apis": []
     },
+    "border-gray-50": {
+      "routes": [],
+      "components": [
+        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
+        "lib/components/common/FileItem.svelte",
+        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
+      ],
+      "apis": []
+    },
     "text-blue-900": {
       "routes": [],
       "components": [
@@ -16031,16 +16592,26 @@
       ],
       "apis": []
     },
+    "border-gray-800": {
+      "routes": [],
+      "components": [
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte"
+      ],
+      "apis": []
+    },
+    "text-gray-50": {
+      "routes": [],
+      "components": [
+        "lib/components/report/ReportTemplateList.svelte"
+      ],
+      "apis": []
+    },
     "text-blue-400": {
       "routes": [],
       "components": [
         "lib/components/workspace/common/ManifestModal.svelte"
       ],
-      "apis": []
-    },
-    "border-gray-200": {
-      "routes": [],
-      "components": [],
       "apis": []
     },
     "border-blue-500": {
@@ -16063,6 +16634,31 @@
       "components": [],
       "apis": []
     },
+    "text-blue-600": {
+      "routes": [],
+      "components": [],
+      "apis": []
+    },
+    "bg-blue-50": {
+      "routes": [],
+      "components": [],
+      "apis": []
+    },
+    "bg-blue-500": {
+      "routes": [],
+      "components": [],
+      "apis": []
+    },
+    "bg-blue-600": {
+      "routes": [],
+      "components": [],
+      "apis": []
+    },
+    "bg-blue-700": {
+      "routes": [],
+      "components": [],
+      "apis": []
+    },
     "layout--app---layout-svelte": {
       "routes": [
         "(app)/",
@@ -16072,15 +16668,23 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/",
+        "(app)/agent/",
         "(app)/c/:id/",
         "(app)/channels/:id/",
         "(app)/home/",
+        "(app)/notebook/",
         "(app)/playground/",
         "(app)/playground/completions/",
         "(app)/playground/notes/",
+        "(app)/report/",
+        "(app)/schedule/",
+        "(app)/search/",
+        "(app)/usage/",
         "(app)/workspace/",
         "(app)/workspace/functions/create/",
         "(app)/workspace/knowledge/",
@@ -16108,15 +16712,23 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/",
+        "(app)/agent/",
         "(app)/c/:id/",
         "(app)/channels/:id/",
         "(app)/home/",
+        "(app)/notebook/",
         "(app)/playground/",
         "(app)/playground/completions/",
         "(app)/playground/notes/",
+        "(app)/report/",
+        "(app)/schedule/",
+        "(app)/search/",
+        "(app)/usage/",
         "(app)/workspace/",
         "(app)/workspace/functions/create/",
         "(app)/workspace/knowledge/",
@@ -16148,15 +16760,23 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/",
+        "(app)/agent/",
         "(app)/c/:id/",
         "(app)/channels/:id/",
         "(app)/home/",
+        "(app)/notebook/",
         "(app)/playground/",
         "(app)/playground/completions/",
         "(app)/playground/notes/",
+        "(app)/report/",
+        "(app)/schedule/",
+        "(app)/search/",
+        "(app)/usage/",
         "(app)/workspace/",
         "(app)/workspace/functions/create/",
         "(app)/workspace/knowledge/",
@@ -16187,6 +16807,8 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/"
@@ -16268,7 +16890,7 @@
       "type": "card",
       "background": "hover:bg-gray-100",
       "borderRadius": "rounded-lg",
-      "shadow": "shadow-xl",
+      "shadow": "shadow-sm",
       "padding": "p-1",
       "files": [
         "lib/components/AddConnectionModal.svelte",
@@ -16288,7 +16910,8 @@
     "text-gray-100": {
       "routes": [
         "routes/(app)/+layout.svelte",
-        "routes/auth/+page.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "components": [
@@ -16324,7 +16947,6 @@
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Overview.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/SettingsModal.svelte",
         "lib/components/chat/ShortcutsModal.svelte",
@@ -16335,15 +16957,21 @@
         "lib/components/common/FileItemModal.svelte",
         "lib/components/common/Overlay.svelte",
         "lib/components/common/Selector.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/common/AccessControlModal.svelte",
         "lib/components/workspace/common/ManifestModal.svelte"
       ],
-      "fileCount": 49
+      "fileCount": 53
     },
     "text-gray-200": {
       "routes": [
         "routes/(app)/+layout.svelte",
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/auth/+page.svelte"
       ],
       "components": [
@@ -16379,7 +17007,6 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Personalization/AddMemoryModal.svelte",
         "lib/components/chat/Settings/Personalization/EditMemoryModal.svelte",
@@ -16393,7 +17020,9 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
@@ -16404,12 +17033,16 @@
         "lib/components/workspace/common/ManifestModal.svelte",
         "lib/components/workspace/common/ValvesModal.svelte"
       ],
-      "fileCount": 58
+      "fileCount": 61
     },
     "text-gray-500": {
       "routes": [
         "routes/(app)/admin/gateway/+page.svelte",
-        "routes/auth/+page.svelte"
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte"
       ],
       "components": [
         "lib/components/AddConnectionModal.svelte",
@@ -16460,7 +17093,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
@@ -16487,8 +17119,12 @@
         "lib/components/layout/Sidebar/ChatItem.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat/Message.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Knowledge.svelte",
         "lib/components/workspace/Models/ActionsSelector.svelte",
@@ -16504,10 +17140,12 @@
         "lib/components/workspace/Tools.svelte",
         "lib/components/workspace/common/AccessControl.svelte"
       ],
-      "fileCount": 93
+      "fileCount": 100
     },
     "text-gray-300": {
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/+error.svelte",
         "routes/auth/+page.svelte"
       ],
@@ -16551,6 +17189,7 @@
         "lib/components/chat/Messages/CodeExecutionModal.svelte",
         "lib/components/chat/Messages/CodeExecutions.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -16575,8 +17214,8 @@
         "lib/components/layout/Sidebar/ChannelItem.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/playground/Chat/Message.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Knowledge/ItemMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
@@ -16590,10 +17229,12 @@
         "lib/components/workspace/common/ManifestModal.svelte",
         "lib/components/workspace/common/ValvesModal.svelte"
       ],
-      "fileCount": 79
+      "fileCount": 82
     },
     "text-gray-700": {
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "components": [
@@ -16633,22 +17274,21 @@
         "lib/components/layout/Sidebar/ChannelModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddTextContentModal.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte",
         "lib/components/workspace/Tools.svelte"
       ],
-      "fileCount": 42
+      "fileCount": 45
     },
     "bg-gray-100": {
       "routes": [
         "routes/(app)/+layout.svelte",
-        "routes/(app)/admin/+layout.svelte",
         "routes/(app)/home/+layout.svelte",
         "routes/(app)/playground/+layout.svelte",
         "routes/(app)/workspace/+layout.svelte",
-        "routes/auth/+page.svelte",
         "routes/error/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
@@ -16690,6 +17330,7 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
+        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account/UpdatePassword.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -16722,13 +17363,14 @@
         "lib/components/workspace/Tools.svelte",
         "lib/components/workspace/common/AccessControl.svelte"
       ],
-      "fileCount": 76
+      "fileCount": 75
     },
     "bg-gray-900": {
       "routes": [
         "routes/(app)/+layout.svelte",
         "routes/(app)/admin/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/(app)/workspace/+layout.svelte",
         "routes/s/[id]/+page.svelte"
       ],
@@ -16785,12 +17427,15 @@
         "lib/components/common/Folder.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte"
       ],
-      "fileCount": 61
+      "fileCount": 65
     },
     "bg-gray-850": {
       "routes": [
@@ -16834,7 +17479,6 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
@@ -16863,11 +17507,10 @@
         "lib/components/workspace/Tools.svelte",
         "lib/components/workspace/common/AccessControl.svelte"
       ],
-      "fileCount": 66
+      "fileCount": 65
     },
     "bg-gray-50": {
       "routes": [
-        "routes/(app)/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [
@@ -16902,13 +17545,11 @@
         "lib/components/chat/Messages/Markdown/Source.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/common/Drawer.svelte",
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Navbar.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
@@ -16922,7 +17563,7 @@
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
         "lib/components/workspace/Tools.svelte"
       ],
-      "fileCount": 52
+      "fileCount": 49
     },
     "bg-gray-950": {
       "routes": [],
@@ -16933,14 +17574,14 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/layout/Sidebar/ChannelModal.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/workspace/Knowledge/CreateKnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ],
-      "fileCount": 9
+      "fileCount": 8
     },
     "bg-gray-200": {
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
         "routes/error/+page.svelte"
       ],
       "components": [
@@ -16957,10 +17598,11 @@
         "lib/components/common/ConfirmDialog.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ],
-      "fileCount": 13
+      "fileCount": 14
     },
     "bg-gray-700": {
       "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
         "routes/auth/+page.svelte"
       ],
       "components": [
@@ -16985,7 +17627,7 @@
         "lib/components/workspace/Prompts.svelte",
         "lib/components/workspace/Tools.svelte"
       ],
-      "fileCount": 21
+      "fileCount": 22
     },
     "border-gray-100": {
       "routes": [
@@ -17012,13 +17654,12 @@
         "lib/components/common/Valves.svelte",
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte",
         "lib/components/playground/Chat.svelte",
         "lib/components/playground/Completions.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ],
-      "fileCount": 26
+      "fileCount": 25
     },
     "border-gray-850": {
       "routes": [],
@@ -17038,7 +17679,6 @@
         "lib/components/chat/MessageInput/Commands/Models.svelte",
         "lib/components/chat/MessageInput/Commands/Prompts.svelte",
         "lib/components/chat/MessageInput/Commands.svelte",
-        "lib/components/chat/MessageInput.svelte",
         "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
         "lib/components/chat/Messages/RateComment.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
@@ -17049,13 +17689,15 @@
         "lib/components/playground/Completions.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ],
-      "fileCount": 25
+      "fileCount": 24
     },
     "text-gray-400": {
       "routes": [
         "routes/(app)/+layout.svelte",
         "routes/(app)/admin/gateway/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/auth/+page.svelte",
         "routes/s/[id]/+page.svelte"
       ],
       "components": [
@@ -17085,8 +17727,6 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Navbar.svelte",
         "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/About.svelte",
         "lib/components/chat/Settings/Account.svelte",
@@ -17100,16 +17740,28 @@
         "lib/components/layout/Overlay/AccountPending.svelte",
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte",
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
         "lib/components/workspace/common/AccessControl.svelte"
       ],
-      "fileCount": 49
+      "fileCount": 52
     },
     "text-gray-600": {
       "routes": [
-        "routes/(app)/admin/monitoring/+page.svelte"
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/report/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
+        "routes/(app)/usage/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Feedbacks.svelte",
@@ -17124,9 +17776,8 @@
         "lib/components/chat/Messages/MultiResponseMessages.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/ModelSelector.svelte",
         "lib/components/chat/Navbar.svelte",
+        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte",
         "lib/components/chat/Settings/Personalization.svelte",
         "lib/components/chat/Settings/Tools.svelte",
@@ -17140,13 +17791,16 @@
         "lib/components/layout/Sidebar/ArchivedChatsModal.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportTemplateList.svelte",
         "lib/components/workspace/Prompts/PromptEditor.svelte"
       ],
-      "fileCount": 30
+      "fileCount": 40
     },
     "text-gray-900": {
       "routes": [
-        "routes/auth/+page.svelte"
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Feedbacks.svelte",
@@ -17156,16 +17810,21 @@
         "lib/components/chat/Messages/Markdown/MarkdownTokens.svelte",
         "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
         "lib/components/playground/Chat/Message.svelte",
-        "lib/components/playground/Chat.svelte"
+        "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte"
       ],
-      "fileCount": 9
+      "fileCount": 13
     },
     "bg-gray-800": {
       "routes": [
         "routes/(app)/admin/+layout.svelte",
         "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/(app)/report/+page.svelte",
         "routes/(app)/workspace/+layout.svelte",
-        "routes/+error.svelte"
+        "routes/+error.svelte",
+        "routes/auth/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Feedbacks.svelte",
@@ -17198,7 +17857,10 @@
         "lib/components/common/SVGPanZoom.svelte",
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
         "lib/components/playground/Chat.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase/AddContentMenu.svelte",
         "lib/components/workspace/Knowledge/KnowledgeBase.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte",
@@ -17208,11 +17870,13 @@
         "lib/components/workspace/Tools/ToolkitEditor.svelte",
         "lib/components/workspace/Tools.svelte"
       ],
-      "fileCount": 43
+      "fileCount": 48
     },
     "text-gray-800": {
       "routes": [
-        "routes/(app)/+layout.svelte"
+        "routes/(app)/+layout.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte"
       ],
       "components": [
         "lib/components/admin/Evaluations/Leaderboard.svelte",
@@ -17229,15 +17893,17 @@
         "lib/components/chat/Messages/ResponseMessage.svelte",
         "lib/components/chat/Messages/UserMessage.svelte",
         "lib/components/chat/ModelSelector/Selector.svelte",
-        "lib/components/chat/Placeholder.svelte",
         "lib/components/chat/Settings/Account.svelte",
         "lib/components/chat/ShareChatModal.svelte",
         "lib/components/chat/ToolServersModal.svelte",
         "lib/components/common/Banner.svelte",
         "lib/components/common/ConfirmDialog.svelte",
-        "lib/components/layout/Sidebar.svelte"
+        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte"
       ],
-      "fileCount": 22
+      "fileCount": 26
     },
     "text-green-500": {
       "routes": [],
@@ -17249,6 +17915,8 @@
     "text-red-500": {
       "routes": [
         "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/admin/guardrails/+page.svelte",
+        "routes/(app)/admin/mcp/+page.svelte",
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [
@@ -17257,7 +17925,7 @@
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/chat/Settings/Personalization/ManageModal.svelte"
       ],
-      "fileCount": 6
+      "fileCount": 8
     },
     "bg-yellow-500": {
       "routes": [],
@@ -17297,15 +17965,16 @@
         "lib/components/channel/Messages/Message/ProfilePreview.svelte",
         "lib/components/channel/Messages/Message.svelte",
         "lib/components/chat/MessageInput/Commands/Knowledge.svelte",
-        "lib/components/chat/ModelSelector/Selector.svelte",
         "lib/components/common/Tags/TagList.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte",
         "lib/components/workspace/Tools.svelte"
       ],
-      "fileCount": 9
+      "fileCount": 8
     },
     "bg-green-500": {
-      "routes": [],
+      "routes": [
+        "routes/(app)/search/+page.svelte"
+      ],
       "components": [
         "lib/components/admin/Settings/Images.svelte",
         "lib/components/channel/Messages/Message/ProfilePreview.svelte",
@@ -17313,7 +17982,7 @@
         "lib/components/layout/Sidebar/UserMenu.svelte",
         "lib/components/workspace/Models/Knowledge/Selector.svelte"
       ],
-      "fileCount": 5
+      "fileCount": 6
     },
     "text-green-700": {
       "routes": [],
@@ -17334,14 +18003,16 @@
       "fileCount": 3
     },
     "bg-gray-600": {
-      "routes": [],
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
       "components": [
         "lib/components/admin/Settings/Models/Manage/ManageOllama.svelte",
         "lib/components/channel/MessageInput.svelte",
         "lib/components/chat/Messages/Skeleton.svelte",
         "lib/components/workspace/Models/ModelEditor.svelte"
       ],
-      "fileCount": 4
+      "fileCount": 5
     },
     "border-gray-900": {
       "routes": [],
@@ -17349,18 +18020,16 @@
         "lib/components/app/AppSidebar.svelte",
         "lib/components/chat/Overview/Node.svelte",
         "lib/components/layout/Sidebar/RecursiveFolder.svelte",
-        "lib/components/layout/Sidebar/SearchInput.svelte",
         "lib/components/layout/Sidebar.svelte"
       ],
-      "fileCount": 5
+      "fileCount": 4
     },
     "bg-gray-400": {
       "routes": [],
       "components": [
-        "lib/components/channel/MessageInput.svelte",
-        "lib/components/chat/MessageInput.svelte"
+        "lib/components/channel/MessageInput.svelte"
       ],
-      "fileCount": 2
+      "fileCount": 1
     },
     "bg-green-400": {
       "routes": [],
@@ -17384,26 +18053,40 @@
       ],
       "fileCount": 1
     },
-    "border-gray-50": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/MessageInput.svelte",
-        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
-        "lib/components/common/FileItem.svelte",
-        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
-      ],
-      "fileCount": 4
-    },
-    "border-gray-800": {
+    "border-gray-200": {
       "routes": [
         "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/agent/+page.svelte",
+        "routes/(app)/notebook/+page.svelte",
+        "routes/(app)/schedule/+page.svelte",
+        "routes/(app)/search/+page.svelte",
         "routes/(app)/workspace/+layout.svelte"
       ],
       "components": [
-        "lib/components/chat/MessageInput.svelte"
+        "lib/components/chat/MessageInput.svelte",
+        "lib/components/layout/Sidebar/SearchInput.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte"
       ],
-      "fileCount": 4
+      "fileCount": 10
+    },
+    "border-gray-700": {
+      "routes": [
+        "routes/(app)/admin/+layout.svelte",
+        "routes/(app)/report/+page.svelte"
+      ],
+      "components": [
+        "lib/components/chat/MessageInput.svelte",
+        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
+        "lib/components/chat/Messages/ResponseMessage.svelte",
+        "lib/components/chat/Messages/UserMessage.svelte",
+        "lib/components/layout/Sidebar.svelte",
+        "lib/components/layout/TopNavbar.svelte",
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte",
+        "lib/components/report/ReportTemplateList.svelte"
+      ],
+      "fileCount": 11
     },
     "border-red-600": {
       "routes": [],
@@ -17420,22 +18103,13 @@
       "fileCount": 1
     },
     "border-gray-300": {
-      "routes": [],
-      "components": [
-        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte"
-      ],
-      "fileCount": 1
-    },
-    "border-gray-700": {
       "routes": [
         "routes/(app)/admin/monitoring/+page.svelte"
       ],
       "components": [
-        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte",
-        "lib/components/chat/Messages/ResponseMessage.svelte",
-        "lib/components/chat/Messages/UserMessage.svelte"
+        "lib/components/chat/Messages/ResponseMessage/WebSearchResults.svelte"
       ],
-      "fileCount": 4
+      "fileCount": 2
     },
     "bg-gray-300": {
       "routes": [],
@@ -17449,12 +18123,24 @@
       "fileCount": 5
     },
     "border-gray-600": {
-      "routes": [],
+      "routes": [
+        "routes/(app)/admin/monitoring/+page.svelte",
+        "routes/auth/+page.svelte"
+      ],
       "components": [
         "lib/components/chat/Settings/Advanced/AdvancedParams.svelte",
         "lib/components/common/Tags/TagInput.svelte"
       ],
-      "fileCount": 2
+      "fileCount": 4
+    },
+    "border-gray-50": {
+      "routes": [],
+      "components": [
+        "lib/components/chat/Settings/Personalization/ManageModal.svelte",
+        "lib/components/common/FileItem.svelte",
+        "lib/components/layout/Sidebar/ArchivedChatsModal.svelte"
+      ],
+      "fileCount": 3
     },
     "text-blue-900": {
       "routes": [],
@@ -17471,6 +18157,23 @@
       ],
       "fileCount": 2
     },
+    "border-gray-800": {
+      "routes": [
+        "routes/(app)/workspace/+layout.svelte"
+      ],
+      "components": [
+        "lib/components/report/ReportChatPanel.svelte",
+        "lib/components/report/ReportPreview.svelte"
+      ],
+      "fileCount": 3
+    },
+    "text-gray-50": {
+      "routes": [],
+      "components": [
+        "lib/components/report/ReportTemplateList.svelte"
+      ],
+      "fileCount": 1
+    },
     "text-blue-400": {
       "routes": [],
       "components": [
@@ -17478,22 +18181,13 @@
       ],
       "fileCount": 1
     },
-    "border-gray-200": {
-      "routes": [
-        "routes/(app)/admin/+layout.svelte",
-        "routes/(app)/admin/gateway/+page.svelte",
-        "routes/(app)/admin/monitoring/+page.svelte",
-        "routes/(app)/workspace/+layout.svelte"
-      ],
-      "components": [],
-      "fileCount": 4
-    },
     "border-blue-500": {
       "routes": [
-        "routes/(app)/admin/gateway/+page.svelte"
+        "routes/(app)/admin/gateway/+page.svelte",
+        "routes/(app)/agent/+page.svelte"
       ],
       "components": [],
-      "fileCount": 1
+      "fileCount": 2
     },
     "text-red-400": {
       "routes": [
@@ -17515,6 +18209,41 @@
       ],
       "components": [],
       "fileCount": 1
+    },
+    "text-blue-600": {
+      "routes": [
+        "routes/(app)/agent/+page.svelte"
+      ],
+      "components": [],
+      "fileCount": 1
+    },
+    "bg-blue-50": {
+      "routes": [
+        "routes/(app)/agent/+page.svelte"
+      ],
+      "components": [],
+      "fileCount": 1
+    },
+    "bg-blue-500": {
+      "routes": [
+        "routes/(app)/notebook/+page.svelte"
+      ],
+      "components": [],
+      "fileCount": 1
+    },
+    "bg-blue-600": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "fileCount": 1
+    },
+    "bg-blue-700": {
+      "routes": [
+        "routes/auth/+page.svelte"
+      ],
+      "components": [],
+      "fileCount": 1
     }
   },
   "layoutIndex": {
@@ -17529,15 +18258,23 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/",
+        "(app)/agent/",
         "(app)/c/:id/",
         "(app)/channels/:id/",
         "(app)/home/",
+        "(app)/notebook/",
         "(app)/playground/",
         "(app)/playground/completions/",
         "(app)/playground/notes/",
+        "(app)/report/",
+        "(app)/schedule/",
+        "(app)/search/",
+        "(app)/usage/",
         "(app)/workspace/",
         "(app)/workspace/functions/create/",
         "(app)/workspace/knowledge/",
@@ -17565,15 +18302,23 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/",
+        "(app)/agent/",
         "(app)/c/:id/",
         "(app)/channels/:id/",
         "(app)/home/",
+        "(app)/notebook/",
         "(app)/playground/",
         "(app)/playground/completions/",
         "(app)/playground/notes/",
+        "(app)/report/",
+        "(app)/schedule/",
+        "(app)/search/",
+        "(app)/usage/",
         "(app)/workspace/",
         "(app)/workspace/functions/create/",
         "(app)/workspace/knowledge/",
@@ -17605,15 +18350,23 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/",
+        "(app)/agent/",
         "(app)/c/:id/",
         "(app)/channels/:id/",
         "(app)/home/",
+        "(app)/notebook/",
         "(app)/playground/",
         "(app)/playground/completions/",
         "(app)/playground/notes/",
+        "(app)/report/",
+        "(app)/schedule/",
+        "(app)/search/",
+        "(app)/usage/",
         "(app)/workspace/",
         "(app)/workspace/functions/create/",
         "(app)/workspace/knowledge/",
@@ -17644,6 +18397,8 @@
         "(app)/admin/functions/create/",
         "(app)/admin/functions/edit/",
         "(app)/admin/gateway/",
+        "(app)/admin/guardrails/",
+        "(app)/admin/mcp/",
         "(app)/admin/monitoring/",
         "(app)/admin/settings/",
         "(app)/admin/users/"
@@ -17687,22 +18442,16 @@
     }
   },
   "navigationIndex": {
-    "/": {
-      "type": "sidebar-menu",
-      "href": "/",
-      "label": "New Chat",
-      "depth": 1
-    },
     "/home": {
       "type": "sidebar-menu",
       "href": "/home",
       "label": "Home",
       "depth": 1
     },
-    "/workspace": {
+    "/": {
       "type": "sidebar-menu",
-      "href": "/workspace",
-      "label": "Workspace",
+      "href": "/",
+      "label": "Button Navigation",
       "depth": 1
     },
     "(app)/": {

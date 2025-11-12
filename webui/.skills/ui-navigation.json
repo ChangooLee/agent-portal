@@ -1,62 +1,34 @@
 {
   "metadata": {
-    "generatedAt": "2025-11-07T06:49:02.513Z",
+    "generatedAt": "2025-11-12T04:29:25.516Z",
     "maxDepth": 2,
-    "totalMenuItems": 10
+    "totalMenuItems": 8
   },
   "sidebar": {
     "component": "Sidebar.svelte",
     "componentPath": "lib/components/layout/Sidebar.svelte",
     "menuItems": [
       {
-        "href": "/",
-        "label": "New Chat",
+        "href": "/home",
+        "label": "Home",
         "type": "link",
         "depth": 1,
         "index": 0
       },
       {
-        "href": "/home",
-        "label": "Home",
-        "type": "link",
-        "depth": 1,
-        "index": 1
-      },
-      {
-        "href": "/workspace",
-        "label": "Workspace",
-        "type": "link",
-        "depth": 1,
-        "index": 2
-      },
-      {
-        "href": "/workspace",
-        "label": "Workspace",
-        "type": "link",
+        "href": "/",
+        "label": "Button Navigation",
+        "type": "button",
         "depth": 1
       }
     ],
     "menuStructure": [
       {
-        "href": "/",
-        "label": "New Chat",
-        "type": "link",
-        "depth": 1,
-        "index": 0
-      },
-      {
         "href": "/home",
         "label": "Home",
         "type": "link",
         "depth": 1,
-        "index": 1
-      },
-      {
-        "href": "/workspace",
-        "label": "Workspace",
-        "type": "link",
-        "depth": 1,
-        "index": 2
+        "index": 0
       }
     ],
     "folders": [
@@ -79,7 +51,7 @@
     "hasChannels": true,
     "hasChats": true,
     "maxDepth": 2,
-    "totalMenuItems": 4
+    "totalMenuItems": 2
   },
   "tabNavigation": [
     {
@@ -124,13 +96,7 @@
     "layout": "admin/+layout.svelte",
     "tabs": [],
     "i18nKeys": [
-      "Admin Panel",
-      "Users",
-      "Evaluations",
-      "Functions",
-      "Monitoring",
-      "Settings",
-      "Gateway"
+      "Admin Panel"
     ],
     "depth": 1
   },
@@ -159,30 +125,16 @@
   "hierarchy": {
     "level1": [
       {
-        "href": "/",
-        "label": "New Chat",
+        "href": "/home",
+        "label": "Home",
         "type": "link",
         "depth": 1,
         "index": 0
       },
       {
-        "href": "/home",
-        "label": "Home",
-        "type": "link",
-        "depth": 1,
-        "index": 1
-      },
-      {
-        "href": "/workspace",
-        "label": "Workspace",
-        "type": "link",
-        "depth": 1,
-        "index": 2
-      },
-      {
-        "href": "/workspace",
-        "label": "Workspace",
-        "type": "link",
+        "href": "/",
+        "label": "Button Navigation",
+        "type": "button",
         "depth": 1
       }
     ],
