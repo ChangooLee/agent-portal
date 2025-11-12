@@ -630,15 +630,32 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 * (선택) NVIDIA 드라이버/CUDA (vLLM 사용 시)
 * (선택) 도메인/SSL(운영 환경 권장)
 
-### 6.0 현재 진행 상황
+### 6.0 현재 진행 상황 ⚠️
 
-**Stage 2 완료 (코드 레벨)**:
-- ✅ Kong Gateway 설정 및 실행
-- ✅ Konga (Kong Admin UI) 스키마 생성 및 실행
+**⚠️ 중요**: 이 README는 **최종 목표 아키텍처**를 설명합니다. 현재는 개발 초기 단계입니다.
+
+**현재 실행 가능한 서비스**:
+- ✅ Open-WebUI (포트 3000) - UI Shell만 실행 중
+
+**구현 완료 (코드 레벨, 미통합)**:
 - ✅ Backend BFF Chat API (`/chat/stream`, `/chat/completions`)
 - ✅ Observability API (`/observability/health`, `/observability/usage`, `/observability/models`)
-- ✅ Open-WebUI Monitoring 페이지 추가
-- ✅ Embed 프록시 (`/embed/langfuse`, `/embed/helicone`, `/embed/kong-admin`)
+- ✅ Monitoring/Gateway/MCP/가드레일/리더보드 페이지
+- ✅ `config/litellm.yaml`, `config/kong.yml` 설정 파일
+
+**미구현 서비스** (docker-compose.yml에 정의되었으나 실행 안 됨):
+- ⚠️ Backend BFF (FastAPI) - 환경 설정 및 통합 필요
+- ⚠️ Kong Gateway + Konga - 스키마 초기화 필요
+- ⚠️ LiteLLM, Langfuse, Helicone - 환경 설정 필요
+- ⚠️ MariaDB, ChromaDB, Redis, MinIO - 초기화 필요
+- ⚠️ Langflow, Flowise, AutoGen Studio - docker-compose에 추가 필요
+- ⚠️ Document Service - 구현 필요
+
+**다음 단계**: 
+1. `.env` 파일 설정
+2. `docker-compose up -d` 전체 스택 실행
+3. 서비스 간 통합 테스트
+4. 인증/인가 시스템 구현
 
 **상세 진행 상황**: [PROGRESS.md](./PROGRESS.md) 참조
 
@@ -1047,28 +1064,40 @@ services:
 
 ---
 
-## 포트 매트릭스
+## 포트 매트릭스 (실제 구현 기준)
 
-| 컴포넌트 | 포트 | 설명 |
-|:---|:---:|:---|
-| Portal Shell (Open-WebUI) | 3000 | 통합 UI |
-| Backend (FastAPI BFF) | 8000 | API/BFF |
-| LangGraph | 8123 | 에이전트 실행 |
-| LiteLLM | 4000 | LLM 게이트웨이 |
-| Kong Proxy | 8002 | MCP/API 보안 프록시 |
-| Kong Admin | 8001 | Kong 관리 API |
-| Kong Admin UI (Konga) | 1337 | Kong 관리 UI |
-| ChromaDB | 8001 | 벡터DB HTTP (내부 포트) |
-| MinIO/Console | 9000/9001 | 오브젝트 스토리지 |
-| Langfuse UI | 3001 | 체인 트레이스 |
-| Helicone UI | 8787 | LLM 프록시 대시 |
-| AutoGen Studio | 5050 | 대화형 워크플로 UI |
-| AutoGen API | 5051 | Studio 백엔드 |
-| Langflow | 7860 | 노코드 에이전트 빌더 |
-| Flowise | 3002 | 노코드 에이전트 빌더 |
-| Document Service | 8080 | 문서 인텔리전스 마이크로서비스 |
-| Perplexica | 5173 | 검색 포털(임베드/프록시) |
-| Open-Notebook | 3030 | AI 노트북(임베드/프록시) |
+⚠️ **주의**: 아래 포트는 현재 `docker-compose.yml`에 정의된 실제 포트입니다.
+
+| 컴포넌트 | 포트 | 상태 | 설명 |
+|:---|:---:|:---:|:---|
+| Portal Shell (Open-WebUI) | 3000 | ✅ 실행 중 | 통합 UI |
+| Backend (FastAPI BFF) | 8000 | ⚠️ 미실행 | API/BFF |
+| LangGraph | 8123 | ⚠️ 미실행 | 에이전트 실행 |
+| LiteLLM | 4000 | ⚠️ 미실행 | LLM 게이트웨이 |
+| Kong Proxy | 8002 | ⚠️ 미실행 | MCP/API 보안 프록시 (외부 포트) |
+| Kong Admin | 8001 | ⚠️ 비공개 | Kong 관리 API (내부 전용) |
+| Kong Admin UI (Konga) | 비공개 | ⚠️ 미실행 | BFF 프록시로만 접근 |
+| ChromaDB | 8001 | ⚠️ 미실행 | 벡터DB HTTP |
+| MinIO/Console | 9000/9001 | ⚠️ 미실행 | 오브젝트 스토리지 |
+| Langfuse UI | 3001 | ⚠️ 미실행 | 체인 트레이스 |
+| Helicone UI | 8787 | ⚠️ 미실행 | LLM 프록시 대시 |
+| AutoGen Studio | 5050 | ❌ 미정의 | 대화형 워크플로 UI |
+| AutoGen API | 5051 | ❌ 미정의 | Studio 백엔드 |
+| Langflow | 7860 | ❌ 미정의 | 노코드 에이전트 빌더 |
+| Flowise | 3002 | ❌ 미정의 | 노코드 에이전트 빌더 |
+| Document Service | 8080 | ❌ 미구현 | 문서 인텔리전스 |
+| Perplexica | 3210 | ⚠️ 미실행 | 검색 포털(임베드/프록시) |
+| Open-Notebook | 3100 | ⚠️ 미실행 | AI 노트북(임베드/프록시) |
+| MariaDB | 3306 | ⚠️ 미실행 | 코어 메타데이터 |
+| Redis | 6379 | ⚠️ 미실행 | 세션/캐시 |
+
+**범례**:
+- ✅ **실행 중**: 현재 docker-compose로 실행 가능
+- ⚠️ **미실행**: docker-compose.yml에 정의되었으나 환경 설정 필요
+- ❌ **미정의**: docker-compose.yml에 아직 추가 안 됨
+- ❌ **미구현**: 디렉토리만 존재, 코드 구현 필요
+
+**실제 docker-compose.yml 파일 참조**: [docker-compose.yml](./docker-compose.yml)
 
 ---
 
