@@ -138,11 +138,7 @@
 				</div>
 
 				<div class=" text-[2.5rem] @sm:text-[3rem] font-semibold bg-gradient-to-r from-primary via-secondary to-accent dark:from-primary-light dark:via-secondary-light dark:to-accent-light bg-clip-text text-transparent line-clamp-1 leading-tight animate-fade-in" in:fade={{ duration: 100 }}>
-					{#if models[selectedModelIdx]?.name}
-						{models[selectedModelIdx]?.name}
-					{:else}
-						반갑습니다, {$user?.name || '사용자'}님! 무엇을 도와드릴까요?
-					{/if}
+					반갑습니다, {$user?.name || '사용자'}님! 무엇을 도와드릴까요?
 				</div>
 			</div>
 

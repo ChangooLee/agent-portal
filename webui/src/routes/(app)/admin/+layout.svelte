@@ -4,6 +4,13 @@
 
 	import { WEBUI_NAME, showSidebar, user } from '$lib/stores';
 	import MenuLines from '$lib/components/icons/MenuLines.svelte';
+	import UsersSolid from '$lib/components/icons/UsersSolid.svelte';
+	import ChartBar from '$lib/components/icons/ChartBar.svelte';
+	import Cube from '$lib/components/icons/Cube.svelte';
+	import GlobeAlt from '$lib/components/icons/GlobeAlt.svelte';
+	import LockClosed from '$lib/components/icons/LockClosed.svelte';
+	import Star from '$lib/components/icons/Star.svelte';
+	import Cog6Solid from '$lib/components/icons/Cog6Solid.svelte';
 	import { page } from '$app/stores';
 
 	const i18n = getContext('i18n');
@@ -52,7 +59,8 @@
 								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
 							title="사용자관리"
 						>
-							<span>사용자관리</span>
+							<UsersSolid className="size-4" />
+							<span class="hidden sm:inline">사용자관리</span>
 						</a>
 
 						<a
@@ -62,7 +70,8 @@
 								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
 							title="사용량"
 						>
-							<span>사용량</span>
+							<ChartBar className="size-4" />
+							<span class="hidden sm:inline">사용량</span>
 						</a>
 
 						<a
@@ -72,7 +81,8 @@
 								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
 							title="MCP"
 						>
-							<span>MCP</span>
+							<Cube className="size-4" />
+							<span class="hidden sm:inline">MCP</span>
 						</a>
 
 						<a
@@ -82,7 +92,8 @@
 								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
 							title="Gateway"
 						>
-							<span>Gateway</span>
+							<GlobeAlt className="size-4" />
+							<span class="hidden sm:inline">Gateway</span>
 						</a>
 
 						<a
@@ -92,7 +103,8 @@
 								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
 							title="가드레일"
 						>
-							<span>가드레일</span>
+							<LockClosed className="size-4" />
+							<span class="hidden sm:inline">가드레일</span>
 						</a>
 
 						<a
@@ -102,7 +114,8 @@
 								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
 							title="리더보드"
 						>
-							<span>리더보드</span>
+							<Star className="size-4" />
+							<span class="hidden sm:inline">리더보드</span>
 						</a>
 
 						<a
@@ -112,7 +125,8 @@
 								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
 							title="설정"
 						>
-							<span>설정</span>
+							<Cog6Solid className="size-4" />
+							<span class="hidden sm:inline">설정</span>
 						</a>
 					</div>
 				</div>
