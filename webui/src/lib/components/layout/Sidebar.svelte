@@ -508,14 +508,14 @@
 			</button>
 
 		<!-- 상단 로고/타이틀 영역 -->
-		<div class="flex items-center gap-2 flex-1">
+		<div class="flex items-center gap-2 flex-1 py-2">
 			<img
 				crossorigin="anonymous"
 				src="{WEBUI_BASE_URL}/static/favicon.png"
-				class="size-6 rounded-full"
+				class="size-6 rounded-full flex-shrink-0"
 				alt="logo"
 			/>
-			<div class="self-center font-semibold text-base text-gray-800 dark:text-gray-100 font-primary">
+			<div class="text-base text-gray-800 dark:text-gray-100 font-primary" style="font-weight: 700; font-family: 'Samsung Gothic', sans-serif;">
 				SFN AI Portal
 			</div>
 		</div>
