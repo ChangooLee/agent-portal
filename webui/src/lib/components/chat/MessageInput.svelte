@@ -505,10 +505,10 @@
 								dispatch('submit', prompt);
 							}}
 						>
-							<div
-								class="flex-1 flex flex-col relative w-full shadow-lg rounded-3xl border border-gray-50 dark:border-gray-850 hover:border-gray-100 focus-within:border-gray-100 hover:dark:border-gray-800 focus-within:dark:border-gray-800 transition px-1 bg-white/90 dark:bg-gray-400/5 dark:text-gray-100"
-								dir={$settings?.chatDirection ?? 'auto'}
-							>
+						<div
+							class="flex-1 flex flex-col relative w-full rounded-3xl px-1 dark:text-gray-100 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-gray-200/30 dark:border-gray-700/30 hover:bg-white/50 dark:hover:bg-gray-800/50 focus-within:bg-white/50 dark:focus-within:bg-gray-800/50 hover:shadow-lg focus-within:shadow-lg transition-all duration-300 ease-out"
+							dir={$settings?.chatDirection ?? 'auto'}
+						>
 								{#if files.length > 0}
 									<div class="mx-2 mt-2.5 -mb-1 flex items-center flex-wrap gap-2">
 										{#each files as file, fileIdx}
