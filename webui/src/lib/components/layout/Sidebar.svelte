@@ -482,7 +482,7 @@
 			? ''
 			: 'invisible'}"
 	>
-		<div class="px-1.5 flex justify-between items-center space-x-1 text-gray-600">
+		<div class="px-1.5 flex items-center space-x-1 text-gray-600">
 			<button
 				class=" cursor-pointer p-[7px] flex rounded-lg hover:bg-gray-200 transition-all duration-200 ease-in-out"
 				on:click={() => {
