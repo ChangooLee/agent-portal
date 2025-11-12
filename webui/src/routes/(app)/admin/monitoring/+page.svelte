@@ -133,21 +133,36 @@
 	<title>{$i18n.t('Monitoring')} | {$WEBUI_NAME}</title>
 </svelte:head>
 
-<div class="flex flex-col h-full w-full">
-	{#if $user?.role !== 'admin'}
-		<div class="text-red-500">
-			{$i18n.t('Access Denied: Only administrators can view this page.')}
-		</div>
-	{:else}
-		<!-- Tab Navigation -->
-		<div class="flex gap-2 mb-4">
-			<button
-				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'summary'
-					? 'bg-[#0072CE] text-white shadow-sm'
-					: 'text-gray-600 hover:bg-gray-50'}"
-				on:click={() => (activeTab = 'summary')}
-			>
-				{$i18n.t('Summary')}
+<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+	<div class="mx-auto flex w-full max-w-[1400px] flex-col gap-6">
+		{#if $user?.role !== 'admin'}
+			<div class="text-red-500">
+				{$i18n.t('Access Denied: Only administrators can view this page.')}
+			</div>
+		{:else}
+			<!-- Hero Section -->
+			<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-4 shadow-xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
+				<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 opacity-60" />
+				<div class="relative flex items-center gap-3">
+					<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200">
+						<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-accent" />
+						SFN AI Monitoring
+					</span>
+					<h1 class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+						실시간 AI 사용량 및 성능 모니터링
+					</h1>
+				</div>
+			</section>
+
+			<!-- Tab Navigation -->
+			<div class="flex gap-2">
+				<button
+					class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'summary'
+						? 'bg-[#0072CE] text-white shadow-sm'
+						: 'text-gray-600 hover:bg-gray-50'}"
+					on:click={() => (activeTab = 'summary')}
+				>
+					{$i18n.t('Summary')}
 			</button>
 			<button
 				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {activeTab === 'langfuse'
@@ -176,13 +191,13 @@
 		<!-- Content Area -->
 		<div class="flex-1 min-h-0">
 			{#if activeTab === 'summary'}
-				<div class="space-y-6">
-					{#if loading}
-						<div class="flex justify-center items-center h-64">
-							<span class="loading loading-spinner loading-lg"></span>
-							<p class="ml-2">{$i18n.t('Loading usage summary...')}</p>
-						</div>
-					{:else}
+				{#if loading}
+					<div class="flex justify-center items-center h-64">
+						<span class="loading loading-spinner loading-lg"></span>
+						<p class="ml-2">{$i18n.t('Loading usage summary...')}</p>
+					</div>
+				{:else}
+					<div class="space-y-6">
 						<!-- Show sample data (API data will be used when available) -->
 						<!-- Header with Period Selector -->
 						<div class="flex justify-between items-center">
@@ -573,8 +588,8 @@
 								</div>
 							</div>
 						</div>
-					{/if}
-				</div>
+					</div>
+				{/if}
 			{:else if activeTab === 'langfuse' || activeTab === 'helicone'}
 				<div class="relative h-full">
 					{#if loading}
@@ -602,5 +617,6 @@
 				</div>
 			{/if}
 		</div>
-	{/if}
+		{/if}
+	</div>
 </div>

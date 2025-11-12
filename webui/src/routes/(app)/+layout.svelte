@@ -333,12 +333,12 @@
 		{/if} -->
 		{/if}
 
-		<Sidebar />
+	<Sidebar />
 
-		<div class="flex-1 flex flex-col min-h-screen overflow-y-auto">
-			{#if !$page.url.pathname.startsWith('/admin')}
-				<TopNavbar />
-			{/if}
+	<div class="flex-1 flex flex-col h-screen max-h-screen overflow-y-auto">
+		{#if !$page.url.pathname.startsWith('/admin')}
+			<TopNavbar />
+		{/if}
 			
 			{#if loaded}
 				<main class="flex-1">

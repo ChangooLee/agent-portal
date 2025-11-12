@@ -10,6 +10,12 @@
 	onMount(async () => {
 		loaded = true;
 	});
+
+	const heroStats = [
+		{ label: '다중 검색 엔진', value: '통합', hint: 'Google · Bing · DuckDuckGo' },
+		{ label: '대화형 리서치', value: '지원', hint: 'AI 기반 답변 생성' },
+		{ label: 'Stage 8', value: '출시 예정', hint: 'Perplexica 임베드' }
+	];
 </script>
 
 <svelte:head>
@@ -17,31 +23,55 @@
 </svelte:head>
 
 {#if loaded}
-	<div class="flex flex-col w-full min-h-full">
-		<div class="flex-1 overflow-y-auto p-8">
-			<div class="w-full">
-				<div class="flex items-center gap-4 mb-6">
-					<div class="p-3 rounded-lg bg-green-500 text-white">
-						<Search className="size-8" />
+	<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+		<div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+			<!-- Hero Section -->
+			<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
+				<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 opacity-60" />
+				<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
+				<div class="relative flex flex-col gap-5">
+					<div class="flex flex-wrap items-center gap-3">
+						<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200">
+							<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-accent" />
+							SFN AI Search Portal
+						</span>
+						<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+							AI 검색으로 더 깊은 인사이트를 발견하세요
+						</h1>
 					</div>
-					<div>
-						<h1 class="text-3xl font-bold">검색 포털</h1>
-						<p class="text-gray-600">대화형 리서치에 특화된 검색 포털</p>
-					</div>
-				</div>
 
-				<div class="bg-white rounded-xl border border-gray-200 p-8 text-center">
-					<div class="mb-4">
-						<Search className="size-16 mx-auto text-gray-300" />
+					<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+						대화형 리서치에 특화된 검색 포털로 다중 검색 엔진을 통합하고 AI 기반 답변을 생성합니다.
+					</p>
+
+					<div class="grid grid-cols-3 gap-3 @md:grid-cols-4 @lg:grid-cols-6">
+						{#each heroStats as stat}
+							<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-primary/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
+								<div class="text-[11px] font-medium uppercase tracking-wide text-primary dark:text-primary-light">
+									{stat.label}
+								</div>
+								<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+									{stat.value}
+								</div>
+								<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">{stat.hint}</div>
+							</div>
+						{/each}
 					</div>
-					<h2 class="text-xl font-semibold mb-2">준비 중입니다</h2>
-					<p class="text-gray-600 mb-4">
-						Perplexica 검색 포털 기능은 Stage 8에서 구현될 예정입니다.
-					</p>
-					<p class="text-sm text-gray-500">
-						향후 iframe으로 임베드되어 포털 Apps 탭에서 사용할 수 있습니다.
-					</p>
 				</div>
+			</section>
+
+			<!-- Coming Soon Card -->
+			<div class="bg-white/60 dark:bg-gray-900/50 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/20 shadow-xl p-8 text-center">
+				<div class="mb-4 inline-flex p-4 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg">
+					<Search className="size-16 text-white" />
+				</div>
+				<h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">준비 중입니다</h2>
+				<p class="text-gray-600 dark:text-gray-300 mb-4">
+					Perplexica 검색 포털 기능은 Stage 8에서 구현될 예정입니다.
+				</p>
+				<p class="text-sm text-gray-500 dark:text-gray-400">
+					향후 iframe으로 임베드되어 포털 Apps 탭에서 사용할 수 있습니다.
+				</p>
 			</div>
 		</div>
 	</div>
