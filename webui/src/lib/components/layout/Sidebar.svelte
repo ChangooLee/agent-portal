@@ -506,6 +506,7 @@
 					</svg>
 				</div>
 			</button>
+		</div>
 
 		<!-- 상단 로고/타이틀 영역 -->
 		<div class="px-1.5 flex justify-center text-gray-800 mt-1">
