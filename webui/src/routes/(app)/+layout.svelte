@@ -272,7 +272,7 @@
 	</div>
 	
 	<div
-		class=" text-gray-800 dark:text-gray-100 bg-transparent min-h-screen overflow-auto flex flex-row justify-end"
+		class=" text-gray-800 dark:text-gray-100 bg-transparent min-h-screen flex flex-row justify-end"
 	>
 		{#if !['user', 'admin'].includes($user?.role)}
 			<AccountPending />
@@ -335,17 +335,17 @@
 
 		<Sidebar />
 
-		<div class="flex-1 flex flex-col overflow-hidden">
+		<div class="flex-1 flex flex-col min-h-screen overflow-y-auto">
 			{#if !$page.url.pathname.startsWith('/admin')}
 				<TopNavbar />
 			{/if}
 			
 			{#if loaded}
-				<div class="flex-1 overflow-auto">
+				<main class="flex-1">
 					<slot />
-				</div>
+				</main>
 			{:else}
-				<div class="w-full flex-1 h-full flex items-center justify-center">
+				<div class="w-full flex-1 flex items-center justify-center py-12">
 					<Spinner />
 				</div>
 			{/if}
