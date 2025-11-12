@@ -17,11 +17,7 @@
 </svelte:head>
 
 {#if loaded}
-	<div
-		class="flex flex-col w-full h-screen max-h-[100dvh] transition-width duration-200 ease-in-out {$showSidebar
-			? 'md:max-w-[calc(100%-260px)]'
-			: ''} max-w-full"
-	>
+	<div class="flex flex-col w-full h-screen max-h-[100dvh]">
 		<div class="flex-1 overflow-y-auto p-8">
 			<div class="w-full">
 				<div class="flex items-center gap-4 mb-6">

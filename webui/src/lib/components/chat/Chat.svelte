@@ -1953,9 +1953,7 @@
 />
 
 <div
-	class="h-screen max-h-[100dvh] transition-all duration-200 ease-in-out {$showSidebar
-		? 'md:ml-[260px]'
-		: ''} w-full flex flex-col"
+	class="h-screen max-h-[100dvh] w-full flex flex-col"
 	id="chat-container"
 >
 	{#if $settings?.backgroundImageUrl ?? null}

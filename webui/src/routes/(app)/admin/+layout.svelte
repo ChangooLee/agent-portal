@@ -25,11 +25,7 @@
 </svelte:head>
 
 {#if loaded}
-	<div
-		class=" flex flex-col w-full h-screen max-h-[100dvh] transition-width duration-200 ease-in-out {$showSidebar
-			? 'md:max-w-[calc(100%-260px)]'
-			: ''} max-w-full"
-	>
+	<div class="flex flex-col w-full h-screen max-h-[100dvh]">
 		<nav class="sticky top-0 z-30 w-full py-2 flex flex-col items-center drag-region bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200">
 			<div class="flex items-center w-full px-1.5">
 				<div class="{$showSidebar ? 'md:hidden' : ''} mr-1 self-start flex flex-none items-center text-gray-600">

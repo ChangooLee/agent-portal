@@ -30,3 +30,31 @@ Agent Portal의 UI 개발에서 학습한 패턴과 방법을 기록합니다.
 
 ---
 
+
+## 2025-11-12: Auto-extracted from commit 9853788
+
+**내용**: 브라우저 title은 APP_NAME (constants.ts)과 WEBUI_NAME (stores)를 통해 중앙 관리
+**커밋**: 9853788
+
+---
+
+## 2025-11-12: Auto-extracted from commit 6008376
+
+**내용**: svelte:head에서 변수를 사용할 때는 반드시 해당 store를 import 해야 함
+**커밋**: 6008376
+
+---
+
+## 2025-11-12: Auto-extracted from commit 15325cc
+
+**내용**: webui backend의 WEBUI_NAME은 env.py에 하드코딩되어 있으며, 이 값이 /api/config로 프론트엔드에 전달됨
+**커밋**: 15325cc
+
+---
+
+## 2025-11-12: Auto-extracted from commit 2c64b05
+
+**내용**: CSS max-width는 최대 너비만 제한하고 요소를 밀어내지 않음. 사이드바와 같이 고정 요소 옆에 컨텐츠를 배치하려면 margin-left 사용
+**커밋**: 2c64b05
+
+---
