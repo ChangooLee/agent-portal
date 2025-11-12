@@ -16,9 +16,9 @@
 </svelte:head>
 
 <div
-	class=" flex flex-col w-full h-screen max-h-[100dvh] transition-width duration-200 ease-in-out {$showSidebar
-		? 'md:max-w-[calc(100%-260px)]'
-		: ''} max-w-full"
+	class="flex flex-col w-full h-screen max-h-[100dvh] transition-all duration-200 ease-in-out {$showSidebar
+		? 'md:ml-[260px]'
+		: ''}"
 >
 	<nav class="   px-2.5 pt-1 backdrop-blur-xl w-full drag-region">
 		<div class=" flex items-center">
