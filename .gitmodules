@@ -1,0 +1,34 @@
+[submodule "chroma"]
+	path = chroma
+	url = https://github.com/chroma-core/chroma.git
+[submodule "langflow"]
+	path = langflow
+	url = https://github.com/langflow-ai/langflow.git
+[submodule "flowise"]
+	path = flowise
+	url = https://github.com/FlowiseAI/Flowise.git
+[submodule "langfuse"]
+	path = langfuse
+	url = https://github.com/langfuse/langfuse.git
+[submodule "perplexica"]
+	path = perplexica
+	url = https://github.com/ItzCrazyKns/Perplexica.git
+[submodule "helicone"]
+	path = helicone
+	url = https://github.com/Helicone/helicone.git
+[submodule "kong"]
+	path = kong
+	url = https://github.com/Kong/kong.git
+[submodule "litellm"]
+	path = litellm
+	url = https://github.com/BerriAI/litellm.git
+[submodule "paddleocr"]
+	path = paddleocr
+	url = https://github.com/PaddlePaddle/PaddleOCR.git
+[submodule "seaweedfs"]
+	path = seaweedfs
+	url = https://github.com/chrislusf/seaweedfs.git
+[submodule "unstructured"]
+	path = unstructured
+	url = https://github.com/Unstructured-IO/unstructured.git
+
