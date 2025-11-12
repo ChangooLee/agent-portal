@@ -507,30 +507,21 @@
 				</div>
 			</button>
 
-			<a
-				id="sidebar-new-chat-button"
-				class="flex justify-center items-center flex-1 rounded-lg px-2 py-1 h-full text-right hover:bg-blue-50 transition-all duration-200 ease-in-out no-drag-region"
-				style="--hover-bg: #e6f2ff;"
-				href="/"
-				draggable="false"
-				on:click={async () => {
-					selectedChatId = null;
-					await goto('/');
-					const newChatButton = document.getElementById('new-chat-button');
-					setTimeout(() => {
-						newChatButton?.click();
-						if ($mobile) {
-							showSidebar.set(false);
-						}
-					}, 0);
-				}}
+		<!-- 상단 로고/타이틀 영역 -->
+		<div class="px-1.5 flex justify-center text-gray-800 mt-1">
+			<div
+				class="flex justify-center items-center gap-2 flex-1 rounded-lg px-2 py-1 h-full"
 			>
-				<div class="flex items-center justify-center">
-					<div class=" self-center font-semibold text-base text-gray-800 font-primary">
-						SFN AI Portal
-					</div>
+				<img
+					crossorigin="anonymous"
+					src="{WEBUI_BASE_URL}/static/favicon.png"
+					class="size-6 rounded-full"
+					alt="logo"
+				/>
+				<div class="self-center font-semibold text-base text-gray-800 font-primary">
+					SFN AI Portal
 				</div>
-			</a>
+			</div>
 		</div>
 
 		<!-- 모델/에이전트 선택 버튼 -->
