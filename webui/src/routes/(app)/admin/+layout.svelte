@@ -104,6 +104,16 @@
 						>
 							<span>리더보드</span>
 						</a>
+
+						<a
+							href="/admin/settings"
+							class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out {$page.url.pathname.includes('/admin/settings')
+								? 'bg-[#0072CE] text-white shadow-sm'
+								: 'text-gray-600 hover:bg-gray-50'}"
+							title="설정"
+						>
+							<span>설정</span>
+						</a>
 					</div>
 				</div>
 			</div>
