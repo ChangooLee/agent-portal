@@ -507,18 +507,18 @@
 				</div>
 			</button>
 
-			<!-- 상단 로고/타이틀 영역 -->
-			<div class="flex justify-center items-center gap-2 flex-1">
-				<img
-					crossorigin="anonymous"
-					src="{WEBUI_BASE_URL}/static/favicon.png"
-					class="size-6 rounded-full"
-					alt="logo"
-				/>
-				<div class="self-center font-semibold text-base text-gray-800 font-primary">
-					SFN AI Portal
-				</div>
+		<!-- 상단 로고/타이틀 영역 -->
+		<div class="flex items-center gap-2 flex-1">
+			<img
+				crossorigin="anonymous"
+				src="{WEBUI_BASE_URL}/static/favicon.png"
+				class="size-6 rounded-full"
+				alt="logo"
+			/>
+			<div class="self-center font-semibold text-base text-gray-800 dark:text-gray-100 font-primary">
+				SFN AI Portal
 			</div>
+		</div>
 		</div>
 
 		<!-- 모델/에이전트 선택 버튼 -->
