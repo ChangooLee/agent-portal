@@ -482,7 +482,7 @@
 			? ''
 			: 'invisible'}"
 	>
-		<div class="px-1.5 flex justify-between space-x-1 text-gray-600">
+		<div class="px-1.5 flex justify-between items-center space-x-1 text-gray-600">
 			<button
 				class=" cursor-pointer p-[7px] flex rounded-lg hover:bg-gray-200 transition-all duration-200 ease-in-out"
 				on:click={() => {
@@ -506,13 +506,9 @@
 					</svg>
 				</div>
 			</button>
-		</div>
 
-		<!-- 상단 로고/타이틀 영역 -->
-		<div class="px-1.5 flex justify-center text-gray-800 mt-1">
-			<div
-				class="flex justify-center items-center gap-2 flex-1 rounded-lg px-2 py-1 h-full"
-			>
+			<!-- 상단 로고/타이틀 영역 -->
+			<div class="flex justify-center items-center gap-2 flex-1">
 				<img
 					crossorigin="anonymous"
 					src="{WEBUI_BASE_URL}/static/favicon.png"
