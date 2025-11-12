@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>MCP | Admin Panel</title>
+	<title>MCP | {$WEBUI_NAME}</title>
 </svelte:head>
 
 <div class="flex flex-col w-full h-full">

@@ -29,7 +29,7 @@
 </script>
 
 <svelte:head>
-	<title>{$i18n.t('Gateway')} | Admin Panel</title>
+	<title>{$i18n.t('Gateway')} | {$WEBUI_NAME}</title>
 </svelte:head>
 
 <div class="flex flex-col w-full h-full">

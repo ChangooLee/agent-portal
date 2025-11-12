@@ -130,7 +130,7 @@
 </script>
 
 <svelte:head>
-	<title>{$i18n.t('Monitoring')} | Admin Panel</title>
+	<title>{$i18n.t('Monitoring')} | {$WEBUI_NAME}</title>
 </svelte:head>
 
 <div class="flex flex-col h-full w-full">

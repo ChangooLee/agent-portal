@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>가드레일 | Admin Panel</title>
+	<title>가드레일 | {$WEBUI_NAME}</title>
 </svelte:head>
 
 <div class="flex flex-col w-full h-full">
