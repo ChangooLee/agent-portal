@@ -509,7 +509,7 @@
 
 			<a
 				id="sidebar-new-chat-button"
-				class="flex justify-between items-center flex-1 rounded-lg px-2 py-1 h-full text-right hover:bg-blue-50 transition-all duration-200 ease-in-out no-drag-region"
+				class="flex justify-center items-center flex-1 rounded-lg px-2 py-1 h-full text-right hover:bg-blue-50 transition-all duration-200 ease-in-out no-drag-region"
 				style="--hover-bg: #e6f2ff;"
 				href="/"
 				draggable="false"
@@ -525,22 +525,10 @@
 					}, 0);
 				}}
 			>
-				<div class="flex items-center">
-					<div class="self-center mx-1.5">
-						<img
-							crossorigin="anonymous"
-							src="{WEBUI_BASE_URL}/static/favicon.png"
-							class=" size-5 -translate-x-1.5 rounded-full"
-							alt="logo"
-						/>
+				<div class="flex items-center justify-center">
+					<div class=" self-center font-semibold text-base text-gray-800 font-primary">
+						SFN AI Portal
 					</div>
-					<div class=" self-center font-medium text-sm text-gray-800 font-primary">
-						{$i18n.t('New Chat')}
-					</div>
-				</div>
-
-				<div>
-					<PencilSquare className=" size-5" strokeWidth="2" />
 				</div>
 			</a>
 		</div>
@@ -627,6 +615,33 @@
 				placeholder="채팅 검색"
 				showClearButton={true}
 			/>
+		</div>
+
+		<!-- 새 채팅 버튼 (검색바 아래) -->
+		<div class="px-1.5 flex justify-center text-gray-800 mt-2">
+			<button
+				class="grow flex items-center justify-center gap-2 rounded-lg px-2 py-[7px] hover:bg-gray-200 transition-all duration-200 ease-in-out"
+				on:click={async () => {
+					selectedChatId = null;
+					await goto('/');
+					const newChatButton = document.getElementById('new-chat-button');
+					setTimeout(() => {
+						newChatButton?.click();
+						if ($mobile) {
+							showSidebar.set(false);
+						}
+					}, 0);
+				}}
+				draggable="false"
+			>
+				<div class="self-center">
+					<PencilSquare className="size-[1.1rem]" strokeWidth="2" />
+				</div>
+
+				<div class="flex self-center translate-y-[0.5px]">
+					<div class="self-center font-medium text-sm font-primary">새 채팅</div>
+				</div>
+			</button>
 		</div>
 
 		<div
