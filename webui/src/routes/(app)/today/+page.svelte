@@ -211,16 +211,16 @@
 		<div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/30" />
 		
 		<!-- Hero Content -->
-		<div class="relative px-6 py-12 text-center">
-			<div class="inline-flex items-center justify-center px-4 py-2 mb-4 rounded-full bg-gradient-to-r from-primary/90 to-secondary/90 text-white text-sm font-medium shadow-lg">
+		<div class="relative px-6 py-6 text-center">
+			<div class="inline-flex items-center justify-center px-3 py-1.5 mb-3 rounded-full bg-gradient-to-r from-primary/90 to-secondary/90 text-white text-xs font-medium shadow-lg">
 				<span>📰 Today's News</span>
 			</div>
 			
-			<h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+			<h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
 				오늘의 뉴스
 			</h1>
 			
-			<p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+			<p class="text-sm text-gray-600 dark:text-gray-300">
 				{#if newsData}
 					{formatDate(newsData.date)} · {newsData.total_articles}개 기사
 				{:else}
@@ -231,10 +231,10 @@
 	</div>
 	
 	<!-- Content Section -->
-	<div class="flex-1 px-6 py-8">
+	<div class="flex-1 px-6 py-4">
 		<div class="max-w-7xl mx-auto">
 			<!-- Search Bar -->
-			<div class="mb-8">
+			<div class="mb-6">
 				<div class="relative max-w-2xl mx-auto">
 					<input
 						type="text"
