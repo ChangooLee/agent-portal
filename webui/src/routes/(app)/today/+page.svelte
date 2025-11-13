@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, afterUpdate } from 'svelte';
 	import { WEBUI_NAME } from '$lib/stores';
 	
 	interface Article {
@@ -35,6 +35,7 @@
 	let hasMore = true;
 	let offset = 0;
 	let observerTarget: HTMLDivElement;
+	let observer: IntersectionObserver | null = null;
 	
 	const formatDate = (dateStr: string) => {
 		if (!dateStr) return '';
@@ -85,15 +86,20 @@
 	};
 	
 	const fetchMoreArticles = async () => {
-		if (loadingMore || !hasMore) return;
+		if (loadingMore || !hasMore) {
+			console.log('⏸️ Skip fetch:', { loadingMore, hasMore });
+			return;
+		}
 		
 		try {
 			loadingMore = true;
+			console.log('📡 Fetching articles:', { offset, limit: 20 });
 			const response = await fetch(`/api/news/articles?offset=${offset}&limit=20`);
 			if (!response.ok) {
 				throw new Error(`Failed to fetch articles: ${response.statusText}`);
 			}
 			const data = await response.json();
+			console.log('✅ Fetched:', { count: data.articles.length, newOffset: offset + data.articles.length, has_more: data.has_more });
 			allArticles = [...allArticles, ...data.articles];
 			offset += data.articles.length;
 			hasMore = data.has_more;
@@ -127,26 +133,25 @@
 	onMount(() => {
 		fetchTodayNews();
 		fetchMoreArticles();
-		
-		// Intersection Observer for infinite scroll
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries[0].isIntersecting && hasMore && !loadingMore) {
-					fetchMoreArticles();
-				}
-			},
-			{ threshold: 0.1 }
-		);
-		
-		if (observerTarget) {
+	});
+	
+	// Setup observer after DOM is ready
+	afterUpdate(() => {
+		if (observerTarget && !observer) {
+			console.log('👀 Setting up Intersection Observer');
+			observer = new IntersectionObserver(
+				(entries) => {
+					console.log('👁️ Observer triggered:', entries[0].isIntersecting, { hasMore, loadingMore });
+					if (entries[0].isIntersecting && hasMore && !loadingMore) {
+						console.log('🔄 Loading more articles...');
+						fetchMoreArticles();
+					}
+				},
+				{ threshold: 0.1, rootMargin: '100px' }
+			);
+			
 			observer.observe(observerTarget);
 		}
-		
-		return () => {
-			if (observerTarget) {
-				observer.unobserve(observerTarget);
-			}
-		};
 	});
 </script>
 
@@ -274,6 +279,11 @@
 							{/each}
 						</div>
 						
+						<!-- Intersection Observer Target (positioned before loading indicator) -->
+						{#if hasMore}
+							<div bind:this={observerTarget} class="h-20 w-full"></div>
+						{/if}
+						
 						<!-- Loading More Indicator -->
 						{#if loadingMore}
 							<div class="flex items-center justify-center py-12">
@@ -281,9 +291,6 @@
 								<p class="ml-3 text-gray-600 dark:text-gray-400">더 많은 기사를 불러오는 중...</p>
 							</div>
 						{/if}
-						
-						<!-- Intersection Observer Target -->
-						<div bind:this={observerTarget} class="h-4"></div>
 						
 						<!-- No More Articles -->
 						{#if !hasMore && allArticles.length > 0}
