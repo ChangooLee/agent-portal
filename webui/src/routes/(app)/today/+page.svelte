@@ -27,6 +27,7 @@
 	
 	let newsData: NewsData | null = null;
 	let allArticles: Article[] = [];
+	let filteredArticles: Article[] = [];
 	let selectedArticle: ArticleDetail | null = null;
 	let loading = true;
 	let loadingMore = false;
@@ -36,6 +37,8 @@
 	let offset = 0;
 	let observerTarget: HTMLDivElement;
 	let observer: IntersectionObserver | null = null;
+	let searchQuery = '';
+	let isSearching = false;
 	
 	const formatDate = (dateStr: string) => {
 		if (!dateStr) return '';
@@ -130,6 +133,48 @@
 		selectedArticle = null;
 	};
 	
+	const handleSearch = () => {
+		if (!searchQuery.trim()) {
+			filteredArticles = [];
+			isSearching = false;
+			return;
+		}
+		
+		isSearching = true;
+		const query = searchQuery.toLowerCase().trim();
+		
+		// Featured articles에서 검색
+		const featuredResults = newsData?.featured_articles.filter(article => 
+			article.title.toLowerCase().includes(query) || 
+			article.highlight.toLowerCase().includes(query) ||
+			article.tags?.some(tag => tag.toLowerCase().includes(query))
+		) || [];
+		
+		// All articles에서 검색
+		const allResults = allArticles.filter(article => 
+			article.title.toLowerCase().includes(query) || 
+			article.highlight.toLowerCase().includes(query) ||
+			article.tags?.some(tag => tag.toLowerCase().includes(query))
+		);
+		
+		// 중복 제거 (featured articles가 all articles에도 포함될 수 있음)
+		const allIds = new Set(allResults.map(a => a.id));
+		const uniqueFeatured = featuredResults.filter(a => !allIds.has(a.id));
+		
+		// 중요도순 정렬
+		filteredArticles = [...uniqueFeatured, ...allResults].sort(
+			(a, b) => b.importance_score - a.importance_score
+		);
+		
+		console.log('🔍 Search results:', { query, count: filteredArticles.length });
+	};
+	
+	const clearSearch = () => {
+		searchQuery = '';
+		filteredArticles = [];
+		isSearching = false;
+	};
+	
 	onMount(() => {
 		fetchTodayNews();
 		fetchMoreArticles();
@@ -188,6 +233,63 @@
 	<!-- Content Section -->
 	<div class="flex-1 px-6 py-8">
 		<div class="max-w-7xl mx-auto">
+			<!-- Search Bar -->
+			<div class="mb-8">
+				<div class="relative max-w-2xl mx-auto">
+					<input
+						type="text"
+						bind:value={searchQuery}
+						on:input={handleSearch}
+						placeholder="제목, 내용, 태그로 검색..."
+						class="w-full px-5 py-3 pl-12 pr-12 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+					/>
+					<!-- Search Icon -->
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+						/>
+					</svg>
+					<!-- Clear Button -->
+					{#if searchQuery}
+						<button
+							on:click={clearSearch}
+							class="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors"
+							aria-label="Clear search"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-5 w-5 text-gray-400"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								/>
+							</svg>
+						</button>
+					{/if}
+				</div>
+				<!-- Search Results Count -->
+				{#if isSearching}
+					<p class="text-center mt-3 text-sm text-gray-600 dark:text-gray-400">
+						🔍 "{searchQuery}" 검색 결과: {filteredArticles.length}개
+					</p>
+				{/if}
+			</div>
+			
 			{#if loading}
 				<div class="flex items-center justify-center py-20">
 					<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -196,6 +298,60 @@
 				<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
 					<p class="text-red-800 dark:text-red-300 font-medium">⚠️ {error}</p>
 				</div>
+			{:else if isSearching}
+				<!-- Search Results Section -->
+				{#if filteredArticles.length > 0}
+					<div>
+						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🔍 검색 결과 ({filteredArticles.length}개)</h2>
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+							{#each filteredArticles as article}
+								<button
+									class="text-left bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-primary/20 dark:border-primary-light/20 rounded-xl p-6 hover:shadow-xl hover:scale-[1.02] hover:border-primary/40 transition-all duration-300 ease-out cursor-pointer"
+									on:click={() => fetchArticleDetail(article.id)}
+								>
+									<!-- Importance Badge -->
+									{#if getScoreLabel(article.importance_score)}
+										<div class="flex items-center mb-3">
+											<span class="{getScoreBadgeColor(article.importance_score)} px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+												{getScoreLabel(article.importance_score)}
+											</span>
+										</div>
+									{/if}
+									
+									<!-- Title (highlight search term) -->
+									<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+										{article.title}
+									</h3>
+									
+									<!-- Highlight -->
+									<p class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+										{article.highlight}
+									</p>
+									
+									<!-- Tags -->
+									{#if article.tags && article.tags.length > 0}
+										<div class="flex flex-wrap gap-2">
+											{#each article.tags.slice(0, 3) as tag, index}
+												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
+													{tag}
+												</span>
+											{/each}
+											{#if article.tags.length > 3}
+												<span class="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded-md text-xs font-medium">
+													+{article.tags.length - 3}
+												</span>
+											{/if}
+										</div>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
+						<p class="text-gray-600 dark:text-gray-400">🔍 "{searchQuery}"에 대한 검색 결과가 없습니다.</p>
+					</div>
+				{/if}
 			{:else}
 				<!-- Featured Articles Section -->
 				{#if newsData && newsData.featured_articles.length > 0}
