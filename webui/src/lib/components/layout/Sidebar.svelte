@@ -515,9 +515,20 @@
 				class="size-6 rounded-full flex-shrink-0"
 				alt="logo"
 			/>
-			<div class="text-base text-gray-800 dark:text-gray-100 font-primary" style="font-weight: 700; font-family: 'Samsung Gothic', sans-serif;">
+			<a
+				href="/"
+				class="text-base text-gray-800 dark:text-gray-100 font-primary hover:text-gray-900 dark:hover:text-gray-50 transition-colors cursor-pointer"
+				style="font-weight: 700; font-family: 'Samsung Gothic', sans-serif;"
+				on:click={() => {
+					selectedChatId = null;
+					chatId.set('');
+					if ($mobile) {
+						showSidebar.set(false);
+					}
+				}}
+			>
 				SFN AI Portal
-			</div>
+			</a>
 		</div>
 		</div>
 
