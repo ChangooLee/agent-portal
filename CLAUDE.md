@@ -103,6 +103,38 @@ agent-portal/
 
 ---
 
+## 백엔드 아키텍처
+
+### 이중 백엔드 구조 (CRITICAL)
+
+Agent Portal은 **두 개의 독립적인 백엔드**를 운영합니다:
+
+1. **webui/backend**: Open-WebUI 내장 백엔드
+   - 역할: Chat, OpenAI/Ollama 프록시, RAG, 벡터 DB
+   - 기술: FastAPI + SQLAlchemy + ChromaDB
+   - 포트: 8080 (컨테이너 내부), 3000 (외부)
+   - PYTHONPATH: `/app/backend` (반드시 설정 필요)
+
+2. **backend/**: FastAPI BFF (Backend for Frontend)
+   - 역할: News API, Observability, Kong/Embed 프록시
+   - 기술: FastAPI + HTTPX
+   - 포트: 8000
+   - PYTHONPATH: 자동 설정 (WORKDIR=/app)
+
+### PYTHONPATH 설정 규칙 (ALWAYS)
+
+**webui/backend 개발 시 반드시 확인**:
+- Dockerfile: `ENV PYTHONPATH=/app/backend:$PYTHONPATH`
+- 스크립트: `PYTHONPATH=. uvicorn open_webui.main:app`
+- Docker Compose: 볼륨 마운트 시에도 ENV 유지
+
+**실패 사례**: 
+- `ModuleNotFoundError: No module named 'open_webui'`
+- 원인: PYTHONPATH 미설정
+- 해결: `webui/dev-start.sh` line 27, `webui/Dockerfile.dev` line 29
+
+---
+
 ## 코딩 표준
 
 ### Python (Backend)

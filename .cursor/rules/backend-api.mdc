@@ -451,6 +451,134 @@ echo "## $(date +%Y-%m-%d): 외부 API 호출 패턴
    - ❌ `def get_data(): ...`
    - ✅ `async def get_data(): ...`
 
+## WebUI Backend 개발 규칙 (CRITICAL)
+
+Agent Portal은 두 개의 백엔드 시스템을 운영합니다:
+1. **webui/backend**: Open-WebUI 내장 백엔드 (FastAPI + SQLAlchemy)
+2. **backend/**: FastAPI BFF (Backend for Frontend)
+
+### WebUI Backend 구조
+
+**디렉토리 구조**:
+```
+webui/backend/
+├── open_webui/          # 메인 Python 모듈
+│   ├── main.py         # FastAPI 앱 진입점
+│   ├── routers/        # API 라우터 (OpenAI, Ollama, Chat 등)
+│   ├── models/         # SQLAlchemy 모델
+│   ├── utils/          # 유틸리티 함수
+│   └── retrieval/      # RAG 및 벡터 DB
+├── requirements.txt    # Python 의존성
+├── start.sh           # 프로덕션 시작 스크립트
+└── dev.sh             # (사용되지 않음)
+```
+
+### PYTHONPATH 설정 (ALWAYS)
+
+**규칙**: 모든 Python 서비스는 PYTHONPATH를 명시적으로 설정해야 합니다.
+
+**개발 환경** (Docker Compose):
+```dockerfile
+# webui/Dockerfile.dev
+ENV PYTHONPATH=/app/backend:$PYTHONPATH
+```
+
+**스크립트 실행**:
+```bash
+# webui/dev-start.sh
+cd backend
+PYTHONPATH=. uvicorn open_webui.main:app --host 0.0.0.0 --port 8080 --reload &
+```
+
+**프로덕션**:
+```bash
+# webui/start.sh
+cd backend
+export PYTHONPATH=.
+uvicorn open_webui.main:app --host 0.0.0.0 --port 8080
+```
+
+### 개발 서버 실행 (docker-compose.dev.yml)
+
+**포트 매핑**:
+- `5173:3001`: Vite 프론트엔드 개발 서버 (핫 리로드)
+- `8080:3000`: Open-WebUI 백엔드 API
+
+**볼륨 마운트**:
+```yaml
+volumes:
+  - ./webui:/app                          # 소스 코드 실시간 마운트
+  - webui_node_modules:/app/node_modules  # node_modules 분리
+  - webui_backend_data:/app/backend/data  # DB 데이터 영구 저장
+```
+
+**환경 변수**:
+```yaml
+environment:
+  - DEV_MODE=true
+  - AUTO_RELOAD=true
+  - DEBUG=true
+```
+
+**실행 명령**:
+```bash
+# 개발 모드 시작
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d webui
+
+# 로그 확인
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f webui
+```
+
+### FastAPI BFF 개발 규칙
+
+**디렉토리 구조**:
+```
+backend/
+├── app/
+│   ├── main.py         # FastAPI 앱
+│   ├── routes/         # API 엔드포인트 (Chat, News, Observability)
+│   ├── services/       # 비즈니스 로직 (LiteLLM, Langfuse)
+│   ├── middleware/     # RBAC 등
+│   └── config.py       # 설정 관리
+├── requirements.txt
+└── Dockerfile
+```
+
+**포트**: `8000` (프록시 및 BFF API)
+
+**PYTHONPATH**: 자동 설정됨 (Docker WORKDIR=/app)
+
+### 체크리스트: 새 백엔드 서비스 추가 시
+
+webui/backend 수정 시:
+- [ ] PYTHONPATH 설정 확인 (스크립트 또는 Dockerfile)
+- [ ] `backend/` 디렉토리에서 상대 import 사용 (`from open_webui.xxx import yyy`)
+- [ ] 개발 환경 테스트: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d webui`
+- [ ] 로그 확인: `ModuleNotFoundError` 발생 여부
+
+backend/ (FastAPI BFF) 수정 시:
+- [ ] `app/` 디렉토리 구조 유지
+- [ ] Type hints 및 Docstring 작성
+- [ ] 서비스 레이어 패턴 준수 (Singleton)
+- [ ] 에러 핸들링 및 타임아웃 설정 (30초)
+
+### 가드레일: 절대 하지 말아야 할 것
+
+1. **webui/backend에서 절대 경로 import 금지**:
+   - ❌ `from /app/backend/open_webui import xxx`
+   - ✅ `from open_webui import xxx` (PYTHONPATH 기준 상대 경로)
+
+2. **PYTHONPATH 없이 uvicorn 실행 금지**:
+   - ❌ `uvicorn open_webui.main:app`
+   - ✅ `PYTHONPATH=. uvicorn open_webui.main:app`
+
+3. **dev-start.sh 수정 시 PYTHONPATH 유지**:
+   - 항상 `PYTHONPATH=.`를 uvicorn 명령 앞에 추가
+
+4. **두 백엔드 혼동 금지**:
+   - `webui/backend`: Open-WebUI 내장, port 8080 (컨테이너 내부)
+   - `backend/`: FastAPI BFF, port 8000
+
 ## 참고 자료
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)

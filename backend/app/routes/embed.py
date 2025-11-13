@@ -1,5 +1,5 @@
 """Embed proxy routes for observability tools"""
-from fastapi import APIRouter, Request, Response, HTTPException, status, Security
+from fastapi import APIRouter, Request, Response, HTTPException, status, Security, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Optional
@@ -99,7 +99,7 @@ async def proxy_request(
 async def proxy_helicone(
     path: str,
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security, auto_error=False)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
     """Proxy requests to Helicone"""
     if not settings.OBSERVABILITY_ENABLED:
@@ -127,7 +127,7 @@ async def proxy_helicone(
 async def proxy_langfuse(
     path: str,
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security, auto_error=False)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
     """Proxy requests to Langfuse"""
     if not settings.OBSERVABILITY_ENABLED:
@@ -155,7 +155,7 @@ async def proxy_langfuse(
 async def proxy_security(
     path: str,
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security, auto_error=False)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
     """Proxy requests to Security Metrics (SigNoz/OpenObserve)"""
     if not settings.OBSERVABILITY_ENABLED:

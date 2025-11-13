@@ -16,6 +16,7 @@ ANALYZE_LAYOUTS="$SCRIPT_DIR/analyze-layout-hierarchy.js"
 ANALYZE_NAVIGATION="$SCRIPT_DIR/analyze-navigation-structure.js"
 ANALYZE_STYLES="$SCRIPT_DIR/analyze-global-styles.js"
 ENHANCE_INDEX="$SCRIPT_DIR/enhance-search-index.js"
+ANALYZE_BACKEND="$SCRIPT_DIR/analyze-backend-structure.js"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -80,6 +81,13 @@ if [ -f "$ENHANCE_INDEX" ]; then
     node "$ENHANCE_INDEX"
 else
     echo -e "${RED}Warning: enhance-search-index.js not found${NC}"
+fi
+
+echo -e "${YELLOW}Running backend structure analysis...${NC}"
+if [ -f "$ANALYZE_BACKEND" ]; then
+    node "$ANALYZE_BACKEND"
+else
+    echo -e "${RED}Warning: analyze-backend-structure.js not found${NC}"
 fi
 
 echo -e "${GREEN}✓ UI Skills files updated successfully${NC}"

@@ -21,9 +21,13 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      - ENVIRONMENT=docker  # Docker 환경임을 명시
     volumes:
       # 개발 중 로컬 파일 직접 마운트
       - ./backend/app:/app/app:ro
+      # News data volume mount
+      - /Users/lchangoo/Workspace/mcp-naver-news/src/data:/data/news:ro
     depends_on:
       - mariadb
       - chromadb

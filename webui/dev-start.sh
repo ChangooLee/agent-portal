@@ -23,7 +23,8 @@ fi
 # 백엔드를 백그라운드로 실행
 echo "Starting backend server..."
 cd backend
-WEBUI_SECRET_KEY="$WEBUI_SECRET_KEY" uvicorn open_webui.main:app --host "$HOST" --port "$PORT" --forwarded-allow-ips '*' --reload &
+# PYTHONPATH를 현재 디렉토리(backend)로 설정하여 open_webui 모듈을 찾을 수 있도록 함
+PYTHONPATH=. WEBUI_SECRET_KEY="$WEBUI_SECRET_KEY" uvicorn open_webui.main:app --host "$HOST" --port "$PORT" --forwarded-allow-ips '*' --reload &
 BACKEND_PID=$!
 cd ..
 

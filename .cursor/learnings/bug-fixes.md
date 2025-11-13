@@ -44,3 +44,36 @@ Agent Portal에서 발생한 버그와 수정 방법을 기록합니다.
 
 ---
 
+## 2025-11-13: WebUI 개발 서버 PYTHONPATH 설정 누락
+
+**증상**:
+- webui 개발 서버(docker-compose.dev.yml)가 3001 포트로 기동 실패
+- 에러: `ModuleNotFoundError: No module named 'open_webui'`
+- Backend: uvicorn이 `open_webui.main:app`을 찾지 못함
+
+**근본 원인**:
+- `dev-start.sh`에서 `cd backend` 후 uvicorn 실행 시 PYTHONPATH 미설정
+- `Dockerfile.dev`에 PYTHONPATH 환경 변수 누락
+- Python이 `backend/open_webui` 디렉토리를 모듈로 인식하지 못함
+
+**해결 방법**:
+1. `dev-start.sh` 수정:
+   ```bash
+   PYTHONPATH=. WEBUI_SECRET_KEY="$WEBUI_SECRET_KEY" uvicorn open_webui.main:app --host "$HOST" --port "$PORT" --forwarded-allow-ips '*' --reload &
+   ```
+2. `Dockerfile.dev` 수정:
+   ```dockerfile
+   ENV PYTHONPATH=/app/backend:$PYTHONPATH
+   ```
+
+**예방**:
+- 모든 Python 서비스는 PYTHONPATH를 명시적으로 설정
+- Docker 개발 환경에서는 ENV로 전역 설정
+- 스크립트 실행 시에는 `PYTHONPATH=.` 명시
+
+**참고**:
+- webui/dev-start.sh (line 27)
+- webui/Dockerfile.dev (line 29)
+
+---
+

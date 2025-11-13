@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "project": "agent-portal-backend-bff",
+    "description": "FastAPI BFF (Backend for Frontend) structure mapping",
+    "generated": "2025-11-13",
+    "version": "1.0"
+  },
+  "services": [
+    {
+      "name": "LiteLLM Service",
+      "file": "app/services/litellm_service.py",
+      "class": "LiteLLMService",
+      "singleton": "litellm_service",
+      "purpose": "LLM 게이트웨이 호출 (chat completions, models)",
+      "methods": [
+        "chat_completion",
+        "get_models"
+      ],
+      "dependencies": ["httpx", "fastapi"]
+    },
+    {
+      "name": "Langfuse Service",
+      "file": "app/services/langfuse_service.py",
+      "class": "LangfuseService",
+      "singleton": "langfuse_service",
+      "purpose": "LLM 관측성 (트레이싱, 로깅)",
+      "methods": [
+        "create_trace"
+      ],
+      "dependencies": ["langfuse"],
+      "optional": true
+    }
+  ],
+  "routes": [
+    {
+      "name": "Chat API",
+      "file": "app/routes/chat.py",
+      "prefix": "/chat",
+      "endpoints": [
+        {"path": "/stream", "method": "POST", "description": "스트리밍 채팅"},
+        {"path": "/completions", "method": "POST", "description": "일반 채팅"}
+      ],
+      "dependencies": ["litellm_service", "langfuse_service"]
+    },
+    {
+      "name": "News API",
+      "file": "app/routes/news.py",
+      "prefix": "/api/news",
+      "endpoints": [
+        {"path": "/today", "method": "GET", "description": "오늘의 뉴스 메타데이터"},
+        {"path": "/article/{id}", "method": "GET", "description": "기사 상세"}
+      ],
+      "dependencies": ["config.NEWS_DATA_PATH"]
+    },
+    {
+      "name": "Observability API",
+      "file": "app/routes/observability.py",
+      "prefix": "/observability",
+      "endpoints": [
+        {"path": "/health", "method": "GET", "description": "헬스 체크"},
+        {"path": "/usage", "method": "GET", "description": "사용량 통계"},
+        {"path": "/models", "method": "GET", "description": "모델 목록"}
+      ],
+      "dependencies": ["litellm_service", "langfuse_service"]
+    }
+  ],
+  "config": {
+    "file": "app/config.py",
+    "class": "Settings",
+    "env_vars": [
+      "LITELLM_BASE_URL",
+      "LANGFUSE_BASE_URL",
+      "NEWS_DATA_PATH",
+      "NEWS_DATA_PATH_DEV"
+    ]
+  }
+}
+

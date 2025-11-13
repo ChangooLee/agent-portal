@@ -1,5 +1,5 @@
 """Kong Admin UI (Konga) proxy route"""
-from fastapi import APIRouter, Request, Response, HTTPException, status
+from fastapi import APIRouter, Request, Response, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 import httpx
 from app.config import get_settings
@@ -19,7 +19,7 @@ settings = get_settings()
 async def proxy_kong_admin(
     path: str,
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security, auto_error=False)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
     """
     Proxy requests to Konga (Kong Admin UI).

@@ -37,6 +37,30 @@ class Settings(BaseSettings):
     # Default workspace filter
     DEFAULT_WORKSPACE_FILTER: str = "ws_default"
     
+    # Environment
+    ENVIRONMENT: str = "local"  # local, development, production
+    
+    # News Data
+    # 로컬 PC: /Users/lchangoo/Workspace/mcp-naver-news/src/data
+    # 개발 서버: 환경 변수로 설정 (NEWS_DATA_PATH_DEV)
+    # Docker: /data/news (볼륨 마운트)
+    NEWS_DATA_PATH: str = "/data/news"  # Docker volume mount path
+    NEWS_DATA_PATH_DEV: str = ""  # Development server path (set via env var)
+    NEWS_DATA_PATH_LOCAL: str = "/Users/lchangoo/Workspace/mcp-naver-news/src/data"  # Local PC path
+    
+    def get_news_data_path(self) -> str:
+        """환경에 따른 뉴스 데이터 경로 반환.
+        
+        Returns:
+            뉴스 데이터 경로
+        """
+        if self.ENVIRONMENT == "local":
+            return self.NEWS_DATA_PATH_LOCAL
+        elif self.ENVIRONMENT == "development" and self.NEWS_DATA_PATH_DEV:
+            return self.NEWS_DATA_PATH_DEV
+        else:
+            return self.NEWS_DATA_PATH
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

@@ -44,7 +44,13 @@ export default defineConfig({
 		host: '0.0.0.0', // Docker 내부에서 접근 가능하도록
 		port: 5173, // Vite dev server 포트 (백엔드는 8080에서 실행)
 		proxy: {
-			// 백엔드 API 프록시
+			// News API → FastAPI BFF (포트 8000)
+			// Docker 환경: 컨테이너 이름 사용, 로컬 환경: localhost 사용
+			'/api/news': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true
+			},
+			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
 			'/api': {
 				target: 'http://localhost:8080',
 				changeOrigin: true

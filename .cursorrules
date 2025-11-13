@@ -45,6 +45,26 @@
 
 **직접 파일 검색은 마지막 수단으로만 사용**
 
+### 4. Backend Skills 시스템 (Backend 작업 시 ALWAYS)
+
+**Backend 관련 작업**:
+- `backend/.skills/backend-structure.json` — FastAPI BFF 구조 매핑
+- `webui/.skills/backend-structure.json` — WebUI Backend 구조 매핑
+- `docs/DEV_CHECKLIST.md` — 개발 환경 체크리스트
+
+**CRITICAL: WebUI Backend 개발 시**:
+- PYTHONPATH 설정 필수 (`webui/Dockerfile.dev` line 29, `webui/dev-start.sh` line 27)
+- 이중 백엔드 구조 인식:
+  - `webui/backend`: Open-WebUI 내장 (포트 8080/3000)
+  - `backend/`: FastAPI BFF (포트 8000)
+- ModuleNotFoundError 발생 시 PYTHONPATH 확인 (`.cursor/learnings/bug-fixes.md` 참조)
+
+**절차**:
+1. Backend Skills 파일에서 서비스/라우터 구조 확인
+2. 기존 패턴 재사용 (Singleton, Type hints, 타임아웃 30초)
+3. DEV_CHECKLIST.md 체크리스트 확인
+4. `.cursor/rules/backend-api.mdc` 규칙 준수
+
 ---
 
 ## 📋 8가지 계획 전략

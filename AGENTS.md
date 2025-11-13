@@ -292,6 +292,26 @@ trace.end()
 - **방법 2**: Docker 초기화 스크립트 활용 (docker-entrypoint-initdb.d)
 - **방법 3**: Konga 환경변수 설정 (`MIGRATE=safe`, `KONGA_SEED=false`)
 
+### 문제 5: WebUI 개발 서버 PYTHONPATH 설정 누락
+
+**증상**: webui 개발 서버(3001 포트) 시작 실패, `ModuleNotFoundError: No module named 'open_webui'`
+
+**해결** (대안 제시):
+- **방법 1**: `dev-start.sh` 수정 (권장)
+  ```bash
+  PYTHONPATH=. uvicorn open_webui.main:app --host 0.0.0.0 --port 8080 --reload &
+  ```
+- **방법 2**: `Dockerfile.dev` 수정
+  ```dockerfile
+  ENV PYTHONPATH=/app/backend:$PYTHONPATH
+  ```
+- **방법 3**: 두 가지 모두 적용 (가장 안전)
+
+**예방**:
+- webui/backend 수정 시 항상 PYTHONPATH 확인
+- Docker 개발 환경은 ENV로 전역 설정
+- 스크립트는 `PYTHONPATH=.` 명시
+
 ---
 
 ## 5. 작업 체크리스트

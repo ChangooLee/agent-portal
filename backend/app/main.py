@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.routes import embed, kong_admin, chat, observability
+from app.routes import embed, kong_admin, chat, observability, news
 
 settings = get_settings()
 
@@ -26,6 +26,7 @@ app.include_router(embed.router)
 app.include_router(kong_admin.router)
 app.include_router(chat.router)
 app.include_router(observability.router)
+app.include_router(news.router)
 
 
 @app.get("/health")
