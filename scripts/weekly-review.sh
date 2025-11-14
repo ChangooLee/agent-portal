@@ -59,9 +59,23 @@ fi
 echo ""
 echo ""
 
-# 2. 반복 패턴 식별
-echo "🔍 Repeated Patterns"
-echo "--------------------"
+# 2. 학습 내용 자동 통합
+echo "🔄 Integrating Learnings to Rules"
+echo "----------------------------------"
+echo ""
+
+if command -v node &> /dev/null; then
+    echo "Running integrate-learnings-to-rules.js..."
+    node scripts/integrate-learnings-to-rules.js
+    echo ""
+else
+    echo "⚠️  Node.js not found, skipping automatic integration"
+    echo ""
+fi
+
+# 3. 반복 패턴 분석
+echo "🔍 Repeated Pattern Analysis"
+echo "-----------------------------"
 echo ""
 
 if [ -d "$LEARNING_DIR" ]; then
@@ -75,40 +89,78 @@ if [ -d "$LEARNING_DIR" ]; then
         sed 's/^/   /'
     
     echo ""
+    echo "Patterns appearing 3+ times should be integrated into .mdc files."
+    echo ""
 fi
 
-# 3. 문서 동기화 상태
+# 4. 가드레일 업데이트 제안
+echo "🛡️  Guardrail Update Recommendations"
+echo "--------------------------------------"
+echo ""
+
+if [ -f "$LEARNING_DIR/bug-fixes.md" ]; then
+    echo "Bug fixes that should become guardrails:"
+    grep -h "^## " "$LEARNING_DIR/bug-fixes.md" | tail -5 | sed 's/^##/   /'
+    echo ""
+    echo "Review these and add to CLAUDE.md or AGENTS.md as needed."
+    echo ""
+fi
+
+# 5. 문서 동기화 상태
 echo "📋 Document Sync Status"
 echo "-----------------------"
 echo ""
 
-./scripts/sync-docs.sh
+if [ -f "./scripts/sync-docs.sh" ]; then
+    ./scripts/sync-docs.sh
+else
+    echo "⚠️  sync-docs.sh not found, skipping..."
+fi
 
 echo ""
 echo ""
 
-# 4. 권장 사항
+# 6. Skills 시스템 업데이트
+echo "🎯 Skills System Update"
+echo "------------------------"
+echo ""
+
+if [ -f "./scripts/update-ui-skills.sh" ]; then
+    echo "Running UI Skills update..."
+    ./scripts/update-ui-skills.sh
+    echo ""
+else
+    echo "⚠️  update-ui-skills.sh not found, skipping..."
+    echo ""
+fi
+
+# 7. 권장 사항
 echo "💡 Recommended Actions"
 echo "----------------------"
 echo ""
-echo "1. Review learning entries and identify patterns"
-echo "2. Update CLAUDE.md with new guardrails (if failures found)"
-echo "3. Update .cursor/rules/ with new patterns"
-echo "4. Update AGENTS.md with workflow improvements"
-echo "5. Run: ./scripts/sync-docs.sh"
+echo "Automatic tasks completed:"
+echo "  ✅ Learning integration to .mdc files"
+echo "  ✅ Repeated pattern analysis"
+echo "  ✅ Skills system update"
+echo ""
+echo "Manual review needed:"
+echo "  1. Review new guardrails (from bug fixes)"
+echo "  2. Update CLAUDE.md with critical patterns"
+echo "  3. Update AGENTS.md with workflow improvements"
+echo "  4. Review preferences and apply to project defaults"
 echo ""
 echo "📝 Integration Checklist:"
-echo "   [ ] Review learnings for repeated patterns"
-echo "   [ ] Add new guardrails to CLAUDE.md (failure cases)"
-echo "   [ ] Add new patterns to .cursor/rules/ui-development.mdc"
-echo "   [ ] Add new patterns to .cursor/rules/backend-api.mdc"
-echo "   [ ] Update preferences in .cursor/rules/learning-patterns.mdc"
+echo "   [ ] Review Learning History sections in .mdc files"
+echo "   [ ] Add critical bug fixes to CLAUDE.md as guardrails"
+echo "   [ ] Update coding standards if new patterns emerged"
+echo "   [ ] Apply preferences to project settings"
 echo "   [ ] Commit documentation updates"
 echo ""
 echo "🎯 Next Steps:"
-echo "   1. Review this week's learnings"
-echo "   2. Integrate repeated patterns into core documents"
+echo "   1. Review auto-integrated learning history"
+echo "   2. Manually add critical patterns to core docs"
 echo "   3. Clean up old/redundant learning entries (optional)"
+echo "   4. Create PR for documentation updates"
 echo ""
 echo "✅ Weekly review completed"
 

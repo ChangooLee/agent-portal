@@ -1,0 +1,348 @@
+---
+name: admin-screens
+description: Admin Screens 개발 규칙 (Glassmorphism 디자인, 네비게이션)
+globs: webui/src/routes/(app)/admin/**/*.svelte
+alwaysApply: false
+version: 1.0
+lastUpdated: 2025-11-14
+---
+
+# Admin Screens Development Rules
+
+Agent Portal의 Admin 화면 개발 규칙입니다.
+
+## Overview
+
+이 문서는 Admin 화면의 개발 패턴을 정의합니다. Glassmorphism 디자인, Hero 섹션, 아이콘 기반 네비게이션, 탭 컴포넌트, 테이블 스타일, 차트 통합 등 관리자 UI/UX 패턴을 포함합니다.
+
+## Examples
+
+### Example 1: Glassmorphism Hero 섹션
+
+**패턴**:
+```svelte
+<script lang="ts">
+  import { ChartBar, Cube, LockClosed } from '$lib/components/icons';
+</script>
+
+<!-- Hero Section -->
+<div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 dark:from-primary-light/5 dark:via-secondary-light/5 dark:to-accent-light/5">
+  <div class="absolute inset-0 bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl"></div>
+  
+  <div class="relative px-8 py-12">
+    <!-- Badge -->
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 dark:bg-primary-light/10 text-primary dark:text-primary-light text-sm font-medium mb-4 backdrop-blur-sm border border-primary/20 dark:border-primary-light/20">
+      <ChartBar className="size-4" />
+      <span>관리자 대시보드</span>
+    </div>
+    
+    <!-- Title -->
+    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+      모니터링 & 분석
+    </h1>
+    
+    <!-- Description -->
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl">
+      실시간 LLM 호출 현황, 비용 분석, 성능 지표를 한눈에 확인하세요
+    </p>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+      <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-6 border border-white/20 dark:border-gray-700/20">
+        <div class="text-3xl font-bold text-primary dark:text-primary-light">1,234</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">총 호출 수</div>
+      </div>
+      <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-6 border border-white/20 dark:border-gray-700/20">
+        <div class="text-3xl font-bold text-secondary dark:text-secondary-light">$56.78</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">이번 달 비용</div>
+      </div>
+      <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-6 border border-white/20 dark:border-gray-700/20">
+        <div class="text-3xl font-bold text-accent dark:text-accent-light">98.5%</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">성공률</div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+**핵심 포인트**:
+- `backdrop-blur-xl`로 Glassmorphism 효과
+- `bg-gradient-to-br`로 그라데이션 배경
+- `from-primary/10` 등 투명도 조절
+- Stats 카드에도 Glassmorphism 적용
+
+### Example 2: Admin 네비게이션 메뉴 (Glassmorphism)
+
+**패턴**:
+```svelte
+<script lang="ts">
+  import { page } from '$app/stores';
+  import { UsersSolid, ChartBar, Cube, GlobeAlt, LockClosed, Star, Cog6Solid } from '$lib/components/icons';
+  
+  const navItems = [
+    { path: '/admin/users', icon: UsersSolid, label: '사용자 관리' },
+    { path: '/admin/monitoring', icon: ChartBar, label: '모니터링' },
+    { path: '/admin/gateway', icon: GlobeAlt, label: 'Gateway 설정' },
+    { path: '/admin/mcp', icon: Cube, label: 'MCP 서버' },
+    { path: '/admin/guardrails', icon: LockClosed, label: 'Guardrails' },
+    { path: '/admin/evaluations', icon: Star, label: '평가 리더보드' },
+    { path: '/admin/settings', icon: Cog6Solid, label: '설정' }
+  ];
+</script>
+
+<nav class="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 py-3 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-white/20 dark:border-gray-700/20">
+  {#each navItems as item}
+    <a
+      href={item.path}
+      class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ease-out whitespace-nowrap
+      {$page.url.pathname === item.path
+        ? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 dark:from-primary-light/80 dark:via-secondary-light/80 dark:to-accent-light/80 text-white backdrop-blur-md shadow-lg shadow-primary/30 dark:shadow-primary-light/20 border border-white/20 dark:border-gray-700/20 transform scale-105'
+        : 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
+    >
+      <svelte:component this={item.icon} className="size-4" />
+      <span class="hidden sm:inline">{item.label}</span>
+    </a>
+  {/each}
+</nav>
+```
+
+**핵심 포인트**:
+- 아이콘 + 텍스트 조합 (모바일에서는 아이콘만)
+- Active 상태: 그라데이션 + 그림자 + scale-105
+- Inactive 상태: 투명 배경 + hover 효과
+- `scrollbar-none`으로 스크롤바 숨김
+
+### Example 3: 모던 탭 버튼
+
+**패턴**:
+```svelte
+<script lang="ts">
+  let activeTab = 'summary';
+  
+  const tabs = [
+    { id: 'summary', label: '요약', icon: ChartBar },
+    { id: 'litellm', label: 'LiteLLM', icon: Cube },
+    { id: 'langfuse', label: 'Langfuse', icon: Star }
+  ];
+</script>
+
+<div class="flex items-center gap-2 mb-6">
+  {#each tabs as tab}
+    <button
+      on:click={() => activeTab = tab.id}
+      class="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 ease-out
+      {activeTab === tab.id
+        ? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 dark:from-primary-light/80 dark:via-secondary-light/80 dark:to-accent-light/80 text-white backdrop-blur-md shadow-lg shadow-primary/30 dark:shadow-primary-light/20 border border-white/20 dark:border-gray-700/20 transform scale-105'
+        : 'bg-white/60 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-800/80 border border-gray-200/50 dark:border-gray-700/50 hover:shadow-md hover:scale-105'}"
+    >
+      <svelte:component this={tab.icon} className="size-4" />
+      <span>{tab.label}</span>
+    </button>
+  {/each}
+</div>
+```
+
+**핵심 포인트**:
+- 구식 `border-b-2` 대신 `rounded-xl` 버튼
+- 그라데이션 + 그림자 + scale 애니메이션
+- 아이콘 + 텍스트 조합
+
+### Example 4: Glassmorphism 카드
+
+**패턴**:
+```svelte
+<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-8 border border-white/20 dark:border-gray-700/20 shadow-xl">
+  <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+    카드 제목
+  </h2>
+  
+  <p class="text-gray-600 dark:text-gray-300 mb-6">
+    카드 설명 내용
+  </p>
+  
+  <!-- Card Content -->
+  <div class="space-y-4">
+    <!-- Content Here -->
+  </div>
+</div>
+```
+
+**핵심 포인트**:
+- `bg-white/60`로 투명도 조절
+- `backdrop-blur-sm`로 블러 효과
+- `border border-white/20`으로 섬세한 테두리
+- `shadow-xl`로 깊이감
+
+### Example 5: "Coming Soon" 상태
+
+**패턴**:
+```svelte
+<div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-rose-500/10 dark:from-purple-400/5 dark:via-pink-400/5 dark:to-rose-400/5">
+  <div class="absolute inset-0 bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl"></div>
+  
+  <div class="relative px-8 py-12">
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 dark:bg-purple-400/10 text-purple-600 dark:text-purple-400 text-sm font-medium mb-4 backdrop-blur-sm border border-purple-500/20 dark:border-purple-400/20">
+      <Cube className="size-4" />
+      <span>Coming Soon</span>
+    </div>
+    
+    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+      기능 개발 중
+    </h1>
+    
+    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl">
+      이 기능은 현재 개발 중입니다. 곧 만나보실 수 있습니다!
+    </p>
+    
+    <!-- Icon Background -->
+    <div class="mt-8 flex items-center justify-center">
+      <div class="relative">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-pink-500/20 dark:from-purple-400/20 dark:to-pink-400/20 rounded-2xl blur-3xl"></div>
+        <div class="relative bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-12 border border-white/20 dark:border-gray-700/20">
+          <Cube className="size-24 text-purple-500 dark:text-purple-400" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+**핵심 포인트**:
+- 보라/핑크 그라데이션으로 "개발 중" 느낌
+- 큰 아이콘 + 블러 배경으로 시각적 임팩트
+- "Coming Soon" 배지
+
+## 아키텍처
+
+### Admin 화면 구조
+
+```
+webui/src/routes/(app)/admin/
+├── +layout.svelte              # Admin 레이아웃 (네비게이션)
+├── users/
+│   └── +page.svelte           # 사용자 관리
+├── monitoring/
+│   └── +page.svelte           # 모니터링 대시보드
+├── gateway/
+│   └── +page.svelte           # Gateway 설정
+├── mcp/
+│   └── +page.svelte           # MCP 서버 관리
+├── guardrails/
+│   └── +page.svelte           # Guardrails 설정
+├── evaluations/
+│   └── +page.svelte           # 평가 리더보드
+└── settings/
+    └── +page.svelte           # 설정
+```
+
+### 레이아웃 계층
+
+1. **+layout.svelte (app)**:
+   - 전체 앱 레이아웃
+   - 사이드바, TopNavbar 포함
+
+2. **+layout.svelte (admin)**:
+   - Admin 네비게이션 메뉴
+   - Glassmorphism 스타일 적용
+
+3. **+page.svelte (각 화면)**:
+   - Hero 섹션
+   - 기능별 콘텐츠
+
+## 색상 팔레트
+
+### Primary 색상
+
+- `#0072CE` (Samsung Blue)
+- Tailwind: `bg-[#0072CE]`, `text-[#0072CE]`
+
+### Gradient 색상
+
+- Primary/Secondary/Accent 조합:
+  - `from-primary/90 via-secondary/90 to-accent/90`
+  - `from-primary-light/80 via-secondary-light/80 to-accent-light/80` (다크 모드)
+
+### "Coming Soon" 색상
+
+- Purple/Pink/Rose:
+  - `from-purple-500/10 via-pink-500/10 to-rose-500/10`
+
+## 반응형 디자인
+
+### 브레이크포인트
+
+- **모바일**: 기본 (< 640px)
+  - 네비게이션: 아이콘만 표시
+  - Hero 섹션: 1열 레이아웃
+  
+- **태블릿**: `@md:` (≥ 768px)
+  - 네비게이션: 아이콘 + 텍스트
+  - Hero 섹션: 2열 레이아웃
+  
+- **데스크톱**: `@lg:` (≥ 1024px)
+  - 모든 요소 표시
+  - Hero 섹션: 3열 레이아웃
+
+## 체크리스트
+
+### 새 Admin 화면 추가 시
+
+- [ ] Hero 섹션 추가 (Glassmorphism)
+- [ ] Badge + Title + Description 구조
+- [ ] Stats 카드 (3개, md:grid-cols-3)
+- [ ] 탭 버튼 (rounded-xl, 그라데이션)
+- [ ] Glassmorphism 카드로 콘텐츠 감싸기
+- [ ] 아이콘 추가 (svelte-hero-icons)
+- [ ] 반응형 디자인 (모바일, 태블릿, 데스크톱)
+- [ ] 다크 모드 스타일 (dark: 클래스)
+
+### Admin 네비게이션 업데이트 시
+
+- [ ] `+layout.svelte`에 새 메뉴 아이템 추가
+- [ ] 아이콘 import (svelte-hero-icons)
+- [ ] Active 상태 확인 (`$page.url.pathname === item.path`)
+- [ ] 모바일 대응 (sm:inline으로 텍스트 숨김)
+
+## 가드레일
+
+### ❌ 절대 하지 말 것
+
+1. **구식 탭 스타일 사용**:
+   - ❌ `border-b-2 {activeTab ? 'border-blue-500' : 'border-transparent'}`
+   - ✅ `rounded-xl + 그라데이션 + shadow`
+
+2. **Glassmorphism 미적용**:
+   - ❌ `bg-white dark:bg-gray-800`
+   - ✅ `bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm`
+
+3. **아이콘 누락**:
+   - ❌ 텍스트만 표시
+   - ✅ 아이콘 + 텍스트 조합
+
+4. **반응형 디자인 미적용**:
+   - ❌ 데스크톱 화면만 고려
+   - ✅ 모바일, 태블릿, 데스크톱 모두 테스트
+
+5. **다크 모드 미고려**:
+   - ❌ 라이트 모드만 테스트
+   - ✅ 다크 모드 전환 테스트
+
+## 학습 내용
+
+### 성공 사례
+
+1. **Glassmorphism 디자인**: `backdrop-blur-xl` + 투명도 조절로 모던한 느낌
+2. **아이콘 기반 네비게이션**: 모바일에서 아이콘만, 데스크톱에서 텍스트 추가로 반응형 대응
+3. **그라데이션 + 그림자**: Active 상태 시각적 강조
+4. **"Coming Soon" 상태**: 보라/핑크 그라데이션으로 개발 중 느낌 전달
+
+### 실패 사례
+
+1. **border-b-2 탭**: 구식 디자인, rounded-lg 버튼이 더 모던함
+2. **불투명 배경**: Glassmorphism 효과 없이 평범함
+
+## 참고 자료
+
+- [Tailwind CSS Glassmorphism](https://tailwindcss.com/docs/backdrop-blur)
+- [Svelte Hero Icons](https://github.com/krowten/svelte-hero-icons)
+- [SvelteKit Layouts](https://kit.svelte.dev/docs/routing#layout)

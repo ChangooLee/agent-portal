@@ -22,11 +22,27 @@
 
 ### 2. 필수 참조 문서 (ALWAYS)
 
-작업 시작 전 **4개 핵심 문서** 확인:
-1. `CLAUDE.md` — 프로젝트 가이드 (주요 가이드)
-2. `AGENTS.md` — 에이전트 워크플로우 (복잡한 작업 시)
-3. `README.md` — 프로젝트 개요 및 아키텍처
-4. `DEVELOP.md` — 개발 가이드 및 환경 설정
+작업 시작 전 **핵심 문서** 우선 순위:
+
+**1단계: .cursor/rules/*.mdc 파일 (특화 규칙)**
+- `ui-development.mdc` — UI 개발 (SvelteKit, Tailwind CSS, Glassmorphism)
+- `backend-api.mdc` — Backend API (FastAPI, 서비스 레이어, 에러 핸들링)
+- `news-feature.mdc` — News 기능 (무한 스크롤, 검색, 중요도 정렬)
+- `admin-screens.mdc` — Admin 화면 (Glassmorphism, 네비게이션)
+- `planning-strategies.mdc` — 8가지 계획 전략 (15-20분 계획 투자)
+- `learning-patterns.mdc` — 학습 축적 시스템 (성문화, 주간 리뷰)
+
+**2단계: 프로젝트 핵심 문서**
+- `CLAUDE.md` — 프로젝트 가이드 (가드레일, 코딩 표준)
+- `AGENTS.md` — 에이전트 워크플로우 (복잡한 작업 시)
+- `README.md` — 프로젝트 개요 및 아키텍처
+- `DEVELOP.md` — 개발 가이드 및 환경 설정
+
+**3단계: Skills JSON 파일 (보조)**
+- `webui/.skills/*.json` — UI 구조/패턴 분석 결과
+- `backend/.skills/*.json` — Backend 구조 분석 결과
+
+**중요**: .mdc 파일이 **최종 규칙**, Skills JSON은 **중간 분석 결과**입니다.
 
 ### 3. Skills 시스템 우선 활용 (UI 작업 시 ALWAYS)
 

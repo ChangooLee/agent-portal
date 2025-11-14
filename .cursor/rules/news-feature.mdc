@@ -1,0 +1,536 @@
+---
+name: news-feature
+description: News Feature 개발 규칙 (무한 스크롤, 실시간 검색, 중요도 정렬)
+globs: webui/src/routes/(app)/today/**/*.svelte, backend/app/routes/news.py
+alwaysApply: false
+version: 1.0
+lastUpdated: 2025-11-14
+---
+
+# News Feature Development Rules
+
+Agent Portal의 Today 페이지 뉴스 기능 개발 규칙입니다.
+
+## Overview
+
+이 문서는 Today 페이지의 뉴스 기능 개발 패턴을 정의합니다. 무한 스크롤, 실시간 검색 필터링, 중요도 기반 정렬, 모달 팝업, Glassmorphism 디자인 등 현대적인 뉴스 피드 UI/UX 패턴을 포함합니다.
+
+## Examples
+
+### Example 1: 무한 스크롤 구현
+
+**패턴**:
+```svelte
+<script lang="ts">
+  import { onMount, afterUpdate } from 'svelte';
+  
+  let allArticles = [];
+  let offset = 0;
+  let hasMore = true;
+  let loadingMore = false;
+  let observerTarget: HTMLElement;
+  let observer: IntersectionObserver;
+  
+  async function fetchMoreArticles() {
+    if (loadingMore || !hasMore) return;
+    loadingMore = true;
+    
+    try {
+      const response = await fetch(`/api/news/articles?offset=${offset}&limit=20`);
+      const data = await response.json();
+      
+      allArticles = [...allArticles, ...data.articles];
+      offset += data.articles.length;
+      hasMore = data.has_more;
+    } catch (error) {
+      console.error('Failed to fetch articles:', error);
+    } finally {
+      loadingMore = false;
+    }
+  }
+  
+  // afterUpdate에서 observer 설정 (DOM 준비 보장)
+  afterUpdate(() => {
+    if (observerTarget && !observer) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !loadingMore) {
+            fetchMoreArticles();
+          }
+        },
+        { threshold: 0.1 }
+      );
+      observer.observe(observerTarget);
+    }
+  });
+  
+  onMount(() => {
+    fetchMoreArticles();
+    
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  });
+</script>
+
+<!-- Article Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {#each allArticles as article}
+    <div class="article-card">
+      <h3>{article.title}</h3>
+      <p>{article.summary}</p>
+    </div>
+  {/each}
+</div>
+
+<!-- Intersection Observer Target -->
+<div bind:this={observerTarget} class="h-20"></div>
+
+{#if loadingMore}
+  <div class="text-center py-8">
+    <div class="spinner"></div>
+  </div>
+{/if}
+```
+
+**핵심 포인트**:
+- `afterUpdate`에서 observer 설정 (onMount는 DOM 준비 보장 안 됨)
+- `threshold: 0.1`로 조기 로딩 (스크롤 끝 도달 전 미리 로딩)
+- `observerTarget`은 `h-20`으로 충분한 높이 확보
+
+### Example 2: 실시간 검색 필터링
+
+**패턴**:
+```svelte
+<script lang="ts">
+  let searchQuery = '';
+  let allArticles = [];
+  let featuredArticles = [];
+  let filteredArticles = [];
+  let isSearching = false;
+  
+  function handleSearch() {
+    if (!searchQuery.trim()) {
+      filteredArticles = [];
+      isSearching = false;
+      return;
+    }
+    
+    isSearching = true;
+    const query = searchQuery.toLowerCase();
+    
+    // 전체 기사 (featured + all) 검색
+    const allToSearch = [...featuredArticles, ...allArticles];
+    
+    filteredArticles = allToSearch.filter(article => 
+      article.title.toLowerCase().includes(query) ||
+      article.content.toLowerCase().includes(query) ||
+      article.summary?.toLowerCase().includes(query) ||
+      article.tags?.some(tag => tag.toLowerCase().includes(query))
+    ).sort((a, b) => b.importance_score - a.importance_score);
+  }
+  
+  function clearSearch() {
+    searchQuery = '';
+    filteredArticles = [];
+    isSearching = false;
+  }
+</script>
+
+<!-- Search Bar -->
+<div class="mb-6">
+  <div class="relative max-w-2xl mx-auto">
+    <input
+      type="text"
+      bind:value={searchQuery}
+      on:input={handleSearch}
+      placeholder="제목, 내용, 태그로 검색..."
+      class="w-full px-5 py-3 pl-12 pr-12 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+    />
+    
+    <!-- Search Icon -->
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
+    </svg>
+    
+    <!-- Clear Button -->
+    {#if searchQuery}
+      <button
+        on:click={clearSearch}
+        class="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    {/if}
+  </div>
+  
+  <!-- Search Results Count -->
+  {#if isSearching}
+    <p class="text-center mt-3 text-sm text-gray-600 dark:text-gray-400">
+      🔍 "{searchQuery}" 검색 결과: {filteredArticles.length}개
+    </p>
+  {/if}
+</div>
+```
+
+**핵심 포인트**:
+- `on:input`으로 실시간 필터링 (keydown 대신)
+- 여러 필드 동시 검색 (title, content, summary, tags)
+- 중요도 순 정렬 (`importance_score` 내림차순)
+- Clear 버튼으로 검색 초기화
+
+### Example 3: 중요도 기반 정렬 (Backend)
+
+**패턴**:
+```python
+# backend/app/routes/news.py
+from fastapi import APIRouter, Query, HTTPException
+from typing import Dict, Any
+from pathlib import Path
+import json
+from datetime import datetime
+
+router = APIRouter(prefix="/api/news", tags=["news"])
+
+@router.get("/articles")
+async def get_articles(
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+    limit: int = Query(20, ge=1, le=100, description="Number of articles to return")
+) -> Dict[str, Any]:
+    """Get articles list for infinite scroll.
+    
+    Args:
+        offset: Starting index
+        limit: Number of articles to return
+        
+    Returns:
+        Articles list with pagination info
+        
+    Raises:
+        HTTPException: 404 if file not found, 500 for file read errors
+    """
+    try:
+        today = datetime.now().strftime("%Y%m%d")
+        data_path = settings.get_news_data_path()
+        index_file = Path(data_path) / today / "articles_index.json"
+        
+        if not index_file.exists():
+            raise HTTPException(
+                status_code=404,
+                detail=f"No articles found for date {today}"
+            )
+        
+        with open(index_file, 'r', encoding='utf-8') as f:
+            all_articles = json.load(f)
+        
+        # 중요도순 정렬 (importance_score 내림차순)
+        sorted_articles = sorted(
+            all_articles,
+            key=lambda x: x.get('importance_score', 0),
+            reverse=True
+        )
+        
+        # 페이지네이션
+        total = len(sorted_articles)
+        articles = sorted_articles[offset:offset + limit]
+        
+        return {
+            "articles": articles,
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": (offset + limit) < total
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to read articles: {str(e)}"
+        )
+```
+
+**핵심 포인트**:
+- `importance_score` 기준 내림차순 정렬
+- `offset` + `limit` 페이지네이션
+- `has_more` 플래그로 무한 스크롤 제어
+
+### Example 4: 모달 팝업 (기사 상세)
+
+**패턴**:
+```svelte
+<script lang="ts">
+  let selectedArticle = null;
+  
+  function selectArticle(article) {
+    selectedArticle = article;
+    // 배경 스크롤 방지
+    document.body.style.overflow = 'hidden';
+  }
+  
+  function closeModal() {
+    selectedArticle = null;
+    document.body.style.overflow = '';
+  }
+</script>
+
+<!-- Article Cards -->
+{#each articles as article}
+  <div
+    class="article-card cursor-pointer"
+    on:click={() => selectArticle(article)}
+  >
+    <h3>{article.title}</h3>
+  </div>
+{/each}
+
+<!-- Modal -->
+{#if selectedArticle}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    on:click={closeModal}
+  >
+    <div
+      class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+      on:click|stopPropagation
+    >
+      <!-- Modal Header -->
+      <div class="sticky top-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 border-b border-gray-200 dark:border-gray-700">
+        <button
+          on:click={closeModal}
+          class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        
+        <h2 class="text-2xl font-bold pr-12">{selectedArticle.title}</h2>
+        <p class="text-sm text-gray-500 mt-2">{selectedArticle.media} · {selectedArticle.published_date}</p>
+      </div>
+      
+      <!-- Modal Content -->
+      <div class="p-6">
+        <div class="prose prose-lg max-w-none dark:prose-invert">
+          {#each selectedArticle.pages as page}
+            <p>{page}</p>
+          {/each}
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
+```
+
+**핵심 포인트**:
+- 배경 클릭 시 모달 닫기 (`on:click={closeModal}`)
+- 모달 내부 클릭 시 이벤트 전파 방지 (`on:click|stopPropagation`)
+- 배경 스크롤 방지 (`document.body.style.overflow`)
+- `max-h-[90vh]` + `overflow-y-auto`로 스크롤 가능
+
+## 아키텍처
+
+### Frontend (SvelteKit)
+
+**파일 구조**:
+```
+webui/src/routes/(app)/today/
+└── +page.svelte        # 메인 페이지
+```
+
+**상태 관리**:
+- `featuredArticles`: 메타 기사 (상단 고정)
+- `allArticles`: 전체 기사 (무한 스크롤)
+- `filteredArticles`: 검색 결과
+- `selectedArticle`: 모달에 표시할 기사
+
+### Backend (FastAPI)
+
+**파일 구조**:
+```
+backend/app/routes/
+└── news.py             # 뉴스 API 엔드포인트
+```
+
+**엔드포인트**:
+- `GET /api/news/today`: 메타 정보 조회
+- `GET /api/news/article/{id}`: 기사 상세 조회
+- `GET /api/news/articles`: 무한 스크롤용 기사 목록 (offset + limit)
+
+### 데이터 구조 (JSON)
+
+**articles_meta.json**:
+```json
+{
+  "crawl_date": "2025-11-13",
+  "total_articles": 150,
+  "categories": ["정치", "경제", "사회", "..."]
+}
+```
+
+**articles_index.json**:
+```json
+[
+  {
+    "id": "20251113_001",
+    "title": "기사 제목",
+    "summary": "기사 요약 (3줄)",
+    "media": "언론사",
+    "published_date": "2025-11-13 08:00:00",
+    "category": "경제",
+    "importance_score": 8.5,
+    "tags": ["태그1", "태그2"],
+    "thumbnail_url": "/images/20251113_001.jpg"
+  }
+]
+```
+
+**articles_detail.json**:
+```json
+{
+  "20251113_001": {
+    "id": "20251113_001",
+    "title": "기사 제목",
+    "content": "전체 기사 내용",
+    "media": "언론사",
+    "reporter": "기자명",
+    "published_date": "2025-11-13 08:00:00",
+    "category": "경제",
+    "tags": ["태그1", "태그2"],
+    "related_articles": ["20251113_002", "20251113_003"]
+  }
+}
+```
+
+**articles_pages.json**:
+```json
+{
+  "20251113_001": {
+    "id": "20251113_001",
+    "pages": [
+      "첫 번째 문단 내용...",
+      "두 번째 문단 내용...",
+      "세 번째 문단 내용..."
+    ]
+  }
+}
+```
+
+## 환경 설정
+
+### 뉴스 데이터 경로
+
+**backend/app/config.py**:
+```python
+class Settings(BaseSettings):
+    # Environment
+    ENVIRONMENT: str = "local"  # local, development, production, docker
+    
+    # News Data
+    NEWS_DATA_PATH: str = "/data/news"  # Docker volume mount path
+    NEWS_DATA_PATH_DEV: str = ""  # Development server path (set via env var)
+    NEWS_DATA_PATH_LOCAL: str = "/Users/lchangoo/Workspace/mcp-naver-news/src/data"  # Local PC path
+    
+    def get_news_data_path(self) -> str:
+        """환경에 따른 뉴스 데이터 경로 반환."""
+        if self.ENVIRONMENT == "local":
+            return self.NEWS_DATA_PATH_LOCAL
+        elif self.ENVIRONMENT == "development" and self.NEWS_DATA_PATH_DEV:
+            return self.NEWS_DATA_PATH_DEV
+        else:
+            return self.NEWS_DATA_PATH
+```
+
+**docker-compose.yml**:
+```yaml
+services:
+  backend:
+    environment:
+      - ENVIRONMENT=docker
+    volumes:
+      - /Users/lchangoo/Workspace/mcp-naver-news/src/data:/data/news:ro
+```
+
+## 체크리스트
+
+### 새 뉴스 기능 추가 시
+
+Frontend:
+- [ ] 무한 스크롤 구현 (afterUpdate + IntersectionObserver)
+- [ ] 실시간 검색 필터링 (on:input)
+- [ ] 중요도 순 정렬 (importance_score)
+- [ ] 모달 팝업 (배경 클릭, 스크롤 방지)
+- [ ] Glassmorphism 디자인 (backdrop-blur, 투명도)
+- [ ] 반응형 디자인 (모바일, 태블릿, 데스크톱)
+
+Backend:
+- [ ] 환경별 데이터 경로 설정 (config.py)
+- [ ] 중요도 순 정렬 (sorted by importance_score desc)
+- [ ] 페이지네이션 (offset + limit)
+- [ ] 에러 핸들링 (404, 500)
+- [ ] Type hints 및 Docstring
+
+## 가드레일
+
+### ❌ 절대 하지 말 것
+
+1. **onMount에서 IntersectionObserver 설정**:
+   - ❌ `onMount(() => { observer = new IntersectionObserver(...) })`
+   - ✅ `afterUpdate(() => { if (observerTarget && !observer) { ... } })`
+
+2. **keydown 이벤트로 검색**:
+   - ❌ `on:keydown={handleSearch}`
+   - ✅ `on:input={handleSearch}` (실시간 필터링)
+
+3. **importance_score 숫자 노출**:
+   - ❌ `<span>{article.importance_score}</span>`
+   - ✅ 점수는 정렬에만 사용, UI에는 배지만 표시
+
+4. **모달 배경 스크롤 방지 누락**:
+   - ❌ 모달 열림 시 배경 스크롤 가능
+   - ✅ `document.body.style.overflow = 'hidden'`
+
+## 학습 내용
+
+### 성공 사례
+
+1. **afterUpdate에서 observer 설정**: onMount에서는 DOM 준비 보장 안 됨
+2. **threshold: 0.1**: 스크롤 끝 도달 전 미리 로딩으로 UX 개선
+3. **중요도 순 정렬**: 최신순보다 중요도순이 뉴스 피드에 더 적합
+4. **검색 결과 count 표시**: 사용자에게 검색 결과 피드백 제공
+
+### 실패 사례
+
+1. **onMount에서 observer 설정**: DOM 준비 전 실행되어 observerTarget이 undefined
+2. **importance_score 숫자 노출**: 사용자에게 혼란, 배지만 표시하는 것이 더 직관적
+
+## 참고 자료
+
+- [Intersection Observer API - MDN](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API)
+- [SvelteKit Lifecycle - afterUpdate](https://svelte.dev/docs/svelte#afterupdate)
+- [Tailwind CSS Glassmorphism](https://tailwindcss.com/docs/backdrop-blur)

@@ -1,12 +1,163 @@
 ---
+name: ui-development
 description: UI 개발 전용 규칙 (Skills 시스템 활용)
 globs: webui/src/**/*.svelte, webui/src/**/*.ts, webui/src/**/*.css
 alwaysApply: false
+version: 2.0
+lastUpdated: 2025-11-14
 ---
 
 # UI Development Rules
 
 Agent Portal의 UI 개발 시 반드시 따라야 하는 규칙입니다.
+
+## Overview
+
+이 문서는 SvelteKit 기반 UI 개발의 모든 패턴과 규칙을 정의합니다. Skills 시스템을 활용한 자연어 기반 UI 검색, Glassmorphism 디자인, 무한 스크롤, 실시간 검색 등 현대적인 웹 개발 패턴을 포함합니다.
+
+## Examples
+
+### Example 1: 탭 스타일 변경 (Before/After)
+
+**Before** (구식 패턴):
+```svelte
+<!-- ❌ 사용하지 말 것 -->
+<button class="border-b-2 {activeTab === 'summary' ? 'border-blue-500' : 'border-transparent'}">
+  탭
+</button>
+```
+
+**After** (모던 패턴):
+```svelte
+<!-- ✅ 권장 패턴 -->
+<button 
+  class="px-4 py-2 rounded-lg {activeTab === 'summary' ? 'bg-[#0072CE] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'} transition-all duration-200"
+>
+  탭
+</button>
+```
+
+**학습**: border-b-2 대신 rounded-lg 버튼이 더 모던하고 사용자 친화적
+
+### Example 2: 무한 스크롤 구현
+
+**패턴**:
+```svelte
+<script lang="ts">
+  import { onMount, afterUpdate } from 'svelte';
+  
+  let articles = [];
+  let offset = 0;
+  let hasMore = true;
+  let loadingMore = false;
+  let observerTarget: HTMLElement;
+  let observer: IntersectionObserver;
+  
+  async function fetchMoreArticles() {
+    if (loadingMore || !hasMore) return;
+    loadingMore = true;
+    
+    try {
+      const response = await fetch(`/api/news/articles?offset=${offset}&limit=20`);
+      const data = await response.json();
+      
+      articles = [...articles, ...data.articles];
+      offset += data.articles.length;
+      hasMore = data.has_more;
+    } catch (error) {
+      console.error('Failed to fetch articles:', error);
+    } finally {
+      loadingMore = false;
+    }
+  }
+  
+  afterUpdate(() => {
+    if (observerTarget && !observer) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !loadingMore) {
+            fetchMoreArticles();
+          }
+        },
+        { threshold: 0.1 }
+      );
+      observer.observe(observerTarget);
+    }
+  });
+  
+  onMount(() => {
+    fetchMoreArticles();
+    
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  });
+</script>
+
+<!-- Article Grid -->
+{#each articles as article}
+  <div class="article-card">{article.title}</div>
+{/each}
+
+<!-- Intersection Observer Target -->
+<div bind:this={observerTarget} class="h-20"></div>
+
+{#if loadingMore}
+  <div class="loading">Loading...</div>
+{/if}
+```
+
+**핵심 포인트**:
+- `afterUpdate`에서 observer 설정 (DOM 준비 보장)
+- `IntersectionObserver`로 스크롤 감지
+- `threshold: 0.1`로 조기 로딩
+
+### Example 3: 실시간 검색 필터링
+
+**패턴**:
+```svelte
+<script lang="ts">
+  let searchQuery = '';
+  let allArticles = [];
+  let filteredArticles = [];
+  
+  function handleSearch() {
+    if (!searchQuery.trim()) {
+      filteredArticles = [];
+      return;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    filteredArticles = allArticles.filter(article => 
+      article.title.toLowerCase().includes(query) ||
+      article.content.toLowerCase().includes(query) ||
+      article.tags?.some(tag => tag.toLowerCase().includes(query))
+    ).sort((a, b) => b.importance_score - a.importance_score);
+  }
+  
+  function clearSearch() {
+    searchQuery = '';
+    filteredArticles = [];
+  }
+</script>
+
+<input
+  type="text"
+  bind:value={searchQuery}
+  on:input={handleSearch}
+  placeholder="제목, 내용, 태그로 검색..."
+  class="w-full px-5 py-3 pl-12 pr-12 rounded-xl bg-white/60 dark:bg-gray-800/60"
+/>
+
+{#if searchQuery}
+  <button on:click={clearSearch}>Clear</button>
+{/if}
+```
+
+**핵심 포인트**:
+- `on:input`으로 실시간 필터링
+- 여러 필드 동시 검색 (title, content, tags)
+- 중요도 순 정렬
 
 ## Skills 시스템 우선 활용 (ALWAYS)
 
