@@ -102,11 +102,15 @@
 				throw new Error(`Failed to fetch articles: ${response.statusText}`);
 			}
 			const data = await response.json();
-			console.log('✅ Fetched:', { count: data.articles.length, newOffset: offset + data.articles.length, has_more: data.has_more });
+			console.log('✅ Fetched:', { count: data.articles.length, newOffset: offset + data.articles.length, has_more: data.has_more, newsDataLoaded: !!newsData });
 			
-			// Featured articles에 포함된 기사는 제외
-			const featuredIds = new Set(newsData?.featured_articles.map(a => a.id) || []);
-			const newArticles = data.articles.filter((article: Article) => !featuredIds.has(article.id));
+			// Featured articles에 포함된 기사는 제외 (newsData가 로드된 경우에만)
+			let newArticles = data.articles;
+			if (newsData?.featured_articles) {
+				const featuredIds = new Set(newsData.featured_articles.map(a => a.id));
+				newArticles = data.articles.filter((article: Article) => !featuredIds.has(article.id));
+				console.log('🔍 Filtered:', { before: data.articles.length, after: newArticles.length, featuredCount: featuredIds.size });
+			}
 			
 			allArticles = [...allArticles, ...newArticles];
 			offset += data.articles.length;
@@ -180,9 +184,9 @@
 		isSearching = false;
 	};
 	
-	onMount(() => {
-		fetchTodayNews();
-		fetchMoreArticles();
+	onMount(async () => {
+		await fetchTodayNews();
+		await fetchMoreArticles();
 	});
 	
 	// Setup observer after DOM is ready
