@@ -8,7 +8,15 @@
 		highlight: string;
 		importance_score: number;
 		tags?: string[];
+		category?: string;
 		link: string;
+	}
+	
+	interface CategoryStatistics {
+		total_categories: number;
+		category_list: string[];
+		category_distribution: Record<string, number>;
+		top_categories: Array<{ category: string; count: number; percentage: number }>;
 	}
 	
 	interface NewsData {
@@ -17,6 +25,7 @@
 		total_pages: number;
 		items_per_page: number;
 		featured_articles: Article[];
+		category_statistics?: CategoryStatistics;
 	}
 	
 	interface ArticleDetail extends Article {
@@ -39,8 +48,10 @@
 	let observer: IntersectionObserver | null = null;
 	let searchQuery = '';
 	let isSearching = false;
-	let selectedTag: string | null = null;
+	let selectedTags: string[] = [];
+	let selectedCategories: string[] = [];
 	let topTags: Array<{ tag: string; count: number }> = [];
+	let categories: Array<{ category: string; count: number; isActive: boolean }> = [];
 	
 	const formatDate = (dateStr: string) => {
 		if (!dateStr) return '';
@@ -107,8 +118,11 @@
 			offset += data.articles.length;
 			hasMore = data.has_more;
 			
-			// 태그 재계산 (새 기사 로드 후)
+			// 태그 및 카테고리 재계산 (새 기사 로드 후)
 			calculateTopTags();
+			if (newsData || allArticles.length > 0) {
+				calculateCategories();
+			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load more articles';
 		} finally {
@@ -138,12 +152,14 @@
 		if (!searchQuery.trim()) {
 			filteredArticles = [];
 			isSearching = false;
-			selectedTag = null; // 검색 해제 시 태그 필터도 해제
+			selectedTags = []; // 검색 해제 시 태그 필터도 해제
+			selectedCategories = []; // 검색 해제 시 카테고리 필터도 해제
 			return;
 		}
 		
 		isSearching = true;
-		selectedTag = null; // 검색 시 태그 필터 해제
+		selectedTags = []; // 검색 시 태그 필터 해제
+		selectedCategories = []; // 검색 시 카테고리 필터 해제
 		const query = searchQuery.toLowerCase().trim();
 		
 		// Featured articles에서 검색
@@ -174,7 +190,8 @@
 		searchQuery = '';
 		filteredArticles = [];
 		isSearching = false;
-		selectedTag = null; // 검색 해제 시 태그 필터도 해제
+		selectedTags = []; // 검색 해제 시 태그 필터도 해제
+		selectedCategories = []; // 검색 해제 시 카테고리 필터도 해제
 	};
 	
 	// 태그 카운팅 및 상위 10개 선택
@@ -214,46 +231,170 @@
 			.slice(0, 10);
 	};
 	
-	// 태그 클릭 핸들러
-	const handleTagClick = (tag: string) => {
-		if (selectedTag === tag) {
-			// 같은 태그 클릭 시 필터 해제 (원래 결과로 복귀)
-			selectedTag = null;
-			filteredArticles = [];
-			isSearching = false;
-			searchQuery = '';
-		} else {
-			// 새로운 태그 선택
-			selectedTag = tag;
-			isSearching = false; // 태그 필터링은 검색이 아님
-			searchQuery = ''; // 검색 쿼리 초기화
-			
-			// Featured articles에서 필터링
-			const featuredResults = newsData?.featured_articles.filter(article => 
-				article.tags?.includes(tag)
-			) || [];
-			
-			// All articles에서 필터링
-			const allResults = allArticles.filter(article => 
-				article.tags?.includes(tag)
-			);
-			
-			// 중복 제거
-			const allIds = new Set(allResults.map(a => a.id));
-			const uniqueFeatured = featuredResults.filter(a => !allIds.has(a.id));
-			
-			// 중요도순 정렬
-			filteredArticles = [...uniqueFeatured, ...allResults].sort(
-				(a, b) => b.importance_score - a.importance_score
-			);
+	// 카테고리 카운팅 및 목록 생성 (meta.json 기반)
+	const calculateCategories = () => {
+		// meta.json에서 전체 카테고리 목록 가져오기
+		const metaCategories = newsData?.category_statistics?.top_categories || [];
+		
+		// 로드된 기사에서 실제로 존재하는 카테고리 추출
+		const loadedCategorySet = new Set<string>();
+		
+		// Featured articles의 카테고리
+		if (newsData?.featured_articles) {
+			newsData.featured_articles.forEach(article => {
+				const cat = (article as Article).category;
+				if (cat && cat.trim()) {
+					loadedCategorySet.add(cat);
+				}
+			});
 		}
+		
+		// All articles의 카테고리
+		allArticles.forEach(article => {
+			const cat = (article as Article).category;
+			if (cat && cat.trim()) {
+				loadedCategorySet.add(cat);
+			}
+		});
+		
+		// 카테고리별 실제 카운팅 (로드된 기사 기준)
+		const categoryCounts = new Map<string, Set<number>>();
+		
+		// Featured articles의 카테고리 카운팅
+		if (newsData?.featured_articles) {
+			newsData.featured_articles.forEach(article => {
+				const cat = (article as Article).category;
+				if (cat && cat.trim()) {
+					if (!categoryCounts.has(cat)) {
+						categoryCounts.set(cat, new Set());
+					}
+					categoryCounts.get(cat)!.add(article.id);
+				}
+			});
+		}
+		
+		// All articles의 카테고리 카운팅 (featured articles와 중복되지 않는 기사만)
+		const featuredIds = new Set(newsData?.featured_articles?.map(a => a.id) || []);
+		allArticles.forEach(article => {
+			const cat = (article as Article).category;
+			if (cat && cat.trim() && !featuredIds.has(article.id)) {
+				if (!categoryCounts.has(cat)) {
+					categoryCounts.set(cat, new Set());
+				}
+				categoryCounts.get(cat)!.add(article.id);
+			}
+		});
+		
+		// meta.json의 전체 카테고리 목록을 기반으로 카테고리 목록 생성
+		// 로드된 기사에 있는 카테고리는 활성화, 없는 카테고리는 비활성화
+		categories = metaCategories.map(metaCat => {
+			const loadedCount = categoryCounts.get(metaCat.category)?.size || 0;
+			const isActive = loadedCategorySet.has(metaCat.category);
+			
+			return {
+				category: metaCat.category,
+				count: loadedCount > 0 ? loadedCount : metaCat.count, // 로드된 기사 수 또는 전체 기사 수
+				isActive: isActive
+			};
+		});
+	};
+	
+	// 태그/카테고리 필터링 적용
+	const applyFilters = () => {
+		// 검색 중이면 필터링하지 않음
+		if (isSearching) {
+			return;
+		}
+		
+		// 필터가 없으면 초기화
+		if (selectedTags.length === 0 && selectedCategories.length === 0) {
+			filteredArticles = [];
+			return;
+		}
+		
+		// Featured articles에서 필터링
+		const featuredResults = newsData?.featured_articles.filter(article => {
+			// 태그 필터 (OR 조건: 선택된 태그 중 하나라도 포함)
+			const tagMatch = selectedTags.length === 0 || 
+				selectedTags.some(tag => article.tags?.includes(tag));
+			
+			// 카테고리 필터 (OR 조건: 선택된 카테고리 중 하나라도 일치)
+			const categoryMatch = selectedCategories.length === 0 || 
+				selectedCategories.includes(article.category || '');
+			
+			return tagMatch && categoryMatch;
+		}) || [];
+		
+		// All articles에서 필터링
+		const allResults = allArticles.filter(article => {
+			// 태그 필터 (OR 조건)
+			const tagMatch = selectedTags.length === 0 || 
+				selectedTags.some(tag => article.tags?.includes(tag));
+			
+			// 카테고리 필터 (OR 조건)
+			const categoryMatch = selectedCategories.length === 0 || 
+				selectedCategories.includes(article.category || '');
+			
+			return tagMatch && categoryMatch;
+		});
+		
+		// 중복 제거
+		const allIds = new Set(allResults.map(a => a.id));
+		const uniqueFeatured = featuredResults.filter(a => !allIds.has(a.id));
+		
+		// 중요도순 정렬
+		filteredArticles = [...uniqueFeatured, ...allResults].sort(
+			(a, b) => b.importance_score - a.importance_score
+		);
+	};
+	
+	// 태그 토글 핸들러 (복수 선택)
+	const handleTagToggle = (tag: string) => {
+		isSearching = false;
+		searchQuery = '';
+		
+		// 태그 토글
+		if (selectedTags.includes(tag)) {
+			selectedTags = selectedTags.filter(t => t !== tag);
+		} else {
+			selectedTags = [...selectedTags, tag];
+		}
+		
+		// 필터 적용
+		applyFilters();
+	};
+	
+	// 카테고리 토글 핸들러 (복수 선택)
+	const handleCategoryToggle = (category: string) => {
+		// 비활성화된 카테고리는 클릭 불가
+		const categoryData = categories.find(c => c.category === category);
+		if (!categoryData || !categoryData.isActive) {
+			return;
+		}
+		
+		isSearching = false;
+		searchQuery = '';
+		
+		// 카테고리 토글
+		if (selectedCategories.includes(category)) {
+			selectedCategories = selectedCategories.filter(c => c !== category);
+		} else {
+			selectedCategories = [...selectedCategories, category];
+		}
+		
+		// 필터 적용
+		applyFilters();
 	};
 	
 	onMount(async () => {
 		await fetchTodayNews();
 		await fetchMoreArticles();
-		// 태그 계산 (데이터 로드 후)
+		// 태그 및 카테고리 계산 (데이터 로드 후)
 		calculateTopTags();
+		// 카테고리 계산은 데이터가 있을 때만
+		if (newsData || allArticles.length > 0) {
+			calculateCategories();
+		}
 	});
 	
 	// Setup observer after DOM is ready
@@ -421,35 +562,96 @@
 					</div>
 				{/if}
 			{:else}
-				<!-- Top Tags Bubble Section -->
-				{#if topTags.length > 0}
-					<div class="mb-8">
-						<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">🏷️ 인기 태그</h3>
-						<div class="flex flex-wrap gap-3">
-							{#each topTags as { tag, count }}
-								<button
-									on:click={() => handleTagClick(tag)}
-									class="px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all duration-200 ease-out cursor-pointer {selectedTag === tag 
-										? 'bg-gradient-to-r from-primary/90 to-secondary/90 text-white border-2 border-primary shadow-lg scale-105' 
-										: 'bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-800 dark:text-blue-200 border border-blue-200/50 dark:border-blue-700/50 hover:shadow-lg hover:scale-105'}"
-								>
-									<span>{tag}</span>
-									<span class="ml-2 text-xs opacity-70">({count})</span>
-								</button>
-							{/each}
-						</div>
-						{#if selectedTag}
-							<div class="mt-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-								<span>선택된 태그: <strong class="text-primary dark:text-primary-light">{selectedTag}</strong></span>
-								<span>·</span>
-								<span>{filteredArticles.length}개 기사</span>
+				<!-- Tags and Categories Filter Section -->
+				<div class="mb-8 space-y-6">
+					<!-- Tags Section (제목 우측에 태그 배치) -->
+					{#if topTags.length > 0}
+						<div class="flex items-center gap-4 flex-wrap">
+							<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">🏷️ 인기 태그</h3>
+							<div class="flex flex-wrap gap-2 flex-1">
+								{#each topTags as { tag, count }}
+									<button
+										on:click={() => handleTagToggle(tag)}
+										class="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm transition-all duration-200 ease-out cursor-pointer {selectedTags.includes(tag)
+											? 'bg-gradient-to-r from-primary/90 to-secondary/90 text-white border-2 border-primary shadow-md scale-105' 
+											: 'bg-white/70 dark:bg-gray-800/70 text-blue-700 dark:text-blue-300 border border-blue-300/50 dark:border-blue-600/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all'}"
+									>
+										<span>{tag}</span>
+										<span class="ml-1.5 text-[10px] opacity-70">({count})</span>
+									</button>
+								{/each}
 							</div>
-						{/if}
+						</div>
+					{/if}
+					
+					<!-- Categories Section (제목 우측에 카테고리 배치) -->
+					<div>
+						<!-- 카테고리 설명 (당구장 표시) -->
+						<div class="mb-2">
+							<p class="text-xs text-gray-500 dark:text-gray-400 border-l-2 border-dashed border-gray-300 dark:border-gray-600 pl-3">
+								스크롤하여 더 많은 카테고리 기사를 불러오면 활성화됩니다
+							</p>
+						</div>
+						<div class="flex items-center gap-4 flex-wrap">
+							<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">📂 카테고리</h3>
+							{#if categories.length > 0}
+								<div class="flex flex-wrap gap-2 flex-1">
+									{#each categories as { category, count, isActive }}
+										<button
+											on:click={() => handleCategoryToggle(category)}
+											class="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm transition-all duration-200 ease-out {!isActive 
+												? 'opacity-30 cursor-not-allowed bg-gray-100/50 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border border-gray-200/50 dark:border-gray-700/50'
+												: selectedCategories.includes(category)
+													? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-2 border-indigo-400 shadow-md scale-105 cursor-pointer' 
+													: 'bg-white/70 dark:bg-gray-800/70 text-indigo-700 dark:text-indigo-300 border border-indigo-300/50 dark:border-indigo-600/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer'}"
+										>
+											<span>{category}</span>
+											<span class="ml-1.5 text-[10px] opacity-70">({count})</span>
+										</button>
+									{/each}
+								</div>
+							{:else}
+								<p class="text-sm text-gray-500 dark:text-gray-400">카테고리 데이터를 불러오는 중...</p>
+							{/if}
+						</div>
 					</div>
-				{/if}
+					
+					<!-- Selected Filters Display -->
+					{#if selectedTags.length > 0 || selectedCategories.length > 0}
+						<div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-4 py-3">
+							{#if selectedTags.length > 0}
+								<div class="flex items-center gap-2">
+									<span class="font-medium">태그:</span>
+									<div class="flex flex-wrap gap-2">
+										{#each selectedTags as tag}
+											<span class="px-2 py-1 rounded-md bg-primary/20 text-primary dark:bg-primary-light/20 dark:text-primary-light text-xs font-medium">
+												{tag}
+											</span>
+										{/each}
+									</div>
+								</div>
+							{/if}
+							{#if selectedCategories.length > 0}
+								<div class="flex items-center gap-2">
+									<span class="font-medium">카테고리:</span>
+									<div class="flex flex-wrap gap-2">
+										{#each selectedCategories as category}
+											<span class="px-2 py-1 rounded-md bg-green-500/20 text-green-700 dark:bg-green-500/20 dark:text-green-300 text-xs font-medium">
+												{category}
+											</span>
+										{/each}
+									</div>
+								</div>
+							{/if}
+							<span class="ml-auto font-semibold text-primary dark:text-primary-light">
+								{filteredArticles.length}개 기사
+							</span>
+						</div>
+					{/if}
+				</div>
 				
 				<!-- Featured Articles Section -->
-				{#if newsData && newsData.featured_articles.length > 0 && !selectedTag}
+				{#if newsData && newsData.featured_articles.length > 0 && selectedTags.length === 0 && selectedCategories.length === 0}
 					<div class="mb-12">
 						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🔥 주요 뉴스</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -493,11 +695,11 @@
 					</div>
 				{/if}
 				
-				<!-- Tag Filtered Articles Section -->
-				{#if selectedTag && filteredArticles.length > 0}
+				<!-- Filtered Articles Section -->
+				{#if (selectedTags.length > 0 || selectedCategories.length > 0) && filteredArticles.length > 0}
 					<div class="mb-12">
 						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-							🏷️ "{selectedTag}" 태그 기사 ({filteredArticles.length}개)
+							필터링된 기사 ({filteredArticles.length}개)
 						</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 							{#each filteredArticles as article}
@@ -538,14 +740,14 @@
 							{/each}
 						</div>
 					</div>
-				{:else if selectedTag && filteredArticles.length === 0}
+				{:else if (selectedTags.length > 0 || selectedCategories.length > 0) && filteredArticles.length === 0}
 					<div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
-						<p class="text-gray-600 dark:text-gray-400">🏷️ "{selectedTag}" 태그를 가진 기사가 없습니다.</p>
+						<p class="text-gray-600 dark:text-gray-400">선택한 필터 조건에 맞는 기사가 없습니다.</p>
 					</div>
 				{/if}
 				
 				<!-- All Articles Section -->
-				{#if allArticles.length > 0 && !selectedTag}
+				{#if allArticles.length > 0 && selectedTags.length === 0 && selectedCategories.length === 0}
 					<div>
 						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
 							📰 전체 뉴스 ({allArticles.length}개 / 전체 {newsData?.total_articles || 0}개)
