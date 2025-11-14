@@ -58,7 +58,7 @@ services:
   langfuse:
     image: langfuse/langfuse:latest
     ports:
-      - "3001:3000"
+      - "3003:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@langfuse-db:5432/postgres
     depends_on:
@@ -236,6 +236,48 @@ services:
     depends_on:
       - litellm
 
+  # Agent Builders
+  langflow:
+    image: langflowai/langflow:latest
+    ports:
+      - "7860:7860"
+    environment:
+      - LANGFLOW_HOST=0.0.0.0
+      - LANGFLOW_PORT=7860
+    volumes:
+      - langflow_data:/data
+
+  flowise:
+    image: flowiseai/flowise:latest
+    ports:
+      - "3002:3000"
+    environment:
+      - PORT=3000
+    volumes:
+      - flowise_data:/root/.flowise
+
+  autogen-studio:
+    build: ./autogen-studio
+    ports:
+      - "5050:5050"
+    environment:
+      - LITELLM_BASE_URL=http://litellm:4000
+    depends_on:
+      - litellm
+
+  autogen-api:
+    build: ./autogen-api
+    ports:
+      - "5051:5051"
+    environment:
+      - LITELLM_BASE_URL=http://litellm:4000
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+    depends_on:
+      - litellm
+      - langfuse
+
 volumes:
   mariadb:
   chromadb:
@@ -245,4 +287,6 @@ volumes:
   helicone_db:
   kong_db:
   konga_db:
+  langflow_data:
+  flowise_data:
 
