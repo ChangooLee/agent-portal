@@ -53,9 +53,12 @@ if [ $CONFLICTS -gt 0 ]; then
     echo "❌ $CONFLICTS 개 포트 충돌 발견!"
     echo ""
     echo "해결 방법:"
-    echo "1. 충돌하는 프로세스 종료: kill -9 <PID>"
-    echo "2. docker-compose.yml에서 포트 변경"
-    echo "3. 충돌 프로세스가 필요하면 Agent Portal 포트 변경"
+    echo "1. docker-compose.yml에서 충돌하는 서비스의 포트 변경 (권장)"
+    echo "   예: '7860:7860' → '7861:7860'"
+    echo "2. 충돌하는 서비스의 포트 목록을 scripts/check-ports.sh에 업데이트"
+    echo ""
+    echo "⚠️  기존 프로세스는 종료하지 마세요!"
+    echo "    (Stable Diffusion 등 상시 실행 서비스일 수 있음)"
     echo ""
     exit 1
 else

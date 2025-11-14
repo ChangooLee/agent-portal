@@ -90,16 +90,20 @@ Agent Portal에서 발생한 버그와 수정 방법을 기록합니다.
 - 포트 충돌 시 명확한 에러 메시지 없음 (컨테이너는 정상 실행되지만 접속 안 됨)
 
 **해결 방법**:
-1. Langflow 포트 변경: `7860:7860` → `7861:7860`
+1. 충돌하는 서비스의 포트 변경 (⚠️ 기존 프로세스는 종료하지 않음)
+   - Langflow: `7860:7860` → `7861:7860` (docker-compose.yml 수정)
+   - 외부 포트만 변경, 내부 포트는 유지
 2. 포트 충돌 체크 스크립트 생성: `scripts/check-ports.sh`
    - 서비스별 필수 포트 목록 정의
    - lsof로 포트 사용 현황 확인
    - 충돌 시 PID 및 프로세스명 표시
+   - 해결 방법: docker-compose.yml 포트 변경 안내
 3. 개발 프로세스에 포트 체크 단계 추가
 
 **예방**:
 - **서비스 기동 전 필수**: `./scripts/check-ports.sh` 실행
-- docker-compose.yml 수정 시 포트 목록 업데이트
+- 충돌 발견 시 docker-compose.yml에서 포트 변경 (kill 금지)
+- scripts/check-ports.sh의 포트 목록 동기화
 - DEV_CHECKLIST.md에 포트 체크 항목 추가
 - 로컬 환경의 상시 실행 서비스 목록 문서화 (Stable Diffusion 등)
 

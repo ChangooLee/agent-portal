@@ -81,9 +81,9 @@ Agent Portal 프로젝트의 개발 환경 설정 및 확인 사항입니다.
 
 **확인 항목**:
 - [ ] 모든 필수 포트가 사용 가능한지 확인
-- [ ] 충돌 발견 시 해결:
-  - 충돌 프로세스 종료: `kill -9 <PID>`
-  - 또는 docker-compose.yml에서 포트 변경
+- [ ] 충돌 발견 시 해결 (⚠️ 기존 프로세스는 종료하지 말 것):
+  - **우선**: docker-compose.yml에서 포트 변경 (예: `7860:7860` → `7861:7860`)
+  - scripts/check-ports.sh의 포트 목록 업데이트
 - [ ] 로컬 환경의 상시 실행 서비스 확인 (Stable Diffusion 등)
 
 **주요 포트 목록**:
@@ -179,12 +179,26 @@ node scripts/analyze-backend-structure.js
 ### 포트 충돌
 
 ```bash
-# 사용 중인 포트 확인
-lsof -i :3000 -i :3001 -i :8000
+# 포트 사용 현황 확인
+./scripts/check-ports.sh
 
-# 프로세스 종료
-kill -9 <PID>
+# 또는 특정 포트 확인
+lsof -i :3000 -i :3001 -i :8000
 ```
+
+**해결 방법** (⚠️ 기존 프로세스 종료 금지):
+1. docker-compose.yml에서 충돌하는 서비스의 포트 변경
+   ```yaml
+   # 변경 전
+   ports:
+     - "7860:7860"
+   
+   # 변경 후
+   ports:
+     - "7861:7860"
+   ```
+2. scripts/check-ports.sh의 포트 목록 업데이트
+3. 서비스 재시작: `docker-compose restart <service-name>`
 
 ### 볼륨 마운트 문제
 
