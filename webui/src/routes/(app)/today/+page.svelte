@@ -39,6 +39,8 @@
 	let observer: IntersectionObserver | null = null;
 	let searchQuery = '';
 	let isSearching = false;
+	let selectedTag: string | null = null;
+	let topTags: Array<{ tag: string; count: number }> = [];
 	
 	const formatDate = (dateStr: string) => {
 		if (!dateStr) return '';
@@ -80,14 +82,8 @@
 				throw new Error(`Failed to fetch news: ${response.statusText}`);
 			}
 			newsData = await response.json();
-			console.log('📰 Today News loaded:', { 
-				total: newsData.total_articles, 
-				featured: newsData.featured_articles.length,
-				featuredIds: newsData.featured_articles.map(a => a.id).slice(0, 5)
-			});
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load news';
-			console.error('Error fetching news:', e);
 		} finally {
 			loading = false;
 		}
@@ -95,32 +91,26 @@
 	
 		const fetchMoreArticles = async () => {
 		if (loadingMore || !hasMore) {
-			console.log('⏸️ Skip fetch:', { loadingMore, hasMore });
 			return;
 		}
 		
 		try {
 			loadingMore = true;
-			console.log('📡 Fetching articles:', { offset, limit: 20 });
 			const response = await fetch(`/api/news/articles?offset=${offset}&limit=20`);
 			if (!response.ok) {
 				throw new Error(`Failed to fetch articles: ${response.statusText}`);
 			}
 			const data = await response.json();
-			console.log('✅ Fetched:', { count: data.articles.length, newOffset: offset + data.articles.length, has_more: data.has_more });
 			
 			// 백엔드에서 이미 featured articles를 제외하고 있으므로 필터링 불필요
 			allArticles = [...allArticles, ...data.articles];
-			console.log('✅ All articles updated:', { 
-				totalCount: allArticles.length, 
-				newCount: data.articles.length,
-				firstArticleIds: allArticles.slice(0, 3).map(a => a.id)
-			});
 			offset += data.articles.length;
 			hasMore = data.has_more;
+			
+			// 태그 재계산 (새 기사 로드 후)
+			calculateTopTags();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load more articles';
-			console.error('Error fetching more articles:', e);
 		} finally {
 			loadingMore = false;
 		}
@@ -136,7 +126,6 @@
 			showModal = true;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load article';
-			console.error('Error fetching article:', e);
 		}
 	};
 	
@@ -149,10 +138,12 @@
 		if (!searchQuery.trim()) {
 			filteredArticles = [];
 			isSearching = false;
+			selectedTag = null; // 검색 해제 시 태그 필터도 해제
 			return;
 		}
 		
 		isSearching = true;
+		selectedTag = null; // 검색 시 태그 필터 해제
 		const query = searchQuery.toLowerCase().trim();
 		
 		// Featured articles에서 검색
@@ -177,30 +168,100 @@
 		filteredArticles = [...uniqueFeatured, ...allResults].sort(
 			(a, b) => b.importance_score - a.importance_score
 		);
-		
-		console.log('🔍 Search results:', { query, count: filteredArticles.length });
 	};
 	
 	const clearSearch = () => {
 		searchQuery = '';
 		filteredArticles = [];
 		isSearching = false;
+		selectedTag = null; // 검색 해제 시 태그 필터도 해제
+	};
+	
+	// 태그 카운팅 및 상위 10개 선택
+	const calculateTopTags = () => {
+		const tagCounts = new Map<string, Set<number>>();
+		
+		// Featured articles의 태그 카운팅 (기사 ID 저장)
+		if (newsData?.featured_articles) {
+			newsData.featured_articles.forEach(article => {
+				article.tags?.forEach(tag => {
+					if (!tagCounts.has(tag)) {
+						tagCounts.set(tag, new Set());
+					}
+					tagCounts.get(tag)!.add(article.id);
+				});
+			});
+		}
+		
+		// All articles의 태그 카운팅 (featured articles와 중복되지 않는 기사만)
+		const featuredIds = new Set(newsData?.featured_articles?.map(a => a.id) || []);
+		allArticles.forEach(article => {
+			// featured articles에 포함되지 않은 기사만 카운팅
+			if (!featuredIds.has(article.id)) {
+				article.tags?.forEach(tag => {
+					if (!tagCounts.has(tag)) {
+						tagCounts.set(tag, new Set());
+					}
+					tagCounts.get(tag)!.add(article.id);
+				});
+			}
+		});
+		
+		// 상위 10개 태그 선택 (고유 기사 수 기준)
+		topTags = Array.from(tagCounts.entries())
+			.map(([tag, articleIds]) => ({ tag, count: articleIds.size }))
+			.sort((a, b) => b.count - a.count)
+			.slice(0, 10);
+	};
+	
+	// 태그 클릭 핸들러
+	const handleTagClick = (tag: string) => {
+		if (selectedTag === tag) {
+			// 같은 태그 클릭 시 필터 해제 (원래 결과로 복귀)
+			selectedTag = null;
+			filteredArticles = [];
+			isSearching = false;
+			searchQuery = '';
+		} else {
+			// 새로운 태그 선택
+			selectedTag = tag;
+			isSearching = false; // 태그 필터링은 검색이 아님
+			searchQuery = ''; // 검색 쿼리 초기화
+			
+			// Featured articles에서 필터링
+			const featuredResults = newsData?.featured_articles.filter(article => 
+				article.tags?.includes(tag)
+			) || [];
+			
+			// All articles에서 필터링
+			const allResults = allArticles.filter(article => 
+				article.tags?.includes(tag)
+			);
+			
+			// 중복 제거
+			const allIds = new Set(allResults.map(a => a.id));
+			const uniqueFeatured = featuredResults.filter(a => !allIds.has(a.id));
+			
+			// 중요도순 정렬
+			filteredArticles = [...uniqueFeatured, ...allResults].sort(
+				(a, b) => b.importance_score - a.importance_score
+			);
+		}
 	};
 	
 	onMount(async () => {
 		await fetchTodayNews();
 		await fetchMoreArticles();
+		// 태그 계산 (데이터 로드 후)
+		calculateTopTags();
 	});
 	
 	// Setup observer after DOM is ready
 	afterUpdate(() => {
 		if (observerTarget && !observer) {
-			console.log('👀 Setting up Intersection Observer');
 			observer = new IntersectionObserver(
 				(entries) => {
-					console.log('👁️ Observer triggered:', entries[0].isIntersecting, { hasMore, loadingMore });
 					if (entries[0].isIntersecting && hasMore && !loadingMore) {
-						console.log('🔄 Loading more articles...');
 						fetchMoreArticles();
 					}
 				},
@@ -360,8 +421,35 @@
 					</div>
 				{/if}
 			{:else}
+				<!-- Top Tags Bubble Section -->
+				{#if topTags.length > 0}
+					<div class="mb-8">
+						<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">🏷️ 인기 태그</h3>
+						<div class="flex flex-wrap gap-3">
+							{#each topTags as { tag, count }}
+								<button
+									on:click={() => handleTagClick(tag)}
+									class="px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all duration-200 ease-out cursor-pointer {selectedTag === tag 
+										? 'bg-gradient-to-r from-primary/90 to-secondary/90 text-white border-2 border-primary shadow-lg scale-105' 
+										: 'bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-800 dark:text-blue-200 border border-blue-200/50 dark:border-blue-700/50 hover:shadow-lg hover:scale-105'}"
+								>
+									<span>{tag}</span>
+									<span class="ml-2 text-xs opacity-70">({count})</span>
+								</button>
+							{/each}
+						</div>
+						{#if selectedTag}
+							<div class="mt-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+								<span>선택된 태그: <strong class="text-primary dark:text-primary-light">{selectedTag}</strong></span>
+								<span>·</span>
+								<span>{filteredArticles.length}개 기사</span>
+							</div>
+						{/if}
+					</div>
+				{/if}
+				
 				<!-- Featured Articles Section -->
-				{#if newsData && newsData.featured_articles.length > 0}
+				{#if newsData && newsData.featured_articles.length > 0 && !selectedTag}
 					<div class="mb-12">
 						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🔥 주요 뉴스</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -405,9 +493,59 @@
 					</div>
 				{/if}
 				
+				<!-- Tag Filtered Articles Section -->
+				{#if selectedTag && filteredArticles.length > 0}
+					<div class="mb-12">
+						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+							🏷️ "{selectedTag}" 태그 기사 ({filteredArticles.length}개)
+						</h2>
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+							{#each filteredArticles as article}
+								<button
+									class="text-left bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-primary/20 dark:border-primary-light/20 rounded-xl p-6 hover:shadow-xl hover:scale-[1.02] hover:border-primary/40 transition-all duration-300 ease-out cursor-pointer"
+									on:click={() => fetchArticleDetail(article.id)}
+								>
+									<!-- Importance Badge -->
+									{#if getScoreLabel(article.importance_score)}
+										<div class="flex items-center mb-3">
+											<span class="{getScoreBadgeColor(article.importance_score)} px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+												{getScoreLabel(article.importance_score)}
+											</span>
+										</div>
+									{/if}
+									
+									<!-- Title -->
+									<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+										{article.title}
+									</h3>
+									
+									<!-- Highlight -->
+									<p class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+										{article.highlight}
+									</p>
+									
+									<!-- Tags -->
+									{#if article.tags && article.tags.length > 0}
+										<div class="flex flex-wrap gap-2">
+											{#each article.tags as tag, index}
+												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
+													{tag}
+												</span>
+											{/each}
+										</div>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{:else if selectedTag && filteredArticles.length === 0}
+					<div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
+						<p class="text-gray-600 dark:text-gray-400">🏷️ "{selectedTag}" 태그를 가진 기사가 없습니다.</p>
+					</div>
+				{/if}
+				
 				<!-- All Articles Section -->
-				<!-- Debug: allArticles.length = {allArticles.length} -->
-				{#if allArticles.length > 0}
+				{#if allArticles.length > 0 && !selectedTag}
 					<div>
 						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
 							📰 전체 뉴스 ({allArticles.length}개 / 전체 {newsData?.total_articles || 0}개)
@@ -470,16 +608,6 @@
 								<p class="text-gray-500 dark:text-gray-400">모든 기사를 불러왔습니다.</p>
 							</div>
 						{/if}
-					</div>
-				{:else}
-					<!-- Debug: No articles to display -->
-					<div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 text-center">
-						<p class="text-yellow-800 dark:text-yellow-300 font-medium">
-							🔍 전체 뉴스를 불러오는 중... (allArticles.length = {allArticles.length})
-						</p>
-						<p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
-							브라우저 콘솔(F12)에서 로그를 확인하세요.
-						</p>
 					</div>
 				{/if}
 				
