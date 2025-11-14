@@ -425,14 +425,10 @@
 		<div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/30" />
 		
 		<!-- Hero Content -->
-		<div class="relative px-6 py-6 text-center">
-			<div class="inline-flex items-center justify-center px-3 py-1.5 mb-3 rounded-full bg-gradient-to-r from-primary/90 to-secondary/90 text-white text-xs font-medium shadow-lg">
+		<div class="relative px-6 py-4 text-center">
+			<div class="inline-flex items-center justify-center px-6 py-3 mb-2 rounded-full bg-gradient-to-r from-primary/90 to-secondary/90 text-white text-base font-semibold shadow-lg">
 				<span>📰 Today's News</span>
 			</div>
-			
-			<h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-				오늘의 뉴스
-			</h1>
 			
 			<p class="text-sm text-gray-600 dark:text-gray-300">
 				{#if newsData}
