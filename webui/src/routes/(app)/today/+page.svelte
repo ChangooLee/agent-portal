@@ -103,7 +103,12 @@
 			}
 			const data = await response.json();
 			console.log('✅ Fetched:', { count: data.articles.length, newOffset: offset + data.articles.length, has_more: data.has_more });
-			allArticles = [...allArticles, ...data.articles];
+			
+			// Featured articles에 포함된 기사는 제외
+			const featuredIds = new Set(newsData?.featured_articles.map(a => a.id) || []);
+			const newArticles = data.articles.filter((article: Article) => !featuredIds.has(article.id));
+			
+			allArticles = [...allArticles, ...newArticles];
 			offset += data.articles.length;
 			hasMore = data.has_more;
 		} catch (e) {
@@ -331,16 +336,11 @@
 									<!-- Tags -->
 									{#if article.tags && article.tags.length > 0}
 										<div class="flex flex-wrap gap-2">
-											{#each article.tags.slice(0, 3) as tag, index}
+											{#each article.tags as tag, index}
 												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
 													{tag}
 												</span>
 											{/each}
-											{#if article.tags.length > 3}
-												<span class="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded-md text-xs font-medium">
-													+{article.tags.length - 3}
-												</span>
-											{/if}
 										</div>
 									{/if}
 								</button>
@@ -385,16 +385,11 @@
 									<!-- Tags -->
 									{#if article.tags && article.tags.length > 0}
 										<div class="flex flex-wrap gap-2">
-											{#each article.tags.slice(0, 3) as tag, index}
+											{#each article.tags as tag, index}
 												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
 													{tag}
 												</span>
 											{/each}
-											{#if article.tags.length > 3}
-												<span class="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 px-2 py-1 rounded-md text-xs font-medium">
-													+{article.tags.length - 3}
-												</span>
-											{/if}
 										</div>
 									{/if}
 								</button>
@@ -428,9 +423,20 @@
 									</h3>
 									
 									<!-- Highlight -->
-									<p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
+									<p class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
 										{article.highlight}
 									</p>
+									
+									<!-- Tags -->
+									{#if article.tags && article.tags.length > 0}
+										<div class="flex flex-wrap gap-2">
+											{#each article.tags as tag, index}
+												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
+													{tag}
+												</span>
+											{/each}
+										</div>
+									{/if}
 								</button>
 							{/each}
 						</div>
