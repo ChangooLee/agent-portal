@@ -240,7 +240,7 @@ services:
   langflow:
     image: langflowai/langflow:latest
     ports:
-      - "7860:7860"
+      - "7861:7860"
     environment:
       - LANGFLOW_HOST=0.0.0.0
       - LANGFLOW_PORT=7860

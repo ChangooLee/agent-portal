@@ -72,6 +72,31 @@ Agent Portal 프로젝트의 개발 환경 설정 및 확인 사항입니다.
 
 ## Docker 개발 환경
 
+### 서비스 기동 전 필수 체크 (⚠️ CRITICAL)
+
+```bash
+# 포트 충돌 확인 (반드시 실행!)
+./scripts/check-ports.sh
+```
+
+**확인 항목**:
+- [ ] 모든 필수 포트가 사용 가능한지 확인
+- [ ] 충돌 발견 시 해결:
+  - 충돌 프로세스 종료: `kill -9 <PID>`
+  - 또는 docker-compose.yml에서 포트 변경
+- [ ] 로컬 환경의 상시 실행 서비스 확인 (Stable Diffusion 등)
+
+**주요 포트 목록**:
+- Backend BFF: 8000
+- WebUI: 3000, 3001 (dev)
+- Flowise: 3002
+- Langfuse: 3003
+- LiteLLM: 4000
+- AutoGen Studio: 5050
+- AutoGen API: 5051
+- Langflow: 7861 (⚠️ 7860은 Stable Diffusion)
+- Kong: 8002, 8443
+
 ### 개발 모드 시작
 
 ```bash

@@ -77,3 +77,35 @@ Agent Portal에서 발생한 버그와 수정 방법을 기록합니다.
 
 ---
 
+## 2025-11-14: 서비스 기동 시 포트 충돌 미확인
+
+**증상**:
+- Langflow를 7860 포트로 기동했지만 이미 Stable Diffusion이 7860 포트 사용 중
+- 포트 충돌로 인해 백엔드는 정상이지만 외부 접속 불가
+- 사용자가 포트 충돌을 인지하지 못하고 백엔드 문제로 착각
+
+**근본 원인**:
+- 서비스 기동 전 포트 사용 현황 확인 절차 부재
+- docker-compose.yml 작성 시 로컬 환경의 포트 사용 현황 미파악
+- 포트 충돌 시 명확한 에러 메시지 없음 (컨테이너는 정상 실행되지만 접속 안 됨)
+
+**해결 방법**:
+1. Langflow 포트 변경: `7860:7860` → `7861:7860`
+2. 포트 충돌 체크 스크립트 생성: `scripts/check-ports.sh`
+   - 서비스별 필수 포트 목록 정의
+   - lsof로 포트 사용 현황 확인
+   - 충돌 시 PID 및 프로세스명 표시
+3. 개발 프로세스에 포트 체크 단계 추가
+
+**예방**:
+- **서비스 기동 전 필수**: `./scripts/check-ports.sh` 실행
+- docker-compose.yml 수정 시 포트 목록 업데이트
+- DEV_CHECKLIST.md에 포트 체크 항목 추가
+- 로컬 환경의 상시 실행 서비스 목록 문서화 (Stable Diffusion 등)
+
+**참고**:
+- docker-compose.yml (line 243: Langflow 포트 7860 → 7861)
+- scripts/check-ports.sh (신규 생성)
+- .cursor/learnings/bug-fixes.md (이 문서)
+
+---
