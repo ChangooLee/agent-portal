@@ -80,6 +80,11 @@
 				throw new Error(`Failed to fetch news: ${response.statusText}`);
 			}
 			newsData = await response.json();
+			console.log('📰 Today News loaded:', { 
+				total: newsData.total_articles, 
+				featured: newsData.featured_articles.length,
+				featuredIds: newsData.featured_articles.map(a => a.id).slice(0, 5)
+			});
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load news';
 			console.error('Error fetching news:', e);
@@ -109,10 +114,22 @@
 			if (newsData?.featured_articles) {
 				const featuredIds = new Set(newsData.featured_articles.map(a => a.id));
 				newArticles = data.articles.filter((article: Article) => !featuredIds.has(article.id));
-				console.log('🔍 Filtered:', { before: data.articles.length, after: newArticles.length, featuredCount: featuredIds.size });
+				console.log('🔍 Filtered:', { 
+					before: data.articles.length, 
+					after: newArticles.length, 
+					featuredCount: featuredIds.size,
+					sampleFiltered: data.articles.slice(0, 3).map(a => ({ id: a.id, inFeatured: featuredIds.has(a.id) }))
+				});
+			} else {
+				console.warn('⚠️ newsData not loaded yet, skipping filter');
 			}
 			
 			allArticles = [...allArticles, ...newArticles];
+			console.log('✅ All articles updated:', { 
+				totalCount: allArticles.length, 
+				newCount: newArticles.length,
+				firstArticleIds: allArticles.slice(0, 3).map(a => a.id)
+			});
 			offset += data.articles.length;
 			hasMore = data.has_more;
 		} catch (e) {
@@ -403,9 +420,12 @@
 				{/if}
 				
 				<!-- All Articles Section -->
+				<!-- Debug: allArticles.length = {allArticles.length} -->
 				{#if allArticles.length > 0}
 					<div>
-						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">📰 전체 뉴스 ({newsData?.total_articles || 0}개)</h2>
+						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+							📰 전체 뉴스 ({allArticles.length}개 / 전체 {newsData?.total_articles || 0}개)
+						</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 							{#each allArticles as article}
 								<button
@@ -464,6 +484,16 @@
 								<p class="text-gray-500 dark:text-gray-400">모든 기사를 불러왔습니다.</p>
 							</div>
 						{/if}
+					</div>
+				{:else}
+					<!-- Debug: No articles to display -->
+					<div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 text-center">
+						<p class="text-yellow-800 dark:text-yellow-300 font-medium">
+							🔍 전체 뉴스를 불러오는 중... (allArticles.length = {allArticles.length})
+						</p>
+						<p class="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+							브라우저 콘솔(F12)에서 로그를 확인하세요.
+						</p>
 					</div>
 				{/if}
 				
