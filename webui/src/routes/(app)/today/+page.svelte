@@ -93,7 +93,7 @@
 		}
 	};
 	
-	const fetchMoreArticles = async () => {
+		const fetchMoreArticles = async () => {
 		if (loadingMore || !hasMore) {
 			console.log('⏸️ Skip fetch:', { loadingMore, hasMore });
 			return;
@@ -107,27 +107,13 @@
 				throw new Error(`Failed to fetch articles: ${response.statusText}`);
 			}
 			const data = await response.json();
-			console.log('✅ Fetched:', { count: data.articles.length, newOffset: offset + data.articles.length, has_more: data.has_more, newsDataLoaded: !!newsData });
+			console.log('✅ Fetched:', { count: data.articles.length, newOffset: offset + data.articles.length, has_more: data.has_more });
 			
-			// Featured articles에 포함된 기사는 제외 (newsData가 로드된 경우에만)
-			let newArticles = data.articles;
-			if (newsData?.featured_articles) {
-				const featuredIds = new Set(newsData.featured_articles.map(a => a.id));
-				newArticles = data.articles.filter((article: Article) => !featuredIds.has(article.id));
-				console.log('🔍 Filtered:', { 
-					before: data.articles.length, 
-					after: newArticles.length, 
-					featuredCount: featuredIds.size,
-					sampleFiltered: data.articles.slice(0, 3).map(a => ({ id: a.id, inFeatured: featuredIds.has(a.id) }))
-				});
-			} else {
-				console.warn('⚠️ newsData not loaded yet, skipping filter');
-			}
-			
-			allArticles = [...allArticles, ...newArticles];
+			// 백엔드에서 이미 featured articles를 제외하고 있으므로 필터링 불필요
+			allArticles = [...allArticles, ...data.articles];
 			console.log('✅ All articles updated:', { 
 				totalCount: allArticles.length, 
-				newCount: newArticles.length,
+				newCount: data.articles.length,
 				firstArticleIds: allArticles.slice(0, 3).map(a => a.id)
 			});
 			offset += data.articles.length;

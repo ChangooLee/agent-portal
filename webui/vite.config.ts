@@ -17,6 +17,8 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 // 	}
 // };
 
+const devPort = Number(process.env.VITE_DEV_PORT ?? '3001');
+
 export default defineConfig({
 	plugins: [
 		sveltekit(),
@@ -42,7 +44,7 @@ export default defineConfig({
 	},
 	server: {
 		host: '0.0.0.0', // Docker 내부에서 접근 가능하도록
-		port: 5173, // Vite dev server 포트 (백엔드는 8080에서 실행)
+		port: devPort, // 기본 3001, 필요 시 VITE_DEV_PORT로 오버라이드
 		proxy: {
 			// News API → FastAPI BFF (포트 8000)
 			// Docker 환경: 컨테이너 이름 사용, 로컬 환경: localhost 사용
@@ -70,7 +72,7 @@ export default defineConfig({
 		},
 		hmr: {
 			// Docker 환경에서 HMR이 정상 작동하도록 설정
-			clientPort: 3001  // 외부 포트 매핑
+			clientPort: Number(process.env.VITE_HMR_PORT ?? devPort) // 외부 포트 매핑
 		},
 		watch: {
 			// 파일 변경 감지 최적화

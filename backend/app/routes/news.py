@@ -60,12 +60,14 @@ async def get_articles(
 ) -> Dict[str, Any]:
     """Get articles list for infinite scroll.
     
+    Excludes featured articles to avoid duplication with /api/news/today endpoint.
+    
     Args:
-        offset: Starting index
+        offset: Starting index (after excluding featured articles)
         limit: Number of articles to return
         
     Returns:
-        Articles list with pagination info
+        Articles list with pagination info (featured articles excluded)
         
     Raises:
         HTTPException: 404 if file not found, 500 for file read errors
@@ -91,9 +93,24 @@ async def get_articles(
         with open(index_file, 'r', encoding='utf-8') as f:
             all_articles = json.load(f)
         
+        # Get featured articles IDs to exclude them
+        meta_file = Path(data_path) / today / "articles_meta.json"
+        featured_ids = set()
+        if meta_file.exists():
+            with open(meta_file, 'r', encoding='utf-8') as f:
+                meta_data = json.load(f)
+                featured_articles = meta_data.get('featured_articles', [])
+                featured_ids = {article.get('id') for article in featured_articles if 'id' in article}
+        
+        # Filter out featured articles
+        non_featured_articles = [
+            article for article in all_articles
+            if article.get('id') not in featured_ids
+        ]
+        
         # Sort by importance_score (descending)
         sorted_articles = sorted(
-            all_articles,
+            non_featured_articles,
             key=lambda x: x.get('importance_score', 0),
             reverse=True
         )
