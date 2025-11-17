@@ -251,7 +251,7 @@
 	}}
 />
 
-<div class="w-full min-h-screen max-h-[100dvh] relative overflow-y-auto">
+<div class="w-full h-screen max-h-[100dvh] relative overflow-y-auto">
 	<!-- Subtle reflective light layer -->
 	<div class="absolute inset-0 -z-20 bg-light-overlay"></div>
 	<!-- Animated Samsung Blue Multi-Layer Gradient Background -->
@@ -261,37 +261,37 @@
 
 	{#if loaded}
 		<div
-			class="relative min-h-screen w-full flex flex-col justify-center items-center font-primary z-40 px-4 py-8 md:py-16"
+			class="relative w-full flex flex-col items-center font-primary z-40 px-4 py-4 md:py-16 min-h-full md:min-h-screen"
 			style="font-family: 'Samsung Gothic', -apple-system, BlinkMacSystemFont, sans-serif;"
 		>
 			<!-- Logo at top -->
-			<div class="mb-4 md:mb-8">
+			<div class="mb-4 md:mb-8 mt-2 md:mt-0">
 					<img
 						id="logo"
 						crossorigin="anonymous"
 					src="/samsung-financial-networks-logo.webp"
-					class="h-12 md:h-16 w-auto"
+					class="h-10 md:h-16 w-auto"
 					alt="Samsung Financial Networks"
 					/>
 				</div>
 
 			<!-- Hero Section -->
-			<div class="w-full max-w-3xl mb-4 md:mb-12 text-center text-white">
+			<div class="w-full max-w-3xl mb-4 md:mb-12 text-center text-white hidden md:block">
 				<div
 					class="transition-opacity duration-1000 ease-in-out"
 					style="opacity: {heroOpacity};"
 				>
-					<h1 class="text-xl md:text-3xl lg:text-4xl font-extrabold leading-snug mb-2 md:mb-4 text-white">
+					<h1 class="text-3xl lg:text-4xl font-extrabold leading-snug mb-4 text-white">
 						{heroSets[heroSetIndex].title}
 					</h1>
-					<p class="text-sm md:text-lg lg:text-xl opacity-90 max-w-2xl mx-auto text-white hidden md:block">
+					<p class="text-lg lg:text-xl opacity-90 max-w-2xl mx-auto text-white">
 						{heroSets[heroSetIndex].text[0]}<br />
 						{heroSets[heroSetIndex].text[1]}
 					</p>
 			</div>
-		</div>
 
-			<div class="w-full max-w-[400px] mx-auto -mt-8 md:mt-0 relative z-50">
+			<!-- Login Form -->
+			<div class="w-full max-w-[400px] mx-auto relative z-50 mb-8 md:mb-0">
 				{#if ($config?.features.auth_trusted_header ?? false) || $config?.features.auth === false}
 					<div class=" my-auto pb-10 w-full">
 						<div
