@@ -45,7 +45,8 @@ agent-portal/
 │   │   │   └── proxy.py       # 리버스 프록시 (Langflow/Flowise/AutoGen/Perplexica/Notebook)
 │   │   ├── services/          # 비즈니스 로직 레이어
 │   │   │   ├── litellm_service.py  # LiteLLM 게이트웨이 (Stage 2 ✅)
-│   │   │   └── langfuse_service.py # Langfuse 관측성 (Stage 2 ✅)
+│   │   │   ├── langfuse_service.py # Langfuse 관측성 (Stage 2 ✅)
+│   │   │   └── agentops_service.py # AgentOps 에이전트 모니터링 (Stage 3 🚧)
 │   │   ├── middleware/        # 미들웨어 (RBAC 등)
 │   │   ├── config.py          # 설정 관리
 │   │   └── main.py            # FastAPI 앱 진입점
@@ -93,10 +94,13 @@ agent-portal/
 | **Kong** | 8002/8443 | API Gateway, 보안/라우팅 | ✅ 실행 중 |
 | **Konga** | 1337 | Kong Admin UI | ✅ 실행 중 |
 | **LiteLLM** | 4000 | LLM 게이트웨이 | ⚠️ 설정 필요 |
-| **Langfuse** | 3001 | LLM 관측성 | ⚠️ 설정 필요 |
+| **Langfuse** | 3001 | LLM 관측성 (체인 추적) | ⚠️ 설정 필요 |
+| **AgentOps** | - | 에이전트 실행 모니터링 (SDK) | 🚧 통합 중 |
 | **Helicone** | 8787 | LLM 프록시/비용 추적 | ⚠️ 설정 필요 |
-| **AutoGen Studio** | 5050 | 대화형 워크플로 UI | ❌ 미구현 |
-| **AutoGen API** | 5051 | Studio 백엔드 | ❌ 미구현 |
+| **Langflow** | 7861 | 노코드 에이전트 빌더 | ✅ 실행 중 |
+| **Flowise** | 3002 | 노코드 에이전트 빌더 | ✅ 실행 중 |
+| **AutoGen Studio** | 5050 | 대화형 워크플로 UI | ✅ 실행 중 |
+| **AutoGen API** | 5051 | Studio 백엔드 | ⚠️ 의존성 오류 |
 | **Perplexica** | 5173 | 검색 포털(iframe 임베드) | ❌ 미구현 |
 | **Open-Notebook** | 3030 | AI 노트북(iframe 임베드) | ❌ 미구현 |
 
@@ -112,9 +116,10 @@ agent-portal/
 - Open-WebUI Monitoring 페이지
 - Embed 프록시
 
-**Stage 3**: ❌ 미시작
-- 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
-- Export → LangGraph 변환
+**Stage 3**: 🚧 진행 중
+- ✅ 에이전트 빌더 iframe 임베딩 (Langflow + Flowise + AutoGen Studio)
+- 🚧 Langflow UI 재구현 (Phase 1-A 완료, Phase 1-B 진행 중)
+- 🚧 LangGraph 변환 + 실행 + AgentOps 모니터링
 
 **Stage 8**: ❌ 미시작
 - Perplexica + Open-Notebook 임베드 (iframe, 리버스 프록시)
@@ -215,6 +220,47 @@ span = trace.span(name="sub_operation")
 span.end(output={"result": "data"})
 trace.end()
 ```
+
+**AgentOps 통합** (에이전트 실행 모니터링):
+- `agentops_service.start_session()` 사용
+- 세션 단위 추적 (시작 → 실행 → 종료)
+- 비용 계산 및 세션 리플레이 URL 제공
+
+**예시**:
+```python
+from app.services.agentops_service import agentops_service
+
+# 세션 시작
+session = agentops_service.start_session(
+    flow_id="flow-123",
+    tags=["langflow", "production"]
+)
+
+try:
+    # 플로우 실행
+    result = await execute_flow(...)
+    
+    # 성공 기록
+    agentops_service.record_action(
+        session=session,
+        action_type="flow_execution",
+        result=result,
+        cost=0.05
+    )
+    
+    # 세션 종료 (성공)
+    session_url = agentops_service.end_session(session, status="Success")
+    return {"result": result, "agentops_session_url": session_url}
+except Exception as e:
+    # 세션 종료 (실패)
+    agentops_service.end_session(session, status="Fail", error=str(e))
+    raise
+```
+
+**Langfuse vs AgentOps**:
+- **Langfuse**: LLM 체인 추적, 프롬프트 비교, 세션 분석
+- **AgentOps**: 에이전트 실행 모니터링, 비용 추적, 세션 리플레이
+- **함께 사용**: 상호 보완적 (Langfuse는 체인 레벨, AgentOps는 에이전트 레벨)
 
 ---
 
@@ -409,14 +455,21 @@ trace.end()
 - [ ] 프론트엔드-백엔드 데이터 연동 (BFF API 호출)
 
 ### Stage 3: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
-- [ ] Langflow 컨테이너 설정 (포트 7860)
-- [ ] Flowise 컨테이너 설정 (포트 3002)
-- [ ] AutoGen Studio/API 컨테이너 설정 (로컬 빌드, 포트 5050/5051)
-- [ ] 에이전트 빌더 페이지 추가 (`/builder/langflow`, `/builder/flowise`, `/builder/autogen`)
-- [ ] 리버스 프록시 구현 (`/proxy/langflow`, `/proxy/flowise`, `/proxy/autogen`)
-- [ ] Langflow/Flowise 플로우 → LangGraph JSON 변환
-- [ ] AutoGen YAML/JSON → LangGraph 변환기 구현
-- [ ] 에이전트 버전/리비전 관리 시스템
+- [x] Langflow 컨테이너 설정 (포트 7861)
+- [x] Flowise 컨테이너 설정 (포트 3002)
+- [x] AutoGen Studio/API 컨테이너 설정 (로컬 빌드, 포트 5050/5051)
+- [x] 에이전트 빌더 페이지 추가 (`/agent` 탭 UI)
+- [x] 리버스 프록시 구현 (`/api/proxy/langflow`, `/api/proxy/flowise`, `/api/proxy/autogen`)
+- [x] Langflow UI 재구현 - Phase 1-A (플로우 목록 UI)
+- [ ] Langflow UI 재구현 - Phase 1-B (LangGraph 변환 + 실행 + AgentOps)
+  - [ ] AgentOps 서비스 레이어 구현 (`backend/app/services/agentops_service.py`)
+  - [ ] Langflow → LangGraph 변환기 구현 (`backend/app/services/langflow_converter.py`)
+  - [ ] LangGraph 실행 서비스 구현 (`backend/app/services/langgraph_service.py`)
+  - [ ] 변환/실행 API 엔드포인트 추가 (`backend/app/routes/agents.py`)
+  - [ ] 플로우 카드 컴포넌트 (Export/Run 버튼)
+  - [ ] 실행 결과 패널 (비용 정보, AgentOps 리플레이 링크)
+- [ ] Flowise/AutoGen 플로우 → LangGraph JSON 변환 (Phase 2)
+- [ ] 에이전트 버전/리비전 관리 시스템 (Phase 2)
 
 ### Stage 8: Perplexica + Open-Notebook 임베드
 - [ ] Perplexica 포크 및 컨테이너 설정 (포트 5173)

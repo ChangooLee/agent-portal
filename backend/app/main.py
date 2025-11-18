@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.routes import embed, kong_admin, chat, observability, news, proxy, agents
+from app.routes import embed, kong_admin, chat, observability, news, proxy, agents, agentops
 
 settings = get_settings()
 
@@ -29,6 +29,7 @@ app.include_router(observability.router)
 app.include_router(news.router)
 app.include_router(proxy.router)
 app.include_router(agents.router)
+app.include_router(agentops.router)
 
 
 @app.get("/health")

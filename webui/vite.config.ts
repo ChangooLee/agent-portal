@@ -46,6 +46,11 @@ export default defineConfig({
 		host: '0.0.0.0', // Docker 내부에서 접근 가능하도록
 		port: devPort, // 기본 3001, 필요 시 VITE_DEV_PORT로 오버라이드
 		proxy: {
+			// Proxy API (Langflow, Flowise, AutoGen) → FastAPI BFF (포트 8000)
+			'/api/proxy': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true
+			},
 			// News API → FastAPI BFF (포트 8000)
 			// Docker 환경: 컨테이너 이름 사용, 로컬 환경: localhost 사용
 			'/api/news': {

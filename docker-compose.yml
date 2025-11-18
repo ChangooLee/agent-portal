@@ -33,17 +33,17 @@ services:
       - chromadb
       - redis
       - minio
-      - langgraph
+      # - langgraph
       - litellm
       - langfuse
       - helicone
       - kong
 
   # Agent Runtime
-  langgraph:
-    image: yourorg/langgraph-server:latest
-    ports:
-      - "8123:8123"
+  # langgraph:
+  #   image: yourorg/langgraph-server:latest
+  #   ports:
+  #     - "8123:8123"
 
   # LLM Gateway
   litellm:
@@ -277,6 +277,20 @@ services:
     depends_on:
       - litellm
       - langfuse
+
+  # AgentOps Dashboard (로컬 MariaDB 연동, API 키 불필요)
+  agentops-dashboard:
+    build:
+      context: ./agentops-dashboard
+      dockerfile: Dockerfile.local
+    ports:
+      - "3004:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000/api/agentops
+      - NEXT_PUBLIC_PROJECT_ID=default-project
+    depends_on:
+      - backend
+      - mariadb
 
 volumes:
   mariadb:

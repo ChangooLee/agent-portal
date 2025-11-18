@@ -157,6 +157,7 @@ graph TB
 
     subgraph "Observability"
         LANGFUSE["Langfuse<br/>Port: 3001<br/>LLM 체인 추적<br/>세션/툴콜"]
+        AGENTOPS["AgentOps<br/>(SDK)<br/>에이전트 실행 모니터링<br/>세션 리플레이"]
         HELICONE["Helicone<br/>Port: 8787<br/>비용/지연 분석<br/>프롬프트 비교"]
     end
 
@@ -207,6 +208,7 @@ graph TB
     %% Services to Observability
     LITELLM -->|"트레이싱<br/>체인/툴콜"| LANGFUSE
     LANGGRAPH -->|"트레이싱<br/>에이전트 실행"| LANGFUSE
+    LANGGRAPH -->|"세션 추적<br/>AgentOps SDK"| AGENTOPS
     AUTOGEN_API -->|"트레이싱<br/>그룹챗"| LANGFUSE
     PERPLEXICA -->|"모델 호출<br/>LiteLLM 경유"| LITELLM
     NOTEBOOK -->|"모델 호출<br/>LiteLLM 경유"| LITELLM
@@ -615,9 +617,15 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 ## 관측성 (Observability)
 
 * **Langfuse**: LLM 체인/툴콜/세션 추적 — 관리자 패널 **임베드 카드**
+* **AgentOps**: 에이전트 실행 모니터링, 세션 리플레이, 비용 추적 — Python SDK 통합
 * **Helicone**: **비용/지연/성공률/프롬프트 비교** — LiteLLM 앞/뒤 프록시
 * **(옵션) OTEL → SigNoz/OpenObserve**: FastAPI/LiteLLM/MCP 경로 지연·에러율
 * **예산/경영 대시보드**: Superset/Metabase 임베드(월별 비용/예산/위반 히트맵)
+
+**관측성 스택 역할 분담**:
+- **Langfuse**: LLM 체인 레벨 추적 (프롬프트, 응답, 토큰 수)
+- **AgentOps**: 에이전트 레벨 추적 (세션, 액션, 비용, 리플레이)
+- **Helicone**: 프록시 레벨 추적 (지연, 성공률, 비용 비교)
 
 ---
 
@@ -691,6 +699,10 @@ LITELLM_PORT=4000
 LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
 LANGFUSE_HOST=http://langfuse:3001
+
+# AgentOps
+AGENTOPS_API_KEY=...
+AGENTOPS_ORG_KEY=...
 
 # Helicone
 HELICONE_API_KEY=helicone-api-key

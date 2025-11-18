@@ -10,7 +10,7 @@
 |------|------|--------|------|
 | **Stage 1** | ✅ 완료 | 100% | 인프라 및 기본 설정 (1-2주) |
 | **Stage 2** | ⚠️ 부분 완료 | 40% | 코드 완료, 환경 설정 및 통합 테스트 필요 (2-3주) |
-| **Stage 3** | ❌ 미시작 | 0% | 에이전트 빌더 (3-4주) |
+| **Stage 3** | 🚧 진행 중 | 35% | 에이전트 빌더 (3-4주) |
 | **Stage 4** | ❌ 미시작 | 0% | MCP SSE + Kong (2-3주) |
 | **Stage 5** | ❌ 미시작 | 0% | 데이터베이스 (3-4주) |
 | **Stage 6** | ❌ 미시작 | 0% | Document Intelligence (3-4주) |
@@ -18,7 +18,7 @@
 | **Stage 8** | ❌ 미시작 | 0% | 포털 통합 (2-3주) |
 | **Stage 9** | ❌ 미시작 | 0% | 가드레일 (2-3주) |
 
-**전체 진행률**: 약 **15%** (Stage 1 완료)  
+**전체 진행률**: 약 **20%** (Stage 1 완료, Stage 3 진행 중)  
 **총 예상 개발 기간**: 약 **22-30주** (5.5-7.5개월)
 
 ---
@@ -90,19 +90,37 @@
 
 ---
 
-## ❌ Stage 3: 에이전트 빌더 (미시작)
+## 🚧 Stage 3: 에이전트 빌더 (진행 중)
 
-**목표**: Langflow, Flowise, AutoGen Studio 임베드, Export → LangGraph 변환
+**목표**: Langflow, Flowise, AutoGen Studio 임베드, Langflow UI 재구현, LangGraph 변환 + 실행 + AgentOps 모니터링
 
-**계획된 작업**:
-- ⏳ Langflow 컨테이너 설정 (포트 7860)
-- ⏳ Flowise 컨테이너 설정 (포트 3002)
-- ⏳ AutoGen Studio/API 컨테이너 설정 (로컬 빌드, 포트 5050/5051)
-- ⏳ 에이전트 빌더 페이지 구현 (`/agent`)
-- ⏳ 리버스 프록시 구현 (`/proxy/langflow`, `/proxy/flowise`, `/proxy/autogen`)
-- ⏳ Langflow/Flowise 플로우 → LangGraph JSON 변환
-- ⏳ AutoGen YAML/JSON → LangGraph 변환기 구현
-- ⏳ 에이전트 버전/리비전 관리 시스템
+**완료 항목**:
+- ✅ Langflow 컨테이너 설정 (포트 7861)
+- ✅ Flowise 컨테이너 설정 (포트 3002)
+- ✅ AutoGen Studio/API 컨테이너 설정 (로컬 빌드, 포트 5050/5051)
+- ✅ 에이전트 빌더 페이지 구현 (`/agent` 탭 UI)
+- ✅ 리버스 프록시 구현 (`/api/proxy/langflow`, `/api/proxy/flowise`, `/api/proxy/autogen`)
+- ✅ Langflow UI 재구현 - Phase 1-A (플로우 목록 UI)
+  - ✅ Backend API: `/api/agents/flows` (목록/상세/삭제)
+  - ✅ Frontend: 플로우 카드 그리드 (Glassmorphism)
+  - ✅ 검색/필터 (Fuse.js)
+
+**진행 중 항목**:
+- 🚧 Langflow UI 재구현 - Phase 1-B (LangGraph 변환 + 실행 + AgentOps)
+  - ⏳ AgentOps 서비스 레이어 구현 (`backend/app/services/agentops_service.py`)
+  - ⏳ Langflow → LangGraph 변환기 구현 (`backend/app/services/langflow_converter.py`)
+  - ⏳ LangGraph 실행 서비스 구현 (`backend/app/services/langgraph_service.py`)
+  - ⏳ 변환/실행 API 엔드포인트 추가 (`backend/app/routes/agents.py`)
+  - ⏳ 플로우 카드 컴포넌트 (Export/Run 버튼)
+  - ⏳ 실행 결과 패널 (비용 정보, AgentOps 리플레이 링크)
+
+**미완성 항목**:
+- ❌ Flowise/AutoGen 플로우 → LangGraph JSON 변환 (Phase 2)
+- ❌ 에이전트 버전/리비전 관리 시스템 (Phase 2)
+
+**코드 위치**:
+- Backend API: `backend/app/routes/agents.py`
+- Frontend: `webui/src/routes/(app)/agent/+page.svelte`
 
 ---
 

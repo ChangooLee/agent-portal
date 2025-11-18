@@ -405,28 +405,42 @@ services:
 
 ---
 
-### 2.3 3단계: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
+### 2.3 3단계: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio) 🚧 **진행 중**
 
-**목표**: Langflow, Flowise, AutoGen Studio를 임베드하고, Export → LangGraph 변환 기능 구현
+**목표**: Langflow, Flowise, AutoGen Studio를 임베드하고, Langflow UI 재구현, LangGraph 변환 + 실행 + AgentOps 모니터링
+
+**상태**: 🚧 **Phase 1-A 완료, Phase 1-B 진행 중**
 
 #### 작업 내용
 
-1. **Langflow/Flowise/AutoGen Studio 컨테이너 설정**
-   - Langflow: 포트 7860
+1. **Langflow/Flowise/AutoGen Studio 컨테이너 설정** ✅
+   - Langflow: 포트 7861 (Stable Diffusion 충돌 회피)
    - Flowise: 포트 3002
    - AutoGen Studio: 포트 5050 (UI)
    - AutoGen API: 포트 5051 (백엔드)
    - 각각 별도 컨테이너로 실행 (AutoGen은 로컬 빌드)
-   - 리버스 프록시 설정
+   - 리버스 프록시 설정 (`/api/proxy/langflow`, `/api/proxy/flowise`, `/api/proxy/autogen`)
 
-2. **Open-WebUI 에이전트 빌더 페이지 추가**
-   - `/builder/langflow`, `/builder/flowise`, `/builder/autogen` 라우트 생성
-   - iframe 임베드
+2. **Open-WebUI 에이전트 빌더 페이지 추가** ✅
+   - `/agent` 라우트에 탭 UI 구현
+   - iframe 임베드 (직접 포트 접근)
 
-3. **Export → LangGraph 변환**
-   - Langflow/Flowise 플로우 정의를 LangGraph JSON으로 변환
-   - AutoGen YAML/JSON → LangGraph 변환기 구현
-   - 버전/리비전 관리
+3. **Langflow UI 재구현 - Phase 1-A** ✅
+   - Backend API: `/api/agents/flows` (목록/상세/삭제)
+   - Frontend: 플로우 카드 그리드 (Glassmorphism)
+   - 검색/필터 (Fuse.js)
+
+4. **Langflow UI 재구현 - Phase 1-B** 🚧
+   - AgentOps SDK 통합 (에이전트 실행 모니터링)
+   - Langflow → LangGraph 변환기 구현
+   - LangGraph 실행 서비스 구현
+   - 변환/실행 API 엔드포인트 추가
+   - 플로우 카드 컴포넌트 (Export/Run 버튼)
+   - 실행 결과 패널 (비용 정보, AgentOps 리플레이 링크)
+
+5. **Phase 2 (미래)** ❌
+   - Flowise/AutoGen 플로우 → LangGraph JSON 변환
+   - 버전/리비전 관리 시스템
 
 #### 구현 작업
 
@@ -436,10 +450,12 @@ services:
 backend/
 └─ app/
    ├─ routes/
-   │  ├─ agents.py            # /agents/*
-   │  └─ proxy.py              # /proxy/langflow, /proxy/flowise, /proxy/autogen
+   │  ├─ agents.py            # /api/agents/flows/* (목록/상세/삭제/변환/실행)
+   │  └─ proxy.py              # /api/proxy/langflow, /api/proxy/flowise, /api/proxy/autogen
    └─ services/
-      └─ langgraph_export.py  # 플로우 → LangGraph 변환 (Langflow/Flowise/AutoGen)
+      ├─ agentops_service.py  # AgentOps SDK 통합 (세션 추적)
+      ├─ langflow_converter.py # Langflow → LangGraph 변환
+      └─ langgraph_service.py # LangGraph 실행 서비스
 
 autogen-studio/              # AutoGen Studio UI (임베드)
 ├─ Dockerfile
@@ -495,6 +511,7 @@ services:
       - LANGFUSE_HOST=${LANGFUSE_HOST}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - AGENTOPS_API_KEY=${AGENTOPS_API_KEY}
     depends_on: [litellm, langfuse]
 
 volumes:
