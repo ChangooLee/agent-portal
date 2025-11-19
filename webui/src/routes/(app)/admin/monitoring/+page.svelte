@@ -33,6 +33,9 @@
 	import FilterPanel from '$lib/components/agentops/FilterPanel.svelte';
 	import ExportDialog from '$lib/components/agentops/ExportDialog.svelte';
 
+	// AgentOps 모니터링 화면 전용 스타일
+	import './styles.css';
+
 	const i18n = getContext('i18n');
 
 	// Tab state
@@ -474,176 +477,97 @@
 						</div>
 					{:else if activeTab === 'overview'}
 						<!-- Overview Tab: AgentOps 스타일 대시보드 -->
-						<div class="space-y-6">
-							<!-- Metrics Cards (AgentOps 스타일) -->
-							<!-- 빈 상태에서도 기본값(0)으로 표시 -->
-							<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-									<!-- Total Events/Traces -->
-									<div
-										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
-									>
-										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
-										<div class="relative flex items-start justify-between">
-											<div class="flex-1">
-												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Events</p>
-												<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatNumber(metrics?.trace_count || 0)}</p>
-											</div>
-											<div class="flex-shrink-0">
-												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20">
-													<svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-													</svg>
-												</div>
+						<div class="space-y-6 monitoring-page">
+							<!-- Page Title -->
+							<div class="mt-2 flex items-center gap-2">
+								<span class="text-2xl font-medium" style="color: hsl(222.2, 44%, 14%);">Overview</span>
+							</div>
+
+							<!-- Metrics Cards (AgentOps 스타일 - 간결하고 정제된 디자인) -->
+							<div class="grid gap-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+								<!-- Total Cost -->
+								<div class="ao-metric-card-container">
+									<div class="ao-metric-card">
+										<div class="ao-metric-card-header">
+											<div class="ao-metric-card-title">
+												<span>Total Cost</span>
 											</div>
 										</div>
-									</div>
-
-									<!-- Total Cost -->
-									<div
-										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
-									>
-										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl"></div>
-										<div class="relative flex items-start justify-between">
-											<div class="flex-1">
-												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Cost</p>
-												<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatCost(metrics?.total_cost || 0)}</p>
-											</div>
-											<div class="flex-shrink-0">
-												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-50 dark:bg-green-900/20">
-													<svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-													</svg>
-												</div>
-											</div>
-										</div>
-									</div>
-
-									<!-- Avg Latency -->
-									<div
-										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
-									>
-										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-full blur-3xl"></div>
-										<div class="relative flex items-start justify-between">
-											<div class="flex-1">
-												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Avg Latency</p>
-												<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatDuration(metrics?.avg_duration || 0)}</p>
-											</div>
-											<div class="flex-shrink-0">
-												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-900/20">
-													<svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-													</svg>
-												</div>
-											</div>
-										</div>
-									</div>
-
-									<!-- Error Rate -->
-									<div
-										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
-									>
-										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
-										<div class="relative flex items-start justify-between">
-											<div class="flex-1">
-												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Error Count</p>
-												<p class="text-3xl font-bold text-red-600 dark:text-red-400">{metrics?.error_count || 0}</p>
-												<p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-													{metrics?.trace_count ? (((metrics.error_count || 0) / metrics.trace_count) * 100).toFixed(1) : '0.0'}% error rate
-												</p>
-											</div>
-											<div class="flex-shrink-0">
-												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20">
-													<svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-													</svg>
-												</div>
+										<div class="ao-metric-card-content">
+											<div class="ao-metric-card-value">
+												{formatCost(metrics?.total_cost || 0)}
 											</div>
 										</div>
 									</div>
 								</div>
 
-								<!-- Token Usage Metric (추가) -->
-								<div class="grid gap-6 md:grid-cols-3">
-									<!-- Total Tokens -->
-									<div
-										class="relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
-									>
-										<div class="flex items-center justify-between mb-4">
-											<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Token Usage</h3>
-											<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/20">
-												<svg class="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-												</svg>
+								<!-- Total Events -->
+								<div class="ao-metric-card-container">
+									<div class="ao-metric-card">
+										<div class="ao-metric-card-header">
+											<div class="ao-metric-card-title">
+												<span>Total Events</span>
 											</div>
 										</div>
-										<div class="space-y-2">
-											<div class="flex items-baseline gap-2">
-												<span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-													{formatNumber(metrics?.total_tokens || 0)}
-												</span>
-												<span class="text-sm text-gray-500 dark:text-gray-500">tokens</span>
+										<div class="ao-metric-card-content">
+											<div class="ao-metric-card-value">
+												{formatNumber(metrics?.trace_count || 0)}
 											</div>
-											<p class="text-xs text-gray-500 dark:text-gray-500">Total tokens processed</p>
-										</div>
-									</div>
-
-									<!-- Success Rate -->
-									<div
-										class="relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
-									>
-										<div class="flex items-center justify-between mb-4">
-											<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Success Rate</h3>
-											<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-900/20">
-												<svg class="h-5 w-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-												</svg>
-											</div>
-										</div>
-										<div class="space-y-2">
-											<div class="flex items-baseline gap-2">
-												<span class="text-2xl font-bold text-teal-600 dark:text-teal-400">
-													{metrics?.trace_count ? ((((metrics.trace_count || 0) - (metrics.error_count || 0)) / metrics.trace_count) * 100).toFixed(1) : '100.0'}%
-												</span>
-											</div>
-											<p class="text-xs text-gray-500 dark:text-gray-500">
-												{formatNumber((metrics?.trace_count || 0) - (metrics?.error_count || 0))} / {formatNumber(metrics?.trace_count || 0)} successful
-											</p>
-										</div>
-									</div>
-
-									<!-- Avg Cost per Request -->
-									<div
-										class="relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
-									>
-										<div class="flex items-center justify-between mb-4">
-											<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Avg Cost/Request</h3>
-											<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
-												<svg class="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-												</svg>
-											</div>
-										</div>
-										<div class="space-y-2">
-											<div class="flex items-baseline gap-2">
-												<span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-													{formatCost(metrics?.trace_count ? (metrics.total_cost || 0) / metrics.trace_count : 0)}
-												</span>
-											</div>
-											<p class="text-xs text-gray-500 dark:text-gray-500">Per event cost</p>
 										</div>
 									</div>
 								</div>
 
-							<!-- Charts -->
-							<div class="grid gap-6 lg:grid-cols-2">
-								<div
-									class="rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
-								>
+								<!-- Avg Latency -->
+								<div class="ao-metric-card-container">
+									<div class="ao-metric-card">
+										<div class="ao-metric-card-header">
+											<div class="ao-metric-card-title">
+												<span>Avg Latency</span>
+											</div>
+										</div>
+										<div class="ao-metric-card-content">
+											<div class="ao-metric-card-value">
+												{formatDuration(metrics?.avg_duration || 0)}
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- Fail Rate (Error Rate) -->
+								<div class="ao-metric-card-container">
+									<div class="ao-metric-card">
+										<div class="ao-metric-card-header">
+											<div class="ao-metric-card-title">
+												<span>Fail Rate</span>
+											</div>
+										</div>
+										<div class="ao-metric-card-content">
+											<div class="ao-metric-card-value">
+												{metrics?.trace_count ? (((metrics.error_count || 0) / metrics.trace_count) * 100).toFixed(1) : '0.0'}%
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Separator -->
+							<div class="pt-3">
+								<hr class="border-gray-200 dark:border-gray-700" />
+							</div>
+
+							<!-- Analytics Section (AgentOps 스타일) -->
+							<div class="flex justify-between pt-8">
+								<div class="flex items-center gap-2">
+									<div class="text-2xl font-medium" style="color: hsl(222.2, 44%, 14%);">Analytics</div>
+								</div>
+							</div>
+
+							<!-- Charts (AgentOps 스타일 컨테이너) -->
+							<div class="grid gap-2 lg:grid-cols-2">
+								<div class="ao-chart-container">
 									<CostChart {costData} title="Cost Trend (Last 7 Days)" interval="day" />
 								</div>
-								<div
-									class="rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
-								>
+								<div class="ao-chart-container">
 									<TokenChart {tokenData} title="Token Usage (Last 7 Days)" interval="day" />
 								</div>
 							</div>

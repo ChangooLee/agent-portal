@@ -47,3 +47,4 @@ external/agentops/app/out/
 external/agentops/__pycache__/
 external/agentops/dist/
 external/agentops/build/
+agentops-reference/

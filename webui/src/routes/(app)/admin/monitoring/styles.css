@@ -1,0 +1,202 @@
+/**
+ * AgentOps 모니터링 화면 전용 스타일
+ * Adapted from: https://github.com/AgentOps-AI/agentops
+ * License: MIT
+ * 
+ * 주의: 이 스타일은 모니터링 화면(/admin/monitoring)에만 적용됩니다.
+ * 다른 화면(Today, Agent, Chat 등)에는 영향을 주지 않습니다.
+ */
+
+/* AgentOps CSS 변수 (모니터링 화면 전용) */
+.monitoring-page {
+  /* Primary 색상 */
+  --ao-primary: 222.2 44% 14%; /* rgba(20, 27, 52, 1) */
+  --ao-primary-foreground: 227 44% 14% / 0.74;
+  
+  /* 상태 색상 */
+  --ao-success: 153 40% 59%; /* #4BC498 */
+  --ao-warning: 52 72% 69%; /* #EDD867 */
+  --ao-error: 345 74% 63%; /* #E65A7E */
+  
+  /* UI 색상 */
+  --ao-border: 234 43% 91%; /* #DEE0F4 */
+  --ao-background: #F7F8FF; /* 밝은 보라빛 회색 */
+  --ao-primary-container: 235 100% 98%; /* #EBECF8 */
+  --ao-icon-white: 236 36% 91%; /* #E1E2F2 */
+  
+  /* 차트 색상 */
+  --ao-chart-primary: 248 100% 50%; /* 파란색 */
+  --ao-chart-secondary: 198 100% 50%; /* 청록색 */
+}
+
+/* AgentOps 메트릭 카드 스타일 */
+.ao-metric-card-container {
+  border-radius: 1rem; /* rounded-2xl */
+  background-color: var(--ao-background);
+  padding: 0;
+}
+
+.dark .ao-metric-card-container {
+  background-color: transparent;
+}
+
+.ao-metric-card {
+  border-radius: 0.75rem; /* rounded-xl */
+  border-color: white;
+  background-color: transparent;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 6rem; /* h-24 */
+}
+
+.ao-metric-card-header {
+  margin-bottom: 1rem;
+  margin-top: 0.75rem;
+  padding: 0;
+}
+
+.ao-metric-card-title {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+  color: hsl(var(--ao-primary));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dark .ao-metric-card-title {
+  color: rgba(225, 226, 242, 1); /* --ao-icon-white */
+}
+
+.ao-metric-card-value {
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 600; /* font-semibold */
+  color: hsl(var(--ao-primary));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dark .ao-metric-card-value {
+  color: rgba(225, 226, 242, 1);
+}
+
+.ao-metric-card-content {
+  padding: 0;
+  padding-left: 0.5rem;
+}
+
+/* AgentOps 차트 컨테이너 */
+.ao-chart-container {
+  border-radius: 1rem;
+  background-color: var(--ao-background);
+  padding: 1.5rem;
+}
+
+.dark .ao-chart-container {
+  background-color: rgba(17, 24, 39, 0.6); /* dark:bg-gray-900/60 */
+}
+
+/* AgentOps Success Rate Badge */
+.ao-success-badge {
+  background-color: hsl(var(--ao-success) / 0.1);
+  color: hsl(var(--ao-success));
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ao-warning-badge {
+  background-color: hsl(var(--ao-warning) / 0.1);
+  color: hsl(var(--ao-warning));
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ao-error-badge {
+  background-color: hsl(var(--ao-error) / 0.1);
+  color: hsl(var(--ao-error));
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* AgentOps 테이블 스타일 */
+.ao-table {
+  background-color: white;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--ao-border));
+  overflow: hidden;
+}
+
+.dark .ao-table {
+  background-color: rgba(17, 24, 39, 0.6);
+  border-color: rgba(55, 65, 81, 0.3);
+}
+
+.ao-table-header {
+  background-color: rgba(249, 250, 251, 1);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--ao-primary) / 0.7);
+}
+
+.dark .ao-table-header {
+  background-color: rgba(31, 41, 55, 0.5);
+  color: rgba(209, 213, 219, 1);
+}
+
+.ao-table-row:hover {
+  background-color: rgba(249, 250, 251, 0.5);
+}
+
+.dark .ao-table-row:hover {
+  background-color: rgba(31, 41, 55, 0.3);
+}
+
+/* AgentOps 버튼 스타일 (모니터링 화면 전용) */
+.ao-button-primary {
+  background-color: hsl(var(--ao-primary));
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.ao-button-primary:hover {
+  opacity: 0.9;
+}
+
+.ao-button-secondary {
+  background-color: white;
+  color: hsl(var(--ao-primary));
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--ao-border));
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.ao-button-secondary:hover {
+  background-color: rgba(249, 250, 251, 1);
+}
+
+.dark .ao-button-secondary {
+  background-color: rgba(31, 41, 55, 0.6);
+  color: rgba(225, 226, 242, 1);
+  border-color: rgba(55, 65, 81, 0.3);
+}
+
+.dark .ao-button-secondary:hover {
+  background-color: rgba(31, 41, 55, 0.8);
+}
+
