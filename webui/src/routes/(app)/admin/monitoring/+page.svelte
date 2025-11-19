@@ -404,6 +404,9 @@
 									</thead>
 									<tbody class="bg-white dark:bg-gray-900/50 divide-y divide-gray-200 dark:divide-gray-700">
 										{#each traces as trace}
+											{@const maxDuration = 120000}
+											{@const durationPercent = Math.min((trace.duration / maxDuration) * 100, 100)}
+											{@const barColor = trace.duration >= 60000 ? 'bg-amber-400/60' : trace.duration >= 30000 ? 'bg-slate-400/60' : 'bg-emerald-400/60'}
 											<tr class="ao-table-row cursor-pointer transition-all duration-200">
 												<td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
 													{trace.trace_id.substring(0, 8)}...
@@ -423,21 +426,18 @@
 														<span class="text-yellow-500">UNSET</span>
 													{/if}
 												</td>
-											<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-												{@const maxDuration = 120000}
-												{@const durationPercent = Math.min((trace.duration / maxDuration) * 100, 100)}
-												{@const barColor = trace.duration >= 60000 ? 'bg-amber-400/60' : trace.duration >= 30000 ? 'bg-slate-400/60' : 'bg-emerald-400/60'}
-												<div class="flex items-center gap-2">
-													<!-- Duration Progress Bar (AgentOps 스타일) -->
-													<div class="h-2 w-16 rounded-full bg-slate-200/30 dark:bg-slate-700/30">
-														<div
-															class="{barColor} h-2 rounded-full transition-all duration-200"
-															style="width: {Math.max(durationPercent, 10)}%"
-														></div>
+												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+													<div class="flex items-center gap-2">
+														<!-- Duration Progress Bar (AgentOps 스타일) -->
+														<div class="h-2 w-16 rounded-full bg-slate-200/30 dark:bg-slate-700/30">
+															<div
+																class="{barColor} h-2 rounded-full transition-all duration-200"
+																style="width: {Math.max(durationPercent, 10)}%"
+															></div>
+														</div>
+														<span>{formatDuration(trace.duration)}</span>
 													</div>
-													<span>{formatDuration(trace.duration)}</span>
-												</div>
-											</td>
+												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
 													{formatCost(trace.total_cost)}
 												</td>
