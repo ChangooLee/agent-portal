@@ -9,9 +9,14 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import aiomysql
 import json
+import os
 from app.config import get_settings
 
 settings = get_settings()
+
+# 환경 변수에서 직접 읽기 (Docker 환경에서 더 안정적)
+MARIADB_ROOT_PASSWORD = os.getenv('MARIADB_ROOT_PASSWORD', settings.MARIADB_ROOT_PASSWORD)
+MARIADB_DATABASE = os.getenv('MARIADB_DATABASE', settings.MARIADB_DATABASE)
 
 
 class AgentOpsAdapter:
@@ -30,12 +35,29 @@ class AgentOpsAdapter:
                 host='mariadb',
                 port=3306,
                 user='root',
-                password=getattr(settings, 'MARIADB_ROOT_PASSWORD', 'agentportal'),
-                db=getattr(settings, 'MARIADB_DATABASE', 'agentportal'),
+                password=MARIADB_ROOT_PASSWORD,
+                db=MARIADB_DATABASE,
                 autocommit=True,
                 charset='utf8mb4'
             )
         return self.pool
+    
+    async def _execute_query(self, query: str, params: tuple) -> List[Dict[str, Any]]:
+        """SQL 쿼리 실행 헬퍼 메서드.
+        
+        Args:
+            query: SQL 쿼리 문자열
+            params: 쿼리 파라미터
+            
+        Returns:
+            쿼리 결과 리스트
+        """
+        pool = await self.get_pool()
+        async with pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
+                await cursor.execute(query, params)
+                result = await cursor.fetchall()
+                return result
     
     async def get_traces(
         self,
@@ -569,7 +591,7 @@ class AgentOpsAdapter:
                 query = """
                 SELECT 
                     start_time as timestamp,
-                    duration_ms as duration,
+                    CAST(duration / 1000000 AS UNSIGNED) as duration,
                     CASE WHEN error_count > 0 THEN 'error' ELSE 'success' END as status
                 FROM trace_summaries
                 WHERE project_id = %s
@@ -660,6 +682,60 @@ class AgentOpsAdapter:
                 }
             ]
         }
+    
+    async def get_agent_usage_stats(
+        self,
+        project_id: str,
+        start_time: datetime,
+        end_time: datetime
+    ) -> List[Dict[str, Any]]:
+        """
+        에이전트별 사용량 통계 조회.
+        
+        Args:
+            project_id: 프로젝트 ID
+            start_time: 시작 시간
+            end_time: 종료 시간
+        
+        Returns:
+            에이전트별 통계 리스트
+        """
+        query = """
+        SELECT 
+            COALESCE(service_name, 'Unknown Agent') as agent_name,
+            COUNT(DISTINCT trace_id) as event_count,
+            COALESCE(SUM(CAST(JSON_EXTRACT(span_attributes, '$.llm.usage.total_tokens') AS UNSIGNED)), 0) as total_tokens,
+            COALESCE(SUM(CAST(JSON_EXTRACT(span_attributes, '$.llm.cost') AS DECIMAL(10, 6))), 0) as total_cost,
+            COALESCE(AVG(duration / 1000000), 0) as avg_latency_ms,
+            COUNT(CASE WHEN status_code = 'ERROR' THEN 1 END) as error_count,
+            COUNT(DISTINCT trace_id) - COUNT(CASE WHEN status_code = 'ERROR' THEN 1 END) as success_count
+        FROM otel_traces
+        WHERE project_id = %s
+            AND timestamp >= %s
+            AND timestamp <= %s
+        GROUP BY agent_name
+        ORDER BY total_tokens DESC
+        """
+        
+        result = await self._execute_query(query, (project_id, start_time, end_time))
+        
+        agent_stats = []
+        for row in result:
+            event_count = row['event_count'] or 0
+            success_count = row['success_count'] or 0
+            success_rate = (success_count / event_count * 100) if event_count > 0 else 100.0
+            
+            agent_stats.append({
+                'agent_name': row['agent_name'],
+                'total_tokens': row['total_tokens'] or 0,
+                'total_cost': float(row['total_cost']) if row['total_cost'] else 0.0,
+                'event_count': event_count,
+                'avg_latency': round(row['avg_latency_ms'], 2) if row['avg_latency_ms'] else 0.0,
+                'error_count': row['error_count'] or 0,
+                'success_rate': round(success_rate, 1)
+            })
+        
+        return agent_stats
 
 
 # Singleton

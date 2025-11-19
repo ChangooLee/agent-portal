@@ -550,6 +550,206 @@ async def proxy_perplexica(path: str, request: Request) -> Response:
     )
 ```
 
+## 데이터베이스 작업 패턴 (CRITICAL)
+
+### SQL 쿼리 작성 시 반드시 스키마 확인
+
+**규칙**: 새 테이블/스키마 작업 시 **반드시 실제 스키마를 먼저 확인**하고 쿼리 작성
+
+**잘못된 예시** (❌):
+```python
+# 추측으로 쿼리 작성 (컬럼명 확인 안 함)
+query = """
+SELECT 
+    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(attributes, '$.service.name')), 'Unknown') as name
+FROM otel_traces
+WHERE JSON_EXTRACT(resource_attributes, '$.project.id') = %s
+"""
+# 결과: (1054, "Unknown column 'attributes' in 'SELECT'")
+```
+
+**올바른 예시** (✅):
+```python
+# 1단계: 실제 스키마 확인
+# docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
+#   -e "DESCRIBE otel_traces;"
+# 
+# 확인 결과:
+# - service_name (VARCHAR)
+# - span_attributes (LONGTEXT, JSON)
+# - resource_attributes (LONGTEXT, JSON)
+# - project_id (VARCHAR)
+# - timestamp (DATETIME)
+
+# 2단계: 실제 컬럼명으로 쿼리 작성
+query = """
+SELECT 
+    COALESCE(service_name, 'Unknown') as name,
+    COALESCE(SUM(CAST(JSON_EXTRACT(span_attributes, '$.llm.usage.total_tokens') AS UNSIGNED)), 0) as total_tokens
+FROM otel_traces
+WHERE project_id = %s
+    AND timestamp >= %s
+    AND timestamp <= %s
+GROUP BY service_name
+"""
+```
+
+### 스키마 확인 체크리스트
+
+**MariaDB/MySQL**:
+```bash
+# 테이블 구조 확인
+docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
+  -e "DESCRIBE table_name;"
+
+# 테이블 생성 구문 확인 (상세 정보)
+docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
+  -e "SHOW CREATE TABLE table_name\G"
+
+# 샘플 데이터 확인
+docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
+  -e "SELECT * FROM table_name LIMIT 5;"
+```
+
+**PostgreSQL**:
+```bash
+# 테이블 구조 확인
+docker-compose exec postgres-db psql -U username -d database \
+  -c "\d+ table_name"
+
+# 샘플 데이터 확인
+docker-compose exec postgres-db psql -U username -d database \
+  -c "SELECT * FROM table_name LIMIT 5;"
+```
+
+### 데이터베이스 어댑터 패턴
+
+```python
+# backend/app/services/db_adapter.py
+from typing import List, Dict, Any
+import aiomysql
+from datetime import datetime
+
+class DatabaseAdapter:
+    """데이터베이스 어댑터 클래스.
+    
+    Attributes:
+        host: 데이터베이스 호스트
+        port: 데이터베이스 포트
+        user: 사용자명
+        password: 비밀번호
+        database: 데이터베이스명
+    """
+    
+    def __init__(self, host: str, port: int, user: str, password: str, database: str):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.database = database
+    
+    async def _execute_query(
+        self, 
+        query: str, 
+        params: tuple = ()
+    ) -> List[Dict[str, Any]]:
+        """SQL 쿼리 실행 (내부 메서드).
+        
+        Args:
+            query: SQL 쿼리
+            params: 쿼리 파라미터
+            
+        Returns:
+            쿼리 결과 리스트
+            
+        Raises:
+            Exception: 쿼리 실행 실패 시
+        """
+        conn = await aiomysql.connect(
+            host=self.host,
+            port=self.port,
+            user=self.user,
+            password=self.password,
+            db=self.database,
+            charset='utf8mb4'
+        )
+        
+        try:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
+                await cursor.execute(query, params)
+                result = await cursor.fetchall()
+                await conn.commit()
+                return result
+        finally:
+            conn.close()
+    
+    async def get_records(
+        self,
+        project_id: str,
+        start_time: datetime,
+        end_time: datetime
+    ) -> List[Dict[str, Any]]:
+        """레코드 조회 (공개 메서드).
+        
+        ⚠️  주의: 쿼리 작성 전 반드시 실제 스키마 확인!
+        
+        Args:
+            project_id: 프로젝트 ID
+            start_time: 시작 시간
+            end_time: 종료 시간
+            
+        Returns:
+            레코드 리스트
+        """
+        # ✅ 실제 스키마 확인 후 작성된 쿼리
+        query = """
+        SELECT 
+            COALESCE(service_name, 'Unknown') as name,
+            COUNT(*) as count
+        FROM otel_traces
+        WHERE project_id = %s
+            AND timestamp >= %s
+            AND timestamp <= %s
+        GROUP BY service_name
+        """
+        
+        result = await self._execute_query(query, (project_id, start_time, end_time))
+        return result
+
+# Singleton
+db_adapter = DatabaseAdapter(
+    host="mariadb",
+    port=3306,
+    user="root",
+    password="rootpass",
+    database="agent_portal"
+)
+```
+
+### 데이터베이스 작업 금지 사항
+
+**❌ 절대 하지 말 것**:
+
+1. **스키마 확인 없이 추측으로 쿼리 작성**:
+   - ❌ `SELECT attributes FROM ...` (컬럼명 확인 안 함)
+   - ✅ `DESCRIBE table_name;` 실행 후 쿼리 작성
+
+2. **SQL Injection 취약점**:
+   - ❌ `f"SELECT * FROM users WHERE id = {user_id}"`
+   - ✅ `cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))`
+
+3. **트랜잭션 누락** (INSERT/UPDATE/DELETE 시):
+   - ❌ `cursor.execute("UPDATE ..."); # commit 없음`
+   - ✅ `cursor.execute("UPDATE ..."); await conn.commit()`
+
+4. **컨넥션 누수**:
+   - ❌ `conn = await aiomysql.connect(...); # close 없음`
+   - ✅ `try: ... finally: conn.close()`
+
+5. **에러 핸들링 누락**:
+   - ❌ `result = await cursor.fetchall() # 예외 처리 없음`
+   - ✅ `try: ... except aiomysql.Error as e: ...`
+
 ## 테스트 및 검증
 
 ### 작업 완료 후 반드시 확인

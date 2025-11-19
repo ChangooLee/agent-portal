@@ -113,3 +113,68 @@ Agent Portal에서 발생한 버그와 수정 방법을 기록합니다.
 - .cursor/learnings/bug-fixes.md (이 문서)
 
 ---
+
+## 2025-11-18: AgentOps API SQL 쿼리 스키마 불일치
+
+**증상**:
+- `/api/agentops/agents/usage` 엔드포인트 호출 시 500 Internal Server Error 발생
+- 에러 메시지: `(1054, "Unknown column 'attributes' in 'SELECT'")`
+- 프론트엔드에서 "Failed to fetch agent usage stats: Internal Server Error" 표시
+
+**근본 원인**:
+- SQL 쿼리에서 사용한 컬럼명이 실제 MariaDB 테이블 스키마와 불일치
+- 쿼리: `JSON_EXTRACT(attributes, '$.service.name')` (존재하지 않는 컬럼)
+- 실제 테이블: `service_name`, `span_attributes`, `resource_attributes` 컬럼 사용
+- `otel_traces` 테이블 스키마를 확인하지 않고 추측으로 쿼리 작성
+
+**해결 방법**:
+1. 실제 테이블 스키마 확인:
+   ```bash
+   docker-compose exec mariadb mariadb -uroot -prootpass agent_portal -e "DESCRIBE otel_traces;"
+   ```
+2. SQL 쿼리 수정 (`backend/app/services/agentops_adapter.py`):
+   ```python
+   # 수정 전
+   query = """
+   SELECT 
+       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(attributes, '$.service.name')), 'Unknown Agent') as agent_name,
+       ... JSON_EXTRACT(attributes, '$.llm.usage.total_tokens') ...
+   FROM otel_traces
+   WHERE JSON_EXTRACT(resource_attributes, '$.project.id') = %s
+       AND start_time >= %s
+       AND end_time <= %s
+   """
+   
+   # 수정 후
+   query = """
+   SELECT 
+       COALESCE(service_name, 'Unknown Agent') as agent_name,
+       ... JSON_EXTRACT(span_attributes, '$.llm.usage.total_tokens') ...
+   FROM otel_traces
+   WHERE project_id = %s
+       AND timestamp >= %s
+       AND timestamp <= %s
+   """
+   ```
+3. Docker 이미지 완전 재빌드:
+   ```bash
+   docker-compose down backend
+   docker rmi agent-portal-backend:latest
+   docker-compose build --no-cache --pull backend
+   docker-compose up -d backend
+   ```
+
+**예방**:
+- 새 테이블/스키마 작업 시 **반드시 실제 스키마 먼저 확인**
+- `DESCRIBE table_name;` 또는 `SHOW CREATE TABLE table_name;` 실행
+- SQL 쿼리 작성 전 컬럼명과 데이터 타입 확인
+- 추측으로 쿼리 작성 금지
+- Docker 볼륨 마운트 제거 후 재빌드하여 확실히 코드 반영 확인
+- 로컬 파일 수정 후 컨테이너 내부 파일도 확인 (`docker-compose exec backend cat /app/...`)
+
+**참고**:
+- backend/app/services/agentops_adapter.py (line 703-718)
+- scripts/init-agentops-schema.sql (otel_traces 테이블 정의)
+- commit: 2025-11-18 SQL 스키마 수정
+
+---
