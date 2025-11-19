@@ -378,42 +378,67 @@
 						</button>
 					</div>
 				{:else}
-					<!-- Traces Tab -->
+					<!-- Traces Tab (AgentOps 스타일) -->
 					{#if activeTab === 'traces'}
-						<div class="space-y-4">
-							<!-- Traces Table -->
-							<div
-								class="overflow-x-auto rounded-lg border border-white/20 bg-white/60 shadow-xl backdrop-blur-sm dark:border-gray-700/30 dark:bg-gray-900/60"
-							>
+						<div class="space-y-4 monitoring-page">
+							<!-- Page Title -->
+							<div class="mt-2 flex items-center gap-2">
+								<span class="text-2xl font-medium" style="color: hsl(222.2, 44%, 14%);">Traces</span>
+							</div>
+
+							<!-- Traces Table (AgentOps 스타일) -->
+							<div class="ao-table">
 								<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-									<thead class="bg-gray-50 dark:bg-gray-800/50">
+									<thead class="ao-table-header">
 										<tr>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trace ID</th>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Service</th>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Span</th>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Duration</th>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cost</th>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Spans</th>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Errors</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Trace ID</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Service</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Span</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Duration</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Cost</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Spans</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Errors</th>
 											<th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
 										</tr>
 									</thead>
 									<tbody class="bg-white dark:bg-gray-900/50 divide-y divide-gray-200 dark:divide-gray-700">
 										{#each traces as trace}
-											<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+											<tr class="ao-table-row cursor-pointer transition-all duration-200">
 												<td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
 													{trace.trace_id.substring(0, 8)}...
 												</td>
-												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+												<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
 													{trace.service_name}
 												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
 													{trace.span_name}
 												</td>
-												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-													{formatDuration(trace.duration)}
+												<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+													{#if trace.error_count === 0}
+														<span class="text-green-500">OK</span>
+													{:else if trace.error_count > 0}
+														<span class="text-red-500">ERROR</span>
+													{:else}
+														<span class="text-yellow-500">UNSET</span>
+													{/if}
 												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+													<div class="flex items-center gap-2">
+														<!-- Duration Progress Bar (AgentOps 스타일) -->
+														<div class="h-2 w-16 rounded-full bg-slate-200/30 dark:bg-slate-700/30">
+															{@const maxDuration = 120000}
+															{@const durationPercent = Math.min((trace.duration / maxDuration) * 100, 100)}
+															{@const barColor = trace.duration >= 60000 ? 'bg-amber-400/60' : trace.duration >= 30000 ? 'bg-slate-400/60' : 'bg-emerald-400/60'}
+															<div
+																class="{barColor} h-2 rounded-full transition-all duration-200"
+																style="width: {Math.max(durationPercent, 10)}%"
+															></div>
+														</div>
+														<span>{formatDuration(trace.duration)}</span>
+													</div>
+												</td>
+												<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
 													{formatCost(trace.total_cost)}
 												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
@@ -421,7 +446,7 @@
 												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm">
 													{#if trace.error_count > 0}
-														<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+														<span class="px-2.5 py-0.5 inline-flex text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
 															{trace.error_count}
 														</span>
 													{:else}
@@ -431,13 +456,13 @@
 												<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
 													<button
 														on:click={() => openTraceDrawer(trace.trace_id)}
-														class="text-primary hover:text-primary-dark dark:text-primary-light dark:hover:text-primary-light-dark"
+														class="text-[#0072CE] hover:text-[#005BA3] transition-colors"
 													>
 														View
 													</button>
 													<button
 														on:click={() => openReplay(trace.trace_id)}
-														class="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-500"
+														class="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-500 transition-colors"
 													>
 														Replay
 													</button>
@@ -445,8 +470,12 @@
 											</tr>
 										{:else}
 											<tr>
-												<td colspan="8" class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
-													No traces found.
+												<td colspan="9" class="px-6 py-12 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+													<svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+													</svg>
+													<p class="font-medium">No traces found.</p>
+													<p class="text-xs mt-2">Traces will appear here once agents start processing requests.</p>
 												</td>
 											</tr>
 										{/each}
@@ -665,16 +694,21 @@
 							</div>
 						</div>
 					{:else if activeTab === 'replay'}
-						<!-- Replay Tab -->
-						<div>
+						<!-- Replay Tab (AgentOps 스타일) -->
+						<div class="monitoring-page">
+							<!-- Page Title -->
+							<div class="mt-2 flex items-center gap-2 mb-6">
+								<span class="text-2xl font-medium" style="color: hsl(222.2, 44%, 14%);">Replay</span>
+							</div>
+
 							{#if replayTraceId}
-								<ReplayPlayer traceId={replayTraceId} />
+								<div class="ao-chart-container">
+									<ReplayPlayer traceId={replayTraceId} />
+								</div>
 							{:else}
-								<div
-									class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-12 backdrop-blur-sm shadow-sm text-center"
-								>
+								<div class="ao-chart-container p-12 text-center">
 									<svg
-										class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600"
+										class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -692,7 +726,7 @@
 											d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
 										/>
 									</svg>
-									<h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+									<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
 										No Replay Selected
 									</h3>
 									<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -702,21 +736,22 @@
 							{/if}
 						</div>
 					{:else if activeTab === 'analytics'}
-						<!-- Analytics Tab -->
-						<div class="space-y-6">
-							<!-- Performance Metrics -->
-							<div
-								class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-6 backdrop-blur-sm shadow-sm"
-							>
+						<!-- Analytics Tab (AgentOps 스타일) -->
+						<div class="space-y-6 monitoring-page">
+							<!-- Page Title -->
+							<div class="mt-2 flex items-center gap-2">
+								<span class="text-2xl font-medium" style="color: hsl(222.2, 44%, 14%);">Analytics</span>
+							</div>
+
+							<!-- Performance Metrics (AgentOps 스타일) -->
+							<div class="ao-chart-container">
 								<PerformanceChart {performanceData} title="Latency Distribution" />
 							</div>
 
-							<!-- Agent Flow Graph -->
+							<!-- Agent Flow Graph (AgentOps 스타일) -->
 							{#if agentFlowGraph}
-								<div
-									class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-6 backdrop-blur-sm shadow-sm"
-								>
-									<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+								<div class="ao-chart-container">
+									<h3 class="text-lg font-semibold mb-4" style="color: hsl(222.2, 44%, 14%);">
 										Agent Communication Flow
 									</h3>
 									<AgentFlowGraphComponent flowGraph={agentFlowGraph} />
