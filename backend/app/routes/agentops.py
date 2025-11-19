@@ -279,3 +279,34 @@ async def get_agent_flow_graph(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch agent flow graph: {str(e)}")
 
+
+@router.get("/agents/usage")
+async def get_agent_usage_stats(
+    project_id: str = Query(..., description="Project ID"),
+    start_time: datetime = Query(..., description="Start time (ISO 8601)"),
+    end_time: datetime = Query(..., description="End time (ISO 8601)")
+):
+    """
+    에이전트별 사용량 통계 조회.
+    
+    Returns:
+        [{
+            "agent_name": str,
+            "total_tokens": int,
+            "total_cost": float,
+            "event_count": int,
+            "avg_latency": float,
+            "error_count": int,
+            "success_rate": float
+        }]
+    """
+    try:
+        result = await agentops_adapter.get_agent_usage_stats(
+            project_id=project_id,
+            start_time=start_time,
+            end_time=end_time
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch agent usage stats: {str(e)}")
+

@@ -15,7 +15,8 @@ import type {
 	AgentFlowGraph,
 	TraceFilters,
 	ExportOptions,
-	ShareLink
+	ShareLink,
+	AgentUsageStats
 } from './types';
 
 const API_BASE_URL = 'http://localhost:8000/api/agentops';
@@ -333,3 +334,25 @@ export class AgentOpsWebSocket {
 
 // Singleton instance for convenience
 export const agentOpsWS = new AgentOpsWebSocket();
+
+// ============================================================================
+// Agent Usage Stats API
+// ============================================================================
+
+export async function getAgentUsageStats(params: {
+	project_id: string;
+	start_time: string;
+	end_time: string;
+}): Promise<AgentUsageStats[]> {
+	const queryParams = new URLSearchParams({
+		project_id: params.project_id,
+		start_time: params.start_time,
+		end_time: params.end_time
+	});
+
+	const response = await fetch(`${API_BASE_URL}/agents/usage?${queryParams}`);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch agent usage stats: ${response.statusText}`);
+	}
+	return response.json();
+}

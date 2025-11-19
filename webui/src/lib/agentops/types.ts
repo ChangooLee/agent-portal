@@ -256,3 +256,17 @@ export interface ShareLink {
 	expires_at: string;
 }
 
+// ============================================================================
+// Agent Usage Stats
+// ============================================================================
+
+export interface AgentUsageStats {
+	agent_name: string;
+	total_tokens: number;
+	total_cost: number;
+	event_count: number;
+	avg_latency: number;
+	error_count: number;
+	success_rate: number;
+}
+

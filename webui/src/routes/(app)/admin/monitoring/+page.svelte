@@ -8,6 +8,7 @@
 		getTokenUsage,
 		getPerformanceMetrics,
 		getAgentFlowGraph,
+		getAgentUsageStats,
 		agentOpsWS,
 		type Trace,
 		type Metrics
@@ -18,7 +19,8 @@
 		CostDataPoint,
 		TokenDataPoint,
 		PerformanceDataPoint,
-		AgentFlowGraph
+		AgentFlowGraph,
+		AgentUsageStats
 	} from '$lib/agentops/types';
 
 	// Import all new components
@@ -34,7 +36,7 @@
 	const i18n = getContext('i18n');
 
 	// Tab state
-	let activeTab: 'traces' | 'overview' | 'replay' | 'analytics' = 'traces';
+	let activeTab: 'traces' | 'overview' | 'replay' | 'analytics' = 'overview'; // 메인 화면: Overview
 	let loading = true;
 	let error: string | null = null;
 
@@ -53,6 +55,9 @@
 	let tokenData: TokenDataPoint[] = [];
 	let performanceData: PerformanceDataPoint[] = [];
 	let agentFlowGraph: AgentFlowGraph | null = null;
+	
+	// Agent Usage state
+	let agentUsageStats: AgentUsageStats[] = [];
 
 	// Filter state
 	let filters: TraceFilters = {
@@ -71,7 +76,7 @@
 	const projectId = 'default-project';
 
 	onMount(async () => {
-		// Connect WebSocket for real-time updates
+		// WebSocket 실시간 업데이트 (Loader.svelte 수정 후 안정화됨)
 		agentOpsWS.connect(projectId);
 		agentOpsWS.on('trace_new', handleNewTrace);
 		agentOpsWS.on('trace_update', handleTraceUpdate);
@@ -98,7 +103,7 @@
 			if (activeTab === 'traces') {
 				await loadTraces();
 			} else if (activeTab === 'overview') {
-				await Promise.all([loadMetrics(), loadCostTrend(), loadTokenUsage()]);
+				await Promise.all([loadMetrics(), loadCostTrend(), loadTokenUsage(), loadAgentUsageStats()]);
 			} else if (activeTab === 'analytics') {
 				await Promise.all([loadPerformanceMetrics(), loadAgentFlowGraph()]);
 			}
@@ -160,6 +165,14 @@
 
 	async function loadAgentFlowGraph() {
 		agentFlowGraph = await getAgentFlowGraph({
+			project_id: projectId,
+			start_time: filters.start_time,
+			end_time: filters.end_time
+		});
+	}
+	
+	async function loadAgentUsageStats() {
+		agentUsageStats = await getAgentUsageStats({
 			project_id: projectId,
 			start_time: filters.start_time,
 			end_time: filters.end_time
@@ -292,52 +305,52 @@
 				/>
 			{/if}
 
-			<!-- Tab Navigation -->
-			<div class="flex gap-2 overflow-x-auto">
-				<button
-					class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'traces'
-						? 'bg-[#0072CE] text-white shadow-sm'
-						: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
-					on:click={() => {
-						activeTab = 'traces';
-						loadData();
-					}}
-				>
-					📊 Traces
-				</button>
-				<button
-					class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'overview'
-						? 'bg-[#0072CE] text-white shadow-sm'
-						: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
-					on:click={() => {
-						activeTab = 'overview';
-						loadData();
-					}}
-				>
-					📈 Overview
-				</button>
-				<button
-					class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'replay'
-						? 'bg-[#0072CE] text-white shadow-sm'
-						: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
-					on:click={() => {
-						activeTab = 'replay';
-					}}
-				>
-					▶️ Replay
-				</button>
-				<button
-					class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'analytics'
-						? 'bg-[#0072CE] text-white shadow-sm'
-						: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
-					on:click={() => {
-						activeTab = 'analytics';
-						loadData();
-					}}
-				>
-					🎯 Analytics
-				</button>
-			</div>
+		<!-- Tab Navigation (AgentOps 순서: Overview → Analytics → Replay → Traces) -->
+		<div class="flex gap-2 overflow-x-auto">
+			<button
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'overview'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
+				on:click={() => {
+					activeTab = 'overview';
+					loadData();
+				}}
+			>
+				📈 Overview
+			</button>
+			<button
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'analytics'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
+				on:click={() => {
+					activeTab = 'analytics';
+					loadData();
+				}}
+			>
+				🎯 Analytics
+			</button>
+			<button
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'replay'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
+				on:click={() => {
+					activeTab = 'replay';
+				}}
+			>
+				▶️ Replay
+			</button>
+			<button
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'traces'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
+				on:click={() => {
+					activeTab = 'traces';
+					loadData();
+				}}
+			>
+				📊 Traces
+			</button>
+		</div>
 
 			<!-- Content Area -->
 			<div class="flex-1">
@@ -460,52 +473,271 @@
 							</div>
 						</div>
 					{:else if activeTab === 'overview'}
-						<!-- Overview Tab -->
+						<!-- Overview Tab: AgentOps 스타일 대시보드 -->
 						<div class="space-y-6">
-							<!-- Metrics Cards -->
-							{#if metrics}
-								<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+							<!-- Metrics Cards (AgentOps 스타일) -->
+							<!-- 빈 상태에서도 기본값(0)으로 표시 -->
+							<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+									<!-- Total Events/Traces -->
 									<div
-										class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 text-gray-900 dark:text-gray-100 shadow-sm backdrop-blur-sm p-6"
+										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
 									>
-										<div class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Traces</div>
-										<div class="text-3xl font-bold mt-2">{formatNumber(metrics.trace_count)}</div>
+										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
+										<div class="relative flex items-start justify-between">
+											<div class="flex-1">
+												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Events</p>
+												<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatNumber(metrics?.trace_count || 0)}</p>
+											</div>
+											<div class="flex-shrink-0">
+												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20">
+													<svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+													</svg>
+												</div>
+											</div>
+										</div>
 									</div>
+
+									<!-- Total Cost -->
 									<div
-										class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 text-gray-900 dark:text-gray-100 shadow-sm backdrop-blur-sm p-6"
+										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
 									>
-										<div class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Cost</div>
-										<div class="text-3xl font-bold mt-2">{formatCost(metrics.total_cost)}</div>
+										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl"></div>
+										<div class="relative flex items-start justify-between">
+											<div class="flex-1">
+												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Cost</p>
+												<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatCost(metrics?.total_cost || 0)}</p>
+											</div>
+											<div class="flex-shrink-0">
+												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-50 dark:bg-green-900/20">
+													<svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+													</svg>
+												</div>
+											</div>
+										</div>
 									</div>
+
+									<!-- Avg Latency -->
 									<div
-										class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 text-gray-900 dark:text-gray-100 shadow-sm backdrop-blur-sm p-6"
+										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
 									>
-										<div class="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Duration</div>
-										<div class="text-3xl font-bold mt-2">{formatDuration(metrics.avg_duration)}</div>
+										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-full blur-3xl"></div>
+										<div class="relative flex items-start justify-between">
+											<div class="flex-1">
+												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Avg Latency</p>
+												<p class="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatDuration(metrics?.avg_duration || 0)}</p>
+											</div>
+											<div class="flex-shrink-0">
+												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-900/20">
+													<svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+													</svg>
+												</div>
+											</div>
+										</div>
 									</div>
+
+									<!-- Error Rate -->
 									<div
-										class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 text-gray-900 dark:text-gray-100 shadow-sm backdrop-blur-sm p-6"
+										class="group relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg hover:shadow-xl transition-all duration-200"
 									>
-										<div class="text-sm font-medium text-gray-600 dark:text-gray-400">Error Count</div>
-										<div class="text-3xl font-bold mt-2 text-red-600 dark:text-red-400">
-											{metrics.error_count}
+										<div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+										<div class="relative flex items-start justify-between">
+											<div class="flex-1">
+												<p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Error Count</p>
+												<p class="text-3xl font-bold text-red-600 dark:text-red-400">{metrics?.error_count || 0}</p>
+												<p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+													{metrics?.trace_count ? (((metrics.error_count || 0) / metrics.trace_count) * 100).toFixed(1) : '0.0'}% error rate
+												</p>
+											</div>
+											<div class="flex-shrink-0">
+												<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20">
+													<svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+													</svg>
+												</div>
+											</div>
 										</div>
 									</div>
 								</div>
-							{/if}
+
+								<!-- Token Usage Metric (추가) -->
+								<div class="grid gap-6 md:grid-cols-3">
+									<!-- Total Tokens -->
+									<div
+										class="relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
+									>
+										<div class="flex items-center justify-between mb-4">
+											<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Token Usage</h3>
+											<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/20">
+												<svg class="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+												</svg>
+											</div>
+										</div>
+										<div class="space-y-2">
+											<div class="flex items-baseline gap-2">
+												<span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+													{formatNumber(metrics?.total_tokens || 0)}
+												</span>
+												<span class="text-sm text-gray-500 dark:text-gray-500">tokens</span>
+											</div>
+											<p class="text-xs text-gray-500 dark:text-gray-500">Total tokens processed</p>
+										</div>
+									</div>
+
+									<!-- Success Rate -->
+									<div
+										class="relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
+									>
+										<div class="flex items-center justify-between mb-4">
+											<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Success Rate</h3>
+											<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-900/20">
+												<svg class="h-5 w-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+												</svg>
+											</div>
+										</div>
+										<div class="space-y-2">
+											<div class="flex items-baseline gap-2">
+												<span class="text-2xl font-bold text-teal-600 dark:text-teal-400">
+													{metrics?.trace_count ? ((((metrics.trace_count || 0) - (metrics.error_count || 0)) / metrics.trace_count) * 100).toFixed(1) : '100.0'}%
+												</span>
+											</div>
+											<p class="text-xs text-gray-500 dark:text-gray-500">
+												{formatNumber((metrics?.trace_count || 0) - (metrics?.error_count || 0))} / {formatNumber(metrics?.trace_count || 0)} successful
+											</p>
+										</div>
+									</div>
+
+									<!-- Avg Cost per Request -->
+									<div
+										class="relative overflow-hidden rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
+									>
+										<div class="flex items-center justify-between mb-4">
+											<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Avg Cost/Request</h3>
+											<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+												<svg class="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+												</svg>
+											</div>
+										</div>
+										<div class="space-y-2">
+											<div class="flex items-baseline gap-2">
+												<span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+													{formatCost(metrics?.trace_count ? (metrics.total_cost || 0) / metrics.trace_count : 0)}
+												</span>
+											</div>
+											<p class="text-xs text-gray-500 dark:text-gray-500">Per event cost</p>
+										</div>
+									</div>
+								</div>
 
 							<!-- Charts -->
 							<div class="grid gap-6 lg:grid-cols-2">
 								<div
-									class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-6 backdrop-blur-sm shadow-sm"
+									class="rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
 								>
 									<CostChart {costData} title="Cost Trend (Last 7 Days)" interval="day" />
 								</div>
 								<div
-									class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-6 backdrop-blur-sm shadow-sm"
+									class="rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-6 shadow-lg"
 								>
 									<TokenChart {tokenData} title="Token Usage (Last 7 Days)" interval="day" />
 								</div>
+							</div>
+							
+							<!-- Agents Section -->
+							<div class="space-y-4">
+								<div class="flex items-center justify-between">
+									<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+										Agent Usage
+									</h2>
+									<span class="text-sm text-gray-500 dark:text-gray-400">
+										{agentUsageStats.length} agents
+									</span>
+								</div>
+								
+								{#if agentUsageStats.length === 0}
+									<div class="rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 p-12 shadow-lg text-center">
+										<svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+										</svg>
+										<p class="text-gray-600 dark:text-gray-400">No agents found</p>
+										<p class="text-sm text-gray-500 dark:text-gray-500 mt-2">
+											Agent usage data will appear here once agents start processing requests.
+										</p>
+									</div>
+								{:else}
+									<div class="rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
+										<div class="overflow-x-auto">
+											<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+												<thead class="bg-gray-50 dark:bg-gray-900">
+													<tr>
+														<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Agent Name
+														</th>
+														<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Events
+														</th>
+														<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Tokens
+														</th>
+														<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Cost
+														</th>
+														<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Avg Latency
+														</th>
+														<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Errors
+														</th>
+														<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Success Rate
+														</th>
+													</tr>
+												</thead>
+												<tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+													{#each agentUsageStats as agent}
+														<tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+															<td class="px-6 py-4 whitespace-nowrap">
+																<div class="flex items-center">
+																	<div class="flex-shrink-0 h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+																		<svg class="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+																		</svg>
+																	</div>
+																	<span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-100">{agent.agent_name}</span>
+																</div>
+															</td>
+															<td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
+																{formatNumber(agent.event_count)}
+															</td>
+															<td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
+																{formatNumber(agent.total_tokens)}
+															</td>
+															<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 dark:text-gray-100">
+																{formatCost(agent.total_cost)}
+															</td>
+															<td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-gray-100">
+																{formatDuration(agent.avg_latency)}
+															</td>
+															<td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+																<span class="text-red-600 dark:text-red-400">{agent.error_count}</span>
+															</td>
+															<td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+																<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {agent.success_rate >= 95 ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : agent.success_rate >= 80 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}">
+																	{agent.success_rate.toFixed(1)}%
+																</span>
+															</td>
+														</tr>
+													{/each}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								{/if}
 							</div>
 						</div>
 					{:else if activeTab === 'replay'}

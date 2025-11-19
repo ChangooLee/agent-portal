@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "local"  # local, development, production
     
+    # MariaDB
+    MARIADB_ROOT_PASSWORD: str = "rootpass"
+    MARIADB_DATABASE: str = "agent_portal"
+    
     # News Data
     # 로컬 PC: /Users/lchangoo/Workspace/mcp-naver-news/src/data
     # 개발 서버: 환경 변수로 설정 (NEWS_DATA_PATH_DEV)

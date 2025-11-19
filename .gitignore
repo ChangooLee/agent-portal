@@ -39,3 +39,11 @@ docker-compose.override.yml
 # Temporary files
 *.tmp
 *.temp
+
+# AgentOps submodule build artifacts
+external/agentops/node_modules/
+external/agentops/app/.next/
+external/agentops/app/out/
+external/agentops/__pycache__/
+external/agentops/dist/
+external/agentops/build/

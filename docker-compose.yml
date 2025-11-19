@@ -24,8 +24,8 @@ services:
     environment:
       - ENVIRONMENT=docker  # Docker 환경임을 명시
     volumes:
-      # 개발 중 로컬 파일 직접 마운트
-      - ./backend/app:/app/app:ro
+      # 개발 중 로컬 파일 직접 마운트 (주석 처리: agentops/agents 라우터 등록 문제)
+      # - ./backend/app:/app/app:ro
       # News data volume mount
       - /Users/lchangoo/Workspace/mcp-naver-news/src/data:/data/news:ro
     depends_on:

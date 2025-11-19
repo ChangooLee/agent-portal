@@ -37,6 +37,22 @@ export default {
 					light: '#e6f2ff',
 					dark: '#0052A3'
 				},
+				// AgentOps 스타일 색상 (MIT License - https://github.com/AgentOps-AI/agentops)
+				'agentops': {
+					primary: '#141B34', // Primary font color
+					'primary-muted': 'rgba(20, 27, 52, 0.74)', // Secondary font
+					icons: 'rgba(20, 27, 52, 0.68)', // Icons color
+					border: '#DEE0F4', // Border color
+					'icon-white': '#E1E2F2', // Font/Icon white
+					success: '#4BC498', // Success green
+					warning: '#EDD867', // Warning yellow
+					error: '#E65A7E', // Error red
+					'action': '#4BC498', // Action event color
+					'llm-call': 'rgba(36, 0, 255, 0.7)', // LLM Call event color
+					'tool': 'rgba(237, 216, 103, 0.8)', // Tool event color
+					'bg-tint': '#E1E3F2', // Background tint (hover state)
+					'primary-container': '#EBECF8', // Primary container
+				},
 				// Glassmorphism 색상 팔레트
 				glass: {
 					light: 'rgba(255, 255, 255, 0.8)',

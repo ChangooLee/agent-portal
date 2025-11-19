@@ -139,3 +139,10 @@ def calculate_cost(result: Dict) -> float:
 
 ---
 
+
+## 2025-11-19: Auto-extracted from commit 313689a
+
+**내용**: SQL 쿼리 작성 전 반드시 실제 스키마 확인 필수 (DESCRIBE table_name;)
+**커밋**: 313689a
+
+---
