@@ -40,6 +40,9 @@ docker-compose.override.yml
 *.tmp
 *.temp
 
+# Backup directory (임시 문서 백업)
+.backup/
+
 # AgentOps submodule build artifacts
 external/agentops/node_modules/
 external/agentops/app/.next/

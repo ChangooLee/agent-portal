@@ -465,6 +465,120 @@ git add . && git commit -m "..."
 
 ---
 
+## 🧹 임시 문서 관리
+
+### 임시 문서 정의
+
+개발 중 의사결정, 분석, 디버깅을 위해 생성하는 일시적인 문서:
+
+**임시 문서 패턴**:
+- `IMPLEMENTATION_*.md` — 구현 방법 결정 문서
+- `TEMP_*.md` — 임시 메모
+- `TODO_*.md` — 작업 목록 (TODO 앱이 아닌 경우)
+- `DRAFT_*.md` — 초안 문서
+- `WIP_*.md` — 작업 중 문서
+- `DECISION_*.md` — 의사결정 문서
+- `ANALYSIS_*.md` — 분석 문서
+- `DEBUG_*.md` — 디버깅 메모
+- `*_TEMP.md`, `*_WIP.md`, `*_DRAFT.md` — 접미사 형태
+
+### 자동 체크 (Git Hook)
+
+**커밋 시 자동 체크**:
+```bash
+# pre-commit hook이 자동으로 임시 문서 체크
+git add .
+git commit -m "..."
+
+# 출력 예시:
+# 🧹 임시 문서 발견: 2개
+#    - IMPLEMENTATION_CLARIFICATION.md
+#    - TEMP_NOTES.md
+#    권장: ./scripts/clean-temp-docs.sh 실행하여 정리
+```
+
+### 수동 정리
+
+#### 인터랙티브 모드 (권장)
+
+각 파일을 검증하고 사용자가 직접 선택:
+
+```bash
+./scripts/clean-temp-docs.sh
+
+# 각 파일마다 선택 옵션:
+# - k (보존): 파일 유지
+# - b (백업+삭제): .backup/temp-docs/에 백업 후 삭제
+# - s (건너뛰기): 아무 작업 안 함
+```
+
+#### 자동 모드
+
+중요 키워드가 있거나 최근 수정된 파일은 보존, 나머지는 자동 백업:
+
+```bash
+./scripts/clean-temp-docs.sh --auto
+```
+
+### 백업 및 복원
+
+**백업 위치**:
+```
+.backup/temp-docs/YYYYMMDD-HHMMSS/
+└─ <원본 파일 경로 구조 유지>
+```
+
+**복원 방법**:
+```bash
+# 특정 파일 복원
+mv .backup/temp-docs/20251119-143022/IMPLEMENTATION_CLARIFICATION.md ./
+
+# 전체 복원
+cp -r .backup/temp-docs/20251119-143022/* ./
+```
+
+**백업 정리** (30일 이상):
+```bash
+find .backup/temp-docs -type d -mtime +30 -exec rm -rf {} \;
+```
+
+### 중요 문서 보호
+
+다음 키워드가 있는 문서는 자동으로 보존:
+- `CRITICAL`
+- `IMPORTANT`
+- `DO NOT DELETE`
+- `KEEP THIS`
+- `PRODUCTION`
+- `LICENSE`
+
+**중요 문서 표시 예시**:
+```markdown
+# Implementation Plan
+
+<!-- IMPORTANT: 프로덕션 배포 전 반드시 검토 필요 -->
+
+...
+```
+
+### 체크리스트
+
+**임시 문서 생성 시**:
+- [ ] 명확한 파일명 사용 (`IMPLEMENTATION_*`, `TEMP_*` 등)
+- [ ] 중요 문서는 키워드 표시 (`IMPORTANT`, `KEEP THIS`)
+- [ ] 작업 완료 후 정리 (commit 전)
+
+**작업 완료 후**:
+- [ ] `./scripts/clean-temp-docs.sh` 실행
+- [ ] 필요 시 핵심 문서로 내용 통합
+- [ ] 백업 확인 (`.backup/temp-docs/`)
+
+**주간 리뷰 시**:
+- [ ] 임시 문서 정리 확인
+- [ ] 오래된 백업 삭제 (30일 이상)
+
+---
+
 ## 📊 주간 리뷰
 
 **매주 금요일** (자동 알림):

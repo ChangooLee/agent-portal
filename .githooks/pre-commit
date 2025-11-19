@@ -75,6 +75,18 @@ if [ -n "$SVELTE_FILES" ]; then
     fi
 fi
 
+# 6. 임시 문서 체크
+TEMP_PATTERNS="IMPLEMENTATION_.*\.md|TEMP_.*\.md|TODO_.*\.md|DRAFT_.*\.md|WIP_.*\.md|DECISION_.*\.md|ANALYSIS_.*\.md|DEBUG_.*\.md|.*_TEMP\.md|.*_WIP\.md|.*_DRAFT\.md"
+TEMP_DOCS=$(find . -maxdepth 3 -type f \( -name "IMPLEMENTATION_*.md" -o -name "TEMP_*.md" -o -name "TODO_*.md" -o -name "DRAFT_*.md" -o -name "WIP_*.md" -o -name "DECISION_*.md" -o -name "ANALYSIS_*.md" -o -name "DEBUG_*.md" -o -name "*_TEMP.md" -o -name "*_WIP.md" -o -name "*_DRAFT.md" \) 2>/dev/null | grep -v -E '(node_modules|\.git|dist|build|\.next|langflow|flowise|autogen|perplexica|litellm|external)')
+
+if [ -n "$TEMP_DOCS" ]; then
+    TEMP_COUNT=$(echo "$TEMP_DOCS" | wc -l | tr -d ' ')
+    echo "  🧹 임시 문서 발견: ${TEMP_COUNT}개"
+    echo "$TEMP_DOCS" | sed 's/^/     - /'
+    echo "     권장: ./scripts/clean-temp-docs.sh 실행하여 정리"
+    echo "     자동 정리: ./scripts/clean-temp-docs.sh --auto"
+fi
+
 echo "✅ Pre-commit checks completed"
 exit 0
 

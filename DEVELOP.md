@@ -1441,6 +1441,112 @@ docker-compose down -v
 docker-compose up -d mariadb
 ```
 
+### C. 임시 문서 관리
+
+개발 중 생성된 임시 문서를 정리하는 유틸리티:
+
+#### 자동 체크 (Git Hook)
+
+커밋 시 임시 문서가 자동으로 체크됩니다:
+
+```bash
+git add .
+git commit -m "..."
+
+# 출력 예시:
+# 🧹 임시 문서 발견: 2개
+#    - IMPLEMENTATION_CLARIFICATION.md
+#    - TEMP_NOTES.md
+#    권장: ./scripts/clean-temp-docs.sh 실행하여 정리
+```
+
+#### 수동 정리
+
+**인터랙티브 모드** (각 파일 검증):
+
+```bash
+./scripts/clean-temp-docs.sh
+
+# 각 파일마다:
+# - 파일 정보 표시 (크기, 수정일, 미리보기)
+# - 중요 키워드 체크 (CRITICAL, IMPORTANT 등)
+# - 최근 수정 여부 확인 (7일 이내)
+# - 선택 옵션:
+#   k = 보존
+#   b = 백업+삭제 (.backup/temp-docs/에 백업)
+#   s = 건너뛰기
+```
+
+**자동 모드** (중요 문서는 보존, 나머지 자동 백업):
+
+```bash
+./scripts/clean-temp-docs.sh --auto
+```
+
+#### 임시 문서 패턴
+
+다음 패턴의 파일이 자동으로 감지됩니다:
+
+- `IMPLEMENTATION_*.md` — 구현 방법 결정 문서
+- `TEMP_*.md` — 임시 메모
+- `TODO_*.md` — 작업 목록
+- `DRAFT_*.md` — 초안 문서
+- `WIP_*.md` — 작업 중 문서
+- `DECISION_*.md` — 의사결정 문서
+- `ANALYSIS_*.md` — 분석 문서
+- `DEBUG_*.md` — 디버깅 메모
+- `*_TEMP.md`, `*_WIP.md`, `*_DRAFT.md` — 접미사 형태
+
+#### 백업 및 복원
+
+**백업 위치**: `.backup/temp-docs/YYYYMMDD-HHMMSS/`
+
+**복원 방법**:
+
+```bash
+# 특정 파일 복원
+mv .backup/temp-docs/20251119-143022/IMPLEMENTATION_CLARIFICATION.md ./
+
+# 전체 복원
+cp -r .backup/temp-docs/20251119-143022/* ./
+```
+
+**오래된 백업 정리** (30일 이상):
+
+```bash
+find .backup/temp-docs -type d -mtime +30 -exec rm -rf {} \;
+```
+
+#### 중요 문서 보호
+
+다음 키워드가 있는 문서는 자동으로 보존됩니다:
+
+- `CRITICAL`
+- `IMPORTANT`
+- `DO NOT DELETE`
+- `KEEP THIS`
+- `PRODUCTION`
+- `LICENSE`
+
+**중요 문서 표시 예시**:
+
+```markdown
+# Implementation Plan
+
+<!-- IMPORTANT: 프로덕션 배포 전 반드시 검토 필요 -->
+
+...
+```
+
+#### 권장 워크플로우
+
+1. **개발 중**: 자유롭게 임시 문서 생성
+2. **작업 완료 후**: `./scripts/clean-temp-docs.sh` 실행
+3. **커밋 전**: 임시 문서 정리 확인
+4. **주간 리뷰**: 오래된 백업 삭제
+
+**상세 가이드**: [.cursorrules](../.cursorrules#임시-문서-관리) 참조
+
 ---
 
 **문서 버전**: 1.0  
