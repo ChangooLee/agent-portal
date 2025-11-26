@@ -633,10 +633,83 @@
 				? 'opacity-20'
 				: ''}"
 		>
+			<!-- 에이전트 섹션 (상단 고정) -->
+			<Folder
+				collapsible={true}
+				className="px-2 mt-2"
+				name="에이전트"
+				bind:open={showAgentsSection}
+				on:change={(e) => {
+					localStorage.setItem('showAgentsSection', e.detail.toString());
+				}}
+				dragAndDrop={false}
+				onAdd={() => {
+					goto('/agent');
+					if ($mobile) {
+						showSidebar.set(false);
+					}
+				}}
+				onAddLabel="새 에이전트"
+			>
+				{#if agentsLoading}
+					<div class="w-full flex justify-center py-2 text-xs animate-pulse items-center gap-2">
+						<Spinner className="size-4" />
+						<div>Loading...</div>
+					</div>
+				{:else if search ? filteredAgents.length === 0 : agents.length === 0}
+					<div class="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+						<p class="mb-2">등록된 에이전트가 없습니다</p>
+						<a
+							href="/agent"
+							class="text-[#0072CE] hover:underline text-xs"
+							on:click={() => {
+								if ($mobile) {
+									showSidebar.set(false);
+								}
+							}}
+						>
+							에이전트 빌더에서 만들기 →
+						</a>
+					</div>
+				{:else}
+					<div class="flex flex-col">
+						{#each (search ? filteredAgents : agents) as agent (agent.id)}
+							<a
+								href="/agent"
+								class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
+								on:click={() => {
+									if ($mobile) {
+										showSidebar.set(false);
+									}
+								}}
+							>
+								<div class="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
+										/>
+									</svg>
+								</div>
+								<span class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">{agent.name}</span>
+							</a>
+						{/each}
+					</div>
+				{/if}
+			</Folder>
+
 			<!-- 채팅 섹션 -->
 			<Folder
 				collapsible={true}
-				className="px-2 mt-0.5"
+				className="px-2 mt-2"
 				name={$i18n.t('Chats')}
 				bind:open={showChatsSection}
 				on:change={(e) => {
@@ -870,79 +943,6 @@
 						{/if}
 					</div>
 				</div>
-			</Folder>
-
-			<!-- 에이전트 섹션 -->
-			<Folder
-				collapsible={true}
-				className="px-2 mt-0.5"
-				name="에이전트"
-				bind:open={showAgentsSection}
-				on:change={(e) => {
-					localStorage.setItem('showAgentsSection', e.detail.toString());
-				}}
-				dragAndDrop={false}
-				onAdd={() => {
-					goto('/agent');
-					if ($mobile) {
-						showSidebar.set(false);
-					}
-				}}
-				onAddLabel="새 에이전트"
-			>
-				{#if agentsLoading}
-					<div class="w-full flex justify-center py-2 text-xs animate-pulse items-center gap-2">
-						<Spinner className="size-4" />
-						<div>Loading...</div>
-					</div>
-				{:else if search ? filteredAgents.length === 0 : agents.length === 0}
-					<div class="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-						<p class="mb-2">등록된 에이전트가 없습니다</p>
-						<a
-							href="/agent"
-							class="text-[#0072CE] hover:underline text-xs"
-							on:click={() => {
-								if ($mobile) {
-									showSidebar.set(false);
-								}
-							}}
-						>
-							에이전트 빌더에서 만들기 →
-						</a>
-					</div>
-				{:else}
-					<div class="flex flex-col">
-						{#each (search ? filteredAgents : agents) as agent (agent.id)}
-							<a
-								href="/agent"
-								class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
-								on:click={() => {
-									if ($mobile) {
-										showSidebar.set(false);
-									}
-								}}
-							>
-								<div class="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke-width="1.5"
-										stroke="currentColor"
-										class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
-										/>
-									</svg>
-								</div>
-								<span class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">{agent.name}</span>
-							</a>
-						{/each}
-					</div>
-				{/if}
 			</Folder>
 
 			<!-- 채널 섹션 -->
