@@ -598,23 +598,32 @@
 				on:click={async () => {
 					selectedChatId = null;
 					
-					// 마지막 사용 모델 또는 기본 모델을 sessionStorage에 저장
+					// 마지막 사용 모델을 sessionStorage에 저장 (initNewChat에서 사용)
 					const lastModels = localStorage.getItem('lastUsedModels');
 					if (lastModels) {
-						sessionStorage.setItem('selectedModels', lastModels);
-					} else if ($models.length > 0) {
-						// 마지막 사용 모델이 없으면 첫 번째 모델 선택
-						sessionStorage.setItem('selectedModels', JSON.stringify([$models[0].id]));
+						try {
+							const parsed = JSON.parse(lastModels);
+							if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] !== '') {
+								sessionStorage.setItem('selectedModels', lastModels);
+							}
+						} catch (e) {
+							// JSON 파싱 실패 시 무시
+						}
 					}
 					
 					await goto('/');
-					const newChatButton = document.getElementById('new-chat-button');
+					
+					// 페이지 로드 후 new-chat-button 클릭
+					// 약간의 지연을 주어 Chat 컴포넌트가 마운트될 시간을 확보
 					setTimeout(() => {
-						newChatButton?.click();
+						const newChatButton = document.getElementById('new-chat-button');
+						if (newChatButton) {
+							newChatButton.click();
+						}
 						if ($mobile) {
 							showSidebar.set(false);
 						}
-					}, 0);
+					}, 100);
 				}}
 				draggable="false"
 			>

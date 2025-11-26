@@ -699,12 +699,34 @@
 			}
 		}
 
+		// $models가 로드될 때까지 대기 (최대 3초)
+		let waitCount = 0;
+		while ($models.length === 0 && waitCount < 30) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			waitCount++;
+		}
+
 		selectedModels = selectedModels.filter((modelId) => $models.map((m) => m.id).includes(modelId));
 		if (selectedModels.length === 0 || (selectedModels.length === 1 && selectedModels[0] === '')) {
 			if ($models.length > 0) {
 				selectedModels = [$models[0].id];
 			} else {
-				selectedModels = [''];
+				// 모델이 여전히 없으면 localStorage에서 마지막 사용 모델 확인
+				const lastModels = localStorage.getItem('lastUsedModels');
+				if (lastModels) {
+					try {
+						const parsed = JSON.parse(lastModels);
+						if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] !== '') {
+							selectedModels = parsed;
+						} else {
+							selectedModels = [''];
+						}
+					} catch (e) {
+						selectedModels = [''];
+					}
+				} else {
+					selectedModels = [''];
+				}
 			}
 		}
 
