@@ -175,13 +175,23 @@ export interface AgentFlowGraph {
 export interface AgentNode {
 	id: string;
 	label: string;
-	type: 'agent' | 'tool' | 'llm';
+	type: 'agent' | 'tool' | 'llm' | 'stage';
 	position: { x: number; y: number };
 	data: {
-		agent_name: string;
-		total_calls: number;
+		agent_name?: string;
+		stage_name?: string;
+		call_count?: number;
+		total_calls?: number;
 		total_cost: number;
-		avg_duration: number;
+		avg_duration?: number;
+		avg_latency_ms?: number;
+		total_tokens?: number;
+		prompt_tokens?: number;
+		completion_tokens?: number;
+		error_count?: number;
+		guardrail_applied?: number;
+		color?: string;
+		is_guardrail?: boolean;
 	};
 }
 
@@ -192,8 +202,10 @@ export interface AgentEdge {
 	label?: string;
 	animated?: boolean;
 	data: {
-		message_count: number;
-		total_tokens: number;
+		message_count?: number;
+		total_tokens?: number;
+		label?: string;
+		blocked?: boolean;
 	};
 }
 

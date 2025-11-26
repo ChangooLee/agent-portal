@@ -1,6 +1,6 @@
 # Agent Portal — 진행 상황
 
-> 최종 업데이트: 2025-11-12
+> 최종 업데이트: 2025-11-26
 
 ---
 
@@ -9,7 +9,7 @@
 | 단계 | 상태 | 완료율 | 비고 |
 |------|------|--------|------|
 | **Stage 1** | ✅ 완료 | 100% | 인프라 및 기본 설정 (1-2주) |
-| **Stage 2** | ⚠️ 부분 완료 | 40% | 코드 완료, 환경 설정 및 통합 테스트 필요 (2-3주) |
+| **Stage 2** | ✅ 완료 | 95% | LiteLLM + AgentOps + Grafana 모니터링 (2-3주) |
 | **Stage 3** | 🚧 진행 중 | 35% | 에이전트 빌더 (3-4주) |
 | **Stage 4** | ❌ 미시작 | 0% | MCP SSE + Kong (2-3주) |
 | **Stage 5** | ❌ 미시작 | 0% | 데이터베이스 (3-4주) |
@@ -18,7 +18,7 @@
 | **Stage 8** | ❌ 미시작 | 0% | 포털 통합 (2-3주) |
 | **Stage 9** | ❌ 미시작 | 0% | 가드레일 (2-3주) |
 
-**전체 진행률**: 약 **20%** (Stage 1 완료, Stage 3 진행 중)  
+**전체 진행률**: 약 **25%** (Stage 1-2 완료, Stage 3 진행 중)  
 **총 예상 개발 기간**: 약 **22-30주** (5.5-7.5개월)
 
 ---
@@ -55,31 +55,39 @@
 
 ---
 
-## ⚠️ Stage 2: Chat 엔드포인트 연동 및 모니터링 (부분 완료)
+## ✅ Stage 2: Chat 엔드포인트 연동 및 모니터링 (완료)
 
-**목표**: FastAPI BFF 생성, LiteLLM 연동, Langfuse/Helicone 모니터링
+**목표**: FastAPI BFF 생성, LiteLLM 연동, AgentOps self-hosted 모니터링, Langfuse 품질 관리
 
 **완료 항목**:
 - ✅ Backend BFF 기본 구조 생성
 - ✅ Chat API 구현 (`/chat/stream`, `/chat/completions`)
-- ✅ Observability API 구현 (`/observability/health`, `/observability/usage`, `/observability/models`)
-- ✅ LiteLLM 서비스 레이어 구현
-- ✅ Langfuse 서비스 레이어 구현
-- ✅ Embed 프록시 구현 (`/embed/langfuse`, `/embed/helicone`, `/embed/kong-admin`)
-- ✅ Monitoring 페이지 추가 (관리자 > 사용량)
-- ✅ Gateway 페이지 추가 (관리자 > Gateway)
-- ✅ MCP/가드레일/리더보드 placeholder 페이지 추가
-- ✅ `config/litellm.yaml` 설정 파일 생성
-- ✅ `config/kong.yml` 설정 파일 생성
+- ✅ LiteLLM 통합 (OpenRouter 연동)
+- ✅ Embed 프록시 구현 (`/proxy/langfuse`, `/proxy/grafana`)
+- ✅ Monitoring 페이지 구현 (관리자 > Monitoring)
+  - ✅ AgentOps 대시보드 UI 재구현 (Overview, Traces, Analytics, Replay)
+  - ✅ Grafana 탭 임베드 (인프라 메트릭)
+- ✅ Langfuse 페이지 구현 (관리자 > Langfuse, iframe 임베드)
+- ✅ AgentOps self-hosted 통합
+  - ✅ AgentOps API (8003), Dashboard (3006)
+  - ✅ ClickHouse 데이터 저장 (OTEL Collector → ClickHouse)
+  - ✅ Backend BFF → ClickHouse 직접 조회 (`agentops_adapter.py`)
+  - ✅ LiteLLM OTEL callback 연동
+- ✅ 모니터링 스택 구축
+  - ✅ OTEL Collector (4317/4318)
+  - ✅ Prometheus (9090)
+  - ✅ Grafana (3005)
+- ✅ Agent Flow Graph + Guardrail 모니터링
+  - ✅ 실제 호출 흐름 시각화: Client → Input Guardrail → LiteLLM → LLM Provider → Output Guardrail
+  - ✅ 각 단계별 통계: call_count, avg_latency_ms, total_tokens, total_cost
+  - ✅ Guardrail Stats API (`/api/agentops/analytics/guardrails`)
+  - ✅ 가드레일 노드 시각적 구분 (🛡️ 아이콘, 둥근 모서리)
+- ✅ 개발 환경 설정 가이드 (`docs/MONITORING_SETUP.md`, `docs/AGENTOPS_SETUP.md`)
 
-**미완성 항목** (Critical):
-- ❌ 서비스 통합 테스트 (docker-compose up으로 전체 스택 실행)
-- ❌ LiteLLM 실제 연동 테스트
-- ❌ Langfuse 실제 연동 테스트
-- ❌ 프론트엔드-백엔드 데이터 연동
+**미완성 항목**:
 - ❌ 인증/인가 시스템 구현 (보안 취약점)
-- ❌ 테스트 코드 작성 (pytest)
-- ❌ 환경변수 설정 가이드
+- ❌ E2E 테스트 코드 작성 (pytest)
+- ❌ Langfuse 트레이싱 활성화 (선택적)
 
 **코드 위치**:
 - Backend BFF: `backend/app/`

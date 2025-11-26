@@ -52,6 +52,17 @@ function initNetworkProxyFromEnv() {
 async function downloadPackages() {
 	console.log('Setting up pyodide + micropip');
 
+	// Check if pyodide-lock.json already exists (cached)
+	try {
+		const lockFile = await readFile('static/pyodide/pyodide-lock.json');
+		if (lockFile) {
+			console.log('✅ Pyodide packages already cached, skipping download.');
+			return;
+		}
+	} catch (e) {
+		console.log('Pyodide lock file not found, proceeding with download.');
+	}
+
 	let pyodide;
 	try {
 		pyodide = await loadPyodide({

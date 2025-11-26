@@ -9,8 +9,13 @@ services:
     ports:
       - "3000:8080"
     env_file: .env
+    environment:
+      - ENABLE_OPENAI_API=true
+      - OPENAI_API_BASE_URLS=http://litellm:4000/v1
+      - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
     depends_on:
       - backend
+      - litellm
     volumes:
       - ./webui/plugins:/app/plugins
       - ./webui/overrides:/app/overrides
@@ -23,6 +28,12 @@ services:
     env_file: .env
     environment:
       - ENVIRONMENT=docker  # Docker 환경임을 명시
+      # ClickHouse 연결 설정 (Docker 내부 네트워크 사용)
+      - CLICKHOUSE_HOST=agentops-clickhouse
+      - CLICKHOUSE_HTTP_PORT=8123
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=password
+      - CLICKHOUSE_DATABASE=otel_2
     volumes:
       # 개발 중 로컬 파일 직접 마운트 (주석 처리: agentops/agents 라우터 등록 문제)
       # - ./backend/app:/app/app:ro
@@ -38,6 +49,8 @@ services:
       - langfuse
       - helicone
       - kong
+      - prometheus
+      # - otel-collector  # Removed: using agentops-otel-collector instead
 
   # Agent Runtime
   # langgraph:
@@ -45,24 +58,110 @@ services:
   #   ports:
   #     - "8123:8123"
 
+  # LiteLLM Database (PostgreSQL)
+  litellm-postgres:
+    image: postgres:16
+    container_name: litellm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:-litellm_secure_password}
+      POSTGRES_DB: litellm_db
+    volumes:
+      - litellm_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Host 5433 to avoid conflict
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # LLM Gateway
   litellm:
-    image: ghcr.io/berriai/litellm:main
-    command: ["--config", "/app/config.yaml"]
-    volumes:
-      - "./config/litellm.yaml:/app/config.yaml"
+    build: ./litellm
     ports:
       - "4000:4000"
+    env_file: .env
+    environment:
+      # Database connection
+      - DATABASE_URL=postgresql://litellm:${LITELLM_DB_PASSWORD:-litellm_secure_password}@litellm-postgres:5432/litellm_db
+      # Master Key (must start with sk-)
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      # Salt Key (for API key encryption, never change after first use)
+      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
+      # LLM Provider Keys
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # OpenTelemetry integration (LiteLLM specific)
+      - OTEL_EXPORTER=otlp_http
+      - OTEL_ENDPOINT=http://agentops-otel-collector:4318
+      # Standard OTEL environment variables
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://agentops-otel-collector:4318
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://agentops-otel-collector:4318/v1/traces
+      - OTEL_SERVICE_NAME=litellm-proxy
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+    depends_on:
+      litellm-postgres:
+        condition: service_healthy
+      agentops-otel-collector:
+        condition: service_started
 
   # Observability
+  # otel-collector:
+  #   image: otel/opentelemetry-collector:latest
+  #   ports:
+  #     - "4317:4317"  # OTLP gRPC receiver
+  #     - "4318:4318"  # OTLP HTTP receiver
+  #   volumes:
+  #     - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   depends_on:
+  #     - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3005:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./config/grafana-provisioning:/etc/grafana/provisioning/dashboards
+      - ./config/grafana-dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
   langfuse:
-    image: langfuse/langfuse:latest
+    image: langfuse/langfuse:2
     ports:
       - "3003:3000"
+    env_file: .env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@langfuse-db:5432/postgres
+      - DATABASE_URL=${LANGFUSE_DATABASE_URL:-postgresql://postgres:postgres@langfuse-db:5432/postgres}
+      - NEXTAUTH_SECRET=mysecret
+      - NEXTAUTH_URL=http://localhost:3003
+      - SALT=mysalt
     depends_on:
-      - langfuse-db
+      langfuse-db:
+        condition: service_healthy
 
   langfuse-db:
     image: postgres:15-alpine
@@ -70,6 +169,11 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - langfuse_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   helicone:
     image: helicone/helicone:latest
@@ -219,6 +323,46 @@ services:
     volumes:
       - minio:/data
 
+  # AgentOps ClickHouse (for OTLP traces)
+  agentops-clickhouse:
+    image: clickhouse/clickhouse-server:24.12
+    container_name: agentops-clickhouse
+    ports:
+      - "9002:9000"
+      - "8124:8123"
+    environment:
+      - CLICKHOUSE_DB=${AGENTOPS_CLICKHOUSE_DATABASE:-otel_2}
+      - CLICKHOUSE_USER=${AGENTOPS_CLICKHOUSE_USERNAME:-default}
+      - CLICKHOUSE_PASSWORD=${AGENTOPS_CLICKHOUSE_PASSWORD:-password}
+    volumes:
+      - agentops_clickhouse:/var/lib/clickhouse
+      # Migrations disabled - OTLP Collector will create tables automatically
+      # - ./external/agentops/app/clickhouse/migrations:/docker-entrypoint-initdb.d
+
+  # AgentOps OTLP Collector (receives traces from LiteLLM)
+  agentops-otel-collector:
+    build:
+      context: ./external/agentops/app/opentelemetry-collector
+      dockerfile: Dockerfile
+    container_name: agentops-otel-collector
+    ports:
+      - '4317:4317' # otlp grpc receiver
+      - '4318:4318' # otlp http receiver
+    environment:
+      - CLICKHOUSE_ENDPOINT=http://agentops-clickhouse:8123
+      - CLICKHOUSE_USERNAME=${AGENTOPS_CLICKHOUSE_USERNAME:-default}
+      - CLICKHOUSE_PASSWORD=${AGENTOPS_CLICKHOUSE_PASSWORD:-password}
+      - CLICKHOUSE_DATABASE=${AGENTOPS_CLICKHOUSE_DATABASE:-otel_2}
+      - LOGS_TABLE_NAME=${AGENTOPS_LOGS_TABLE_NAME:-otel_logs}
+      - TRACES_TABLE_NAME=${AGENTOPS_TRACES_TABLE_NAME:-otel_traces}
+      - CLICKHOUSE_TTL=${AGENTOPS_CLICKHOUSE_TTL:-72h}
+      - CLICKHOUSE_TIMEOUT=${AGENTOPS_CLICKHOUSE_TIMEOUT:-10s}
+      - JWT_SECRET=${JWT_SECRET_KEY:-super-secret-jwt-token-with-at-least-32-characters-long}
+      # Default project ID for LiteLLM traces (self-hosted mode)
+      - AGENTOPS_PROJECT_ID=${AGENTOPS_PROJECT_ID:-8c59e361-3727-418c-bc68-086b69f7598b}
+    depends_on:
+      - agentops-clickhouse
+
   # 추가 포털
   open-notebook:
     build: ./open-notebook
@@ -244,8 +388,12 @@ services:
     environment:
       - LANGFLOW_HOST=0.0.0.0
       - LANGFLOW_PORT=7860
+      - LANGFLOW_DEFAULT_OPENAI_BASE_URL=http://litellm:4000/v1
+      - LANGFLOW_DEFAULT_OPENAI_API_KEY=${LITELLM_MASTER_KEY}
     volumes:
       - langflow_data:/data
+    depends_on:
+      - litellm
 
   flowise:
     image: flowiseai/flowise:latest
@@ -253,8 +401,12 @@ services:
       - "3002:3000"
     environment:
       - PORT=3000
+      - OPENAI_API_BASE=http://litellm:4000/v1
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
     volumes:
       - flowise_data:/root/.flowise
+    depends_on:
+      - litellm
 
   autogen-studio:
     build: ./autogen-studio
@@ -297,10 +449,14 @@ volumes:
   chromadb:
   redis:
   minio:
+  agentops_clickhouse:
   langfuse_db:
   helicone_db:
   kong_db:
   konga_db:
   langflow_data:
   flowise_data:
+  prometheus_data:
+  grafana_data:
+  litellm_pg_data:
 

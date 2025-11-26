@@ -442,7 +442,7 @@
 	
 	<!-- Content Section -->
 	<div class="flex-1 px-6 py-4">
-		<div class="max-w-7xl mx-auto">
+		<div class="w-full">
 			<!-- Search Bar -->
 			<div class="mb-6">
 				<div class="relative max-w-2xl mx-auto">

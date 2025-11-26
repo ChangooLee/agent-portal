@@ -2,6 +2,22 @@
 
 Agent Portal의 UI 개발에서 학습한 패턴과 방법을 기록합니다.
 
+## 2025-11-19: 상단 네비게이션 메뉴 페이지 전체 너비 사용
+
+**요청**: 상단 네비게이션 메뉴의 모든 메뉴 내부 화면의 가로 사이즈를 full로 채우기
+**적용**: 모든 주요 페이지의 `max-w-*` 제한 제거
+**변경 내용**:
+- `/today`: `max-w-7xl` → `w-full`
+- `/agent`: `max-w-[1400px]` → `w-full`
+- `/report`: `max-w-[1200px]` → `w-full`
+- `/notebook`: `max-w-[1200px]` → `w-full`
+- `/search`: `max-w-[1200px]` → `w-full`
+- `/usage`: `max-w-4xl` → `w-full`
+
+**재사용**: 새 페이지 생성 시 컨텐츠 영역에 `max-w-*` 제한 사용하지 않고 `w-full` 사용
+
+---
+
 ## 형식
 
 ```markdown

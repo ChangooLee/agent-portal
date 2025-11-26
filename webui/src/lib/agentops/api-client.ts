@@ -356,3 +356,48 @@ export async function getAgentUsageStats(params: {
 	}
 	return response.json();
 }
+
+// ============================================================================
+// Guardrail Stats API
+// ============================================================================
+
+export interface GuardrailStats {
+	total_requests: number;
+	guardrail_applied: number;
+	blocked_requests: number;
+	block_rate: number;
+	input_guardrail: {
+		checks: number;
+		blocks: number;
+		block_rate: number;
+	};
+	output_guardrail: {
+		checks: number;
+		blocks: number;
+		block_rate: number;
+	};
+	token_usage: {
+		prompt: number;
+		completion: number;
+		total: number;
+	};
+	avg_latency_ms: number;
+}
+
+export async function getGuardrailStats(params: {
+	project_id: string;
+	start_time: string;
+	end_time: string;
+}): Promise<GuardrailStats> {
+	const queryParams = new URLSearchParams({
+		project_id: params.project_id,
+		start_time: params.start_time,
+		end_time: params.end_time
+	});
+
+	const response = await fetch(`${API_BASE_URL}/analytics/guardrails?${queryParams}`);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch guardrail stats: ${response.statusText}`);
+	}
+	return response.json();
+}

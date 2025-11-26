@@ -8,6 +8,59 @@
 
 ## 0. 철학 및 원칙
 
+### 0.0 테스트 확인 후 완료 판정 (CRITICAL)
+
+**핵심 원칙**: 코드 작성은 시작일 뿐, **실제 테스트 수행 후에만 완료**입니다.
+
+**작업 완료 기준**:
+- ❌ 코드 작성만으로는 완료 아님
+- ❌ "재시작했습니다"만으로는 완료 아님
+- ✅ **실제 테스트 수행 + 결과 확인** 후 완료
+
+**테스트 절차** (반드시 순서대로):
+```bash
+# 1. Backend API 테스트
+curl -s "http://localhost:8000/api/endpoint" | python3 -m json.tool
+
+# 2. 에러 확인
+# - 200 OK: 정상
+# - 500/503/504: 에러 로그 확인 필요
+# - Connection refused: 서비스 미실행
+
+# 3. Frontend 테스트
+# - 브라우저 접속: http://localhost:3001
+# - 브라우저 콘솔 에러 확인 (F12)
+# - 실제 화면 동작 확인
+
+# 4. 결과 판정
+# ✅ 모든 테스트 통과 → TODO completed
+# ❌ 에러 발생 → 수정 후 1번부터 재시도
+```
+
+**금지 사항**:
+- ❌ "구현 완료했습니다" → 테스트 없이 선언
+- ❌ "서버 재시작 완료" → API 응답 확인 없음
+- ❌ "TODO 완료!" → 브라우저 확인 누락
+- ❌ 추측 기반 완료 판정 ("아마 동작할 것")
+
+**예시 (올바른 완료)**:
+```
+1. AgentOps Adapter 수정 완료
+2. Backend 재시작 완료
+3. ✅ 테스트 수행:
+   $ curl http://localhost:8000/api/agentops/metrics?...
+   {"trace_count": 10, "total_cost": 1.23}
+4. ✅ 브라우저 확인: 차트 정상 표시
+5. ✅ TODO completed
+```
+
+**예시 (잘못된 완료)**:
+```
+1. AgentOps Adapter 수정 완료
+2. Backend 재시작 완료
+3. ❌ "구현 완료했습니다!" → 테스트 누락
+```
+
 ### 0.1 "Shoot and Forget" — 결과 중심 위임
 
 **핵심 원칙**: AI 에이전트에게 **충분한 컨텍스트와 명확한 목표**를 제공한 후, 중간 과정보다는 **최종 PR의 품질**로 평가합니다.
@@ -262,6 +315,167 @@ except Exception as e:
 - **AgentOps**: 에이전트 실행 모니터링, 비용 추적, 세션 리플레이
 - **함께 사용**: 상호 보완적 (Langfuse는 체인 레벨, AgentOps는 에이전트 레벨)
 
+### 3.2.1 Agent Flow Graph 및 Guardrail 모니터링
+
+**Agent Flow Graph**:
+실제 LLM/Agent 호출 흐름을 시각화합니다:
+```
+[Client Request] → [Input Guardrail] → [LiteLLM Proxy] → [LLM Provider] → [Output Guardrail]
+                                              ↓
+                                       [Agent Builder]
+                                              ↓
+                                         [MCP Tools]
+```
+
+각 단계별 정보:
+- `call_count`: 호출 횟수
+- `avg_latency_ms`: 평균 레이턴시 (밀리초)
+- `total_tokens`: 총 토큰 사용량
+- `total_cost`: 총 비용
+- `error_count`: 에러/차단 횟수
+- `guardrail_applied`: 가드레일 적용 횟수
+
+**가드레일 유형**:
+| 유형 | 설명 | 감지 방법 |
+|---|---|---|
+| Input Guardrail | PII 감지, 프롬프트 인젝션 방지 | `proxy_pre_call` 스팬 |
+| Output Guardrail | 유해 콘텐츠 필터링, 형식 검증 | `batch_write_to_db` 스팬 |
+| Cost Guardrail | 비용 제한 초과 | 토큰 사용량 모니터링 |
+| Rate Limit | 요청 빈도 제한 | 요청 횟수 모니터링 |
+
+**Guardrail Stats API 사용법**:
+```python
+from app.services.agentops_adapter import agentops_adapter
+
+# 가드레일 통계 조회
+guardrail_stats = await agentops_adapter.get_guardrail_stats(
+    project_id="project-uuid",
+    start_time=datetime.now() - timedelta(days=7),
+    end_time=datetime.now()
+)
+
+# 결과 예시:
+# {
+#     "total_requests": 35,
+#     "blocked_requests": 3,
+#     "block_rate": 8.57,
+#     "input_guardrail": {"checks": 8, "blocks": 0, "block_rate": 0.0},
+#     "output_guardrail": {"checks": 8, "blocks": 0, "block_rate": 0.0},
+#     "token_usage": {"prompt": 129, "completion": 340, "total": 469},
+#     "avg_latency_ms": 753.6
+# }
+```
+
+**프론트엔드에서 가드레일 시각화**:
+- 가드레일 노드는 🛡️ 아이콘과 둥근 모서리로 구분
+- 차단된 엣지는 빨간색 점선으로 표시
+- Analytics 탭의 Agent Communication Flow에서 확인 가능
+
+### 3.3 AgentOps Self-Hosted API 통합 (CRITICAL)
+
+> **중요**: AgentOps는 필수 서비스입니다. 서버가 없으면 명확한 에러를 반환합니다.
+
+**API 키 기반 JWT 인증**:
+- AgentOps는 API 키 기반 JWT Bearer 토큰 인증을 사용합니다
+- 세션 쿠키 인증은 대시보드 UI 전용입니다 (API 호출에 사용 금지)
+- API 키는 `scripts/setup-agentops-apikey.sh`로 생성합니다
+
+**환경 변수 설정**:
+```bash
+# .env 파일에 추가
+AGENTOPS_API_URL=http://agentops-api:8003
+AGENTOPS_API_KEY=12345678-1234-1234-1234-123456789abc  # UUID 형식
+```
+
+**AgentOps Adapter 사용법**:
+```python
+from app.services.agentops_adapter import agentops_adapter
+
+# 트레이스 목록 조회
+traces = await agentops_adapter.get_traces(
+    project_id="project-uuid",
+    start_time=datetime.now() - timedelta(days=7),
+    end_time=datetime.now(),
+    page=1,
+    size=20
+)
+
+# 메트릭 조회
+metrics = await agentops_adapter.get_metrics(
+    project_id="project-uuid",
+    start_time=datetime.now() - timedelta(days=7),
+    end_time=datetime.now()
+)
+
+# 비용 추이 조회
+cost_trend = await agentops_adapter.get_cost_trend(
+    project_id="project-uuid",
+    start_time=datetime.now() - timedelta(days=7),
+    end_time=datetime.now(),
+    interval='day'
+)
+```
+
+**v4 엔드포인트 사용 (CRITICAL)**:
+- ✅ **올바른 경로**: `/v4/traces?project_id=<id>`
+- ❌ **잘못된 경로**: `/v4/traces/list/{project_id}` (구식 경로)
+- ✅ **올바른 인증**: `Authorization: Bearer <jwt_token>`
+- ❌ **잘못된 인증**: `Cookie: session_id=<cookie>` (대시보드 UI 전용)
+
+**에러 처리 원칙 (CRITICAL)**:
+- ✅ **올바른 방법**: 명확한 HTTPException 발생
+  ```python
+  if not self.api_key:
+      raise HTTPException(
+          status_code=500,
+          detail="AgentOps API 키가 설정되지 않았습니다."
+      )
+  ```
+- ❌ **잘못된 방법**: Graceful degradation (빈 데이터 반환)
+  ```python
+  # ❌ 절대 하지 말 것
+  if not self.api_key:
+      return {"traces": [], "total": 0}
+  ```
+
+**프론트엔드 에러 처리**:
+- API 에러 시 "No data available" 메시지 표시
+- 차트/그래프 컴포넌트는 빈 데이터를 자동으로 처리
+- 전역 에러 메시지로 사용자에게 알림
+
+**예시 (프론트엔드)**:
+```typescript
+try {
+    metrics = await getMetrics({
+        project_id: projectId,
+        start_time: filters.start_time,
+        end_time: filters.end_time
+    });
+} catch (e: any) {
+    console.error('Failed to load metrics:', e);
+    // 빈 메트릭 유지, 차트는 "No data available" 표시
+    throw e;  // 전역 에러 핸들러로 전달
+}
+```
+
+**AgentOps API 키 생성**:
+```bash
+# 자동 스크립트 (권장)
+./scripts/setup-agentops-apikey.sh
+
+# 수동 생성 (필요 시)
+# 1. AgentOps 대시보드 접속 (http://localhost:3006)
+# 2. 프로젝트 설정 → API Keys → Create New Key
+# 3. .env 파일에 AGENTOPS_API_KEY 추가
+# 4. 백엔드 재시작
+```
+
+**트러블슈팅**:
+- `503 Service Unavailable`: AgentOps 서버가 실행 중이지 않음 → `docker-compose up -d agentops-api` 실행
+- `500 API 키 미설정`: `.env`에 `AGENTOPS_API_KEY` 추가 → `docker-compose restart backend`
+- `403 Forbidden`: API 키가 유효하지 않음 → `scripts/setup-agentops-apikey.sh` 재실행
+- `400 Bad Request`: API 키 형식 오류 (UUID 형식이어야 함)
+
 ---
 
 ## 4. 자주 발생하는 문제 및 해결 (가드레일)
@@ -425,7 +639,39 @@ except Exception as e:
 
 ---
 
-## 8. 관련 문서
+## 8. 문서 관리 가이드
+
+### 문서 생성 전 필수 체크리스트
+
+- [ ] 기존 문서 검색 완료
+- [ ] 통합 가능성 검토
+- [ ] 카테고리 분류 확인
+- [ ] 파일명 규칙 준수
+
+### 문서 검색 방법
+
+**키워드 검색**:
+```bash
+grep -r "키워드" .cursor/learnings/ docs/ .cursor/rules/
+```
+
+**파일명 검색**:
+```bash
+find . -name "*주제*.md"
+```
+
+### 통합 vs 신규 판단 기준
+
+| 상황 | 판단 | 행동 |
+|------|------|------|
+| 같은 기능/컴포넌트 | 통합 | 기존 파일에 섹션 추가 |
+| 새로운 기술/도구 | 신규 | 새 파일 생성 (예: `litellm-integration.md`) |
+| 임시 분석 | 임시 | `TEMP_*.md` (완료 후 정리) |
+| 같은 카테고리 | 통합 | 기존 카테고리 파일에 추가 |
+
+---
+
+## 9. 관련 문서
 
 - [README.md](./README.md) - 프로젝트 개요 및 시작 가이드
 - [DEVELOP.md](./DEVELOP.md) - 개발 가이드 및 단계별 계획
@@ -434,7 +680,7 @@ except Exception as e:
 
 ---
 
-## 9. 단계별 완료 체크리스트
+## 10. 단계별 완료 체크리스트
 
 ### Stage 1: 인프라 및 기본 설정
 - [x] Kong Gateway 설정 및 실행

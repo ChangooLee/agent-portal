@@ -155,10 +155,12 @@ graph TB
         DOC_SVC["Document Service<br/>Port: 8080<br/>OCR/청킹/임베딩<br/>unstructured+PaddleOCR"]
     end
 
-    subgraph "Observability"
-        LANGFUSE["Langfuse<br/>Port: 3001<br/>LLM 체인 추적<br/>세션/툴콜"]
-        AGENTOPS["AgentOps<br/>(SDK)<br/>에이전트 실행 모니터링<br/>세션 리플레이"]
-        HELICONE["Helicone<br/>Port: 8787<br/>비용/지연 분석<br/>프롬프트 비교"]
+    subgraph "Observability & Monitoring"
+        PROMETHEUS["Prometheus<br/>Port: 9090<br/>메트릭 수집<br/>LiteLLM 스크랩"]
+        GRAFANA["Grafana<br/>Port: 3005<br/>대시보드<br/>실시간 모니터링"]
+        OTEL["OTEL Collector<br/>Port: 4317/4318<br/>메트릭 집계<br/>Prometheus Export"]
+        AGENTOPS["AgentOps<br/>(SDK Optional)<br/>LLM 호출 추적<br/>세션 리플레이"]
+        LANGFUSE["Langfuse<br/>Port: 3003<br/>(Optional)<br/>Agent 품질 관리"]
     end
 
     subgraph "Data Layer"
@@ -616,16 +618,37 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 
 ## 관측성 (Observability)
 
-* **Langfuse**: LLM 체인/툴콜/세션 추적 — 관리자 패널 **임베드 카드**
-* **AgentOps**: 에이전트 실행 모니터링, 세션 리플레이, 비용 추적 — Python SDK 통합
-* **Helicone**: **비용/지연/성공률/프롬프트 비교** — LiteLLM 앞/뒤 프록시
+### 모니터링 아키텍처
+
+Agent Portal은 **두 가지 독립적인 모니터링 스택**을 사용합니다:
+
+#### 1. LLM 모니터링: LiteLLM ↔ AgentOps (직접 연결)
+- **AgentOps Self-Hosted**: LLM 호출 추적, 세션 리플레이, 비용 계산
+- **완전 폐쇄망 지원**: 내부 인스턴스 + 내부 API 키 발급
+- **설정 가이드**: [docs/AGENTOPS_SETUP.md](./docs/AGENTOPS_SETUP.md)
+- **시작**: `./scripts/start-agentops.sh`
+
+#### 2. 인프라 모니터링: Prometheus + Grafana
+- **Prometheus**: vLLM, 애플리케이션 메트릭 수집
+- **Grafana**: 실시간 대시보드 시각화
+- **설정 가이드**: [docs/MONITORING_SETUP.md](./docs/MONITORING_SETUP.md)
+
+#### 3. Agent 품질 관리: Langfuse (선택적)
+- **Langfuse**: LLM 체인 추적, 프롬프트 관리, A/B 테스트
+- **관리자 전용**: `/admin/langfuse` iframe 임베드
+
+### 관측성 도구별 역할
+
+* **AgentOps**: 에이전트 실행 모니터링, 세션 리플레이, 비용 추적 — **LiteLLM SDK 직접 연결**
+* **Langfuse**: LLM 체인/툴콜/세션 추적 — 관리자 패널 **임베드 카드** (선택적)
+* **Helicone**: **비용/지연/성공률/프롬프트 비교** — LiteLLM 앞/뒤 프록시 (선택적)
+* **Prometheus + Grafana**: 인프라 메트릭 수집 및 시각화
 * **(옵션) OTEL → SigNoz/OpenObserve**: FastAPI/LiteLLM/MCP 경로 지연·에러율
-* **예산/경영 대시보드**: Superset/Metabase 임베드(월별 비용/예산/위반 히트맵)
 
 **관측성 스택 역할 분담**:
-- **Langfuse**: LLM 체인 레벨 추적 (프롬프트, 응답, 토큰 수)
-- **AgentOps**: 에이전트 레벨 추적 (세션, 액션, 비용, 리플레이)
-- **Helicone**: 프록시 레벨 추적 (지연, 성공률, 비용 비교)
+- **AgentOps**: 에이전트 레벨 추적 (세션, 액션, 비용, 리플레이) — **Self-hosted 필수**
+- **Langfuse**: LLM 체인 레벨 추적 (프롬프트, 응답, 토큰 수) — **선택적, 품질 관리용**
+- **Prometheus/Grafana**: 인프라 레벨 추적 (vLLM, 애플리케이션 메트릭)
 
 ---
 

@@ -372,21 +372,35 @@ export const generateOpenAIChatCompletion = async (
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify(body)
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			error = `${err?.detail ?? err}`;
-			return null;
-		});
+	}).catch((err) => {
+		error = `${err?.detail ?? err}`;
+		return null;
+	});
+
+	// ⚠️ CRITICAL: 스트리밍 응답 (text/event-stream)은 Response 객체 그대로 반환
+	// 프론트엔드에서 res.body를 createOpenAITextStream()으로 전달
+	if (res && res.ok) {
+		const contentType = res.headers.get('content-type') || res.headers.get('Content-Type') || '';
+		if (contentType.includes('text/event-stream')) {
+			return res; // ✅ SSE: Response 객체 반환
+		}
+	}
+
+	// 비스트리밍 응답: JSON 파싱
+	const data = await res?.json().catch((err) => {
+		error = `Failed to parse response: ${err}`;
+		return null;
+	});
+
+	if (!res || !res.ok) {
+		error = data?.detail || 'Request failed';
+	}
 
 	if (error) {
 		throw error;
 	}
 
-	return res;
+	return data;
 };
 
 export const synthesizeOpenAISpeech = async (

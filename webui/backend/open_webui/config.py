@@ -1665,8 +1665,25 @@ CHROMA_DATA_PATH = f"{DATA_DIR}/vector_db"
 if VECTOR_DB == "chroma":
     import chromadb
 
-    CHROMA_TENANT = os.environ.get("CHROMA_TENANT", chromadb.DEFAULT_TENANT)
-    CHROMA_DATABASE = os.environ.get("CHROMA_DATABASE", chromadb.DEFAULT_DATABASE)
+    def _normalize_chroma_identifier(value: str | None, fallback: str) -> str:
+        """
+        Keeps backward compatibility with older .env files that still set
+        CHROMA_TENANT/CHROMA_DATABASE to the legacy string "default".
+        Modern Chroma releases expect "default_tenant"/"default_database";
+        hitting the wrong identifier prevents the backend from booting.
+        """
+
+        normalized = (value or "").strip()
+        if normalized in ("", "default"):
+            return fallback
+        return normalized
+
+    CHROMA_TENANT = _normalize_chroma_identifier(
+        os.environ.get("CHROMA_TENANT"), chromadb.DEFAULT_TENANT
+    )
+    CHROMA_DATABASE = _normalize_chroma_identifier(
+        os.environ.get("CHROMA_DATABASE"), chromadb.DEFAULT_DATABASE
+    )
     CHROMA_HTTP_HOST = os.environ.get("CHROMA_HTTP_HOST", "")
     CHROMA_HTTP_PORT = int(os.environ.get("CHROMA_HTTP_PORT", "8000"))
     CHROMA_CLIENT_AUTH_PROVIDER = os.environ.get("CHROMA_CLIENT_AUTH_PROVIDER", "")

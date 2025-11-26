@@ -24,7 +24,7 @@
 		: ''} max-w-full"
 >
 	<div class="flex-1 overflow-y-auto p-8">
-		<div class="max-w-4xl mx-auto text-center">
+		<div class="w-full text-center">
 			<p class="text-gray-600">리다이렉트 중...</p>
 		</div>
 	</div>

@@ -284,10 +284,11 @@
 					<h1 class="text-3xl lg:text-4xl font-extrabold leading-snug mb-4 text-white">
 						{heroSets[heroSetIndex].title}
 					</h1>
-					<p class="text-lg lg:text-xl opacity-90 max-w-2xl mx-auto text-white">
-						{heroSets[heroSetIndex].text[0]}<br />
-						{heroSets[heroSetIndex].text[1]}
-					</p>
+				<p class="text-lg lg:text-xl opacity-90 max-w-2xl mx-auto text-white">
+					{heroSets[heroSetIndex].text[0]}<br />
+					{heroSets[heroSetIndex].text[1]}
+				</p>
+				</div>
 			</div>
 
 			<!-- Login Form -->

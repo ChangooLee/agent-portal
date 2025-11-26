@@ -76,7 +76,8 @@
 	// Replay state
 	let replayTraceId: string | null = null;
 
-	const projectId = 'default-project';
+	// AgentOps Self-Hosted project ID (ClickHouse에 저장된 project_id와 일치해야 함)
+	const projectId = '8c59e361-3727-418c-bc68-086b69f7598b';
 
 	onMount(async () => {
 		// WebSocket 실시간 업데이트 (Loader.svelte 수정 후 안정화됨)
@@ -237,6 +238,8 @@
 	}
 
 	function formatCost(cost: number): string {
+		if (cost === 0) return '$0.000000';
+		if (cost < 0.01) return `$${cost.toFixed(6)}`;
 		return `$${cost.toFixed(4)}`;
 	}
 
@@ -308,7 +311,7 @@
 				/>
 			{/if}
 
-		<!-- Tab Navigation (AgentOps 순서: Overview → Analytics → Replay → Traces) -->
+		<!-- Tab Navigation (순서: Overview → Analytics → Traces → Replay) -->
 		<div class="flex gap-2 overflow-x-auto">
 			<button
 				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'overview'
@@ -333,16 +336,6 @@
 				🎯 Analytics
 			</button>
 			<button
-				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'replay'
-					? 'bg-[#0072CE] text-white shadow-sm'
-					: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
-				on:click={() => {
-					activeTab = 'replay';
-				}}
-			>
-				▶️ Replay
-			</button>
-			<button
 				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'traces'
 					? 'bg-[#0072CE] text-white shadow-sm'
 					: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
@@ -352,6 +345,16 @@
 				}}
 			>
 				📊 Traces
+			</button>
+			<button
+				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'replay'
+					? 'bg-[#0072CE] text-white shadow-sm'
+					: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}"
+				on:click={() => {
+					activeTab = 'replay';
+				}}
+			>
+				▶️ Replay
 			</button>
 		</div>
 
@@ -396,8 +399,8 @@
 											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Span</th>
 											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
 											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Duration</th>
+											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Tokens</th>
 											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Cost</th>
-											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Spans</th>
 											<th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Errors</th>
 											<th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
 										</tr>
@@ -418,12 +421,10 @@
 													{trace.span_name}
 												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-													{#if trace.error_count === 0}
-														<span class="text-green-500">OK</span>
-													{:else if trace.error_count > 0}
+													{#if Number(trace.error_count) > 0}
 														<span class="text-red-500">ERROR</span>
 													{:else}
-														<span class="text-yellow-500">UNSET</span>
+														<span class="text-green-500">OK</span>
 													{/if}
 												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
@@ -438,11 +439,17 @@
 														<span>{formatDuration(trace.duration)}</span>
 													</div>
 												</td>
+												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+													{#if trace.prompt_tokens || trace.completion_tokens}
+														<span class="text-blue-600 dark:text-blue-400">{trace.prompt_tokens || 0}</span>
+														<span class="text-gray-400 mx-1">/</span>
+														<span class="text-green-600 dark:text-green-400">{trace.completion_tokens || 0}</span>
+													{:else}
+														<span class="text-gray-400">-</span>
+													{/if}
+												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
 													{formatCost(trace.total_cost)}
-												</td>
-												<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-													{trace.span_count}
 												</td>
 												<td class="px-6 py-4 whitespace-nowrap text-sm">
 													{#if trace.error_count > 0}
@@ -470,7 +477,7 @@
 											</tr>
 										{:else}
 											<tr>
-												<td colspan="9" class="px-6 py-12 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+												<td colspan="8" class="px-6 py-12 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
 													<svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 													</svg>
@@ -513,7 +520,7 @@
 							</div>
 
 							<!-- Metrics Cards (AgentOps 스타일 - 간결하고 정제된 디자인) -->
-							<div class="grid gap-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+							<div class="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
 								<!-- Total Cost -->
 								<div class="ao-metric-card-container">
 									<div class="ao-metric-card">
@@ -530,17 +537,33 @@
 									</div>
 								</div>
 
-								<!-- Total Events -->
+								<!-- LLM Calls -->
 								<div class="ao-metric-card-container">
 									<div class="ao-metric-card">
 										<div class="ao-metric-card-header">
 											<div class="ao-metric-card-title">
-												<span>Total Events</span>
+												<span>🤖 LLM Calls</span>
 											</div>
 										</div>
 										<div class="ao-metric-card-content">
-											<div class="ao-metric-card-value">
-												{formatNumber(metrics?.trace_count || 0)}
+											<div class="ao-metric-card-value text-blue-600 dark:text-blue-400">
+												{formatNumber(metrics?.llm_call_count || 0)}
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- Agent Calls -->
+								<div class="ao-metric-card-container">
+									<div class="ao-metric-card">
+										<div class="ao-metric-card-header">
+											<div class="ao-metric-card-title">
+												<span>🔧 Agent Calls</span>
+											</div>
+										</div>
+										<div class="ao-metric-card-content">
+											<div class="ao-metric-card-value text-green-600 dark:text-green-400">
+												{formatNumber(metrics?.agent_call_count || 0)}
 											</div>
 										</div>
 									</div>

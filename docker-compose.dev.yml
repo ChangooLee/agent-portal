@@ -9,6 +9,13 @@ services:
     build:
       context: ./webui
       dockerfile: Dockerfile.dev
+    # 메모리 제한 설정 (Vite + Svelte 컴파일용)
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
     volumes:
       # 소스 코드 실시간 마운트 (Hot reload)
       - ./webui:/app
@@ -23,11 +30,18 @@ services:
       - NODE_ENV=development
       - PORT=8080
       - DOCKER_ENV=true  # Docker 환경임을 명시 (Vite 프록시 설정용)
+      # RAG 기능 비활성화 (빠른 기동)
+      - RAG_EMBEDDING_ENGINE=openai
+      - RAG_EMBEDDING_MODEL=text-embedding-3-small
+      - ENABLE_RAG_WEB_SEARCH=false
+      - ENABLE_RAG_HYBRID_SEARCH=false
+      # Node.js 메모리 제한 증가 (Vite 빌드 시 OOM 방지)
+      - NODE_OPTIONS=--max-old-space-size=4096
     ports:
       - "3001:3001"  # Vite dev server 포트 (프론트엔드) - 3000 포트 충돌로 3001 사용
       - "8080:8080"  # 백엔드 API 포트 (내부용)
-    # 포트 충돌 시 강제 재시작
-    restart: unless-stopped
+    # 개발 모드에서는 자동 재시작 비활성화 (OOM 시 무한 재시작 방지)
+    restart: "no"
     # dev-start.sh가 프론트엔드와 백엔드를 함께 실행
     command: bash dev-start.sh
     # 개발 모드에서는 depends_on 제거하여 독립 실행 가능

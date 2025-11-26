@@ -310,3 +310,41 @@ async def get_agent_usage_stats(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch agent usage stats: {str(e)}")
 
+
+@router.get("/analytics/guardrails")
+async def get_guardrail_stats(
+    project_id: str = Query(..., description="Project ID"),
+    start_time: datetime = Query(..., description="Start time (ISO 8601)"),
+    end_time: datetime = Query(..., description="End time (ISO 8601)")
+):
+    """
+    가드레일 통계 조회.
+    
+    가드레일 유형:
+    - Input Guardrail: 입력 검증 (PII 감지, 프롬프트 인젝션 방지)
+    - Output Guardrail: 출력 검증 (유해 콘텐츠 필터링, 형식 검증)
+    - Cost Guardrail: 비용 제한 초과
+    - Rate Limit: 요청 빈도 제한
+    
+    Returns:
+        {
+            "total_requests": int,
+            "guardrail_applied": int,
+            "blocked_requests": int,
+            "block_rate": float,
+            "input_guardrail": {"checks": int, "blocks": int, "block_rate": float},
+            "output_guardrail": {"checks": int, "blocks": int, "block_rate": float},
+            "token_usage": {"prompt": int, "completion": int, "total": int},
+            "avg_latency_ms": float
+        }
+    """
+    try:
+        result = await agentops_adapter.get_guardrail_stats(
+            project_id=project_id,
+            start_time=start_time,
+            end_time=end_time
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch guardrail stats: {str(e)}")
+

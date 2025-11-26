@@ -186,6 +186,15 @@ cat webui/.skills/ui-patterns.json | jq '.buttonPatterns'
    " >> .cursor/learnings/api-patterns.md
    ```
 
+5. **기존 프로젝트 문서 검토**:
+   ```bash
+   # 관련 문서 먼저 확인
+   grep -r "주제" .cursor/learnings/ docs/
+   
+   # 유사한 문제 해결 사례
+   cat .cursor/learnings/bug-fixes.md | grep -A 10 "키워드"
+   ```
+
 ---
 
 ## 전략 3: 코드베이스 조사

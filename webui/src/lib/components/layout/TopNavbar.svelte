@@ -9,6 +9,7 @@
 	} from '$lib/stores';
 
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 
 	import ModelSelector from '../chat/ModelSelector.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
@@ -33,9 +34,9 @@
 		selectedModels = [$models[0].id];
 	}
 
-	const initNewChat = () => {
+	const initNewChat = async () => {
 		chatId.set('');
-		window.location.href = '/';
+		await goto('/', { replaceState: false, noScroll: false, keepFocus: false, invalidateAll: true });
 	};
 </script>
 

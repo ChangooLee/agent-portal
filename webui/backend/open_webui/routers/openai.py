@@ -685,7 +685,7 @@ async def generate_chat_completion(
             convert_logit_bias_input_to_json(payload["logit_bias"])
         )
 
-    payload = json.dumps(payload)
+    # Note: payload remains as dict for aiohttp's json parameter
 
     r = None
     session = None
@@ -700,10 +700,9 @@ async def generate_chat_completion(
         r = await session.request(
             method="POST",
             url=f"{url}/chat/completions",
-            data=payload,
+            json=payload,
             headers={
                 "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
                 **(
                     {
                         "HTTP-Referer": "https://openwebui.com/",
@@ -725,8 +724,9 @@ async def generate_chat_completion(
             },
         )
 
-        # Check if response is SSE
-        if "text/event-stream" in r.headers.get("Content-Type", ""):
+        # Check if response is SSE (case-insensitive header check)
+        content_type = r.headers.get("content-type", "") or r.headers.get("Content-Type", "")
+        if "text/event-stream" in content_type:
             streaming = True
             return StreamingResponse(
                 r.content,

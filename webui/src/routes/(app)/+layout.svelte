@@ -335,15 +335,15 @@
 
 	<Sidebar />
 
-	<div class="flex-1 flex flex-col h-screen max-h-screen overflow-y-auto">
+	<div class="flex-1 flex flex-col h-screen max-h-screen">
 		{#if !$page.url.pathname.startsWith('/admin')}
-			<TopNavbar />
+			<TopNavbar class="flex-shrink-0" />
 		{/if}
 			
-			{#if loaded}
-				<main class="flex-1">
-					<slot />
-				</main>
+		{#if loaded}
+			<main class="flex-1 {$page.url.pathname.startsWith('/c/') || $page.url.pathname === '/' ? 'overflow-hidden' : 'overflow-y-auto'}">
+				<slot />
+			</main>
 			{:else}
 				<div class="w-full flex-1 flex items-center justify-center py-12">
 					<Spinner />

@@ -31,8 +31,13 @@ class Settings(BaseSettings):
     
     # LiteLLM
     LITELLM_HOST: str = "http://litellm:4000"
+    LITELLM_MASTER_KEY: str = "sk-1234"
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    
+    # AgentOps (Self-hosted API)
+    AGENTOPS_API_URL: str = "http://host.docker.internal:8003"  # Docker 외부 AgentOps API
+    AGENTOPS_API_KEY: str = ""  # UUID 형식의 API 키 (scripts/setup-agentops-apikey.sh로 생성)
     
     # Default workspace filter
     DEFAULT_WORKSPACE_FILTER: str = "ws_default"

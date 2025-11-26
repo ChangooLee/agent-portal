@@ -57,21 +57,28 @@ export default defineConfig({
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true
 			},
-			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
-			'/api': {
-				target: 'http://localhost:8080',
+			// AgentOps API → FastAPI BFF (포트 8000)
+			'/api/agentops': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true
 			},
+			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
+		// ⚠️ CRITICAL: Docker 환경에서는 localhost (컨테이너 내부 Uvicorn)
+			'/api': {
+			target: 'http://localhost:8080',
+				changeOrigin: true,
+				ws: true
+			},
 			'/ollama': {
-				target: 'http://localhost:8080',
+			target: 'http://localhost:8080',
 				changeOrigin: true
 			},
 			'/openai': {
-				target: 'http://localhost:8080',
+			target: 'http://localhost:8080',
 				changeOrigin: true
 			},
 			'/health': {
-				target: 'http://localhost:8080',
+			target: 'http://localhost:8080',
 				changeOrigin: true
 			}
 		},

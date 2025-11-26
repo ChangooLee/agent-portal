@@ -451,7 +451,7 @@
 			</div>
 		</div>
 
-	<div class="{transparentBackground ? 'bg-transparent' : 'bg-white'} ">
+	<div class="bg-transparent">
 		<input
 			bind:this={filesInputElement}
 			bind:files={inputFiles}
@@ -502,7 +502,7 @@
 							}}
 						>
 						<div
-							class="flex-1 flex flex-col relative w-full rounded-3xl px-1 dark:text-gray-100 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-gray-200/30 dark:border-gray-700/30 hover:bg-white/50 dark:hover:bg-gray-800/50 focus-within:bg-white/50 dark:focus-within:bg-gray-800/50 hover:shadow-lg focus-within:shadow-lg transition-all duration-300 ease-out"
+							class="flex-1 flex flex-col relative w-full rounded-3xl px-1 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300/50 dark:border-gray-600/50 hover:border-gray-400/70 dark:hover:border-gray-500/70 focus-within:border-[#0072CE] dark:focus-within:border-[#0072CE] hover:shadow-md focus-within:shadow-lg transition-all duration-300 ease-out"
 							dir={$settings?.chatDirection ?? 'auto'}
 						>
 								{#if files.length > 0}
@@ -597,7 +597,7 @@
 								<div class="px-2.5">
 									{#if $settings?.richTextInput ?? true}
 										<div
-											class="scrollbar-hidden text-left bg-transparent dark:text-gray-100 outline-hidden w-full pt-3 px-1 resize-none h-fit max-h-80 overflow-auto"
+											class="scrollbar-hidden text-left bg-transparent dark:text-gray-100 outline-hidden w-full py-2.5 px-1 resize-none h-fit max-h-80 overflow-auto"
 											id="chat-input-container"
 										>
 											<RichTextInput
@@ -1026,7 +1026,7 @@
 									{/if}
 								</div>
 
-								<div class=" flex justify-between mt-1 mb-2.5 mx-0.5 max-w-full" dir="ltr">
+								<div class=" flex justify-between mt-1.5 mb-2.5 mx-0.5 max-w-full" dir="ltr">
 									<div class="ml-1 self-end flex items-center flex-1 max-w-[80%] gap-0.5">
 										<InputMenu
 											bind:selectedToolIds

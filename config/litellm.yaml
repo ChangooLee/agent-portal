@@ -2,33 +2,25 @@
 # LLM Gateway 설정 - 다양한 모델을 통합 관리
 
 model_list:
-  # OpenAI Models
+  # OpenRouter Models (Primary)
+  - model_name: qwen-235b
+    litellm_params:
+      model: openrouter/${OPENROUTER_MODEL_NAME:-qwen/qwen3-235b-a22b-2507}
+      api_base: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
+      api_key: ${OPENROUTER_API_KEY}
+  
+  # Alias for compatibility
   - model_name: gpt-4
     litellm_params:
-      model: gpt-4
-      api_key: ${OPENAI_API_KEY}
+      model: openrouter/${OPENROUTER_MODEL_NAME:-qwen/qwen3-235b-a22b-2507}
+      api_base: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
+      api_key: ${OPENROUTER_API_KEY}
   
   - model_name: gpt-3.5-turbo
     litellm_params:
-      model: gpt-3.5-turbo
-      api_key: ${OPENAI_API_KEY}
-
-  # Anthropic Claude
-  - model_name: claude-3-opus
-    litellm_params:
-      model: claude-3-opus-20240229
-      api_key: ${ANTHROPIC_API_KEY}
-  
-  - model_name: claude-3-sonnet
-    litellm_params:
-      model: claude-3-sonnet-20240229
-      api_key: ${ANTHROPIC_API_KEY}
-
-  # Open Source Models (vLLM 또는 Ollama)
-  - model_name: llama-2-7b
-    litellm_params:
-      model: vllm/llama-2-7b-chat-hf
-      api_base: ${VLLM_API_BASE:-http://vllm:8000/v1}
+      model: openrouter/${OPENROUTER_MODEL_NAME:-qwen/qwen3-235b-a22b-2507}
+      api_base: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
+      api_key: ${OPENROUTER_API_KEY}
 
 # General Settings
 general_settings:

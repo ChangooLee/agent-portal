@@ -40,7 +40,25 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Private Network Access middleware (Chrome's CORS policy for localhost from external IP)
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+
+class PrivateNetworkAccessMiddleware(BaseHTTPMiddleware):
+    """Add Access-Control-Allow-Private-Network header for Chrome's Private Network Access policy."""
+    async def dispatch(self, request: StarletteRequest, call_next):
+        # Handle preflight requests
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+        return response
+
+app.add_middleware(PrivateNetworkAccessMiddleware)
 
 # Include routers
 app.include_router(embed.router)

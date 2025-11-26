@@ -1669,9 +1669,66 @@
 		});
 
 		if (res) {
-			if (res.error) {
+			// ⚠️ CRITICAL: 스트리밍 응답 처리 (res.body가 있으면 SSE 응답)
+			if (res.ok && res.body) {
+				// SSE 스트리밍 응답 처리
+				try {
+					const textStream = await createOpenAITextStream(res.body, $settings.splitLargeChunks);
+					for await (const update of textStream) {
+						const { value, done, sources, selectedModelId, error, usage } = update;
+						
+						if (error) {
+							await handleOpenAIError(error, responseMessage);
+							break;
+						}
+						
+						if (done) {
+							break;
+						}
+						
+						if (sources) {
+							responseMessage.sources = sources;
+							history.messages[responseMessageId] = responseMessage;
+							continue;
+						}
+						
+						if (selectedModelId) {
+							responseMessage.selectedModelId = selectedModelId;
+							history.messages[responseMessageId] = responseMessage;
+							continue;
+						}
+						
+						if (usage) {
+							responseMessage.usage = usage;
+							history.messages[responseMessageId] = responseMessage;
+							continue;
+						}
+						
+						if (responseMessage.content == '' && value == '\n') {
+							continue;
+						} else {
+							responseMessage.content += value;
+							history.messages[responseMessageId] = responseMessage;
+						}
+						
+						if (autoScroll) {
+							scrollToBottom();
+						}
+					}
+					
+					responseMessage.done = true;
+					history.messages[responseMessageId] = responseMessage;
+					
+					await saveChatHandler(_chatId, _history);
+				} catch (error) {
+					console.error('Streaming error:', error);
+					await handleOpenAIError({ message: error.toString() }, responseMessage);
+				}
+			} else if (res.error) {
+				// 에러 응답 처리
 				await handleOpenAIError(res.error, responseMessage);
-			} else {
+			} else if (res.task_id) {
+				// 비스트리밍 응답 처리 (task_id 기반)
 				if (taskIds) {
 					taskIds.push(res.task_id);
 				} else {
@@ -1953,7 +2010,7 @@
 />
 
 <div
-	class="h-screen max-h-[100dvh] w-full flex flex-col"
+	class="h-full w-full flex flex-col"
 	id="chat-container"
 >
 	{#if $settings?.backgroundImageUrl ?? null}
@@ -1981,9 +2038,9 @@
 					<!-- Navbar is now in the common layout (TopNavbar) -->
 					<!-- Chat-specific controls can be added here if needed -->
 
-					<div class="flex flex-col flex-auto z-10 w-full @container">
+					<div class="flex flex-col h-full z-10 w-full @container">
 						<div
-							class=" pb-2.5 flex flex-col justify-between w-full flex-auto overflow-auto h-0 max-w-full z-10 scrollbar-hidden"
+							class="pb-2.5 flex flex-col justify-between w-full flex-1 overflow-y-auto max-w-full z-10 scrollbar-hidden"
 							id="messages-container"
 							bind:this={messagesContainerElement}
 							on:scroll={(e) => {
@@ -2011,10 +2068,10 @@
 									bottomPadding={files.length > 0}
 								/>
 							</div>
-						</div>
+					</div>
 
-						<div class=" pb-[1rem]">
-							<MessageInput
+					<div class="flex-shrink-0 pb-4 px-4 w-full">
+						<MessageInput
 								{history}
 								{taskIds}
 								{selectedModels}

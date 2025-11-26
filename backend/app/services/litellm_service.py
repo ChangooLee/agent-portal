@@ -11,12 +11,14 @@ class LiteLLMService:
     
     def __init__(self):
         self.base_url = getattr(settings, 'LITELLM_HOST', 'http://litellm:4000')
+        self.api_key = getattr(settings, 'LITELLM_MASTER_KEY', 'sk-1234')
         
     async def list_models(self) -> Dict[str, Any]:
         """Get list of available models from LiteLLM"""
+        headers = {"Authorization": f"Bearer {self.api_key}"}
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
-                response = await client.get(f"{self.base_url}/v1/models")
+                response = await client.get(f"{self.base_url}/v1/models", headers=headers)
                 response.raise_for_status()
                 return response.json()
             except httpx.RequestError as e:
@@ -33,6 +35,10 @@ class LiteLLMService:
     ):
         """Create a chat completion via LiteLLM (async generator for stream mode)"""
         url = f"{self.base_url}/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
         payload = {
             "model": model,
             "messages": messages,
@@ -42,7 +48,7 @@ class LiteLLMService:
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
-                async with client.stream("POST", url, json=payload) as response:
+                async with client.stream("POST", url, json=payload, headers=headers) as response:
                     response.raise_for_status()
                     async for line in response.aiter_lines():
                         if line.strip():
@@ -60,6 +66,10 @@ class LiteLLMService:
     ) -> Dict[str, Any]:
         """Create a non-streaming chat completion via LiteLLM"""
         url = f"{self.base_url}/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
         payload = {
             "model": model,
             "messages": messages,
@@ -69,7 +79,7 @@ class LiteLLMService:
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
-                response = await client.post(url, json=payload)
+                response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
                 return response.json()
             except httpx.RequestError as e:
