@@ -20,7 +20,8 @@
 		channels,
 		socket,
 		config,
-		isApp
+		isApp,
+		models
 	} from '$lib/stores';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 
@@ -69,6 +70,8 @@
 	let selectedChatId = null;
 	let showDropdown = false;
 	let showPinnedChat = true;
+	let showChatsSection = true;
+	let showAgentsSection = true;
 
 	let showCreateChannel = false;
 
@@ -78,6 +81,17 @@
 
 	let folders = {};
 	let newFolderId = null;
+
+	// Agent state
+	interface AgentFlow {
+		id: string;
+		name: string;
+		description?: string;
+		updated_at?: string;
+	}
+	let agents: AgentFlow[] = [];
+	let agentsLoading = false;
+	let filteredAgents: AgentFlow[] = [];
 
 	const initFolders = async () => {
 		const folderList = await getFolders(localStorage.token).catch((error) => {
@@ -165,6 +179,24 @@
 		await channels.set(await getChannels(localStorage.token));
 	};
 
+	const initAgents = async () => {
+		agentsLoading = true;
+		try {
+			const response = await fetch('/api/agents/flows?offset=0&limit=50');
+			if (response.ok) {
+				const data = await response.json();
+				agents = data.flows || [];
+			} else {
+				agents = [];
+			}
+		} catch (error) {
+			console.error('Failed to load agents:', error);
+			agents = [];
+		} finally {
+			agentsLoading = false;
+		}
+	};
+
 	const initChatList = async () => {
 		// Reset pagination variables
 		tags.set(await getAllTags(localStorage.token));
@@ -216,12 +248,21 @@
 
 		if (search === '') {
 			await initChatList();
+			filteredAgents = [];
 			return;
 		} else {
 			searchDebounceTimeout = setTimeout(async () => {
 				allChatsLoaded = false;
 				currentChatPage.set(1);
 				await chats.set(await getChatListBySearchText(localStorage.token, search));
+
+				// 에이전트도 필터링
+				const searchLower = search.toLowerCase();
+				filteredAgents = agents.filter(
+					(agent) =>
+						agent.name.toLowerCase().includes(searchLower) ||
+						(agent.description && agent.description.toLowerCase().includes(searchLower))
+				);
 
 				if ($chats.length === 0) {
 					tags.set(await getAllTags(localStorage.token));
@@ -392,6 +433,11 @@
 
 		await initChannels();
 		await initChatList();
+		await initAgents();
+
+		// 섹션 열림/닫힘 상태 복원
+		showChatsSection = localStorage.getItem('showChatsSection') !== 'false';
+		showAgentsSection = localStorage.getItem('showAgentsSection') !== 'false';
 
 		window.addEventListener('keydown', onKeyDown);
 		window.addEventListener('keyup', onKeyUp);
@@ -532,77 +578,6 @@
 		</div>
 		</div>
 
-		<!-- 모델/에이전트 선택 버튼 -->
-		<div class="px-1.5 flex justify-center text-gray-800 mt-2">
-			<button
-				class="grow flex items-center space-x-3 rounded-xl px-2 py-[7px] bg-white/40 dark:bg-gray-800/40 hover:bg-white/60 dark:hover:bg-gray-800/60 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md transition-all duration-300 ease-out"
-				on:click={() => {
-					// 메인 영역의 모델 선택 드롭다운 열기
-					const modelSelectorButton = document.querySelector('#model-selector-0-button');
-					if (modelSelectorButton) {
-						modelSelectorButton.click();
-					} else {
-						// 대체 방법: data 속성으로 찾기
-						const altButton = document.querySelector('[data-melt-dropdown-menu-trigger]');
-						if (altButton) {
-							altButton.click();
-						}
-					}
-					if ($mobile) {
-						showSidebar.set(false);
-					}
-				}}
-				draggable="false"
-			>
-				<div class="self-center">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="2"
-						stroke="currentColor"
-						class="size-[1.1rem]"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
-						/>
-					</svg>
-				</div>
-
-				<div class="flex self-center translate-y-[0.5px]">
-					<div class="self-center font-medium text-sm font-primary">모델/에이전트</div>
-				</div>
-			</button>
-		</div>
-
-		<!-- {#if $user?.role === 'admin'}
-			<div class="px-1.5 flex justify-center text-gray-800 dark:text-gray-200">
-				<a
-					class="grow flex items-center space-x-3 rounded-lg px-2 py-[7px] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-					href="/home"
-					on:click={() => {
-						selectedChatId = null;
-						chatId.set('');
-
-						if ($mobile) {
-							showSidebar.set(false);
-						}
-					}}
-					draggable="false"
-				>
-					<div class="self-center">
-						<Home strokeWidth="2" className="size-[1.1rem]" />
-					</div>
-
-					<div class="flex self-center translate-y-[0.5px]">
-						<div class=" self-center font-medium text-sm font-primary">{$i18n.t('Home')}</div>
-					</div>
-				</a>
-			</div>
-		{/if} -->
-
 		<div class="relative {$temporaryChatEnabled ? 'opacity-20' : ''}">
 			{#if $temporaryChatEnabled}
 				<div class="absolute z-40 w-full h-full flex justify-center"></div>
@@ -611,7 +586,7 @@
 			<SearchInput
 				bind:value={search}
 				on:input={searchDebounceHandler}
-				placeholder="채팅 검색"
+				placeholder="채팅, 에이전트 검색..."
 				showClearButton={true}
 			/>
 		</div>
@@ -622,6 +597,16 @@
 				class="grow flex items-center justify-center gap-2 rounded-xl px-2 py-[7px] bg-white/40 dark:bg-gray-800/40 hover:bg-white/60 dark:hover:bg-gray-800/60 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md transition-all duration-300 ease-out"
 				on:click={async () => {
 					selectedChatId = null;
+					
+					// 마지막 사용 모델 또는 기본 모델을 sessionStorage에 저장
+					const lastModels = localStorage.getItem('lastUsedModels');
+					if (lastModels) {
+						sessionStorage.setItem('selectedModels', lastModels);
+					} else if ($models.length > 0) {
+						// 마지막 사용 모델이 없으면 첫 번째 모델 선택
+						sessionStorage.setItem('selectedModels', JSON.stringify([$models[0].id]));
+					}
+					
 					await goto('/');
 					const newChatButton = document.getElementById('new-chat-button');
 					setTimeout(() => {
@@ -648,52 +633,15 @@
 				? 'opacity-20'
 				: ''}"
 		>
-			{#if !search}
-				<Folder
-					className="px-2 mt-0.5"
-					name="에이전트"
-					collapsible={true}
-					dragAndDrop={false}
-					open={false}
-				>
-					<!-- 에이전트 목록은 추후 추가 예정 -->
-					<div class="px-2 py-2 text-sm text-gray-500 dark:text-gray-400">
-						에이전트 목록이 여기에 표시됩니다.
-					</div>
-				</Folder>
-			{/if}
-
-			{#if $config?.features?.enable_channels && ($user?.role === 'admin' || $channels.length > 0) && !search}
-				<Folder
-					className="px-2 mt-0.5"
-					name={$i18n.t('Channels')}
-					dragAndDrop={false}
-					onAdd={async () => {
-						if ($user?.role === 'admin') {
-							await tick();
-
-							setTimeout(() => {
-								showCreateChannel = true;
-							}, 0);
-						}
-					}}
-					onAddLabel={$i18n.t('Create Channel')}
-				>
-					{#each $channels as channel}
-						<ChannelItem
-							{channel}
-							onUpdate={async () => {
-								await initChannels();
-							}}
-						/>
-					{/each}
-				</Folder>
-			{/if}
-
+			<!-- 채팅 섹션 -->
 			<Folder
-				collapsible={!search}
+				collapsible={true}
 				className="px-2 mt-0.5"
 				name={$i18n.t('Chats')}
+				bind:open={showChatsSection}
+				on:change={(e) => {
+					localStorage.setItem('showChatsSection', e.detail.toString());
+				}}
 				onAdd={() => {
 					createFolder();
 				}}
@@ -923,6 +871,107 @@
 					</div>
 				</div>
 			</Folder>
+
+			<!-- 에이전트 섹션 -->
+			<Folder
+				collapsible={true}
+				className="px-2 mt-0.5"
+				name="에이전트"
+				bind:open={showAgentsSection}
+				on:change={(e) => {
+					localStorage.setItem('showAgentsSection', e.detail.toString());
+				}}
+				dragAndDrop={false}
+				onAdd={() => {
+					goto('/agent');
+					if ($mobile) {
+						showSidebar.set(false);
+					}
+				}}
+				onAddLabel="새 에이전트"
+			>
+				{#if agentsLoading}
+					<div class="w-full flex justify-center py-2 text-xs animate-pulse items-center gap-2">
+						<Spinner className="size-4" />
+						<div>Loading...</div>
+					</div>
+				{:else if search ? filteredAgents.length === 0 : agents.length === 0}
+					<div class="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+						<p class="mb-2">등록된 에이전트가 없습니다</p>
+						<a
+							href="/agent"
+							class="text-[#0072CE] hover:underline text-xs"
+							on:click={() => {
+								if ($mobile) {
+									showSidebar.set(false);
+								}
+							}}
+						>
+							에이전트 빌더에서 만들기 →
+						</a>
+					</div>
+				{:else}
+					<div class="flex flex-col">
+						{#each (search ? filteredAgents : agents) as agent (agent.id)}
+							<a
+								href="/agent"
+								class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
+								on:click={() => {
+									if ($mobile) {
+										showSidebar.set(false);
+									}
+								}}
+							>
+								<div class="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="1.5"
+										stroke="currentColor"
+										class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
+										/>
+									</svg>
+								</div>
+								<span class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">{agent.name}</span>
+							</a>
+						{/each}
+					</div>
+				{/if}
+			</Folder>
+
+			<!-- 채널 섹션 -->
+			{#if $config?.features?.enable_channels && ($user?.role === 'admin' || $channels.length > 0) && !search}
+				<Folder
+					className="px-2 mt-0.5"
+					name={$i18n.t('Channels')}
+					dragAndDrop={false}
+					onAdd={async () => {
+						if ($user?.role === 'admin') {
+							await tick();
+
+							setTimeout(() => {
+								showCreateChannel = true;
+							}, 0);
+						}
+					}}
+					onAddLabel={$i18n.t('Create Channel')}
+				>
+					{#each $channels as channel}
+						<ChannelItem
+							{channel}
+							onUpdate={async () => {
+								await initChannels();
+							}}
+						/>
+					{/each}
+				</Folder>
+			{/if}
 		</div>
 
 		<div class="px-2">

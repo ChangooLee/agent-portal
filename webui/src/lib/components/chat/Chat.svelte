@@ -184,6 +184,8 @@
 			return;
 		}
 		sessionStorage.selectedModels = JSON.stringify(selectedModels);
+		// 마지막 사용 모델을 localStorage에도 저장 (새 채팅 시 자동 선택용)
+		localStorage.setItem('lastUsedModels', JSON.stringify(selectedModels));
 		console.log('saveSessionSelectedModels', selectedModels, sessionStorage.selectedModels);
 	};
 
