@@ -1,7 +1,20 @@
-# Environment files
+# Environment files (민감 정보 - 절대 커밋 금지!)
 .env
 .env.local
 .env.*.local
+.env.bak*
+.env.backup*
+.env.old*
+*.env.bak
+*.env.backup
+
+# Secrets and API keys (민감 정보 - 절대 커밋 금지!)
+secrets/
+*.key
+*.pem
+*.p12
+*_secret*
+*_credentials*
 
 # Python
 __pycache__/
@@ -51,6 +64,7 @@ external/agentops/__pycache__/
 external/agentops/dist/
 external/agentops/build/
 agentops-reference/
-.env.bak
-.env.bak2
+# Backup files (민감 정보 포함 가능)
 *.bak
+*.backup
+*.old

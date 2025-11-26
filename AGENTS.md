@@ -483,6 +483,47 @@ try {
 > **중요**: 이 섹션은 실제 실패 사례를 기반으로 작성되었습니다. 새로운 문제 발생 시 여기에 추가하세요.  
 > **가드레일 원칙**: "절대 안 됨"만 말하지 말고 항상 대안을 제시하세요.
 
+### 문제 0: 민감 정보 노출 (CRITICAL - 최우선)
+
+**증상**: API 키, 비밀번호 등이 git에 커밋됨
+
+**원인**: `.env` 백업 파일 생성, 하드코딩된 API 키
+
+**예방 (필수)**:
+- ❌ **절대 금지**: `.env.bak`, `.env.backup` 등 백업 파일 생성
+- ❌ **절대 금지**: 코드에 API 키 하드코딩
+- ✅ **필수**: 민감 정보 작업 시 사용자에게 확인 요청
+
+**AI 에이전트 필수 절차**:
+```
+⚠️ 민감 정보 관련 작업 시 반드시 사용자에게 확인:
+
+1. "이 작업은 민감 정보(.env, API 키 등)를 포함합니다. 진행할까요?"
+2. 백업이 필요한 경우: "민감 정보 없이 설정 구조만 백업할까요?"
+3. git 커밋 전: "민감 정보가 포함된 파일이 없는지 확인했습니다. 커밋할까요?"
+```
+
+**해결 (노출된 경우)**:
+```bash
+# 1. 즉시 API 키 무효화 (해당 서비스 대시보드에서)
+# 2. git history에서 제거
+git filter-branch --force --index-filter \
+  "git rm --cached --ignore-unmatch <민감파일>" \
+  --prune-empty --tag-name-filter cat -- --all
+
+# 3. 강제 푸시
+git push origin main --force
+
+# 4. reflog 정리
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+```
+
+**안전한 대안**:
+- `.env.example` 사용 (플레이스홀더만 포함)
+- 환경 변수 참조: `os.environ.get('API_KEY')`
+- Docker secrets 또는 Vault 사용
+
 ### 문제 1: 컨테이너 내부 파일과 로컬 파일 불일치
 
 **증상**: 로컬 파일 수정이 컨테이너에 반영되지 않음

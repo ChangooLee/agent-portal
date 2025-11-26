@@ -3,6 +3,55 @@
 
 echo "🔍 Pre-commit checks..."
 
+# 0. 민감 정보 체크 (CRITICAL - 최우선)
+echo "  🔐 Checking for sensitive information..."
+
+# 민감 파일 패턴
+SENSITIVE_PATTERNS=".env.bak|.env.backup|.env.old|\.key$|\.pem$|_secret|_credentials"
+SENSITIVE_FILES=$(git diff --cached --name-only | grep -E "$SENSITIVE_PATTERNS")
+
+if [ -n "$SENSITIVE_FILES" ]; then
+    echo ""
+    echo "  ❌ ERROR: 민감 정보가 포함된 파일이 감지되었습니다!"
+    echo "     다음 파일들은 커밋할 수 없습니다:"
+    echo "$SENSITIVE_FILES" | sed 's/^/     - /'
+    echo ""
+    echo "     해결 방법:"
+    echo "     1. git reset HEAD <파일명>  # 스테이지에서 제거"
+    echo "     2. rm <파일명>              # 파일 삭제"
+    echo "     3. .gitignore에 추가        # 향후 방지"
+    echo ""
+    exit 1
+fi
+
+# API 키 패턴 체크 (실제 키 값이 코드에 하드코딩된 경우)
+API_KEY_PATTERNS="sk-or-v1-[a-zA-Z0-9]{64}|sk-[a-zA-Z0-9]{48}|sk-ant-[a-zA-Z0-9-]{80,}"
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -n "$STAGED_FILES" ]; then
+    for file in $STAGED_FILES; do
+        if [ -f "$file" ] && [ "$file" != ".gitignore" ]; then
+            # 바이너리 파일 제외
+            if file "$file" | grep -q "text"; then
+                FOUND_KEYS=$(grep -E "$API_KEY_PATTERNS" "$file" 2>/dev/null || true)
+                if [ -n "$FOUND_KEYS" ]; then
+                    echo ""
+                    echo "  ❌ ERROR: API 키가 파일에 하드코딩되어 있습니다!"
+                    echo "     파일: $file"
+                    echo ""
+                    echo "     해결 방법:"
+                    echo "     1. 환경 변수로 대체: os.environ.get('API_KEY')"
+                    echo "     2. .env 파일 사용 (gitignore에 포함)"
+                    echo ""
+                    exit 1
+                fi
+            fi
+        fi
+    done
+fi
+
+echo "  ✅ 민감 정보 체크 완료"
+
 # 1. UI 파일 변경 시 Skills 시스템 업데이트 확인
 UI_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^webui/src/(routes|lib/components)/.*\.(svelte|ts)$')
 
