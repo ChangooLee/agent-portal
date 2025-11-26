@@ -51,3 +51,6 @@ external/agentops/__pycache__/
 external/agentops/dist/
 external/agentops/build/
 agentops-reference/
+.env.bak
+.env.bak2
+*.bak
