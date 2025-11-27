@@ -538,14 +538,14 @@
 <div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
 	<div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
 		<!-- Hero Section -->
-		<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
-			<div class="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 opacity-60" />
-			<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-500/40 to-teal-500/30 blur-3xl" />
+		<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
+			<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 opacity-60" />
+			<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
 			<div class="relative flex flex-col gap-5">
 				<div class="flex flex-wrap items-center justify-between gap-3">
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200">
-							<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+							<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-accent" />
 							Data Cloud
 						</span>
 						<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
@@ -554,7 +554,7 @@
 					</div>
 					<button
 						on:click={openAddModal}
-						class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
+						class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 text-white font-medium shadow-lg shadow-primary/30 hover:shadow-xl transition-all hover:scale-105"
 					>
 						<Plus class="size-5" />
 						<span>연결 추가</span>
@@ -565,21 +565,52 @@
 					데이터 복제 없이 실시간으로 데이터베이스에 연결하여 스키마 조회 및 쿼리를 실행할 수 있습니다.
 				</p>
 
-				<div class="grid grid-cols-3 gap-3 @md:grid-cols-4 @lg:grid-cols-6">
-					<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-emerald-500/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
-						<div class="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">총 연결</div>
-						<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">{connections.length}</div>
-						<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">등록됨</div>
+				<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+					<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20 shadow-sm">
+						<div class="flex items-center gap-3">
+							<div class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+								<Cube class="size-5 text-blue-600 dark:text-blue-400" />
+							</div>
+							<div>
+								<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{connections.length}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400">총 연결</div>
+							</div>
+						</div>
 					</div>
-					<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-emerald-500/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
-						<div class="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">정상</div>
-						<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">{connections.filter(c => c.health_status === 'healthy').length}</div>
-						<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">연결됨</div>
+					<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20 shadow-sm">
+						<div class="flex items-center gap-3">
+							<div class="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+								<Check class="size-5 text-green-600 dark:text-green-400" />
+							</div>
+							<div>
+								<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{connections.filter(c => c.health_status === 'healthy').length}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400">정상 연결</div>
+							</div>
+						</div>
 					</div>
-					<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-emerald-500/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
-						<div class="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">DB 유형</div>
-						<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">{new Set(connections.map(c => c.db_type)).size}</div>
-						<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">지원</div>
+					<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20 shadow-sm">
+						<div class="flex items-center gap-3">
+							<div class="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+								<svg class="size-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
+								</svg>
+							</div>
+							<div>
+								<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{new Set(connections.map(c => c.db_type)).size}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400">DB 유형</div>
+							</div>
+						</div>
+					</div>
+					<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20 shadow-sm">
+						<div class="flex items-center gap-3">
+							<div class="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+								<XMark class="size-5 text-orange-600 dark:text-orange-400" />
+							</div>
+							<div>
+								<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{connections.filter(c => c.health_status === 'unhealthy').length}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400">오류 연결</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -589,7 +620,7 @@
 		<div class="bg-white/60 dark:bg-gray-900/50 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/20 shadow-xl overflow-hidden">
 			{#if loading}
 				<div class="flex items-center justify-center py-12">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
 				</div>
 			{:else if connections.length === 0}
 				<div class="text-center py-12">
@@ -598,7 +629,7 @@
 					<p class="text-gray-500 dark:text-gray-400 mb-4">데이터베이스 연결을 추가하여 시작하세요.</p>
 					<button
 						on:click={openAddModal}
-						class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+						class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 text-white hover:shadow-lg transition-all"
 					>
 						<Plus class="size-5" />
 						<span>첫 번째 연결 추가</span>
@@ -620,8 +651,8 @@
 								<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
 									<td class="px-6 py-4">
 										<div class="flex items-center gap-3">
-											<div class="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-												<Cube class="size-5 text-emerald-600 dark:text-emerald-400" />
+											<div class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+												<Cube class="size-5 text-blue-600 dark:text-blue-400" />
 											</div>
 											<div>
 												<div class="font-medium text-gray-900 dark:text-gray-100">{conn.name}</div>
@@ -647,20 +678,20 @@
 										<div class="flex items-center justify-end gap-2">
 											<button
 												on:click={() => testConnection(conn)}
-												class="p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+												class="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
 												title="연결 테스트"
 											>
 												<Bolt class="size-4" />
 											</button>
 											<button
 												on:click={() => openSchemaModal(conn)}
-												class="px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+												class="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
 											>
 												스키마
 											</button>
 											<button
 												on:click={() => openQueryModal(conn)}
-												class="px-3 py-1.5 text-sm text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors"
+												class="px-3 py-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
 											>
 												쿼리
 											</button>
@@ -705,40 +736,40 @@
 <!-- Add/Edit Connection Modal -->
 {#if showModal}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-		<div class="bg-slate-800 rounded-2xl border border-white/10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-			<div class="p-6 border-b border-white/10">
-				<h2 class="text-xl font-semibold text-white">
+		<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+			<div class="p-6 border-b border-gray-200 dark:border-gray-700">
+				<h2 class="text-xl font-semibold text-gray-900 dark:text-white">
 					{editingConnection ? '연결 수정' : '새 연결 추가'}
 				</h2>
 			</div>
 
 			<div class="p-6 space-y-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-300 mb-1">연결 이름</label>
+					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">연결 이름</label>
 					<input
 						type="text"
 						bind:value={formData.name}
-						class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+						class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 						placeholder="예: Production MariaDB"
 					/>
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-300 mb-1">설명</label>
+					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">설명</label>
 					<input
 						type="text"
 						bind:value={formData.description}
-						class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+						class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 						placeholder="선택사항"
 					/>
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-300 mb-1">데이터베이스 유형</label>
+					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">데이터베이스 유형</label>
 					<select
 						bind:value={formData.db_type}
 						on:change={onDbTypeChange}
-						class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+						class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 					>
 						{#each dbTypes as dbType}
 							<option value={dbType.value}>{dbType.label}</option>
@@ -748,50 +779,50 @@
 
 				<div class="grid grid-cols-3 gap-4">
 					<div class="col-span-2">
-						<label class="block text-sm font-medium text-gray-300 mb-1">호스트</label>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">호스트</label>
 						<input
 							type="text"
 							bind:value={formData.host}
-							class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+							class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 							placeholder="localhost"
 						/>
 					</div>
 					<div>
-						<label class="block text-sm font-medium text-gray-300 mb-1">포트</label>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">포트</label>
 						<input
 							type="number"
 							bind:value={formData.port}
-							class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+							class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 						/>
 					</div>
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-gray-300 mb-1">데이터베이스 이름</label>
+					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">데이터베이스 이름</label>
 					<input
 						type="text"
 						bind:value={formData.database_name}
-						class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+						class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 						placeholder="database_name"
 					/>
 				</div>
 
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label class="block text-sm font-medium text-gray-300 mb-1">사용자 이름</label>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">사용자 이름</label>
 						<input
 							type="text"
 							bind:value={formData.username}
-							class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+							class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 							placeholder="username"
 						/>
 					</div>
 					<div>
-						<label class="block text-sm font-medium text-gray-300 mb-1">비밀번호</label>
+						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">비밀번호</label>
 						<input
 							type="password"
 							bind:value={formData.password}
-							class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
+							class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 							placeholder={editingConnection ? '변경 시 입력' : '비밀번호'}
 						/>
 					</div>
@@ -802,29 +833,29 @@
 						type="checkbox"
 						id="enabled"
 						bind:checked={formData.enabled}
-						class="w-4 h-4 rounded border-white/10 bg-white/5 text-emerald-500 focus:ring-emerald-500"
+						class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-blue-500 focus:ring-blue-500"
 					/>
-					<label for="enabled" class="text-sm text-gray-300">활성화</label>
+					<label for="enabled" class="text-sm text-gray-700 dark:text-gray-300">활성화</label>
 				</div>
 			</div>
 
-			<div class="p-6 border-t border-white/10 flex justify-between">
+			<div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-between">
 				<button
 					on:click={testNewConnection}
-					class="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors"
+					class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg transition-colors"
 				>
 					연결 테스트
 				</button>
 				<div class="flex gap-2">
 					<button
 						on:click={() => showModal = false}
-						class="px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg transition-colors"
+						class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
 					>
 						취소
 					</button>
 					<button
 						on:click={saveConnection}
-						class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+						class="px-4 py-2 bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 hover:shadow-lg text-white rounded-lg transition-all"
 					>
 						{editingConnection ? '수정' : '추가'}
 					</button>
@@ -837,23 +868,23 @@
 <!-- Schema Modal -->
 {#if showSchemaModal && selectedConnection}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-		<div class="bg-slate-800 rounded-2xl border border-white/10 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-			<div class="p-6 border-b border-white/10 flex justify-between items-center">
+		<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+			<div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 				<div>
-					<h2 class="text-xl font-semibold text-white">스키마 탐색</h2>
-					<p class="text-sm text-gray-400">{selectedConnection.name} - {selectedConnection.database_name}</p>
+					<h2 class="text-xl font-semibold text-gray-900 dark:text-white">스키마 탐색</h2>
+					<p class="text-sm text-gray-600 dark:text-gray-400">{selectedConnection.name} - {selectedConnection.database_name}</p>
 				</div>
 				<div class="flex gap-2">
 					<button
 						on:click={refreshSchema}
 						disabled={schemaLoading}
-						class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-sm transition-colors disabled:opacity-50"
+						class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg text-sm transition-colors disabled:opacity-50"
 					>
 						새로고침
 					</button>
 					<button
 						on:click={() => showSchemaModal = false}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
 					>
 						<XMark class="w-4 h-4" />
 						<span>닫기</span>
@@ -861,40 +892,40 @@
 				</div>
 			</div>
 
-			<div class="flex-1 overflow-y-auto p-6">
+			<div class="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900/50">
 				{#if schemaLoading}
 					<div class="flex justify-center items-center h-64">
-						<div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+						<div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
 					</div>
 				{:else if schemaData && schemaData.tables}
 					<div class="space-y-2">
 						{#each schemaData.tables as table}
-							<div class="bg-white/5 rounded-lg border border-white/10">
+							<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
 								<button
 									on:click={() => toggleTable(table.name)}
-									class="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+									class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
 								>
 									<div class="flex items-center gap-3">
 										{#if expandedTables.has(table.name)}
-											<ChevronDown class="w-4 h-4 text-gray-400" />
+											<ChevronDown class="w-4 h-4 text-gray-500 dark:text-gray-400" />
 										{:else}
-											<ChevronRight class="w-4 h-4 text-gray-400" />
+											<ChevronRight class="w-4 h-4 text-gray-500 dark:text-gray-400" />
 										{/if}
-										<span class="font-medium text-white">{table.name}</span>
-										<span class="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">
+										<span class="font-medium text-gray-900 dark:text-white">{table.name}</span>
+										<span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded">
 											{table.type}
 										</span>
-										<span class="text-sm text-gray-500">
+										<span class="text-sm text-gray-500 dark:text-gray-400">
 											{table.columns?.length || 0} 컬럼
 										</span>
 									</div>
 								</button>
 
 								{#if expandedTables.has(table.name) && table.columns}
-									<div class="border-t border-white/10 p-4">
+									<div class="border-t border-gray-200 dark:border-gray-700 p-4">
 										<table class="w-full text-sm">
 											<thead>
-												<tr class="text-gray-400">
+												<tr class="text-gray-500 dark:text-gray-400">
 													<th class="text-left py-2 px-3">컬럼명</th>
 													<th class="text-left py-2 px-3">타입</th>
 													<th class="text-left py-2 px-3">NULL</th>
@@ -904,25 +935,25 @@
 											</thead>
 											<tbody>
 												{#each table.columns as col}
-													<tr class="border-t border-white/5 hover:bg-white/5">
-														<td class="py-2 px-3 text-white">{col.name}</td>
-														<td class="py-2 px-3 text-gray-400 font-mono text-xs">{col.type}</td>
+													<tr class="border-t border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+														<td class="py-2 px-3 text-gray-900 dark:text-white">{col.name}</td>
+														<td class="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono text-xs">{col.type}</td>
 														<td class="py-2 px-3">
 															{#if col.nullable}
-																<span class="text-yellow-400">YES</span>
+																<span class="text-amber-600 dark:text-yellow-400">YES</span>
 															{:else}
 																<span class="text-gray-500">NO</span>
 															{/if}
 														</td>
 														<td class="py-2 px-3">
 															{#if col.is_primary_key}
-																<span class="text-xs px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded">PK</span>
+																<span class="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-yellow-900/30 text-amber-600 dark:text-yellow-400 rounded">PK</span>
 															{/if}
 															{#if col.is_foreign_key}
-																<span class="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">FK</span>
+																<span class="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">FK</span>
 															{/if}
 														</td>
-														<td class="py-2 px-3 text-gray-500">
+														<td class="py-2 px-3 text-gray-500 dark:text-gray-400">
 															{col.comment || col.business_term || '-'}
 														</td>
 													</tr>
@@ -935,7 +966,7 @@
 						{/each}
 					</div>
 				{:else}
-					<div class="text-center py-16 text-gray-400">
+					<div class="text-center py-16 text-gray-500 dark:text-gray-400">
 						스키마 정보가 없습니다
 					</div>
 				{/if}
@@ -947,15 +978,15 @@
 <!-- Query Modal -->
 {#if showQueryModal && selectedConnection}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-		<div class="bg-slate-800 rounded-2xl border border-white/10 w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-			<div class="p-6 border-b border-white/10 flex justify-between items-center">
+		<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+			<div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 				<div>
-					<h2 class="text-xl font-semibold text-white">쿼리 실행</h2>
-					<p class="text-sm text-gray-400">{selectedConnection.name} - {selectedConnection.database_name}</p>
+					<h2 class="text-xl font-semibold text-gray-900 dark:text-white">쿼리 실행</h2>
+					<p class="text-sm text-gray-600 dark:text-gray-400">{selectedConnection.name} - {selectedConnection.database_name}</p>
 				</div>
 				<button
 					on:click={() => showQueryModal = false}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
 				>
 					<XMark class="w-4 h-4" />
 					<span>닫기</span>
@@ -964,26 +995,26 @@
 
 			<div class="p-6 space-y-4">
 				<!-- Text-to-SQL Section -->
-				<div class="bg-gradient-to-r from-cyan-500/10 to-teal-500/10 rounded-lg border border-cyan-500/20 p-4">
+				<div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4">
 					<div class="flex items-center gap-2 mb-2">
-						<svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
 						</svg>
-						<label class="text-sm font-medium text-cyan-300">AI SQL 생성</label>
-						<span class="text-xs text-gray-500">(자연어 → SQL)</span>
+						<label class="text-sm font-medium text-blue-700 dark:text-blue-300">AI SQL 생성</label>
+						<span class="text-xs text-gray-500 dark:text-gray-400">(자연어 → SQL)</span>
 					</div>
 					<div class="flex gap-2">
 						<input
 							bind:value={naturalLanguageQuery}
 							type="text"
-							class="flex-1 px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:border-cyan-500 focus:outline-none"
+							class="flex-1 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 							placeholder="예: 각 DB 타입별 연결 수를 보여줘"
 							on:keypress={(e) => e.key === 'Enter' && generateSQL()}
 						/>
 						<button
 							on:click={generateSQL}
 							disabled={sqlGenerating || !naturalLanguageQuery.trim()}
-							class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
+							class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
 						>
 							{#if sqlGenerating}
 								<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
@@ -995,16 +1026,16 @@
 							SQL 생성
 						</button>
 					</div>
-					<p class="text-xs text-gray-500 mt-2">스키마 정보를 기반으로 SQL이 생성됩니다. 생성 후 수정하여 실행하세요.</p>
+					<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">스키마 정보를 기반으로 SQL이 생성됩니다. 생성 후 수정하여 실행하세요.</p>
 				</div>
 
 				<!-- SQL Editor Section -->
 				<div>
-					<label class="block text-sm font-medium text-gray-300 mb-2">SQL 쿼리</label>
+					<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SQL 쿼리</label>
 					<textarea
 						bind:value={queryText}
 						rows="4"
-						class="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-lg text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
+						class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 						placeholder="SELECT * FROM table_name LIMIT 10"
 					></textarea>
 				</div>
@@ -1012,7 +1043,7 @@
 				<button
 					on:click={executeQuery}
 					disabled={queryLoading || !queryText.trim()}
-					class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
+					class="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 hover:shadow-lg text-white rounded-lg transition-all disabled:opacity-50"
 				>
 					{#if queryLoading}
 						<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
@@ -1024,24 +1055,24 @@
 			</div>
 
 		{#if queryResult}
-			<div class="flex-1 overflow-auto border-t border-white/10">
-				<div class="p-4 bg-slate-900/50 text-sm text-gray-400">
+			<div class="flex-1 overflow-auto border-t border-gray-200 dark:border-gray-700">
+				<div class="p-4 bg-gray-50 dark:bg-gray-900/50 text-sm text-gray-600 dark:text-gray-400">
 					{queryResult.rows?.length ?? 0}건 조회됨 ({queryResult.execution_time_ms ?? 0}ms)
 				</div>
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm">
-							<thead class="bg-slate-900/50 sticky top-0">
+							<thead class="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
 								<tr>
 									{#each queryResult.columns as col}
-										<th class="text-left py-3 px-4 text-gray-400 font-medium border-b border-white/10">{col}</th>
+										<th class="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700">{col}</th>
 									{/each}
 								</tr>
 							</thead>
 							<tbody>
 								{#each queryResult.rows as row}
-									<tr class="border-b border-white/5 hover:bg-white/5">
+									<tr class="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
 										{#each queryResult.columns as col}
-											<td class="py-2 px-4 text-gray-300 font-mono text-xs">
+											<td class="py-2 px-4 text-gray-700 dark:text-gray-300 font-mono text-xs">
 											{row[col] !== null ? String(row[col]).substring(0, 100) : 'NULL'}
 										</td>
 									{/each}
@@ -1059,56 +1090,56 @@
 <!-- Business Terms Modal -->
 {#if showTermsModal && selectedConnection}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-		<div class="bg-slate-800 rounded-2xl border border-white/10 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-			<div class="p-6 border-b border-white/10 flex justify-between items-center">
+		<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+			<div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 				<div>
-					<h2 class="text-xl font-semibold text-white">비즈니스 용어집</h2>
-					<p class="text-sm text-gray-400">{selectedConnection.name} - 기술명 ↔ 비즈니스명 매핑</p>
+					<h2 class="text-xl font-semibold text-gray-900 dark:text-white">비즈니스 용어집</h2>
+					<p class="text-sm text-gray-600 dark:text-gray-400">{selectedConnection.name} - 기술명 ↔ 비즈니스명 매핑</p>
 				</div>
 				<button
 					on:click={() => showTermsModal = false}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
 				>
 					<XMark class="w-4 h-4" />
 					<span>닫기</span>
 				</button>
 			</div>
 
-			<div class="flex-1 overflow-y-auto p-6">
+			<div class="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900/50">
 				{#if termsLoading}
 					<div class="flex justify-center items-center h-32">
 						<div class="animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent"></div>
 					</div>
 				{:else}
 					<!-- Add Term Form -->
-					<div class="bg-white/5 rounded-lg border border-white/10 p-4 mb-6">
-						<h3 class="text-sm font-medium text-white mb-3">용어 추가</h3>
+					<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
+						<h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">용어 추가</h3>
 						<div class="grid grid-cols-3 gap-3 mb-3">
 							<div>
-								<label class="block text-xs text-gray-400 mb-1">유형</label>
-								<select bind:value={newTerm.term_type} class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm">
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">유형</label>
+								<select bind:value={newTerm.term_type} class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
 									<option value="column">컬럼</option>
 									<option value="table">테이블</option>
 									<option value="schema">스키마</option>
 								</select>
 							</div>
 							<div>
-								<label class="block text-xs text-gray-400 mb-1">기술명 *</label>
-								<input bind:value={newTerm.technical_name} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="user_id" />
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">기술명 *</label>
+								<input bind:value={newTerm.technical_name} type="text" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" placeholder="user_id" />
 							</div>
 							<div>
-								<label class="block text-xs text-gray-400 mb-1">비즈니스명 *</label>
-								<input bind:value={newTerm.business_name} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="사용자 ID" />
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">비즈니스명 *</label>
+								<input bind:value={newTerm.business_name} type="text" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" placeholder="사용자 ID" />
 							</div>
 						</div>
 						<div class="grid grid-cols-3 gap-3 mb-3">
 							<div>
-								<label class="block text-xs text-gray-400 mb-1">테이블명</label>
-								<input bind:value={newTerm.table_name} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="users" />
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">테이블명</label>
+								<input bind:value={newTerm.table_name} type="text" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" placeholder="users" />
 							</div>
 							<div class="col-span-2">
-								<label class="block text-xs text-gray-400 mb-1">설명</label>
-								<input bind:value={newTerm.description} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="용어 설명" />
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">설명</label>
+								<input bind:value={newTerm.description} type="text" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" placeholder="용어 설명" />
 							</div>
 						</div>
 						<button on:click={addTerm} class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm transition-colors">
@@ -1118,10 +1149,10 @@
 
 					<!-- Terms List -->
 					{#if termsData && termsData.terms && termsData.terms.length > 0}
-						<div class="overflow-x-auto">
+						<div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
 							<table class="w-full text-sm">
 								<thead>
-									<tr class="text-gray-400 border-b border-white/10">
+									<tr class="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
 										<th class="text-left py-2 px-3">유형</th>
 										<th class="text-left py-2 px-3">기술명</th>
 										<th class="text-left py-2 px-3">비즈니스명</th>
@@ -1132,18 +1163,18 @@
 								</thead>
 								<tbody>
 									{#each termsData.terms as term}
-										<tr class="border-b border-white/5 hover:bg-white/5">
+										<tr class="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
 											<td class="py-2 px-3">
-												<span class="text-xs px-2 py-0.5 rounded {term.term_type === 'column' ? 'bg-blue-500/20 text-blue-400' : term.term_type === 'table' ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}">
+												<span class="text-xs px-2 py-0.5 rounded {term.term_type === 'column' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : term.term_type === 'table' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'}">
 													{term.term_type}
 												</span>
 											</td>
-											<td class="py-2 px-3 text-white font-mono text-xs">{term.technical_name}</td>
-											<td class="py-2 px-3 text-amber-400">{term.business_name}</td>
-											<td class="py-2 px-3 text-gray-400">{term.table_name || '-'}</td>
+											<td class="py-2 px-3 text-gray-900 dark:text-white font-mono text-xs">{term.technical_name}</td>
+											<td class="py-2 px-3 text-amber-600 dark:text-amber-400">{term.business_name}</td>
+											<td class="py-2 px-3 text-gray-500 dark:text-gray-400">{term.table_name || '-'}</td>
 											<td class="py-2 px-3 text-gray-500">{term.description || '-'}</td>
 											<td class="py-2 px-3 text-right">
-												<button on:click={() => deleteTerm(term.id)} class="p-1 text-gray-400 hover:text-red-400 transition-colors">
+												<button on:click={() => deleteTerm(term.id)} class="p-1 text-gray-400 hover:text-red-500 transition-colors">
 													<GarbageBin class="size-4" />
 												</button>
 											</td>
@@ -1153,7 +1184,7 @@
 							</table>
 						</div>
 					{:else}
-						<div class="text-center py-8 text-gray-400">
+						<div class="text-center py-8 text-gray-500 dark:text-gray-400">
 							등록된 용어가 없습니다. 위 폼에서 용어를 추가하세요.
 						</div>
 					{/if}
@@ -1166,49 +1197,49 @@
 <!-- Permissions Modal -->
 {#if showPermissionsModal && selectedConnection}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-		<div class="bg-slate-800 rounded-2xl border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-			<div class="p-6 border-b border-white/10 flex justify-between items-center">
+		<div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+			<div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 				<div>
-					<h2 class="text-xl font-semibold text-white">권한 관리</h2>
-					<p class="text-sm text-gray-400">{selectedConnection.name} - 사용자/그룹별 접근 권한</p>
+					<h2 class="text-xl font-semibold text-gray-900 dark:text-white">권한 관리</h2>
+					<p class="text-sm text-gray-600 dark:text-gray-400">{selectedConnection.name} - 사용자/그룹별 접근 권한</p>
 				</div>
 				<button
 					on:click={() => showPermissionsModal = false}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
 				>
 					<XMark class="w-4 h-4" />
 					<span>닫기</span>
 				</button>
 			</div>
 
-			<div class="flex-1 overflow-y-auto p-6">
+			<div class="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900/50">
 				{#if permissionsLoading}
 					<div class="flex justify-center items-center h-32">
 						<div class="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
 					</div>
 				{:else}
 					<!-- Add Permission Form -->
-					<div class="bg-white/5 rounded-lg border border-white/10 p-4 mb-6">
-						<h3 class="text-sm font-medium text-white mb-3">권한 추가</h3>
+					<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
+						<h3 class="text-sm font-medium text-gray-900 dark:text-white mb-3">권한 추가</h3>
 						<div class="grid grid-cols-3 gap-3 mb-3">
 							<div>
-								<label class="block text-xs text-gray-400 mb-1">사용자 ID</label>
-								<input bind:value={newPermission.user_id} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="user@example.com" />
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">사용자 ID</label>
+								<input bind:value={newPermission.user_id} type="text" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" placeholder="user@example.com" />
 							</div>
 							<div>
-								<label class="block text-xs text-gray-400 mb-1">그룹 ID</label>
-								<input bind:value={newPermission.group_id} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="data-team" />
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">그룹 ID</label>
+								<input bind:value={newPermission.group_id} type="text" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" placeholder="data-team" />
 							</div>
 							<div>
-								<label class="block text-xs text-gray-400 mb-1">권한 유형</label>
-								<select bind:value={newPermission.permission_type} class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm">
+								<label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">권한 유형</label>
+								<select bind:value={newPermission.permission_type} class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
 									<option value="read">읽기 (read)</option>
 									<option value="write">쓰기 (write)</option>
 									<option value="admin">관리자 (admin)</option>
 								</select>
 							</div>
 						</div>
-						<p class="text-xs text-gray-500 mb-3">* 사용자 ID 또는 그룹 ID 중 하나는 필수입니다.</p>
+						<p class="text-xs text-gray-500 dark:text-gray-400 mb-3">* 사용자 ID 또는 그룹 ID 중 하나는 필수입니다.</p>
 						<button on:click={addPermission} class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors">
 							권한 추가
 						</button>
@@ -1216,10 +1247,10 @@
 
 					<!-- Permissions List -->
 					{#if permissionsData && permissionsData.permissions && permissionsData.permissions.length > 0}
-						<div class="overflow-x-auto">
+						<div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
 							<table class="w-full text-sm">
 								<thead>
-									<tr class="text-gray-400 border-b border-white/10">
+									<tr class="text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
 										<th class="text-left py-2 px-3">대상</th>
 										<th class="text-left py-2 px-3">유형</th>
 										<th class="text-left py-2 px-3">권한</th>
@@ -1229,25 +1260,25 @@
 								</thead>
 								<tbody>
 									{#each permissionsData.permissions as perm}
-										<tr class="border-b border-white/5 hover:bg-white/5">
-											<td class="py-2 px-3 text-white">
+										<tr class="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+											<td class="py-2 px-3 text-gray-900 dark:text-white">
 												{perm.user_id || perm.group_id || '-'}
 											</td>
 											<td class="py-2 px-3">
-												<span class="text-xs px-2 py-0.5 rounded {perm.user_id ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}">
+												<span class="text-xs px-2 py-0.5 rounded {perm.user_id ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}">
 													{perm.user_id ? '사용자' : '그룹'}
 												</span>
 											</td>
 											<td class="py-2 px-3">
-												<span class="text-xs px-2 py-0.5 rounded {perm.permission_type === 'admin' ? 'bg-red-500/20 text-red-400' : perm.permission_type === 'write' ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-500/20 text-gray-400'}">
+												<span class="text-xs px-2 py-0.5 rounded {perm.permission_type === 'admin' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : perm.permission_type === 'write' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}">
 													{perm.permission_type}
 												</span>
 											</td>
-											<td class="py-2 px-3 text-gray-400 text-xs">
+											<td class="py-2 px-3 text-gray-500 dark:text-gray-400 text-xs">
 												{perm.created_at ? new Date(perm.created_at).toLocaleDateString('ko-KR') : '-'}
 											</td>
 											<td class="py-2 px-3 text-right">
-												<button on:click={() => deletePermission(perm.id)} class="p-1 text-gray-400 hover:text-red-400 transition-colors">
+												<button on:click={() => deletePermission(perm.id)} class="p-1 text-gray-400 hover:text-red-500 transition-colors">
 													<GarbageBin class="size-4" />
 												</button>
 											</td>
@@ -1257,7 +1288,7 @@
 							</table>
 						</div>
 					{:else}
-						<div class="text-center py-8 text-gray-400">
+						<div class="text-center py-8 text-gray-500 dark:text-gray-400">
 							등록된 권한이 없습니다. 위 폼에서 권한을 추가하세요.
 						</div>
 					{/if}
