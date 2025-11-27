@@ -6,8 +6,8 @@
 	import Check from '$lib/components/icons/Check.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
 	import Pencil from '$lib/components/icons/Pencil.svelte';
-	import Play from '$lib/components/icons/Play.svelte';
-	import Database from '$lib/components/icons/Database.svelte';
+	import Bolt from '$lib/components/icons/Bolt.svelte';
+	import Cube from '$lib/components/icons/Cube.svelte';
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
 
@@ -337,7 +337,7 @@
 		<div class="relative z-10">
 			<div class="flex items-center gap-4 mb-4">
 				<div class="p-3 bg-emerald-500/20 rounded-xl">
-					<Database class="w-8 h-8 text-emerald-400" />
+					<Cube class="w-8 h-8 text-emerald-400" />
 				</div>
 				<div>
 					<h1 class="text-3xl font-bold text-white">Data Cloud</h1>
@@ -380,7 +380,7 @@
 		</div>
 	{:else if connections.length === 0}
 		<div class="text-center py-16 bg-white/5 rounded-xl border border-white/10">
-			<Database class="w-16 h-16 text-gray-500 mx-auto mb-4" />
+			<Cube class="w-16 h-16 text-gray-500 mx-auto mb-4" />
 			<h3 class="text-lg font-medium text-gray-300">등록된 연결이 없습니다</h3>
 			<p class="text-gray-500 mt-2">새 연결을 추가하여 데이터베이스에 연결하세요</p>
 		</div>
@@ -391,7 +391,7 @@
 					<div class="flex items-start justify-between mb-4">
 						<div class="flex items-center gap-3">
 							<div class="p-2 bg-emerald-500/20 rounded-lg">
-								<Database class="w-5 h-5 text-emerald-400" />
+								<Cube class="w-5 h-5 text-emerald-400" />
 							</div>
 							<div>
 								<h3 class="font-semibold text-white">{conn.name}</h3>
@@ -425,7 +425,7 @@
 							on:click={() => testConnection(conn)}
 							class="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-sm transition-colors"
 						>
-							<Play class="w-4 h-4" />
+							<Bolt class="w-4 h-4" />
 							테스트
 						</button>
 						<button
@@ -736,7 +736,7 @@
 					{#if queryLoading}
 						<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
 					{:else}
-						<Play class="w-4 h-4" />
+						<Bolt class="w-4 h-4" />
 					{/if}
 					실행
 				</button>
