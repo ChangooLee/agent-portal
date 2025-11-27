@@ -11,7 +11,8 @@
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
 
-	const BACKEND_URL = 'http://localhost:8000';
+	// Vite 프록시를 통해 백엔드 API 호출 (CORS 우회)
+	const BACKEND_URL = '/api';
 
 	interface DBConnection {
 		id: string;

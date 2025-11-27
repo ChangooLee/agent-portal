@@ -90,7 +90,7 @@
 
 	async function loadProjects() {
 		try {
-			const response = await fetch('http://localhost:8000/api/projects');
+			const response = await fetch('/api/projects');
 			if (response.ok) {
 				const data = await response.json();
 				projects = data.projects || [];

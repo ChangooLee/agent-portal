@@ -115,7 +115,7 @@
 	async function loadServers() {
 		loading = true;
 		try {
-			const response = await fetch('http://localhost:8000/mcp/servers');
+			const response = await fetch('/api/mcp/servers');
 			if (!response.ok) throw new Error('Failed to load servers');
 			const data = await response.json();
 			servers = data.servers || [];
@@ -163,7 +163,7 @@
 		try {
 			if (editMode && selectedServer) {
 				// Update
-				const response = await fetch(`http://localhost:8000/mcp/servers/${selectedServer.id}`, {
+				const response = await fetch(`/api/mcp/servers/${selectedServer.id}`, {
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
@@ -179,7 +179,7 @@
 				toast.success('MCP 서버가 수정되었습니다.');
 			} else {
 				// Create
-				const response = await fetch('http://localhost:8000/mcp/servers', {
+				const response = await fetch('/api/mcp/servers', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(formData)
@@ -199,7 +199,7 @@
 		if (!confirm(`"${server.name}" 서버를 삭제하시겠습니까?`)) return;
 
 		try {
-			const response = await fetch(`http://localhost:8000/mcp/servers/${server.id}`, {
+			const response = await fetch(`/api/mcp/servers/${server.id}`, {
 				method: 'DELETE'
 			});
 			if (!response.ok) throw new Error('Failed to delete server');
@@ -214,7 +214,7 @@
 	async function testServer(server: MCPServer) {
 		testingServer = server.id;
 		try {
-			const response = await fetch(`http://localhost:8000/mcp/servers/${server.id}/test`, {
+			const response = await fetch(`/api/mcp/servers/${server.id}/test`, {
 				method: 'POST'
 			});
 			const result = await response.json();
@@ -235,7 +235,7 @@
 
 	async function toggleServer(server: MCPServer) {
 		try {
-			const response = await fetch(`http://localhost:8000/mcp/servers/${server.id}`, {
+			const response = await fetch(`/api/mcp/servers/${server.id}`, {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ enabled: !server.enabled })
@@ -251,7 +251,7 @@
 
 	async function viewTools(server: MCPServer) {
 		try {
-			const response = await fetch(`http://localhost:8000/mcp/servers/${server.id}/tools`);
+			const response = await fetch(`/api/mcp/servers/${server.id}/tools`);
 			if (!response.ok) throw new Error('Failed to load tools');
 			selectedServerTools = await response.json();
 			selectedServer = server;
@@ -301,7 +301,7 @@
 		try {
 			// Load permissions, users, and groups in parallel
 			const [permissionsRes, usersRes, groupsRes] = await Promise.all([
-				fetch(`http://localhost:8000/mcp/servers/${server.id}/permissions`).then((r) => r.json()),
+				fetch(`/api/mcp/servers/${server.id}/permissions`).then((r) => r.json()),
 				getUsers(localStorage.token),
 				getGroups(localStorage.token)
 			]);
@@ -343,7 +343,7 @@
 			if (existingPermId) {
 				// Revoke permission
 				const response = await fetch(
-					`http://localhost:8000/mcp/servers/${permissionServer.id}/permissions/${existingPermId}`,
+					`/api/mcp/servers/${permissionServer.id}/permissions/${existingPermId}`,
 					{ method: 'DELETE' }
 				);
 				if (!response.ok) throw new Error('Failed to revoke permission');
@@ -352,7 +352,7 @@
 			} else {
 				// Grant permission
 				const response = await fetch(
-					`http://localhost:8000/mcp/servers/${permissionServer.id}/permissions`,
+					`/api/mcp/servers/${permissionServer.id}/permissions`,
 					{
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },

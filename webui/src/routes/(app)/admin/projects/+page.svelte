@@ -32,7 +32,8 @@
 	let formDescription = '';
 	let formDefaultModel = '';
 
-	const API_BASE = 'http://localhost:8000/api/projects';
+	// Vite 프록시를 통해 백엔드 API 호출 (CORS 우회)
+	const API_BASE = '/api/projects';
 
 	async function loadProjects() {
 		loading = true;

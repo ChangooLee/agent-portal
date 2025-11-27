@@ -62,6 +62,35 @@ export default defineConfig({
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true
 			},
+			// DataCloud API → FastAPI BFF (포트 8000)
+			'/api/datacloud': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/datacloud/, '/datacloud')
+			},
+			// MCP API → FastAPI BFF (포트 8000)
+			'/api/mcp': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/mcp/, '/mcp')
+			},
+			// Gateway API → FastAPI BFF (포트 8000)
+			'/api/gateway': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/gateway/, '/gateway')
+			},
+			// Monitoring API → FastAPI BFF (포트 8000)
+			'/api/monitoring': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/monitoring/, '/monitoring')
+			},
+			// Projects API → FastAPI BFF (포트 8000)
+			'/api/projects': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true
+			},
 			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
 		// ⚠️ CRITICAL: Docker 환경에서는 localhost (컨테이너 내부 Uvicorn)
 			'/api': {

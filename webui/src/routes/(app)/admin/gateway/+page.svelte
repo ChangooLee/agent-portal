@@ -19,7 +19,8 @@
 	let error: string | null = null;
 	let activeTab = 'overview';
 
-	const BFF_BASE_URL = import.meta.env.VITE_BFF_BASE_URL || 'http://localhost:8000';
+	// Vite 프록시를 통해 백엔드 API 호출 (CORS 우회)
+	const BFF_BASE_URL = '/api';
 	const kongAdminUrl = `${BFF_BASE_URL}/embed/kong-admin/`;
 
 	// Gateway Overview Data
