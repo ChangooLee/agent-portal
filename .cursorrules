@@ -542,6 +542,55 @@ git add . && git commit -m "..."
 
 ---
 
+## 📋 계획 문서(Plans) 관리
+
+대규모 기능 개발 시 `docs/plans/` 디렉토리에 계획 문서를 작성하고 관리합니다.
+
+### 계획 문서 작성 시점
+
+**새 계획 문서가 필요한 경우**:
+- 새로운 대규모 기능 개발 (예: MCP Gateway, Data Cloud)
+- 복잡한 아키텍처 변경
+- 다단계(Phase) 구현이 필요한 작업
+
+### 계획 문서 형식
+
+**파일 위치**: `docs/plans/<FEATURE_NAME>_PLAN.md` 또는 `docs/plans/<FEATURE_NAME>_DEVELOPMENT.md`
+
+**필수 섹션**:
+1. 현재 상태 / 배경
+2. 구현 목표
+3. 아키텍처 다이어그램
+4. Phase별 구현 계획
+5. 수정 파일 목록
+6. 의존성
+7. 예상 시간
+
+### 계획 문서 업데이트 절차 (CRITICAL)
+
+**구현 진행 시**:
+```markdown
+| Phase | 상태 | 완료일 |
+|-------|------|--------|
+| Phase 1 | ✅ 완료 | 2025-11-27 |
+| Phase 2 | 🚧 진행중 | - |
+| Phase 3 | ⏳ 대기 | - |
+```
+
+**구현 완료 시**:
+1. 계획 문서 상단에 `## 구현 완료: ✅` 표시
+2. `docs/CURRENT_STATUS.md` 업데이트
+3. 관련 Stage 진행률 업데이트
+
+### 현재 계획 문서 목록
+
+| 문서 | 상태 | 설명 |
+|------|------|------|
+| `MCP_GATEWAY_PLAN.md` | ✅ 완료 | MCP Gateway 구현 계획 |
+| `DATA_CLOUD_DEVELOPMENT.md` | 🚧 진행중 | Data Cloud 커넥터 구현 |
+
+---
+
 ## 🧹 임시 문서 관리
 
 ### 임시 문서 정의

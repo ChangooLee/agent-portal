@@ -307,7 +307,7 @@ metrics = await monitoring_adapter.get_metrics(
     start_time=datetime.now() - timedelta(days=7),
     end_time=datetime.now()
 )
-
+    
 # 결과 사용
 print(f"Total traces: {len(traces)}")
 print(f"Total cost: ${metrics['total_cost']:.4f}")
@@ -753,9 +753,9 @@ find . -name "*주제*.md"
 - [x] 에이전트 빌더 페이지 추가 (`/agent` 탭 UI)
 - [x] 리버스 프록시 구현 (`/api/proxy/langflow`, `/api/proxy/flowise`, `/api/proxy/autogen`)
 - [x] 사이드바 에이전트 섹션 추가 (채팅 섹션과 분리)
-- [ ] Langflow → LangGraph 변환기 구현 (`backend/app/services/langflow_converter.py`)
-- [ ] LangGraph 실행 서비스 구현 (`backend/app/services/langgraph_service.py`)
-- [ ] 변환/실행 API 엔드포인트 추가 (`backend/app/routes/agents.py`)
+  - [ ] Langflow → LangGraph 변환기 구현 (`backend/app/services/langflow_converter.py`)
+  - [ ] LangGraph 실행 서비스 구현 (`backend/app/services/langgraph_service.py`)
+  - [ ] 변환/실행 API 엔드포인트 추가 (`backend/app/routes/agents.py`)
 - [ ] Flowise/AutoGen 플로우 → LangGraph JSON 변환
 - [ ] 에이전트 버전/리비전 관리 시스템
 

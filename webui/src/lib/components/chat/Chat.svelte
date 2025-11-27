@@ -718,8 +718,8 @@
 						const parsed = JSON.parse(lastModels);
 						if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] !== '') {
 							selectedModels = parsed;
-						} else {
-							selectedModels = [''];
+			} else {
+				selectedModels = [''];
 						}
 					} catch (e) {
 						selectedModels = [''];

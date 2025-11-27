@@ -10,7 +10,10 @@ from datetime import datetime, timedelta
 import httpx
 import json
 import os
+import logging
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -29,7 +32,7 @@ class MonitoringAdapter:
     """
     
     def __init__(self):
-        self.base_url = f"http://{CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}"
+        self.base_url = f"http://{CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}/"
     
     async def _execute_query(self, query: str, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """ClickHouse 쿼리 실행 헬퍼 메서드.
@@ -49,20 +52,28 @@ class MonitoringAdapter:
         # JSONEachRow 형식으로 결과 반환
         full_query = f"{query} FORMAT JSONEachRow"
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                self.base_url,
-                headers=headers,
-                content=full_query
-            )
-            response.raise_for_status()
-            
-            # JSONEachRow 파싱
-            result = []
-            for line in response.text.strip().split('\n'):
-                if line:
-                    result.append(json.loads(line))
-            return result
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    self.base_url,
+                    headers=headers,
+                    content=full_query
+                )
+                response.raise_for_status()
+                
+                # JSONEachRow 파싱
+                result = []
+                for line in response.text.strip().split('\n'):
+                    if line:
+                        result.append(json.loads(line))
+                return result
+        except httpx.HTTPStatusError as e:
+            error_text = str(e.response.text) if e.response else ""
+            # 테이블이 없거나 컬럼이 없는 경우 등 ClickHouse 에러 처리
+            if any(err in error_text for err in ["UNKNOWN_TABLE", "does not exist", "UNKNOWN_IDENTIFIER", "Unknown expression"]):
+                logger.warning(f"ClickHouse schema issue, returning empty result: {error_text[:200]}")
+                return []
+            raise
     
     async def get_traces(
         self,
@@ -106,7 +117,7 @@ class MonitoringAdapter:
         count_query = f"""
         SELECT count(DISTINCT TraceId) as total
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -140,7 +151,7 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens'])) as prompt_tokens,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens'])) as completion_tokens
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -250,7 +261,7 @@ class MonitoringAdapter:
             quantile(0.95)(Duration) / 1000000 as p95_duration,
             quantile(0.99)(Duration) / 1000000 as p99_duration
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -597,7 +608,7 @@ class MonitoringAdapter:
             {time_format} as timestamp,
             sum(toFloat64OrZero(SpanAttributes['gen_ai.usage.cost'])) as cost
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY timestamp
@@ -635,7 +646,7 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens'])) as completion_tokens,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.cache_read_input_tokens'])) as cache_hits
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY timestamp
@@ -667,7 +678,7 @@ class MonitoringAdapter:
             sum(Duration) / 1000000 as duration,
             if(countIf(StatusCode = 'ERROR') > 0, 'error', 'success') as status
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY TraceId
@@ -871,7 +882,7 @@ class MonitoringAdapter:
             -- 평균 응답 시간 (가드레일 포함)
             avg(Duration) / 1000000 as avg_latency_ms
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         """
@@ -967,7 +978,7 @@ class MonitoringAdapter:
             avg(Duration) / 1000000 as avg_latency_ms,
             countIf(StatusCode = 'ERROR') as error_count
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE project_id = '{project_id}'
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {agent_filter}

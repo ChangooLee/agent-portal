@@ -1,12 +1,6 @@
 ---
-name: admin-screens
-description: Admin Screens 개발 규칙 (Glassmorphism 디자인, 네비게이션)
-globs: webui/src/routes/(app)/admin/**/*.svelte
 alwaysApply: false
-version: 1.0
-lastUpdated: 2025-11-14
 ---
-
 # Admin Screens Development Rules
 
 Agent Portal의 Admin 화면 개발 규칙입니다.

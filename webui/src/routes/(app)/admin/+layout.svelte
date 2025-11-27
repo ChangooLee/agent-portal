@@ -11,6 +11,7 @@
 	import LockClosed from '$lib/components/icons/LockClosed.svelte';
 	import Star from '$lib/components/icons/Star.svelte';
 	import Cog6Solid from '$lib/components/icons/Cog6Solid.svelte';
+	import CircleStack from '$lib/components/icons/CircleStack.svelte';
 	import { page } from '$app/stores';
 
 	const i18n = getContext('i18n');
@@ -97,6 +98,17 @@
 						</a>
 
 						<a
+							href="/admin/datacloud"
+							class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ease-out {$page.url.pathname.includes('/admin/datacloud')
+								? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 dark:from-primary-light/80 dark:via-secondary-light/80 dark:to-accent-light/80 text-white backdrop-blur-md shadow-lg shadow-primary/30 dark:shadow-primary-light/20 border border-white/20 dark:border-gray-700/20 transform scale-105'
+								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
+							title="Data Cloud"
+						>
+							<CircleStack className="size-4" />
+							<span class="hidden sm:inline">Data Cloud</span>
+						</a>
+
+						<a
 							href="/admin/guardrails"
 							class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ease-out {$page.url.pathname.includes('/admin/guardrails')
 								? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 dark:from-primary-light/80 dark:via-secondary-light/80 dark:to-accent-light/80 text-white backdrop-blur-md shadow-lg shadow-primary/30 dark:shadow-primary-light/20 border border-white/20 dark:border-gray-700/20 transform scale-105'
@@ -129,18 +141,18 @@
 							<span class="hidden sm:inline">설정</span>
 						</a>
 
-					<a
-						href="/admin/langfuse"
-						class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ease-out {$page.url.pathname.includes('/admin/langfuse')
-							? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 dark:from-primary-light/80 dark:via-secondary-light/80 dark:to-accent-light/80 text-white backdrop-blur-md shadow-lg shadow-primary/30 dark:shadow-primary-light/20 border border-white/20 dark:border-gray-700/20 transform scale-105'
-							: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
-						title="Langfuse"
-					>
-						<Star className="size-4" />
-						<span class="hidden sm:inline">Langfuse</span>
-					</a>
+						<a
+							href="/admin/langfuse"
+							class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ease-out {$page.url.pathname.includes('/admin/langfuse')
+								? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 dark:from-primary-light/80 dark:via-secondary-light/80 dark:to-accent-light/80 text-white backdrop-blur-md shadow-lg shadow-primary/30 dark:shadow-primary-light/20 border border-white/20 dark:border-gray-700/20 transform scale-105'
+								: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
+							title="Langfuse"
+						>
+							<Star className="size-4" />
+							<span class="hidden sm:inline">Langfuse</span>
+						</a>
 
-				</div>
+					</div>
 				</div>
 			</div>
 		</nav>

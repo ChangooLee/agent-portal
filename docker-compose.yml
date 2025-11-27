@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Portal Shell (Open-WebUI fork)
   webui:
@@ -34,6 +32,8 @@ services:
       - CLICKHOUSE_USER=default
       - CLICKHOUSE_PASSWORD=password
       - CLICKHOUSE_DATABASE=otel_2
+      # Data Cloud 암호화 키 (Fernet)
+      - DATACLOUD_ENCRYPTION_KEY=LpbushjAoV7u_7Z3tk5TzqsTra79yKjMAanPR0DWz9U=
     volumes:
       # News data volume mount
       - /Users/lchangoo/Workspace/mcp-naver-news/src/data:/data/news:ro

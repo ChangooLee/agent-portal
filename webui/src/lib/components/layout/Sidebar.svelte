@@ -643,15 +643,15 @@
 				: ''}"
 		>
 			<!-- 에이전트 섹션 (상단 고정) -->
-			<Folder
-				collapsible={true}
+				<Folder
+					collapsible={true}
 				className="px-2 mt-2"
 				name="에이전트"
 				bind:open={showAgentsSection}
 				on:change={(e) => {
 					localStorage.setItem('showAgentsSection', e.detail.toString());
 				}}
-				dragAndDrop={false}
+					dragAndDrop={false}
 				onAdd={() => {
 					goto('/agent');
 					if ($mobile) {
@@ -689,8 +689,8 @@
 								on:click={() => {
 									if ($mobile) {
 										showSidebar.set(false);
-									}
-								}}
+						}
+					}}
 							>
 								<div class="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
 									<svg
@@ -710,9 +710,9 @@
 								</div>
 								<span class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">{agent.name}</span>
 							</a>
-						{/each}
+					{/each}
 					</div>
-				{/if}
+			{/if}
 			</Folder>
 
 			<!-- 채팅 섹션 -->

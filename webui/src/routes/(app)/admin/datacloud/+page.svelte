@@ -58,7 +58,7 @@
 	let expandedTables: Set<string> = new Set();
 	let showQueryModal = false;
 	let queryText = '';
-	let queryResult: { columns: string[]; rows: any[]; row_count: number; execution_time_ms: number } | null = null;
+	let queryResult: { columns: string[]; rows: any[]; rows_affected: number; execution_time_ms: number } | null = null;
 	let queryLoading = false;
 
 	// Form data
@@ -293,7 +293,7 @@
 
 			if (response.ok) {
 				queryResult = await response.json();
-				toast.success(`쿼리 실행 완료 (${queryResult?.execution_time_ms}ms, ${queryResult?.row_count}건)`);
+				toast.success(`쿼리 실행 완료 (${queryResult?.execution_time_ms ?? 0}ms, ${queryResult?.rows?.length ?? 0}건)`);
 			} else {
 				const error = await response.json();
 				toast.error(`쿼리 실패: ${error.detail}`);
@@ -330,133 +330,159 @@
 	<title>Data Cloud | Admin</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-	<!-- Hero Section -->
-	<div class="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-cyan-600/20 backdrop-blur-xl border border-white/10 p-8">
-		<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMiIvPjwvZz48L3N2Zz4=')] opacity-20"></div>
-		<div class="relative z-10">
-			<div class="flex items-center gap-4 mb-4">
-				<div class="p-3 bg-emerald-500/20 rounded-xl">
-					<Cube class="w-8 h-8 text-emerald-400" />
+<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+	<div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+		<!-- Hero Section -->
+		<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
+			<div class="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 opacity-60" />
+			<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-500/40 to-teal-500/30 blur-3xl" />
+			<div class="relative flex flex-col gap-5">
+				<div class="flex flex-wrap items-center justify-between gap-3">
+					<div class="flex flex-wrap items-center gap-3">
+						<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200">
+							<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+							Data Cloud
+						</span>
+						<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+							Zero Copy 데이터베이스 커넥터
+						</h1>
+					</div>
+					<button
+						on:click={openAddModal}
+						class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
+					>
+						<Plus class="size-5" />
+						<span>연결 추가</span>
+					</button>
 				</div>
-				<div>
-					<h1 class="text-3xl font-bold text-white">Data Cloud</h1>
-					<p class="text-gray-400">Zero Copy 데이터베이스 커넥터 - 데이터 복제 없이 실시간 연결</p>
+
+				<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+					데이터 복제 없이 실시간으로 데이터베이스에 연결하여 스키마 조회 및 쿼리를 실행할 수 있습니다.
+				</p>
+
+				<div class="grid grid-cols-3 gap-3 @md:grid-cols-4 @lg:grid-cols-6">
+					<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-emerald-500/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
+						<div class="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">총 연결</div>
+						<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">{connections.length}</div>
+						<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">등록됨</div>
+					</div>
+					<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-emerald-500/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
+						<div class="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">정상</div>
+						<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">{connections.filter(c => c.health_status === 'healthy').length}</div>
+						<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">연결됨</div>
+					</div>
+					<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-emerald-500/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
+						<div class="text-[11px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">DB 유형</div>
+						<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">{new Set(connections.map(c => c.db_type)).size}</div>
+						<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">지원</div>
+					</div>
 				</div>
 			</div>
-			<div class="flex gap-4 mt-6">
-				<div class="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
-					<div class="text-2xl font-bold text-white">{connections.length}</div>
-					<div class="text-sm text-gray-400">등록된 연결</div>
+		</section>
+
+		<!-- Connection List -->
+		<div class="bg-white/60 dark:bg-gray-900/50 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/20 shadow-xl overflow-hidden">
+			{#if loading}
+				<div class="flex items-center justify-center py-12">
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
 				</div>
-				<div class="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
-					<div class="text-2xl font-bold text-green-400">{connections.filter(c => c.health_status === 'healthy').length}</div>
-					<div class="text-sm text-gray-400">정상 연결</div>
+			{:else if connections.length === 0}
+				<div class="text-center py-12">
+					<Cube class="size-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+					<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">등록된 연결이 없습니다</h3>
+					<p class="text-gray-500 dark:text-gray-400 mb-4">데이터베이스 연결을 추가하여 시작하세요.</p>
+					<button
+						on:click={openAddModal}
+						class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+					>
+						<Plus class="size-5" />
+						<span>첫 번째 연결 추가</span>
+					</button>
 				</div>
-				<div class="bg-white/5 rounded-xl px-4 py-3 border border-white/10">
-					<div class="text-2xl font-bold text-cyan-400">{new Set(connections.map(c => c.db_type)).size}</div>
-					<div class="text-sm text-gray-400">DB 유형</div>
+			{:else}
+				<div class="overflow-x-auto">
+					<table class="w-full">
+						<thead class="bg-gray-50/50 dark:bg-gray-800/50">
+							<tr>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">데이터베이스</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">상태</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">호스트</th>
+								<th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">작업</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+							{#each connections as conn}
+								<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+									<td class="px-6 py-4">
+										<div class="flex items-center gap-3">
+											<div class="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+												<Cube class="size-5 text-emerald-600 dark:text-emerald-400" />
+											</div>
+											<div>
+												<div class="font-medium text-gray-900 dark:text-gray-100">{conn.name}</div>
+												<div class="text-sm text-gray-500 dark:text-gray-400">{getDbTypeLabel(conn.db_type)}</div>
+											</div>
+										</div>
+									</td>
+									<td class="px-6 py-4">
+										<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium {conn.health_status === 'healthy' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : conn.health_status === 'unhealthy' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-400'}">
+											{#if conn.health_status === 'healthy'}
+												<Check class="size-3" />
+											{:else if conn.health_status === 'unhealthy'}
+												<XMark class="size-3" />
+											{/if}
+											{getHealthStatusText(conn.health_status)}
+										</span>
+									</td>
+									<td class="px-6 py-4">
+										<div class="text-sm text-gray-900 dark:text-gray-100">{conn.host}:{conn.port}</div>
+										<div class="text-sm text-gray-500 dark:text-gray-400">{conn.database_name}</div>
+									</td>
+									<td class="px-6 py-4">
+										<div class="flex items-center justify-end gap-2">
+											<button
+												on:click={() => testConnection(conn)}
+												class="p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+												title="연결 테스트"
+											>
+												<Bolt class="size-4" />
+											</button>
+											<button
+												on:click={() => openSchemaModal(conn)}
+												class="px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+											>
+												스키마
+											</button>
+											<button
+												on:click={() => openQueryModal(conn)}
+												class="px-3 py-1.5 text-sm text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors"
+											>
+												쿼리
+											</button>
+											<button
+												on:click={() => openEditModal(conn)}
+												class="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+												title="편집"
+											>
+												<Pencil class="size-4" />
+											</button>
+											<button
+												on:click={() => deleteConnection(conn)}
+												class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+												title="삭제"
+											>
+												<GarbageBin class="size-4" />
+											</button>
+										</div>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
-			</div>
+			{/if}
 		</div>
 	</div>
-
-	<!-- Actions -->
-	<div class="flex justify-between items-center mb-6">
-		<h2 class="text-xl font-semibold text-white">데이터베이스 연결</h2>
-		<button
-			on:click={openAddModal}
-			class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-		>
-			<Plus class="w-5 h-5" />
-			새 연결 추가
-		</button>
-	</div>
-
-	<!-- Connections Grid -->
-	{#if loading}
-		<div class="flex justify-center items-center h-64">
-			<div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
-		</div>
-	{:else if connections.length === 0}
-		<div class="text-center py-16 bg-white/5 rounded-xl border border-white/10">
-			<Cube class="w-16 h-16 text-gray-500 mx-auto mb-4" />
-			<h3 class="text-lg font-medium text-gray-300">등록된 연결이 없습니다</h3>
-			<p class="text-gray-500 mt-2">새 연결을 추가하여 데이터베이스에 연결하세요</p>
-		</div>
-	{:else}
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-			{#each connections as conn}
-				<div class="bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 p-5 hover:border-emerald-500/50 transition-all">
-					<div class="flex items-start justify-between mb-4">
-						<div class="flex items-center gap-3">
-							<div class="p-2 bg-emerald-500/20 rounded-lg">
-								<Cube class="w-5 h-5 text-emerald-400" />
-							</div>
-							<div>
-								<h3 class="font-semibold text-white">{conn.name}</h3>
-								<p class="text-sm text-gray-400">{getDbTypeLabel(conn.db_type)}</p>
-							</div>
-						</div>
-						<div class="flex items-center gap-1">
-							<span class={`text-sm ${getHealthStatusColor(conn.health_status)}`}>
-								{getHealthStatusText(conn.health_status)}
-							</span>
-						</div>
-					</div>
-
-					<div class="space-y-2 text-sm text-gray-400 mb-4">
-						<div class="flex justify-between">
-							<span>호스트:</span>
-							<span class="text-gray-300">{conn.host}:{conn.port}</span>
-						</div>
-						<div class="flex justify-between">
-							<span>데이터베이스:</span>
-							<span class="text-gray-300">{conn.database_name}</span>
-						</div>
-						<div class="flex justify-between">
-							<span>사용자:</span>
-							<span class="text-gray-300">{conn.username}</span>
-						</div>
-					</div>
-
-					<div class="flex gap-2 pt-4 border-t border-white/10">
-						<button
-							on:click={() => testConnection(conn)}
-							class="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-sm transition-colors"
-						>
-							<Bolt class="w-4 h-4" />
-							테스트
-						</button>
-						<button
-							on:click={() => openSchemaModal(conn)}
-							class="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg text-sm transition-colors"
-						>
-							스키마
-						</button>
-						<button
-							on:click={() => openQueryModal(conn)}
-							class="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-sm transition-colors"
-						>
-							쿼리
-						</button>
-						<button
-							on:click={() => openEditModal(conn)}
-							class="p-2 bg-gray-600/20 hover:bg-gray-600/30 text-gray-400 rounded-lg transition-colors"
-						>
-							<Pencil class="w-4 h-4" />
-						</button>
-						<button
-							on:click={() => deleteConnection(conn)}
-							class="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
-						>
-							<GarbageBin class="w-4 h-4" />
-						</button>
-					</div>
-				</div>
-			{/each}
-		</div>
-	{/if}
 </div>
 
 <!-- Add/Edit Connection Modal -->
@@ -742,11 +768,11 @@
 				</button>
 			</div>
 
-			{#if queryResult}
-				<div class="flex-1 overflow-auto border-t border-white/10">
-					<div class="p-4 bg-slate-900/50 text-sm text-gray-400">
-						{queryResult.row_count}건 조회됨 ({queryResult.execution_time_ms}ms)
-					</div>
+		{#if queryResult}
+			<div class="flex-1 overflow-auto border-t border-white/10">
+				<div class="p-4 bg-slate-900/50 text-sm text-gray-400">
+					{queryResult.rows?.length ?? 0}건 조회됨 ({queryResult.execution_time_ms ?? 0}ms)
+				</div>
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm">
 							<thead class="bg-slate-900/50 sticky top-0">

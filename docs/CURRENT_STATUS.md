@@ -13,16 +13,34 @@
 | **Stage 2** | ✅ 완료 | 95% | Chat + Observability (LiteLLM + OTEL + ClickHouse 통합 완료) |
 | **Stage 3** | 🚧 진행 중 | 40% | 에이전트 빌더 (iframe 임베딩 완료, LangGraph 변환 미완) |
 | **Stage 4** | ✅ 완료 | 100% | MCP Gateway + Kong 통합 + 권한 관리 + SSE 지원 |
+| **Stage 5** | 🚧 진행 중 | 85% | Data Cloud 커넥터 (UI/API 완료, Kong 통합 미완) |
 | **Stage 8** | ❌ 미시작 | 0% | Perplexica + Open-Notebook 임베드 |
 
-**전체 진행률**: 약 **55%**  
-**최근 주요 작업**: MCP Gateway SSE 전송 방식 지원 추가
+**전체 진행률**: 약 **60%**  
+**최근 주요 작업**: Data Cloud 커넥터 구현 (Zero Copy DB 연결)
 
 ---
 
 ## ✅ 최근 완료된 작업 (2025-11-25 ~ 2025-11-27)
 
-### 0. MCP Gateway + Kong 통합 ✨ (2025-11-27)
+### 0. Data Cloud 커넥터 ✨ (2025-11-27) - NEW
+
+**완료 사항**:
+- ✅ DB 스키마 설계 및 적용 (`scripts/init-datacloud-schema.sql`)
+- ✅ Backend 서비스 구현 (`datacloud_service.py`)
+- ✅ API 라우터 구현 (`/datacloud/*`)
+- ✅ Admin UI 구현 (`/admin/datacloud`) - Glassmorphism 적용
+- ✅ 브라우저 테스트 완료 (스키마 조회, 쿼리 실행)
+
+**등록된 DB 연결**:
+| DB | 호스트 | 포트 | 상태 |
+|-----|--------|------|------|
+| Agent Portal MariaDB | mariadb | 3306 | ✅ 정상 |
+| LiteLLM PostgreSQL | litellm-postgres | 5432 | ✅ 정상 |
+
+**접속 경로**: http://localhost:3001/admin/datacloud
+
+### 1. MCP Gateway + Kong 통합 ✨ (2025-11-27)
 
 **완료 사항**:
 - ✅ MCP 서버 DB 스키마 설계 및 적용 (`mcp_servers`, `mcp_server_permissions`)
@@ -137,6 +155,27 @@ docker exec agentops-clickhouse clickhouse-client --query \
 - [ ] Langflow → LangGraph 변환기 구현
 - [ ] LangGraph 실행 서비스 구현
 - [ ] 에이전트 버전/리비전 관리 시스템
+
+### Stage 5: Data Cloud 커넥터 (85% 완료) ✨ NEW
+
+**완료**:
+- ✅ DB 스키마 설계 (`db_connections`, `db_schema_cache`, `db_business_terms`, `db_connection_permissions`, `db_query_logs`)
+- ✅ Backend 서비스 (`datacloud_service.py`) - SQLAlchemy 스키마 리플렉션
+- ✅ API 라우터 (`/datacloud/*`) - CRUD, 테스트, 스키마 조회, 쿼리 실행
+- ✅ Admin UI (`/admin/datacloud`) - Glassmorphism 디자인
+- ✅ 비밀번호 Fernet 암호화
+- ✅ 2개 DB 연결 완료 (MariaDB, PostgreSQL)
+- ✅ 스키마 조회/캐싱 정상 동작
+- ✅ SQL 쿼리 실행 및 결과 표시
+
+**남은 작업**:
+- [ ] Kong Gateway 통합 (API Key 인증, Rate Limiting)
+- [ ] 추가 DB 연결 (langfuse-db, kong-db, konga-db, helicone-db, ClickHouse)
+- [ ] 비즈니스 용어집 UI
+- [ ] 권한 관리 UI
+- [ ] 쿼리 결과 차트 시각화
+
+**계획 문서**: [docs/plans/DATA_CLOUD_DEVELOPMENT.md](./plans/DATA_CLOUD_DEVELOPMENT.md)
 
 ---
 
