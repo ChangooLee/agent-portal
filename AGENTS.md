@@ -45,10 +45,10 @@ curl -s "http://localhost:8000/api/endpoint" | python3 -m json.tool
 
 **예시 (올바른 완료)**:
 ```
-1. AgentOps Adapter 수정 완료
+1. Monitoring Adapter 수정 완료
 2. Backend 재시작 완료
 3. ✅ 테스트 수행:
-   $ curl http://localhost:8000/api/agentops/metrics?...
+   $ curl http://localhost:8000/api/monitoring/metrics?...
    {"trace_count": 10, "total_cost": 1.23}
 4. ✅ 브라우저 확인: 차트 정상 표시
 5. ✅ TODO completed
@@ -56,7 +56,7 @@ curl -s "http://localhost:8000/api/endpoint" | python3 -m json.tool
 
 **예시 (잘못된 완료)**:
 ```
-1. AgentOps Adapter 수정 완료
+1. Monitoring Adapter 수정 완료
 2. Backend 재시작 완료
 3. ❌ "구현 완료했습니다!" → 테스트 누락
 ```
@@ -93,13 +93,16 @@ agent-portal/
 │   │   ├── routes/            # API 엔드포인트
 │   │   │   ├── chat.py        # Chat API (Stage 2 ✅)
 │   │   │   ├── observability.py  # Observability API (Stage 2 ✅)
+│   │   │   ├── monitoring.py  # Monitoring API (ClickHouse 조회)
+│   │   │   ├── projects.py    # 프로젝트 관리 API
 │   │   │   ├── embed.py       # Embed 프록시
 │   │   │   ├── kong_admin.py # Kong Admin 프록시
-│   │   │   └── proxy.py       # 리버스 프록시 (Langflow/Flowise/AutoGen/Perplexica/Notebook)
+│   │   │   └── proxy.py       # 리버스 프록시 (Langflow/Flowise/AutoGen)
 │   │   ├── services/          # 비즈니스 로직 레이어
 │   │   │   ├── litellm_service.py  # LiteLLM 게이트웨이 (Stage 2 ✅)
 │   │   │   ├── langfuse_service.py # Langfuse 관측성 (Stage 2 ✅)
-│   │   │   └── agentops_service.py # AgentOps 에이전트 모니터링 (Stage 3 🚧)
+│   │   │   ├── monitoring_adapter.py # ClickHouse 모니터링 어댑터
+│   │   │   └── project_service.py # 프로젝트 관리 서비스
 │   │   ├── middleware/        # 미들웨어 (RBAC 등)
 │   │   ├── config.py          # 설정 관리
 │   │   └── main.py            # FastAPI 앱 진입점
@@ -139,17 +142,18 @@ agent-portal/
     └── AGENTS.md              # 이 문서
 ```
 
-### 핵심 서비스 및 상태
+### 핵심 서비스 및 상태 (2025-11-26 업데이트)
 
 | 서비스 | 포트 | 역할 | 상태 |
 |--------|------|------|------|
 | **Backend BFF** | 8000 | FastAPI 백엔드, API 게이트웨이 | ✅ 실행 중 |
+| **Open-WebUI** | 3001 | Portal Shell (UI) | ✅ 실행 중 |
 | **Kong** | 8002/8443 | API Gateway, 보안/라우팅 | ✅ 실행 중 |
 | **Konga** | 1337 | Kong Admin UI | ✅ 실행 중 |
-| **LiteLLM** | 4000 | LLM 게이트웨이 | ⚠️ 설정 필요 |
-| **Langfuse** | 3001 | LLM 관측성 (체인 추적) | ⚠️ 설정 필요 |
-| **AgentOps** | - | 에이전트 실행 모니터링 (SDK) | 🚧 통합 중 |
-| **Helicone** | 8787 | LLM 프록시/비용 추적 | ⚠️ 설정 필요 |
+| **LiteLLM** | 4000 | LLM 게이트웨이 + PostgreSQL | ✅ 실행 중 |
+| **Monitoring OTEL Collector** | 4317/4318 | OpenTelemetry traces 수집 | ✅ 실행 중 |
+| **Monitoring ClickHouse** | 8124/9002 | Traces 저장소 | ✅ 실행 중 |
+| **Langfuse** | 3003 | LLM 품질 관리 (선택적) | ⚠️ 선택적 |
 | **Langflow** | 7861 | 노코드 에이전트 빌더 | ✅ 실행 중 |
 | **Flowise** | 3002 | 노코드 에이전트 빌더 | ✅ 실행 중 |
 | **AutoGen Studio** | 5050 | 대화형 워크플로 UI | ✅ 실행 중 |
@@ -157,27 +161,34 @@ agent-portal/
 | **Perplexica** | 5173 | 검색 포털(iframe 임베드) | ❌ 미구현 |
 | **Open-Notebook** | 3030 | AI 노트북(iframe 임베드) | ❌ 미구현 |
 
-### 현재 진행 상황
+> **참고**: AgentOps Self-Hosted 서비스는 제거되었습니다. 모니터링은 ClickHouse + OTEL Collector 기반의 자체 구현으로 대체되었습니다.
+
+### 현재 진행 상황 (2025-11-26 업데이트)
 
 **Stage 1**: ✅ 완료
 - Kong Gateway 설정 및 실행
 - Konga 스키마 생성 및 실행
 
-**Stage 2**: ✅ 코드 완료 (환경 설정 필요)
-- Chat API (`/chat/stream`, `/chat/completions`)
-- Observability API (`/observability/health`, `/observability/usage`, `/observability/models`)
-- Open-WebUI Monitoring 페이지
-- Embed 프록시
+**Stage 2**: ✅ 완료 (95%)
+- ✅ Chat API (`/chat/stream`, `/chat/completions`)
+- ✅ Observability API (`/observability/health`, `/observability/usage`, `/observability/models`)
+- ✅ Open-WebUI Monitoring 페이지 (4개 탭: Overview/Analytics/Traces/Replay)
+- ✅ LiteLLM + PostgreSQL 통합
+- ✅ LiteLLM → OTEL Collector → ClickHouse 파이프라인
+- ✅ Backend BFF ClickHouse 직접 조회
+- ✅ Guardrail 모니터링 (Agent Flow Graph + Stats)
+- ⚠️ Langfuse 선택적 (품질 관리용)
 
-**Stage 3**: 🚧 진행 중
+**Stage 3**: 🚧 진행 중 (40%)
 - ✅ 에이전트 빌더 iframe 임베딩 (Langflow + Flowise + AutoGen Studio)
-- 🚧 Langflow UI 재구현 (Phase 1-A 완료, Phase 1-B 진행 중)
-- 🚧 LangGraph 변환 + 실행 + AgentOps 모니터링
+- ✅ 리버스 프록시 구현
+- 🚧 Langflow → LangGraph 변환기 (미구현)
+- 🚧 에이전트 버전/리비전 관리 시스템 (미구현)
 
 **Stage 8**: ❌ 미시작
 - Perplexica + Open-Notebook 임베드 (iframe, 리버스 프록시)
 
-**상세 진행 상황**: [PROGRESS.md](./PROGRESS.md) 참조
+**상세 진행 상황**: [docs/CURRENT_STATUS.md](./docs/CURRENT_STATUS.md) 참조
 
 ---
 
@@ -274,46 +285,38 @@ span.end(output={"result": "data"})
 trace.end()
 ```
 
-**AgentOps 통합** (에이전트 실행 모니터링):
-- `agentops_service.start_session()` 사용
-- 세션 단위 추적 (시작 → 실행 → 종료)
-- 비용 계산 및 세션 리플레이 URL 제공
+**Monitoring 통합** (LLM 호출 모니터링):
+- LiteLLM → OTEL Collector → ClickHouse 파이프라인 활용
+- `monitoring_adapter.get_traces()` 사용
+- 비용 계산 및 세션 리플레이 제공
 
 **예시**:
 ```python
-from app.services.agentops_service import agentops_service
+from app.services.monitoring_adapter import monitoring_adapter
 
-# 세션 시작
-session = agentops_service.start_session(
-    flow_id="flow-123",
-    tags=["langflow", "production"]
+# 트레이스 조회
+traces = await monitoring_adapter.get_traces(
+    project_id="project-123",
+    start_time=datetime.now() - timedelta(days=7),
+    end_time=datetime.now()
 )
 
-try:
-    # 플로우 실행
-    result = await execute_flow(...)
-    
-    # 성공 기록
-    agentops_service.record_action(
-        session=session,
-        action_type="flow_execution",
-        result=result,
-        cost=0.05
-    )
-    
-    # 세션 종료 (성공)
-    session_url = agentops_service.end_session(session, status="Success")
-    return {"result": result, "agentops_session_url": session_url}
-except Exception as e:
-    # 세션 종료 (실패)
-    agentops_service.end_session(session, status="Fail", error=str(e))
-    raise
+# 메트릭 조회
+metrics = await monitoring_adapter.get_metrics(
+    project_id="project-123",
+    start_time=datetime.now() - timedelta(days=7),
+    end_time=datetime.now()
+)
+
+# 결과 사용
+print(f"Total traces: {len(traces)}")
+print(f"Total cost: ${metrics['total_cost']:.4f}")
 ```
 
-**Langfuse vs AgentOps**:
-- **Langfuse**: LLM 체인 추적, 프롬프트 비교, 세션 분석
-- **AgentOps**: 에이전트 실행 모니터링, 비용 추적, 세션 리플레이
-- **함께 사용**: 상호 보완적 (Langfuse는 체인 레벨, AgentOps는 에이전트 레벨)
+**Langfuse vs Monitoring**:
+- **Langfuse**: LLM 체인 추적, 프롬프트 비교, 세션 분석 (선택적)
+- **Monitoring**: ClickHouse 기반 LLM 호출 모니터링, 비용 추적, 세션 리플레이
+- **함께 사용**: 상호 보완적 (Langfuse는 품질 관리, Monitoring은 비용/성능 추적)
 
 ### 3.2.1 Agent Flow Graph 및 Guardrail 모니터링
 
@@ -730,33 +733,31 @@ find . -name "*주제*.md"
 - [x] Docker Compose 서비스 정의
 - [x] Embed 프록시 라우트 구현
 
-### Stage 2: Chat 및 Observability API
+### Stage 2: Chat 및 Observability API (95% 완료)
 - [x] Chat API 엔드포인트 구현 (`/chat/stream`, `/chat/completions`)
 - [x] Observability API 엔드포인트 구현 (`/observability/*`)
 - [x] LiteLLM 서비스 레이어 구현
-- [x] Langfuse 서비스 레이어 구현
-- [x] Open-WebUI Monitoring 페이지 추가
+- [x] LiteLLM + PostgreSQL 통합 완료
+- [x] LiteLLM → OTEL Collector → ClickHouse 파이프라인 완료
+- [x] Backend BFF ClickHouse 직접 조회 전환
+- [x] Open-WebUI Monitoring 페이지 추가 (4개 탭: Overview/Analytics/Traces/Replay)
+- [x] Guardrail 모니터링 구현 (Agent Flow Graph + Stats)
 - [x] 라우터 등록 완료
-- [ ] LiteLLM 서비스 실행 및 설정 (환경 설정 필요)
-- [ ] Langfuse 서비스 실행 및 연동 (환경 설정 필요)
-- [ ] 프론트엔드-백엔드 데이터 연동 (BFF API 호출)
+- [x] 프론트엔드-백엔드 데이터 연동 완료
+- [ ] Langfuse 서비스 (선택적, 품질 관리용)
 
-### Stage 3: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio)
+### Stage 3: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio) (40% 완료)
 - [x] Langflow 컨테이너 설정 (포트 7861)
 - [x] Flowise 컨테이너 설정 (포트 3002)
 - [x] AutoGen Studio/API 컨테이너 설정 (로컬 빌드, 포트 5050/5051)
 - [x] 에이전트 빌더 페이지 추가 (`/agent` 탭 UI)
 - [x] 리버스 프록시 구현 (`/api/proxy/langflow`, `/api/proxy/flowise`, `/api/proxy/autogen`)
-- [x] Langflow UI 재구현 - Phase 1-A (플로우 목록 UI)
-- [ ] Langflow UI 재구현 - Phase 1-B (LangGraph 변환 + 실행 + AgentOps)
-  - [ ] AgentOps 서비스 레이어 구현 (`backend/app/services/agentops_service.py`)
-  - [ ] Langflow → LangGraph 변환기 구현 (`backend/app/services/langflow_converter.py`)
-  - [ ] LangGraph 실행 서비스 구현 (`backend/app/services/langgraph_service.py`)
-  - [ ] 변환/실행 API 엔드포인트 추가 (`backend/app/routes/agents.py`)
-  - [ ] 플로우 카드 컴포넌트 (Export/Run 버튼)
-  - [ ] 실행 결과 패널 (비용 정보, AgentOps 리플레이 링크)
-- [ ] Flowise/AutoGen 플로우 → LangGraph JSON 변환 (Phase 2)
-- [ ] 에이전트 버전/리비전 관리 시스템 (Phase 2)
+- [x] 사이드바 에이전트 섹션 추가 (채팅 섹션과 분리)
+- [ ] Langflow → LangGraph 변환기 구현 (`backend/app/services/langflow_converter.py`)
+- [ ] LangGraph 실행 서비스 구현 (`backend/app/services/langgraph_service.py`)
+- [ ] 변환/실행 API 엔드포인트 추가 (`backend/app/routes/agents.py`)
+- [ ] Flowise/AutoGen 플로우 → LangGraph JSON 변환
+- [ ] 에이전트 버전/리비전 관리 시스템
 
 ### Stage 8: Perplexica + Open-Notebook 임베드
 - [ ] Perplexica 포크 및 컨테이너 설정 (포트 5173)
@@ -772,6 +773,6 @@ find . -name "*주제*.md"
 
 ---
 
-**마지막 업데이트**: 2025-11-04  
-**버전**: 2.0 (Claude Code 가이드라인 반영)  
+**마지막 업데이트**: 2025-11-26  
+**버전**: 2.1 (OTEL + ClickHouse 통합, Guardrail 모니터링 반영)  
 **참고**: [Claude Code 사용 가이드](https://news.hada.io/topic?id=24099)

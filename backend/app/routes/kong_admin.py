@@ -1,11 +1,9 @@
 """Kong Admin UI (Konga) proxy route"""
-from fastapi import APIRouter, Request, Response, HTTPException, status, Depends
+from fastapi import APIRouter, Request, Response, HTTPException, status
 from fastapi.responses import StreamingResponse
 import httpx
 from app.config import get_settings
-from app.middleware.rbac import get_current_user_role, require_admin_role, security
 from typing import Optional
-from fastapi.security import HTTPAuthorizationCredentials
 
 router = APIRouter()
 settings = get_settings()
@@ -18,19 +16,14 @@ settings = get_settings()
 )
 async def proxy_kong_admin(
     path: str,
-    request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    request: Request
 ):
     """
     Proxy requests to Konga (Kong Admin UI).
-    Only accessible by admin users via BFF proxy.
-    """
-    # Get user role (simplified - integrate with actual auth)
-    # TODO: Integrate with Open-WebUI authentication system
-    user_info = {"role": "admin"}  # Placeholder
     
-    # Require admin role
-    require_admin_role(user_info)
+    Note: Authentication is handled by Konga itself.
+    Access to this endpoint should be restricted at the frontend level.
+    """
     
     # Build target URL
     if not path or path == "":
@@ -42,11 +35,11 @@ async def proxy_kong_admin(
     if request.url.query:
         target_url += f"?{request.url.query}"
     
-    # Prepare headers (remove host, add forwarding headers)
+    # Prepare headers (remove host only, keep authorization for Konga auth)
     headers = {
         key: value
         for key, value in request.headers.items()
-        if key.lower() not in ["host", "content-length", "authorization"]
+        if key.lower() not in ["host", "content-length"]
     }
     
     # Prepare request body
@@ -70,12 +63,13 @@ async def proxy_kong_admin(
                 "x-frame-options",
                 "content-security-policy",
                 "frame-ancestors",
+                "content-encoding",  # Remove to avoid decompression issues
             ]
             for header in headers_to_remove:
                 response_headers.pop(header, None)
             
-            # Set permissive frame policy for embedding
-            response_headers["X-Frame-Options"] = "SAMEORIGIN"
+            # Allow iframe embedding from same origin
+            response_headers["Content-Security-Policy"] = "frame-ancestors 'self' http://localhost:3001"
             
             # Handle cookies - make them HttpOnly and SameSite=Lax for security
             if "set-cookie" in response_headers:

@@ -17,8 +17,8 @@ except Exception as e:
     raise
 
 try:
-    from app.routes import proxy, agents, agentops
-    logger.info("✅ New routes (proxy, agents, agentops) imported successfully")
+    from app.routes import proxy, agents, monitoring, projects, teams, mcp, gateway
+    logger.info("✅ New routes (proxy, agents, monitoring, projects, teams, mcp, gateway) imported successfully")
 except Exception as e:
     logger.error(f"❌ New routes import failed: {e}")
     import traceback
@@ -68,14 +68,18 @@ app.include_router(observability.router)
 app.include_router(news.router)
 app.include_router(proxy.router)
 app.include_router(agents.router)
-app.include_router(agentops.router)
+app.include_router(monitoring.router)
+app.include_router(projects.router)
+app.include_router(teams.router)
+app.include_router(mcp.router)
+app.include_router(gateway.router)
 
 # Debug: 라우터 등록 확인
 import logging
 logger = logging.getLogger(__name__)
 logger.info(f"Total routes registered: {len(app.routes)}")
-agentops_routes = [r for r in app.routes if hasattr(r, 'path') and 'agentops' in r.path.lower()]
-logger.info(f"AgentOps routes: {len(agentops_routes)}")
+monitoring_routes = [r for r in app.routes if hasattr(r, 'path') and 'monitoring' in r.path.lower()]
+logger.info(f"Monitoring routes: {len(monitoring_routes)}")
 
 
 @app.get("/health")

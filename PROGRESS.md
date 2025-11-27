@@ -9,7 +9,7 @@
 | 단계 | 상태 | 완료율 | 비고 |
 |------|------|--------|------|
 | **Stage 1** | ✅ 완료 | 100% | 인프라 및 기본 설정 (1-2주) |
-| **Stage 2** | ✅ 완료 | 95% | LiteLLM + AgentOps + Grafana 모니터링 (2-3주) |
+| **Stage 2** | ✅ 완료 | 100% | LiteLLM + Monitoring + Grafana (2-3주) |
 | **Stage 3** | 🚧 진행 중 | 35% | 에이전트 빌더 (3-4주) |
 | **Stage 4** | ❌ 미시작 | 0% | MCP SSE + Kong (2-3주) |
 | **Stage 5** | ❌ 미시작 | 0% | 데이터베이스 (3-4주) |
@@ -18,7 +18,7 @@
 | **Stage 8** | ❌ 미시작 | 0% | 포털 통합 (2-3주) |
 | **Stage 9** | ❌ 미시작 | 0% | 가드레일 (2-3주) |
 
-**전체 진행률**: 약 **25%** (Stage 1-2 완료, Stage 3 진행 중)  
+**전체 진행률**: 약 **27%** (Stage 1-2 완료, Stage 3 진행 중)  
 **총 예상 개발 기간**: 약 **22-30주** (5.5-7.5개월)
 
 ---
@@ -41,66 +41,67 @@
 - ✅ AI 코딩 가이드라인 작성 (.cursorrules, AGENTS.md, CLAUDE.md)
 
 **실행 중인 서비스**:
-- ✅ Open-WebUI (포트 3000)
-
-**미실행 서비스** (docker-compose.yml에 정의됨):
-- ⚠️ Backend BFF (FastAPI)
-- ⚠️ Kong Gateway + Konga
-- ⚠️ LiteLLM
-- ⚠️ Langfuse
-- ⚠️ Helicone
-- ⚠️ MariaDB, ChromaDB, Redis, MinIO
-- ⚠️ LangGraph Server
-- ⚠️ Open-Notebook, Perplexica
+- ✅ Open-WebUI (포트 3001)
+- ✅ Backend BFF (포트 8000)
+- ✅ LiteLLM (포트 4000)
+- ✅ Monitoring ClickHouse (포트 8124/9002)
+- ✅ Monitoring OTEL Collector (포트 4317/4318)
 
 ---
 
 ## ✅ Stage 2: Chat 엔드포인트 연동 및 모니터링 (완료)
 
-**목표**: FastAPI BFF 생성, LiteLLM 연동, AgentOps self-hosted 모니터링, Langfuse 품질 관리
+**목표**: FastAPI BFF 생성, LiteLLM 연동, ClickHouse 기반 모니터링, Langfuse 품질 관리
 
 **완료 항목**:
 - ✅ Backend BFF 기본 구조 생성
 - ✅ Chat API 구현 (`/chat/stream`, `/chat/completions`)
 - ✅ LiteLLM 통합 (OpenRouter 연동)
 - ✅ Embed 프록시 구현 (`/proxy/langfuse`, `/proxy/grafana`)
-- ✅ Monitoring 페이지 구현 (관리자 > Monitoring)
-  - ✅ AgentOps 대시보드 UI 재구현 (Overview, Traces, Analytics, Replay)
-  - ✅ Grafana 탭 임베드 (인프라 메트릭)
+- ✅ **Monitoring 시스템 구현** (ClickHouse 기반)
+  - ✅ LiteLLM → OTEL Collector → ClickHouse 파이프라인
+  - ✅ Backend BFF → ClickHouse 직접 조회 (`monitoring_adapter.py`)
+  - ✅ Monitoring UI (4개 탭: Overview, Analytics, Traces, Replay)
+- ✅ **프로젝트 관리 시스템 구현**
+  - ✅ 프로젝트 CRUD API (`/api/projects`)
+  - ✅ 팀 관리 API (`/api/teams`)
+  - ✅ Admin 프로젝트 관리 UI
 - ✅ Langfuse 페이지 구현 (관리자 > Langfuse, iframe 임베드)
-- ✅ AgentOps self-hosted 통합
-  - ✅ AgentOps API (8003), Dashboard (3006)
-  - ✅ ClickHouse 데이터 저장 (OTEL Collector → ClickHouse)
-  - ✅ Backend BFF → ClickHouse 직접 조회 (`agentops_adapter.py`)
-  - ✅ LiteLLM OTEL callback 연동
 - ✅ 모니터링 스택 구축
   - ✅ OTEL Collector (4317/4318)
+  - ✅ ClickHouse (8124/9002)
   - ✅ Prometheus (9090)
   - ✅ Grafana (3005)
 - ✅ Agent Flow Graph + Guardrail 모니터링
   - ✅ 실제 호출 흐름 시각화: Client → Input Guardrail → LiteLLM → LLM Provider → Output Guardrail
   - ✅ 각 단계별 통계: call_count, avg_latency_ms, total_tokens, total_cost
-  - ✅ Guardrail Stats API (`/api/agentops/analytics/guardrails`)
+  - ✅ Guardrail Stats API (`/api/monitoring/analytics/guardrails`)
   - ✅ 가드레일 노드 시각적 구분 (🛡️ 아이콘, 둥근 모서리)
-- ✅ 개발 환경 설정 가이드 (`docs/MONITORING_SETUP.md`, `docs/AGENTOPS_SETUP.md`)
 
-**미완성 항목**:
-- ❌ 인증/인가 시스템 구현 (보안 취약점)
-- ❌ E2E 테스트 코드 작성 (pytest)
-- ❌ Langfuse 트레이싱 활성화 (선택적)
+**아키텍처**:
+```
+[LiteLLM Proxy] → [OTEL Collector] → [ClickHouse]
+                                           ↓
+[Backend BFF] ← [monitoring_adapter.py] ←─┘
+      ↓
+[Open-WebUI Monitoring UI]
+```
 
 **코드 위치**:
 - Backend BFF: `backend/app/`
 - Chat API: `backend/app/routes/chat.py`
-- Observability API: `backend/app/routes/observability.py`
+- Monitoring API: `backend/app/routes/monitoring.py`
+- Monitoring Adapter: `backend/app/services/monitoring_adapter.py`
 - Monitoring UI: `webui/src/routes/(app)/admin/monitoring/+page.svelte`
-- Gateway UI: `webui/src/routes/(app)/admin/gateway/+page.svelte`
+- Monitoring Components: `webui/src/lib/components/monitoring/`
+- Projects API: `backend/app/routes/projects.py`
+- Projects UI: `webui/src/routes/(app)/admin/projects/+page.svelte`
 
 ---
 
 ## 🚧 Stage 3: 에이전트 빌더 (진행 중)
 
-**목표**: Langflow, Flowise, AutoGen Studio 임베드, Langflow UI 재구현, LangGraph 변환 + 실행 + AgentOps 모니터링
+**목표**: Langflow, Flowise, AutoGen Studio 임베드, Langflow UI 재구현, LangGraph 변환 + 실행 + 모니터링
 
 **완료 항목**:
 - ✅ Langflow 컨테이너 설정 (포트 7861)
@@ -108,19 +109,17 @@
 - ✅ AutoGen Studio/API 컨테이너 설정 (로컬 빌드, 포트 5050/5051)
 - ✅ 에이전트 빌더 페이지 구현 (`/agent` 탭 UI)
 - ✅ 리버스 프록시 구현 (`/api/proxy/langflow`, `/api/proxy/flowise`, `/api/proxy/autogen`)
-- ✅ Langflow UI 재구현 - Phase 1-A (플로우 목록 UI)
-  - ✅ Backend API: `/api/agents/flows` (목록/상세/삭제)
-  - ✅ Frontend: 플로우 카드 그리드 (Glassmorphism)
-  - ✅ 검색/필터 (Fuse.js)
+- ✅ 사이드바 에이전트 섹션 구현
+  - ✅ 채팅/에이전트 섹션 분리
+  - ✅ 통합 검색 기능
 
 **진행 중 항목**:
-- 🚧 Langflow UI 재구현 - Phase 1-B (LangGraph 변환 + 실행 + AgentOps)
-  - ⏳ AgentOps 서비스 레이어 구현 (`backend/app/services/agentops_service.py`)
+- 🚧 Langflow UI 재구현 - Phase 1-B (LangGraph 변환 + 실행)
   - ⏳ Langflow → LangGraph 변환기 구현 (`backend/app/services/langflow_converter.py`)
   - ⏳ LangGraph 실행 서비스 구현 (`backend/app/services/langgraph_service.py`)
   - ⏳ 변환/실행 API 엔드포인트 추가 (`backend/app/routes/agents.py`)
   - ⏳ 플로우 카드 컴포넌트 (Export/Run 버튼)
-  - ⏳ 실행 결과 패널 (비용 정보, AgentOps 리플레이 링크)
+  - ⏳ 실행 결과 패널 (비용 정보, 리플레이 링크)
 
 **미완성 항목**:
 - ❌ Flowise/AutoGen 플로우 → LangGraph JSON 변환 (Phase 2)
@@ -143,6 +142,8 @@
 - ⏳ MCP SSE 엔드포인트 구현 (`/mcp/sse`)
 - ⏳ MCP Manager UI (서버 등록, Kong 키 발급/회수, 스코프 관리)
 - ⏳ Key-Auth 및 Rate-Limiting 설정
+
+**상세 계획**: `docs/plans/MCP_GATEWAY_PLAN.md` 참조
 
 ---
 
@@ -231,7 +232,7 @@
 ### 3. 테스트
 - [ ] pytest 설정 및 기본 테스트 구조
 - [ ] Chat API 테스트
-- [ ] Observability API 테스트
+- [ ] Monitoring API 테스트
 - [ ] 서비스 레이어 테스트
 
 ---
@@ -239,7 +240,7 @@
 ## 📝 알려진 문제점
 
 ### 1. 서비스 미실행
-- **현상**: docker-compose.yml에 정의된 대부분의 서비스가 실행되지 않음
+- **현상**: docker-compose.yml에 정의된 일부 서비스가 실행되지 않음
 - **원인**: 환경변수 미설정, 의존성 문제
 - **해결책**: 환경 설정 가이드 작성 및 단계별 서비스 실행
 
@@ -257,8 +258,8 @@
 
 ### 4. 누락된 컴포넌트
 - **document-service/**: 디렉토리만 존재, 구현 없음
-- **Langflow/Flowise**: docker-compose.yml에 정의 안 됨
-- **AutoGen Studio/API**: docker-compose.yml에 정의 안 됨
+- **Langflow/Flowise**: docker-compose.yml에 정의됨, 실행 중
+- **AutoGen Studio/API**: docker-compose.yml에 정의됨
 
 ---
 
@@ -268,9 +269,9 @@
 - [DEVELOP.md](./DEVELOP.md) - 개발 가이드 및 단계별 계획
 - [AGENTS.md](./AGENTS.md) - AI 에이전트 가이드
 - [CLAUDE.md](./CLAUDE.md) - 프로젝트 헌법 (AI 행동 규칙)
+- [docs/plans/MCP_GATEWAY_PLAN.md](./docs/plans/MCP_GATEWAY_PLAN.md) - MCP Gateway 계획
 
 ---
 
 **작성자**: AI Agent (Claude)  
-**마지막 업데이트**: 2025-11-12
-
+**마지막 업데이트**: 2025-11-26

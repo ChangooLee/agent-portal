@@ -9,10 +9,10 @@
 		getPerformanceMetrics,
 		getAgentFlowGraph,
 		getAgentUsageStats,
-		agentOpsWS,
+		monitoringWS,
 		type Trace,
 		type Metrics
-	} from '$lib/agentops/api-client';
+	} from '$lib/monitoring/api-client';
 	import type {
 		TraceFilters,
 		FilterPreset,
@@ -21,19 +21,19 @@
 		PerformanceDataPoint,
 		AgentFlowGraph,
 		AgentUsageStats
-	} from '$lib/agentops/types';
+	} from '$lib/monitoring/types';
 
 	// Import all new components
-	import TraceDrawer from '$lib/components/agentops/TraceDrawer.svelte';
-	import ReplayPlayer from '$lib/components/agentops/ReplayPlayer.svelte';
-	import CostChart from '$lib/components/agentops/CostChart.svelte';
-	import TokenChart from '$lib/components/agentops/TokenChart.svelte';
-	import PerformanceChart from '$lib/components/agentops/PerformanceChart.svelte';
-	import AgentFlowGraphComponent from '$lib/components/agentops/AgentFlowGraph.svelte';
-	import FilterPanel from '$lib/components/agentops/FilterPanel.svelte';
-	import ExportDialog from '$lib/components/agentops/ExportDialog.svelte';
+	import TraceDrawer from '$lib/components/monitoring/TraceDrawer.svelte';
+	import ReplayPlayer from '$lib/components/monitoring/ReplayPlayer.svelte';
+	import CostChart from '$lib/components/monitoring/CostChart.svelte';
+	import TokenChart from '$lib/components/monitoring/TokenChart.svelte';
+	import PerformanceChart from '$lib/components/monitoring/PerformanceChart.svelte';
+	import AgentFlowGraphComponent from '$lib/components/monitoring/AgentFlowGraph.svelte';
+	import FilterPanel from '$lib/components/monitoring/FilterPanel.svelte';
+	import ExportDialog from '$lib/components/monitoring/ExportDialog.svelte';
 
-	// AgentOps 모니터링 화면 전용 스타일
+	// 모니터링 화면 전용 스타일
 	import './styles.css';
 
 	const i18n = getContext('i18n');
@@ -76,27 +76,63 @@
 	// Replay state
 	let replayTraceId: string | null = null;
 
-	// AgentOps Self-Hosted project ID (ClickHouse에 저장된 project_id와 일치해야 함)
-	const projectId = '8c59e361-3727-418c-bc68-086b69f7598b';
+	// Project selection
+	interface Project {
+		id: string;
+		name: string;
+		description: string | null;
+	}
+	let projects: Project[] = [];
+	let selectedProjectId = '8c59e361-3727-418c-bc68-086b69f7598b'; // Default project
+
+	// Legacy alias for backward compatibility
+	$: projectId = selectedProjectId;
+
+	async function loadProjects() {
+		try {
+			const response = await fetch('http://localhost:8000/api/projects');
+			if (response.ok) {
+				const data = await response.json();
+				projects = data.projects || [];
+			}
+		} catch (e) {
+			console.error('Failed to load projects:', e);
+			// Use default project if API fails
+			projects = [{
+				id: '8c59e361-3727-418c-bc68-086b69f7598b',
+				name: 'Default Project',
+				description: 'Default project for LLM monitoring'
+			}];
+		}
+	}
+
+	function handleProjectChange(event: Event) {
+		const select = event.target as HTMLSelectElement;
+		selectedProjectId = select.value;
+		loadData();
+	}
 
 	onMount(async () => {
-		// WebSocket 실시간 업데이트 (Loader.svelte 수정 후 안정화됨)
-		agentOpsWS.connect(projectId);
-		agentOpsWS.on('trace_new', handleNewTrace);
-		agentOpsWS.on('trace_update', handleTraceUpdate);
+		// Load projects first
+		await loadProjects();
+
+		// WebSocket 실시간 업데이트
+		monitoringWS.connect(selectedProjectId);
+		monitoringWS.on('trace_new', handleNewTrace);
+		monitoringWS.on('trace_update', handleTraceUpdate);
 
 		// Load initial data
 		await loadData();
 
 		// Load saved filter presets from localStorage
-		const savedPresets = localStorage.getItem('agentops_filter_presets');
+		const savedPresets = localStorage.getItem('monitoring_filter_presets');
 		if (savedPresets) {
 			filterPresets = JSON.parse(savedPresets);
 		}
 	});
 
 	onDestroy(() => {
-		agentOpsWS.disconnect();
+		monitoringWS.disconnect();
 	});
 
 	async function loadData() {

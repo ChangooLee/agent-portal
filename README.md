@@ -56,7 +56,7 @@
 
 #### Kong 관리 (Konga)
 ![Konga Admin](./docs/images/konga-admin.png)
-*Kong Gateway 관리 UI (Konga)*
+*Kong Gateway 관리 UI (Konga)* - [설정 가이드](./docs/KONGA_SETUP.md)
 
 ### 아키텍처 다이어그램
 
@@ -488,13 +488,13 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 
 ---
 
-### 📈 전체 진행 상황
+### 📈 전체 진행 상황 (2025-11-26 업데이트)
 
 | 단계 | 상태 | 완료율 | 비고 |
 |------|------|--------|------|
-| **Stage 1** | ✅ 완료 | 100% | 인프라 및 기본 설정 (1-2주) |
-| **Stage 2** | ⚠️ 부분 완료 | 40% | 코드 완료, 환경 설정 및 테스트 필요 (2-3주) |
-| **Stage 3** | ❌ 미시작 | 0% | 에이전트 빌더 (3-4주) |
+| **Stage 1** | ✅ 완료 | 100% | 인프라 및 기본 설정 |
+| **Stage 2** | ✅ 완료 | 95% | Chat + Observability (LiteLLM + OTEL + ClickHouse 통합 완료) |
+| **Stage 3** | 🚧 진행 중 | 40% | 에이전트 빌더 (iframe 임베딩 완료, LangGraph 변환 미완) |
 | **Stage 4** | ❌ 미시작 | 0% | MCP SSE + Kong (2-3주) |
 | **Stage 5** | ❌ 미시작 | 0% | 데이터베이스 (3-4주) |
 | **Stage 6** | ❌ 미시작 | 0% | Document Intelligence (3-4주) |
@@ -502,7 +502,7 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 | **Stage 8** | ❌ 미시작 | 0% | 포털 통합 (2-3주) |
 | **Stage 9** | ❌ 미시작 | 0% | 가드레일 (2-3주) |
 
-**전체 진행률**: 약 **47%** (Stage 1 완료 + Stage 2 코드 완료)  
+**전체 진행률**: 약 **50%** (Stage 1 완료 + Stage 2 완료 + Stage 3 진행 중)  
 **총 예상 개발 기간**: 약 **22-30주** (5.5-7.5개월)
 
 ---
@@ -545,8 +545,8 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 
 ---
 
-**상세 진행 상황**: [PROGRESS.md](./PROGRESS.md) 참조  
-**개발 가이드**: [DEVELOP.md](./DEVELOP.md) 참조
+**상세 진행 상황**: [docs/CURRENT_STATUS.md](./docs/CURRENT_STATUS.md) 참조  
+**개발 가이드**: [AGENTS.md](./AGENTS.md) 참조
 
 ---
 
@@ -587,7 +587,8 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 * **stdio**: BFF가 MCP 프로세스 스폰/브릿지
 * **SSE/WebSocket**: **Kong** 경유(키 인증/레이트리밋/mTLS/IP 제한/감사)
 * **MCP Manager UI**: 서버 등록/스코프/헬스체크/워크스페이스 권한
-* **Kong Admin OSS UI**: 서비스/라우트/컨슈머/플러그인 **클릭 관리**
+* **Kong Admin OSS UI (Konga)**: 서비스/라우트/컨슈머/플러그인 **클릭 관리**
+* **Konga 설정 가이드**: [docs/KONGA_SETUP.md](./docs/KONGA_SETUP.md)
 
 ### 3.3 문서 인텔리전스
 
@@ -622,11 +623,11 @@ Agent Portal은 **9단계 개발 계획**으로 진행됩니다:
 
 Agent Portal은 **두 가지 독립적인 모니터링 스택**을 사용합니다:
 
-#### 1. LLM 모니터링: LiteLLM ↔ AgentOps (직접 연결)
-- **AgentOps Self-Hosted**: LLM 호출 추적, 세션 리플레이, 비용 계산
-- **완전 폐쇄망 지원**: 내부 인스턴스 + 내부 API 키 발급
-- **설정 가이드**: [docs/AGENTOPS_SETUP.md](./docs/AGENTOPS_SETUP.md)
-- **시작**: `./scripts/start-agentops.sh`
+#### 1. LLM 모니터링: LiteLLM + OTEL + ClickHouse
+- **LiteLLM**: LLM 호출 추적, 비용 계산
+- **OTEL Collector**: 트레이스 수집
+- **ClickHouse**: 트레이스 저장 및 분석
+- **설정 가이드**: [docs/MONITORING_SETUP.md](./docs/MONITORING_SETUP.md)
 
 #### 2. 인프라 모니터링: Prometheus + Grafana
 - **Prometheus**: vLLM, 애플리케이션 메트릭 수집
