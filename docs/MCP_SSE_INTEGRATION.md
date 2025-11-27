@@ -1,6 +1,45 @@
-# Open-WebUI에서 MCP 연동 방법 가이드
+# MCP 연동 가이드
 
 ## 📋 요약
+
+Agent Portal은 **Streamable HTTP**와 **SSE(Server-Sent Events)** 두 가지 방식의 MCP 서버를 모두 지원합니다.
+
+### Agent Portal MCP Gateway 지원 현황 (2025-11-27)
+
+| 전송 방식 | 지원 여부 | 예시 |
+|----------|----------|------|
+| **Streamable HTTP** | ✅ 지원 | MCP OpenDART (`/mcp`) |
+| **SSE** | ✅ 지원 | MCP Naver News (`/sse`) |
+
+---
+
+## 🆕 Agent Portal MCP Gateway (권장)
+
+Agent Portal의 MCP Gateway를 통해 MCP 서버를 등록하고 관리할 수 있습니다.
+
+### 접속 방법
+
+1. **Admin 페이지 접속**: `http://localhost:3001/admin/mcp`
+2. **서버 추가** 버튼 클릭
+3. 서버 정보 입력:
+   - **이름**: MCP 서버 이름
+   - **엔드포인트 URL**: MCP 서버 URL (예: `http://example.com:8089/mcp`)
+   - **전송 타입**: `streamable_http` 또는 `sse`
+   - **설명**: 서버 설명 (선택)
+4. **추가** 버튼 클릭
+5. **연결 테스트** 버튼으로 연결 확인
+
+### 지원 기능
+
+- ✅ MCP 서버 등록/수정/삭제
+- ✅ 연결 테스트 및 도구 목록 조회
+- ✅ Kong Gateway 자동 연동 (API Key 인증, Rate Limiting)
+- ✅ 사용자/그룹별 권한 관리
+- ✅ Streamable HTTP 및 SSE 전송 방식 지원
+
+---
+
+## 📚 Open-WebUI 기본 MCP 연동
 
 Open-WebUI는 **Streamable HTTP** 방식의 MCP를 기본 지원하며, **SSE(Server-Sent Events)** 기반 MCP 서버는 `mcpo` 프록시를 통해 연동할 수 있습니다.
 
@@ -162,7 +201,7 @@ SSE MCP Server → mcpo (프록시) → OpenAPI HTTP Server → Open-WebUI
 
 ---
 
-**마지막 업데이트**: 2025-01-XX  
+**마지막 업데이트**: 2025-11-27  
 **작성자**: AI Assistant  
-**참고**: Open-WebUI v0.6.31+ 기준
+**참고**: Open-WebUI v0.6.31+ 기준, Agent Portal MCP Gateway 지원
 

@@ -32,6 +32,3 @@
 	path = unstructured
 	url = https://github.com/Unstructured-IO/unstructured.git
 
-[submodule "external/agentops"]
-	path = external/agentops
-	url = https://github.com/AgentOps-AI/agentops.git
