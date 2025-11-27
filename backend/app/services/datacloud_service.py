@@ -841,6 +841,129 @@ class DataCloudService:
         
         return False
 
+    async def generate_sql_from_natural_language(
+        self,
+        connection_id: str,
+        question: str
+    ) -> Dict[str, Any]:
+        """
+        자연어 질문을 SQL로 변환 (Text-to-SQL)
+        
+        1. 연결 정보에서 스키마 메타데이터 조회
+        2. 스키마를 프롬프트 컨텍스트로 변환
+        3. LiteLLM을 통해 LLM 호출하여 SQL 생성
+        """
+        from app.services.litellm_service import litellm_service
+        
+        # 1. 스키마 메타데이터 조회
+        schema = await self.get_schema_metadata(connection_id, refresh=False)
+        if not schema or "tables" not in schema:
+            return {"success": False, "error": "스키마 정보를 가져올 수 없습니다.", "sql": ""}
+        
+        # 2. 스키마를 컨텍스트로 변환
+        schema_context = self._build_schema_context(schema)
+        
+        # 3. 비즈니스 용어집 조회
+        terms = await self.get_business_terms(connection_id)
+        terms_context = self._build_terms_context(terms)
+        
+        # 4. 프롬프트 구성
+        system_prompt = """당신은 SQL 전문가입니다. 사용자의 자연어 질문을 주어진 데이터베이스 스키마에 맞는 SQL 쿼리로 변환합니다.
+
+규칙:
+1. SELECT 쿼리만 생성합니다 (INSERT, UPDATE, DELETE 금지)
+2. 안전을 위해 LIMIT 100을 기본으로 추가합니다
+3. 컬럼명과 테이블명은 정확하게 사용합니다
+4. 비즈니스 용어가 있으면 참고하여 올바른 컬럼을 선택합니다
+5. SQL만 반환하고 설명은 하지 않습니다"""
+
+        user_prompt = f"""### 데이터베이스 스키마
+{schema_context}
+
+### 비즈니스 용어집
+{terms_context}
+
+### 사용자 질문
+{question}
+
+### 생성할 SQL 쿼리 (SELECT만 가능, LIMIT 100 포함)"""
+
+        # 5. LiteLLM 호출 (기본 모델: gpt-4o-mini)
+        default_model = os.environ.get('TEXT_TO_SQL_MODEL', 'openrouter/openai/gpt-4o-mini')
+        try:
+            result = await litellm_service.chat_completion_sync(
+                model=default_model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.0,  # 결정적 출력
+                max_tokens=500
+            )
+            
+            # 응답에서 SQL 추출
+            choices = result.get("choices", [])
+            if not choices:
+                return {"success": False, "error": "LLM 응답이 비어있습니다.", "sql": ""}
+            
+            sql = choices[0].get("message", {}).get("content", "").strip()
+            # SQL 코드 블록 제거
+            if sql.startswith("```sql"):
+                sql = sql[6:]
+            if sql.startswith("```"):
+                sql = sql[3:]
+            if sql.endswith("```"):
+                sql = sql[:-3]
+            sql = sql.strip()
+            
+            return {
+                "success": True,
+                "sql": sql,
+                "model": result.get("model", "unknown"),
+                "tokens_used": result.get("usage", {}).get("total_tokens", 0)
+            }
+        except Exception as e:
+            logger.error(f"Text-to-SQL 생성 실패: {e}")
+            return {"success": False, "error": str(e), "sql": ""}
+
+    def _build_schema_context(self, schema: Dict[str, Any]) -> str:
+        """스키마 정보를 텍스트 컨텍스트로 변환"""
+        lines = []
+        tables = schema.get("tables", [])
+        
+        # 최대 20개 테이블만 포함 (토큰 제한)
+        for table in tables[:20]:
+            table_name = table.get("name", "unknown")
+            columns = table.get("columns", [])
+            
+            col_defs = []
+            for col in columns[:30]:  # 테이블당 최대 30개 컬럼
+                col_name = col.get("name", "")
+                col_type = col.get("type", "")
+                pk = " (PK)" if col.get("is_primary_key") else ""
+                fk = " (FK)" if col.get("is_foreign_key") else ""
+                col_defs.append(f"  - {col_name}: {col_type}{pk}{fk}")
+            
+            lines.append(f"테이블: {table_name}")
+            lines.extend(col_defs)
+            lines.append("")
+        
+        return "\n".join(lines)
+
+    def _build_terms_context(self, terms: List[Dict[str, Any]]) -> str:
+        """비즈니스 용어집을 텍스트 컨텍스트로 변환"""
+        if not terms:
+            return "등록된 비즈니스 용어가 없습니다."
+        
+        lines = []
+        for term in terms[:50]:  # 최대 50개 용어
+            tech = term.get("technical_name", "")
+            biz = term.get("business_name", "")
+            desc = term.get("description", "")
+            lines.append(f"- {tech} = {biz}" + (f" ({desc})" if desc else ""))
+        
+        return "\n".join(lines)
+
 
 # Singleton
 datacloud_service = DataCloudService()

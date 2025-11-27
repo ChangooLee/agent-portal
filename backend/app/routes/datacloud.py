@@ -234,6 +234,32 @@ async def execute_query(
 
 
 # =====================
+# Text-to-SQL (LLM)
+# =====================
+
+class GenerateSQLRequest(BaseModel):
+    question: str
+
+
+class GenerateSQLResponse(BaseModel):
+    success: bool
+    sql: str
+    error: Optional[str] = None
+    model: Optional[str] = None
+    tokens_used: Optional[int] = None
+
+
+@router.post("/connections/{connection_id}/generate-sql", response_model=GenerateSQLResponse)
+async def generate_sql(connection_id: str, request: GenerateSQLRequest):
+    """자연어 질문을 SQL로 변환 (Text-to-SQL)"""
+    result = await datacloud_service.generate_sql_from_natural_language(
+        connection_id=connection_id,
+        question=request.question
+    )
+    return result
+
+
+# =====================
 # Business Terms
 # =====================
 

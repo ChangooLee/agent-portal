@@ -61,6 +61,34 @@
 	let queryResult: { columns: string[]; rows: any[]; rows_affected: number; execution_time_ms: number } | null = null;
 	let queryLoading = false;
 
+	// Business Terms Modal
+	let showTermsModal = false;
+	let termsData: { terms: any[] } | null = null;
+	let termsLoading = false;
+	let newTerm = {
+		term_type: 'column',
+		technical_name: '',
+		business_name: '',
+		description: '',
+		schema_name: '',
+		table_name: '',
+		column_name: ''
+	};
+
+	// Permissions Modal
+	let showPermissionsModal = false;
+	let permissionsData: { permissions: any[] } | null = null;
+	let permissionsLoading = false;
+	let newPermission = {
+		user_id: '',
+		group_id: '',
+		permission_type: 'read'
+	};
+
+	// Text-to-SQL
+	let naturalLanguageQuery = '';
+	let sqlGenerating = false;
+
 	// Form data
 	let formData = {
 		name: '',
@@ -305,6 +333,182 @@
 		}
 	}
 
+	// ========================
+	// Business Terms Functions
+	// ========================
+	async function openTermsModal(conn: DBConnection) {
+		selectedConnection = conn;
+		termsData = null;
+		termsLoading = true;
+		showTermsModal = true;
+		newTerm = {
+			term_type: 'column',
+			technical_name: '',
+			business_name: '',
+			description: '',
+			schema_name: '',
+			table_name: '',
+			column_name: ''
+		};
+
+		try {
+			const response = await fetch(`${BACKEND_URL}/datacloud/connections/${conn.id}/terms`);
+			if (response.ok) {
+				termsData = await response.json();
+			} else {
+				toast.error('용어집 로드 실패');
+			}
+		} catch (e: any) {
+			toast.error(`용어집 로드 실패: ${e.message}`);
+		} finally {
+			termsLoading = false;
+		}
+	}
+
+	async function addTerm() {
+		if (!selectedConnection || !newTerm.technical_name || !newTerm.business_name) {
+			toast.error('기술명과 비즈니스명을 입력하세요');
+			return;
+		}
+
+		try {
+			const response = await fetch(`${BACKEND_URL}/datacloud/connections/${selectedConnection.id}/terms`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(newTerm)
+			});
+
+			if (response.ok) {
+				toast.success('용어 추가 완료');
+				await openTermsModal(selectedConnection);
+			} else {
+				const error = await response.json();
+				toast.error(`추가 실패: ${error.detail}`);
+			}
+		} catch (e: any) {
+			toast.error(`추가 실패: ${e.message}`);
+		}
+	}
+
+	async function deleteTerm(termId: string) {
+		if (!confirm('이 용어를 삭제하시겠습니까?')) return;
+
+		try {
+			const response = await fetch(`${BACKEND_URL}/datacloud/terms/${termId}`, {
+				method: 'DELETE'
+			});
+
+			if (response.ok) {
+				toast.success('용어 삭제 완료');
+				if (selectedConnection) await openTermsModal(selectedConnection);
+			} else {
+				toast.error('삭제 실패');
+			}
+		} catch (e: any) {
+			toast.error(`삭제 실패: ${e.message}`);
+		}
+	}
+
+	// ========================
+	// Permissions Functions
+	// ========================
+	async function openPermissionsModal(conn: DBConnection) {
+		selectedConnection = conn;
+		permissionsData = null;
+		permissionsLoading = true;
+		showPermissionsModal = true;
+		newPermission = { user_id: '', group_id: '', permission_type: 'read' };
+
+		try {
+			const response = await fetch(`${BACKEND_URL}/datacloud/connections/${conn.id}/permissions`);
+			if (response.ok) {
+				permissionsData = await response.json();
+			} else {
+				toast.error('권한 로드 실패');
+			}
+		} catch (e: any) {
+			toast.error(`권한 로드 실패: ${e.message}`);
+		} finally {
+			permissionsLoading = false;
+		}
+	}
+
+	async function addPermission() {
+		if (!selectedConnection || (!newPermission.user_id && !newPermission.group_id)) {
+			toast.error('사용자 ID 또는 그룹 ID를 입력하세요');
+			return;
+		}
+
+		try {
+			const response = await fetch(`${BACKEND_URL}/datacloud/connections/${selectedConnection.id}/permissions`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(newPermission)
+			});
+
+			if (response.ok) {
+				toast.success('권한 추가 완료');
+				await openPermissionsModal(selectedConnection);
+			} else {
+				const error = await response.json();
+				toast.error(`추가 실패: ${error.detail}`);
+			}
+		} catch (e: any) {
+			toast.error(`추가 실패: ${e.message}`);
+		}
+	}
+
+	async function deletePermission(permissionId: string) {
+		if (!confirm('이 권한을 삭제하시겠습니까?')) return;
+
+		try {
+			const response = await fetch(`${BACKEND_URL}/datacloud/permissions/${permissionId}`, {
+				method: 'DELETE'
+			});
+
+			if (response.ok) {
+				toast.success('권한 삭제 완료');
+				if (selectedConnection) await openPermissionsModal(selectedConnection);
+			} else {
+				toast.error('삭제 실패');
+			}
+		} catch (e: any) {
+			toast.error(`삭제 실패: ${e.message}`);
+		}
+	}
+
+	// ========================
+	// Text-to-SQL Functions
+	// ========================
+	async function generateSQL() {
+		if (!selectedConnection || !naturalLanguageQuery.trim()) {
+			toast.error('질문을 입력하세요');
+			return;
+		}
+
+		sqlGenerating = true;
+		try {
+			const response = await fetch(`${BACKEND_URL}/datacloud/connections/${selectedConnection.id}/generate-sql`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ question: naturalLanguageQuery })
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				queryText = result.sql;
+				toast.success('SQL이 생성되었습니다. 필요시 수정 후 실행하세요.');
+			} else {
+				const error = await response.json();
+				toast.error(`SQL 생성 실패: ${error.detail}`);
+			}
+		} catch (e: any) {
+			toast.error(`SQL 생성 실패: ${e.message}`);
+		} finally {
+			sqlGenerating = false;
+		}
+	}
+
 	function getHealthStatusColor(status: string): string {
 		switch (status) {
 			case 'healthy': return 'text-green-500';
@@ -458,6 +662,18 @@
 												class="px-3 py-1.5 text-sm text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors"
 											>
 												쿼리
+											</button>
+											<button
+												on:click={() => openTermsModal(conn)}
+												class="px-3 py-1.5 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+											>
+												용어집
+											</button>
+											<button
+												on:click={() => openPermissionsModal(conn)}
+												class="px-3 py-1.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+											>
+												권한
 											</button>
 											<button
 												on:click={() => openEditModal(conn)}
@@ -630,15 +846,16 @@
 					<button
 						on:click={refreshSchema}
 						disabled={schemaLoading}
-						class="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-sm transition-colors disabled:opacity-50"
+						class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg text-sm transition-colors disabled:opacity-50"
 					>
 						새로고침
 					</button>
 					<button
 						on:click={() => showSchemaModal = false}
-						class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
 					>
-						<XMark class="w-5 h-5 text-gray-400" />
+						<XMark class="w-4 h-4" />
+						<span>닫기</span>
 					</button>
 				</div>
 			</div>
@@ -737,13 +954,50 @@
 				</div>
 				<button
 					on:click={() => showQueryModal = false}
-					class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
 				>
-					<XMark class="w-5 h-5 text-gray-400" />
+					<XMark class="w-4 h-4" />
+					<span>닫기</span>
 				</button>
 			</div>
 
 			<div class="p-6 space-y-4">
+				<!-- Text-to-SQL Section -->
+				<div class="bg-gradient-to-r from-cyan-500/10 to-teal-500/10 rounded-lg border border-cyan-500/20 p-4">
+					<div class="flex items-center gap-2 mb-2">
+						<svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+						</svg>
+						<label class="text-sm font-medium text-cyan-300">AI SQL 생성</label>
+						<span class="text-xs text-gray-500">(자연어 → SQL)</span>
+					</div>
+					<div class="flex gap-2">
+						<input
+							bind:value={naturalLanguageQuery}
+							type="text"
+							class="flex-1 px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:border-cyan-500 focus:outline-none"
+							placeholder="예: 각 DB 타입별 연결 수를 보여줘"
+							on:keypress={(e) => e.key === 'Enter' && generateSQL()}
+						/>
+						<button
+							on:click={generateSQL}
+							disabled={sqlGenerating || !naturalLanguageQuery.trim()}
+							class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
+						>
+							{#if sqlGenerating}
+								<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+							{:else}
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+								</svg>
+							{/if}
+							SQL 생성
+						</button>
+					</div>
+					<p class="text-xs text-gray-500 mt-2">스키마 정보를 기반으로 SQL이 생성됩니다. 생성 후 수정하여 실행하세요.</p>
+				</div>
+
+				<!-- SQL Editor Section -->
 				<div>
 					<label class="block text-sm font-medium text-gray-300 mb-2">SQL 쿼리</label>
 					<textarea
@@ -787,16 +1041,227 @@
 									<tr class="border-b border-white/5 hover:bg-white/5">
 										{#each queryResult.columns as col}
 											<td class="py-2 px-4 text-gray-300 font-mono text-xs">
-												{row[col] !== null ? String(row[col]).substring(0, 100) : 'NULL'}
-											</td>
-										{/each}
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
+											{row[col] !== null ? String(row[col]).substring(0, 100) : 'NULL'}
+										</td>
+									{/each}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
-			{/if}
+			</div>
+		{/if}
+	</div>
+</div>
+{/if}
+
+<!-- Business Terms Modal -->
+{#if showTermsModal && selectedConnection}
+	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+		<div class="bg-slate-800 rounded-2xl border border-white/10 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+			<div class="p-6 border-b border-white/10 flex justify-between items-center">
+				<div>
+					<h2 class="text-xl font-semibold text-white">비즈니스 용어집</h2>
+					<p class="text-sm text-gray-400">{selectedConnection.name} - 기술명 ↔ 비즈니스명 매핑</p>
+				</div>
+				<button
+					on:click={() => showTermsModal = false}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
+				>
+					<XMark class="w-4 h-4" />
+					<span>닫기</span>
+				</button>
+			</div>
+
+			<div class="flex-1 overflow-y-auto p-6">
+				{#if termsLoading}
+					<div class="flex justify-center items-center h-32">
+						<div class="animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent"></div>
+					</div>
+				{:else}
+					<!-- Add Term Form -->
+					<div class="bg-white/5 rounded-lg border border-white/10 p-4 mb-6">
+						<h3 class="text-sm font-medium text-white mb-3">용어 추가</h3>
+						<div class="grid grid-cols-3 gap-3 mb-3">
+							<div>
+								<label class="block text-xs text-gray-400 mb-1">유형</label>
+								<select bind:value={newTerm.term_type} class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm">
+									<option value="column">컬럼</option>
+									<option value="table">테이블</option>
+									<option value="schema">스키마</option>
+								</select>
+							</div>
+							<div>
+								<label class="block text-xs text-gray-400 mb-1">기술명 *</label>
+								<input bind:value={newTerm.technical_name} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="user_id" />
+							</div>
+							<div>
+								<label class="block text-xs text-gray-400 mb-1">비즈니스명 *</label>
+								<input bind:value={newTerm.business_name} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="사용자 ID" />
+							</div>
+						</div>
+						<div class="grid grid-cols-3 gap-3 mb-3">
+							<div>
+								<label class="block text-xs text-gray-400 mb-1">테이블명</label>
+								<input bind:value={newTerm.table_name} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="users" />
+							</div>
+							<div class="col-span-2">
+								<label class="block text-xs text-gray-400 mb-1">설명</label>
+								<input bind:value={newTerm.description} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="용어 설명" />
+							</div>
+						</div>
+						<button on:click={addTerm} class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm transition-colors">
+							용어 추가
+						</button>
+					</div>
+
+					<!-- Terms List -->
+					{#if termsData && termsData.terms && termsData.terms.length > 0}
+						<div class="overflow-x-auto">
+							<table class="w-full text-sm">
+								<thead>
+									<tr class="text-gray-400 border-b border-white/10">
+										<th class="text-left py-2 px-3">유형</th>
+										<th class="text-left py-2 px-3">기술명</th>
+										<th class="text-left py-2 px-3">비즈니스명</th>
+										<th class="text-left py-2 px-3">테이블</th>
+										<th class="text-left py-2 px-3">설명</th>
+										<th class="text-right py-2 px-3">작업</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each termsData.terms as term}
+										<tr class="border-b border-white/5 hover:bg-white/5">
+											<td class="py-2 px-3">
+												<span class="text-xs px-2 py-0.5 rounded {term.term_type === 'column' ? 'bg-blue-500/20 text-blue-400' : term.term_type === 'table' ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}">
+													{term.term_type}
+												</span>
+											</td>
+											<td class="py-2 px-3 text-white font-mono text-xs">{term.technical_name}</td>
+											<td class="py-2 px-3 text-amber-400">{term.business_name}</td>
+											<td class="py-2 px-3 text-gray-400">{term.table_name || '-'}</td>
+											<td class="py-2 px-3 text-gray-500">{term.description || '-'}</td>
+											<td class="py-2 px-3 text-right">
+												<button on:click={() => deleteTerm(term.id)} class="p-1 text-gray-400 hover:text-red-400 transition-colors">
+													<GarbageBin class="size-4" />
+												</button>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{:else}
+						<div class="text-center py-8 text-gray-400">
+							등록된 용어가 없습니다. 위 폼에서 용어를 추가하세요.
+						</div>
+					{/if}
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Permissions Modal -->
+{#if showPermissionsModal && selectedConnection}
+	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+		<div class="bg-slate-800 rounded-2xl border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+			<div class="p-6 border-b border-white/10 flex justify-between items-center">
+				<div>
+					<h2 class="text-xl font-semibold text-white">권한 관리</h2>
+					<p class="text-sm text-gray-400">{selectedConnection.name} - 사용자/그룹별 접근 권한</p>
+				</div>
+				<button
+					on:click={() => showPermissionsModal = false}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 rounded-lg text-sm transition-colors"
+				>
+					<XMark class="w-4 h-4" />
+					<span>닫기</span>
+				</button>
+			</div>
+
+			<div class="flex-1 overflow-y-auto p-6">
+				{#if permissionsLoading}
+					<div class="flex justify-center items-center h-32">
+						<div class="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
+					</div>
+				{:else}
+					<!-- Add Permission Form -->
+					<div class="bg-white/5 rounded-lg border border-white/10 p-4 mb-6">
+						<h3 class="text-sm font-medium text-white mb-3">권한 추가</h3>
+						<div class="grid grid-cols-3 gap-3 mb-3">
+							<div>
+								<label class="block text-xs text-gray-400 mb-1">사용자 ID</label>
+								<input bind:value={newPermission.user_id} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="user@example.com" />
+							</div>
+							<div>
+								<label class="block text-xs text-gray-400 mb-1">그룹 ID</label>
+								<input bind:value={newPermission.group_id} type="text" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm" placeholder="data-team" />
+							</div>
+							<div>
+								<label class="block text-xs text-gray-400 mb-1">권한 유형</label>
+								<select bind:value={newPermission.permission_type} class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm">
+									<option value="read">읽기 (read)</option>
+									<option value="write">쓰기 (write)</option>
+									<option value="admin">관리자 (admin)</option>
+								</select>
+							</div>
+						</div>
+						<p class="text-xs text-gray-500 mb-3">* 사용자 ID 또는 그룹 ID 중 하나는 필수입니다.</p>
+						<button on:click={addPermission} class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors">
+							권한 추가
+						</button>
+					</div>
+
+					<!-- Permissions List -->
+					{#if permissionsData && permissionsData.permissions && permissionsData.permissions.length > 0}
+						<div class="overflow-x-auto">
+							<table class="w-full text-sm">
+								<thead>
+									<tr class="text-gray-400 border-b border-white/10">
+										<th class="text-left py-2 px-3">대상</th>
+										<th class="text-left py-2 px-3">유형</th>
+										<th class="text-left py-2 px-3">권한</th>
+										<th class="text-left py-2 px-3">부여일</th>
+										<th class="text-right py-2 px-3">작업</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each permissionsData.permissions as perm}
+										<tr class="border-b border-white/5 hover:bg-white/5">
+											<td class="py-2 px-3 text-white">
+												{perm.user_id || perm.group_id || '-'}
+											</td>
+											<td class="py-2 px-3">
+												<span class="text-xs px-2 py-0.5 rounded {perm.user_id ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}">
+													{perm.user_id ? '사용자' : '그룹'}
+												</span>
+											</td>
+											<td class="py-2 px-3">
+												<span class="text-xs px-2 py-0.5 rounded {perm.permission_type === 'admin' ? 'bg-red-500/20 text-red-400' : perm.permission_type === 'write' ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-500/20 text-gray-400'}">
+													{perm.permission_type}
+												</span>
+											</td>
+											<td class="py-2 px-3 text-gray-400 text-xs">
+												{perm.created_at ? new Date(perm.created_at).toLocaleDateString('ko-KR') : '-'}
+											</td>
+											<td class="py-2 px-3 text-right">
+												<button on:click={() => deletePermission(perm.id)} class="p-1 text-gray-400 hover:text-red-400 transition-colors">
+													<GarbageBin class="size-4" />
+												</button>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{:else}
+						<div class="text-center py-8 text-gray-400">
+							등록된 권한이 없습니다. 위 폼에서 권한을 추가하세요.
+						</div>
+					{/if}
+				{/if}
+			</div>
 		</div>
 	</div>
 {/if}

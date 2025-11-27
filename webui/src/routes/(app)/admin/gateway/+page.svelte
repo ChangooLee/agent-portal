@@ -27,11 +27,14 @@
 		services: any[];
 		consumers: any[];
 		mcp_servers: any[];
+		datacloud_connections: any[];
 		stats: {
 			services_count: number;
 			consumers_count: number;
 			mcp_servers_count: number;
 			active_mcp_count: number;
+			datacloud_count: number;
+			datacloud_healthy_count: number;
 		};
 	}
 
@@ -39,11 +42,14 @@
 		services: [],
 		consumers: [],
 		mcp_servers: [],
+		datacloud_connections: [],
 		stats: {
 			services_count: 0,
 			consumers_count: 0,
 			mcp_servers_count: 0,
-			active_mcp_count: 0
+			active_mcp_count: 0,
+			datacloud_count: 0,
+			datacloud_healthy_count: 0
 		}
 	};
 
@@ -210,7 +216,7 @@
 					</div>
 				{:else}
 					<!-- Stats Cards -->
-					<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+					<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
 						<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20 shadow-sm">
 							<div class="flex items-center gap-3">
 								<div class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -230,6 +236,19 @@
 								<div>
 									<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{overview.stats.mcp_servers_count}</div>
 									<div class="text-xs text-gray-500 dark:text-gray-400">MCP Servers</div>
+								</div>
+							</div>
+						</div>
+						<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20 shadow-sm">
+							<div class="flex items-center gap-3">
+								<div class="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+									<svg class="size-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
+									</svg>
+								</div>
+								<div>
+									<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{overview.stats.datacloud_count ?? 0}</div>
+									<div class="text-xs text-gray-500 dark:text-gray-400">Data Cloud</div>
 								</div>
 							</div>
 						</div>
@@ -257,8 +276,8 @@
 						</div>
 					</div>
 
-					<!-- 3 Column Layout -->
-					<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<!-- 4 Column Layout -->
+					<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
 						<!-- Kong Services -->
 						<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-sm overflow-hidden">
 							<div class="px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between">
@@ -398,6 +417,53 @@
 																</span>
 															{/each}
 														</div>
+													{/if}
+												</div>
+											</div>
+										</div>
+									{/each}
+								{/if}
+							</div>
+						</div>
+
+						<!-- Data Cloud Connections -->
+						<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-sm overflow-hidden">
+							<div class="px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between">
+								<h3 class="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+									<svg class="size-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
+									</svg>
+									Data Cloud
+								</h3>
+								<a href="/admin/datacloud" class="text-xs text-blue-500 hover:underline">관리</a>
+							</div>
+							<div class="max-h-[400px] overflow-y-auto">
+								{#if !overview.datacloud_connections || overview.datacloud_connections.length === 0}
+									<div class="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+										등록된 DB 연결이 없습니다
+									</div>
+								{:else}
+									{#each overview.datacloud_connections as conn}
+										<div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 hover:bg-white/50 dark:hover:bg-gray-700/30 transition-colors">
+											<div class="flex items-start justify-between">
+												<div class="flex-1 min-w-0">
+													<div class="flex items-center gap-2">
+														<span class="font-medium text-gray-900 dark:text-gray-100 truncate">{conn.name}</span>
+														<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+															{conn.db_type}
+														</span>
+													</div>
+													<div class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+														{conn.host}:{conn.port} / {conn.database_name}
+													</div>
+												</div>
+												<div class="flex items-center gap-1 flex-shrink-0 ml-2">
+													{#if conn.health_status === 'healthy'}
+														<span class="w-2 h-2 rounded-full bg-green-500" title="정상"></span>
+													{:else if conn.health_status === 'unhealthy'}
+														<span class="w-2 h-2 rounded-full bg-red-500" title="오류"></span>
+													{:else}
+														<span class="w-2 h-2 rounded-full bg-gray-400" title="미확인"></span>
 													{/if}
 												</div>
 											</div>

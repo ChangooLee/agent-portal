@@ -12,6 +12,7 @@ from datetime import datetime
 
 from app.services.kong_service import kong_service
 from app.services.mcp_service import mcp_service
+from app.services.datacloud_service import datacloud_service
 
 
 router = APIRouter(prefix="/gateway", tags=["gateway"])
@@ -83,6 +84,7 @@ class GatewayOverviewResponse(BaseModel):
     services: List[Dict[str, Any]]
     consumers: List[Dict[str, Any]]
     mcp_servers: List[Dict[str, Any]]
+    datacloud_connections: List[Dict[str, Any]]
     stats: Dict[str, int]
 
 
@@ -161,18 +163,28 @@ async def get_gateway_overview():
     except Exception as e:
         mcp_servers = []
     
+    # Data Cloud Connections 조회
+    try:
+        datacloud_connections = await datacloud_service.list_connections()
+    except Exception as e:
+        datacloud_connections = []
+    
     # 통계
+    healthy_datacloud = len([c for c in datacloud_connections if c.get("health_status") == "healthy"])
     stats = {
         "services_count": len(services),
         "consumers_count": len(consumers),
         "mcp_servers_count": len(mcp_servers),
-        "active_mcp_count": len([s for s in mcp_servers if s.get("enabled")])
+        "active_mcp_count": len([s for s in mcp_servers if s.get("enabled")]),
+        "datacloud_count": len(datacloud_connections),
+        "datacloud_healthy_count": healthy_datacloud
     }
     
     return GatewayOverviewResponse(
         services=services,
         consumers=consumers,
         mcp_servers=mcp_servers,
+        datacloud_connections=datacloud_connections,
         stats=stats
     )
 

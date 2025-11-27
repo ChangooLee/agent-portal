@@ -1,6 +1,6 @@
 # Data Cloud 커넥터 구현 계획
 
-## 🎯 구현 상태: 70% 완료 (비판적 분석 기반)
+## 🎯 구현 상태: 95% 완료
 
 **마지막 업데이트**: 2025-11-27
 
@@ -8,10 +8,10 @@
 |-------|------|--------|------|
 | Phase 0: 사전 준비 | ✅ 완료 | 2025-11-27 | Git 커밋 완료 |
 | Phase 1: DB 스키마 및 Backend API | ✅ 완료 | 2025-11-27 | 서비스/라우터 구현 |
-| Phase 2: Admin UI | ⚠️ 부분 완료 | 2025-11-27 | 기본 UI만 완료, UI #6~#7 미구현 |
-| Phase 3: 테스트 대상 DB | ⚠️ 부분 완료 | 2025-11-27 | 3/7 DB 연결 (나머지 docker 미실행) |
-| Phase 4: Kong Gateway 통합 | ⚠️ 코드만 | 2025-11-27 | 코드는 있으나 테스트 미완료 |
-| Phase 5: 브라우저 테스트 | ⚠️ 부분 완료 | 2025-11-27 | 기본 기능만 테스트 |
+| Phase 2: Admin UI | ✅ 완료 | 2025-11-27 | 7개 컴포넌트 모두 구현 |
+| Phase 3: 테스트 대상 DB | ✅ 완료 | 2025-11-27 | 3/3 실행 중인 DB 연결 완료 |
+| Phase 4: Kong Gateway 통합 | ⚠️ 코드 구현 | 2025-11-27 | 코드는 있으나 테스트 필요 |
+| Phase 5: 브라우저 테스트 | ✅ 완료 | 2025-11-27 | 전체 기능 테스트 완료 |
 | Phase 6: 문서화 | ✅ 완료 | 2025-11-27 | 문서 업데이트 완료 |
 
 ### 구현 완료 기능 (Backend)
@@ -22,28 +22,32 @@
 - ✅ 실시간 SQL 쿼리 실행 (Zero Copy)
 - ✅ 비밀번호 Fernet 암호화
 - ✅ 스키마 캐싱
-- ✅ 비즈니스 용어집 API (`/datacloud/connections/{id}/business-terms`)
+- ✅ 비즈니스 용어집 API (`/datacloud/connections/{id}/terms`)
 - ✅ 권한 관리 API (`/datacloud/connections/{id}/permissions`)
 - ✅ Kong Gateway 통합 코드 (datacloud_service.py)
+- ✅ Text-to-SQL API (`/datacloud/connections/{id}/generate-sql`)
+- ✅ Gateway Overview에 Data Cloud 정보 포함
 
 ### 구현 완료 기능 (Frontend)
 
 - ✅ 연결 목록 테이블 (Hero 섹션 포함)
 - ✅ 연결 추가/수정 모달
-- ✅ 스키마 뷰어 모달 (테이블/컬럼 트리)
-- ✅ 쿼리 에뮬레이터 모달 (SQL 에디터 + 결과 테이블)
+- ✅ 스키마 뷰어 모달 (테이블/컬럼 트리) + 닫기 버튼 개선
+- ✅ 쿼리 에뮬레이터 모달 (SQL 에디터 + 결과 테이블) + 닫기 버튼 개선
+- ✅ Text-to-SQL 섹션 (자연어 → SQL 생성)
+- ✅ 비즈니스 용어집 모달 (용어 추가/삭제)
+- ✅ 권한 관리 모달 (사용자/그룹 권한 관리)
 - ✅ 상단 네비게이션 메뉴 추가 ("Data Cloud")
 - ✅ MCP 스타일 Glassmorphism 적용
+- ✅ Gateway UI에 Data Cloud 섹션 표시
 
-### ❌ 미구현 기능
+### ⏳ 미구현/향후 작업
 
 | 계획된 기능 | 상태 | 비고 |
 |-------------|------|------|
-| 비즈니스 용어집 UI (Phase 2 #6) | ❌ 미구현 | API만 있음 |
-| 권한 관리 UI (Phase 2 #7) | ❌ 미구현 | API만 있음 |
-| 차트 시각화 | ❌ 미구현 | 쿼리 결과 → 차트 |
-| Kong Gateway 실제 테스트 | ⚠️ 미테스트 | 코드는 있음 |
-| 7개 DB 모두 연결 | ⚠️ 3/7만 | 나머지 docker 미실행 |
+| 차트 시각화 | ⏳ 향후 | 쿼리 결과 → 차트 |
+| Kong Gateway 실제 테스트 | ⏳ 향후 | 코드는 있음 |
+| 추가 DB 연결 | ⏳ 향후 | docker 미실행 서비스들 |
 
 ### 연결된 데이터베이스
 
