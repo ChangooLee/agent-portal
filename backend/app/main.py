@@ -17,8 +17,8 @@ except Exception as e:
     raise
 
 try:
-    from app.routes import proxy, agents, monitoring, projects, teams, mcp, gateway
-    logger.info("✅ New routes (proxy, agents, monitoring, projects, teams, mcp, gateway) imported successfully")
+    from app.routes import proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud
+    logger.info("✅ New routes (proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud) imported successfully")
 except Exception as e:
     logger.error(f"❌ New routes import failed: {e}")
     import traceback
@@ -73,6 +73,7 @@ app.include_router(projects.router)
 app.include_router(teams.router)
 app.include_router(mcp.router)
 app.include_router(gateway.router)
+app.include_router(datacloud.router)
 
 # Debug: 라우터 등록 확인
 import logging
