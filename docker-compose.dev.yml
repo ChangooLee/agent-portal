@@ -14,30 +14,37 @@ services:
     environment:
       - DEBUG=true
       - LOG_LEVEL=debug
-    # Uncomment for live code reload:
-    # volumes:
-    #   - ./backend/app:/app/app
+      # External ClickHouse connection (for monitoring)
+      - CLICKHOUSE_HOST=host.docker.internal
+      - CLICKHOUSE_HTTP_PORT=8124
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=password
+      - CLICKHOUSE_DATABASE=otel_2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # WebUI - Development overrides  
   webui:
+    build:
+      context: ./webui
+      dockerfile: Dockerfile.dev
     ports:
-      - "3001:3001"    # Dev server port
+      - "3005:3001"    # Vite dev server (Vite uses port 3001 internally)
+      - "3000:8080"    # Backend API
     environment:
       - NODE_ENV=development
-    # Uncomment for live code reload:
-    # volumes:
-    #   - ./webui/src:/app/src
+      - DOCKER_ENV=true
+      - VITE_HMR_PORT=3005  # External port for HMR WebSocket
+      # External LiteLLM connection
+      - OPENAI_API_BASE_URLS=http://host.docker.internal:4000/v1
+      - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
+      - ENABLE_OPENAI_API=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./webui:/app
+      - webui_node_modules:/app/node_modules
+    command: ["bash", "-c", "chmod +x /app/dev-start.sh && /app/dev-start.sh"]
 
-  # LiteLLM - Development overrides
-  litellm:
-    environment:
-      - LITELLM_LOG=DEBUG
-
-# Development-only volumes (for live reload)
-# volumes:
-#   backend_code:
-#     driver: local
-#     driver_opts:
-#       type: none
-#       device: ${PWD}/backend/app
-#       o: bind
+volumes:
+  webui_node_modules:

@@ -13,7 +13,7 @@ services:
       - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
     depends_on:
       - backend
-      - litellm
+      # - litellm  # Using external litellm service
     volumes:
       - ./webui/plugins:/app/plugins
       - ./webui/overrides:/app/overrides
@@ -36,13 +36,13 @@ services:
       - DATACLOUD_ENCRYPTION_KEY=LpbushjAoV7u_7Z3tk5TzqsTra79yKjMAanPR0DWz9U=
     volumes:
       # News data volume mount
-      - /Users/lchangoo/Workspace/mcp-naver-news/src/data:/data/news:ro
+      - /home3/llmops/mcp/mcp-naver-news/src/data:/data/news:ro
     depends_on:
       - mariadb
       - chromadb
       - redis
       - minio
-      - litellm
+      # - litellm  # Using external litellm service
       - langfuse
       - helicone
       - kong
@@ -54,10 +54,11 @@ services:
   #   ports:
   #     - "8123:8123"
 
-  # LiteLLM Database (PostgreSQL)
+  # LiteLLM Database (PostgreSQL) - Disabled, using external service
   litellm-postgres:
     image: postgres:16
     container_name: litellm-postgres
+    profiles: ["disabled"]
     restart: unless-stopped
     environment:
       POSTGRES_USER: litellm
@@ -73,9 +74,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # LLM Gateway
+  # LLM Gateway (uses external service, disabled here)
+  # To use agent-portal's own litellm, uncomment and configure
   litellm:
-    build: ./litellm
+    image: ghcr.io/berriai/litellm:main-stable
+    profiles: ["disabled"]  # Disabled - using external litellm service
     ports:
       - "4000:4000"
     env_file: .env
@@ -98,11 +101,11 @@ services:
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
-    depends_on:
-      litellm-postgres:
-        condition: service_healthy
-      monitoring-otel-collector:
-        condition: service_started
+    # depends_on:
+    #   litellm-postgres:
+    #     condition: service_healthy
+    #   monitoring-otel-collector:
+    #     condition: service_started
 
   # Observability
   # otel-collector:
@@ -119,7 +122,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     ports:
-      - "9090:9090"
+      - "9092:9090"  # Changed from 9090 to avoid conflict
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -132,7 +135,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3005:3000"
+      - "3008:3000"  # Changed from 3005 to avoid conflict with Vite
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -148,12 +151,12 @@ services:
   langfuse:
     image: langfuse/langfuse:2
     ports:
-      - "3003:3000"
+      - "3007:3000"  # Changed from 3003 to avoid conflict
     env_file: .env
     environment:
       - DATABASE_URL=${LANGFUSE_DATABASE_URL:-postgresql://postgres:postgres@langfuse-db:5432/postgres}
       - NEXTAUTH_SECRET=mysecret
-      - NEXTAUTH_URL=http://localhost:3003
+      - NEXTAUTH_URL=http://localhost:3007
       - SALT=mysalt
     depends_on:
       langfuse-db:
@@ -234,8 +237,8 @@ services:
       - KONG_ADMIN_LISTEN=0.0.0.0:8001
       - KONG_PLUGINS=bundled,prometheus
     ports:
-      - "8002:8000"    # Proxy (외부 포트 변경으로 충돌 방지)
-      - "8443:8443"    # Proxy TLS
+      - "8004:8000"    # Proxy (changed from 8002 to avoid conflict)
+      - "8444:8443"    # Proxy TLS (changed from 8443 to avoid conflict)
       # Admin API(8001)는 외부 노출 안 함 - BFF 프록시로만 접근
     healthcheck:
       test: ["CMD", "kong", "health"]
@@ -294,7 +297,7 @@ services:
   chromadb:
     image: ghcr.io/chroma-core/chroma:latest
     ports:
-      - "8001:8000"
+      - "8005:8000"  # Changed from 8001 to avoid conflict
 
   redis:
     image: redis:7-alpine
@@ -308,18 +311,19 @@ services:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9003:9000"  # Changed from 9000 to avoid conflict
+      - "9004:9001"  # Changed from 9001 to avoid conflict
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio:/data
 
-  # Monitoring ClickHouse (for OTLP traces)
+  # Monitoring ClickHouse (for OTLP traces) - Disabled, using external service
   monitoring-clickhouse:
     image: clickhouse/clickhouse-server:24.12
     container_name: monitoring-clickhouse
+    profiles: ["disabled"]
     ports:
       - "9002:9000"
       - "8124:8123"
@@ -331,14 +335,16 @@ services:
       - monitoring_clickhouse:/var/lib/clickhouse
 
   # Monitoring OTLP Collector (receives traces from LiteLLM)
+  # Disabled - using external otel-collector service
   monitoring-otel-collector:
     build:
       context: ./otel-collector
       dockerfile: Dockerfile
     container_name: monitoring-otel-collector
+    profiles: ["disabled"]  # Disabled - using external otel-collector
     ports:
-      - '4317:4317' # otlp grpc receiver
-      - '4318:4318' # otlp http receiver
+      - '4319:4317' # otlp grpc receiver (changed from 4317)
+      - '4320:4318' # otlp http receiver (changed from 4318)
     environment:
       - CLICKHOUSE_ENDPOINT=http://monitoring-clickhouse:8123
       - CLICKHOUSE_USERNAME=${CLICKHOUSE_USER:-default}
@@ -353,22 +359,20 @@ services:
     depends_on:
       - monitoring-clickhouse
 
-  # 추가 포털
+  # 추가 포털 (disabled - build directories not present)
   open-notebook:
     build: ./open-notebook
+    profiles: ["disabled"]
     ports:
       - "3100:3000"
     env_file: .env
-    depends_on:
-      - litellm
 
   perplexica:
     build: ./perplexica
+    profiles: ["disabled"]
     ports:
       - "3210:3000"
     env_file: .env
-    depends_on:
-      - litellm
 
   # Agent Builders
   langflow:
@@ -378,12 +382,12 @@ services:
     environment:
       - LANGFLOW_HOST=0.0.0.0
       - LANGFLOW_PORT=7860
-      - LANGFLOW_DEFAULT_OPENAI_BASE_URL=http://litellm:4000/v1
+      - LANGFLOW_DEFAULT_OPENAI_BASE_URL=http://host.docker.internal:4000/v1
       - LANGFLOW_DEFAULT_OPENAI_API_KEY=${LITELLM_MASTER_KEY}
     volumes:
       - langflow_data:/data
-    depends_on:
-      - litellm
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   flowise:
     image: flowiseai/flowise:latest
@@ -391,33 +395,32 @@ services:
       - "3002:3000"
     environment:
       - PORT=3000
-      - OPENAI_API_BASE=http://litellm:4000/v1
+      - OPENAI_API_BASE=http://host.docker.internal:4000/v1
       - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
     volumes:
       - flowise_data:/root/.flowise
-    depends_on:
-      - litellm
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   autogen-studio:
     build: ./autogen-studio
+    profiles: ["disabled"]
     ports:
       - "5050:5050"
     environment:
-      - LITELLM_BASE_URL=http://litellm:4000
-    depends_on:
-      - litellm
+      - LITELLM_BASE_URL=http://host.docker.internal:4000
 
   autogen-api:
     build: ./autogen-api
+    profiles: ["disabled"]
     ports:
       - "5051:5051"
     environment:
-      - LITELLM_BASE_URL=http://litellm:4000
+      - LITELLM_BASE_URL=http://host.docker.internal:4000
       - LANGFUSE_HOST=${LANGFUSE_HOST}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
     depends_on:
-      - litellm
       - langfuse
 
 volumes:

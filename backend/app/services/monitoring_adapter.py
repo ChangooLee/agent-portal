@@ -102,7 +102,7 @@ class MonitoringAdapter:
         llm_filter = """
           AND (
             -- 토큰이 있는 LLM 호출 (실제 API 호출)
-            toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens']) > 0
+            toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) > 0
             -- Agent 빌더 호출
             OR SpanName LIKE '%langflow%'
             OR SpanName LIKE '%flowise%'
@@ -114,10 +114,11 @@ class MonitoringAdapter:
         """
         
         # 총 개수
+        # Note: project_id가 비어있는 데이터도 포함 (LiteLLM 기본 설정)
         count_query = f"""
         SELECT count(DISTINCT TraceId) as total
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -144,14 +145,14 @@ class MonitoringAdapter:
                     -- Extract cost from metadata.usage_object using extractAll
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
                     -- Fallback: calculate from tokens (OpenRouter qwen pricing)
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens']) * 0.000000072) +
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens']) * 0.000000464)
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
                 )
             ) as total_cost,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens'])) as prompt_tokens,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens'])) as completion_tokens
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as prompt_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as completion_tokens
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -214,17 +215,18 @@ class MonitoringAdapter:
         LLM/Agent 호출만 집계 (auth, postgres 등 내부 호출 제외).
         """
         # LLM/Agent 호출만 필터링하는 조건
+        # Note: LiteLLM uses 'llm.usage.total_tokens' instead of 'gen_ai.usage.prompt_tokens'
         llm_filter = """
           AND (
             SpanName = 'Received Proxy Server Request'
-            OR SpanName LIKE '%litellm%'
+            OR SpanName = 'litellm_request'
             OR SpanName LIKE '%langflow%'
             OR SpanName LIKE '%flowise%'
             OR SpanName LIKE '%autogen%'
             OR SpanName LIKE '%agent%'
             OR SpanName LIKE '%chat%'
             OR SpanName LIKE '%completion%'
-            OR SpanAttributes['gen_ai.usage.prompt_tokens'] != ''
+            OR SpanAttributes['llm.usage.total_tokens'] != ''
           )
         """
         
@@ -235,7 +237,7 @@ class MonitoringAdapter:
             count() as span_count,
             countIf(StatusCode = 'ERROR') as error_count,
             -- LLM 호출 건수: prompt_tokens가 있는 트레이스
-            countDistinctIf(TraceId, SpanAttributes['gen_ai.usage.prompt_tokens'] != '') as llm_call_count,
+            countDistinctIf(TraceId, SpanAttributes['llm.usage.total_tokens'] != '') as llm_call_count,
             -- Agent 호출 건수: langflow, flowise, autogen 관련 트레이스
             countDistinctIf(TraceId, 
                 SpanName LIKE '%langflow%' 
@@ -248,12 +250,12 @@ class MonitoringAdapter:
                     -- Extract cost from metadata.usage_object using extractAll
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
                     -- Fallback: calculate from tokens (OpenRouter qwen pricing)
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens']) * 0.000000072) +
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens']) * 0.000000464)
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
                 )
             ) as total_cost,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens'])) as prompt_tokens,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens'])) as completion_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as prompt_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as completion_tokens,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.cache_read_input_tokens'])) as cache_read_input_tokens,
             sum(toUInt64OrZero(SpanAttributes['llm.usage.reasoning_tokens'])) as reasoning_tokens,
             avg(Duration) / 1000000 as avg_duration,
@@ -261,7 +263,7 @@ class MonitoringAdapter:
             quantile(0.95)(Duration) / 1000000 as p95_duration,
             quantile(0.99)(Duration) / 1000000 as p99_duration
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -667,7 +669,7 @@ class MonitoringAdapter:
             {time_format} as timestamp,
             sum(toFloat64OrZero(SpanAttributes['gen_ai.usage.cost'])) as cost
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY timestamp
@@ -701,11 +703,11 @@ class MonitoringAdapter:
         query = f"""
         SELECT 
             {time_format} as timestamp,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens'])) as prompt_tokens,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens'])) as completion_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as prompt_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as completion_tokens,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.cache_read_input_tokens'])) as cache_hits
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY timestamp
@@ -737,7 +739,7 @@ class MonitoringAdapter:
             sum(Duration) / 1000000 as duration,
             if(countIf(StatusCode = 'ERROR') > 0, 'error', 'success') as status
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY TraceId
@@ -799,13 +801,13 @@ class MonitoringAdapter:
             END as stage,
             count(DISTINCT TraceId) as call_count,
             avg(Duration) / 1000000 as avg_latency_ms,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens'])) as total_prompt_tokens,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens'])) as total_completion_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as total_prompt_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as total_completion_tokens,
             sum(
                 greatest(
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens']) * 0.000000072) +
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens']) * 0.000000464)
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
                 )
             ) as total_cost,
             countIf(StatusCode = 'Error') as error_count,
@@ -935,13 +937,13 @@ class MonitoringAdapter:
             countIf(SpanName = 'batch_write_to_db' AND StatusCode = 'Error') as output_guardrail_blocks,
             
             -- 비용 관련 (토큰 사용량)
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens'])) as total_prompt_tokens,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens'])) as total_completion_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as total_prompt_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as total_completion_tokens,
             
             -- 평균 응답 시간 (가드레일 포함)
             avg(Duration) / 1000000 as avg_latency_ms
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         """
@@ -1030,14 +1032,14 @@ class MonitoringAdapter:
                     -- Extract cost from metadata.usage_object using extractAll
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
                     -- Fallback: calculate from tokens (OpenRouter qwen pricing)
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens']) * 0.000000072) +
-                    (toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens']) * 0.000000464)
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
                 )
             ) as total_cost,
             avg(Duration) / 1000000 as avg_latency_ms,
             countIf(StatusCode = 'ERROR') as error_count
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE ResourceAttributes['project_id'] = '{project_id}'
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {agent_filter}
