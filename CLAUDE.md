@@ -1,120 +1,76 @@
-# CLAUDE.md — Agent Portal Quick Reference
+# CLAUDE.md — Quick Reference
 
-> **Purpose**: Quick reference for AI agents working on Agent Portal
-
----
-
-## Philosophy
-
-### "Shoot and Forget" — Result-Oriented Delegation
-- Provide clear context and goals to AI
-- Evaluate by final PR quality, not process
-- Human intervenes only at PR review stage
+> Minimal cheat sheet for Agent Portal. See `AGENTS.md` for details.
 
 ---
 
-## Project Structure
+## Project
 
-```
-agent-portal/
-├── backend/                    # FastAPI BFF (port 8000)
-│   ├── app/routes/            # API endpoints
-│   ├── app/services/          # Business logic
-│   └── app/middleware/        # RBAC, auth
-│
-├── webui/                      # Open-WebUI fork (port 3001)
-│   └── src/routes/(app)/admin/ # Admin pages
-│
-├── config/                     # litellm.yaml, kong.yml
-├── docker-compose.yml          # Service orchestration
-└── docs/                       # Documentation
-```
+Enterprise AI agent platform: Chat UI + LLM Gateway + Monitoring + Data Cloud + MCP Gateway
 
 ---
 
-## Key Services
+## Services
 
-| Service | Port | Status |
+| Service | Port | Health |
 |---------|------|--------|
-| Backend BFF | 8000 | ✅ Running |
-| Open-WebUI | 3001 | ✅ Running |
-| LiteLLM | 4000 | ✅ Running |
-| ClickHouse | 8124 | ✅ Running |
-| Kong Gateway | 8002 | ✅ Running |
-| MariaDB | 3306 | ✅ Running |
-
----
-
-## Architecture
-
-### Monitoring Pipeline
-```
-LiteLLM → OTEL Collector → ClickHouse → Backend BFF → Frontend
-```
-
-### Data Cloud
-```
-MariaDB/PostgreSQL/ClickHouse → SQLAlchemy → Backend BFF → Frontend
-```
-
-### MCP Gateway
-```
-MCP Servers → Kong Gateway → Backend Registry → Frontend Admin
-```
+| backend | 8000 | http://localhost:8000/docs |
+| webui | 3001 | http://localhost:3001 |
+| litellm | 4000 | http://localhost:4000/health |
+| kong | 8002 | http://localhost:8002/status |
+| clickhouse | 8124 | http://localhost:8124/ping |
+| mariadb | 3306 | - |
 
 ---
 
 ## Quick Commands
 
-### Backend
 ```bash
-# Rebuild and restart
-docker-compose build --no-cache backend && docker-compose up -d backend
+# Health check
+./scripts/health-check.sh
 
-# Check logs
-docker-compose logs backend --tail=50
+# Logs
+docker compose logs <service> --tail=50 -f
 
-# Test API
-curl http://localhost:8000/api/monitoring/metrics?...
-```
+# Rebuild
+docker compose build --no-cache <service>
+docker compose up -d <service>
 
-### Frontend
-```bash
-# Dev server
-cd webui && npm run dev
-
-# Check browser at http://localhost:3001
-```
-
-### Database
-```bash
 # MariaDB
-docker-compose exec mariadb mariadb -uroot -prootpass agent_portal
+docker compose exec mariadb mariadb -uroot -prootpass agent_portal
 
 # ClickHouse
-docker-compose exec monitoring-clickhouse clickhouse-client
+docker compose exec monitoring-clickhouse clickhouse-client
 ```
 
 ---
 
-## Rules Reference
+## Key Locations
 
-See `.cursor/rules/` for detailed guides:
-- `backend-api.mdc` — FastAPI patterns
-- `ui-development.mdc` — Svelte/Tailwind patterns
-- `admin-screens.mdc` — Admin UI patterns
-- `monitoring-development.mdc` — ClickHouse queries
-- `datacloud-development.mdc` — Database connector
-- `mcp-gateway.mdc` — MCP server management
+| What | Where |
+|------|-------|
+| Backend routes | `backend/app/routes/` |
+| Backend services | `backend/app/services/` |
+| Admin pages | `webui/src/routes/(app)/admin/` |
+| AI rules | `.cursor/rules/*.mdc` |
+| Vite proxy | `webui/vite.config.ts` |
 
 ---
 
-## Common Gotchas
+## Critical Gotchas
 
-1. **ClickHouse project_id**: Use `ResourceAttributes['project_id']`, NOT direct column
-2. **Frontend API calls**: Use `/api/*` proxy, NOT `http://localhost:8000/*`
-3. **Duration units**: ClickHouse stores nanoseconds, convert to ms: `Duration / 1000000`
-4. **Container changes**: Rebuild with `--no-cache` after code changes
+1. **ClickHouse project_id**: `ResourceAttributes['project_id']` (NOT direct column)
+2. **Frontend API**: Use `/api/*` proxy (NOT `http://localhost:8000`)
+3. **Duration**: Nanoseconds in ClickHouse, divide by 1000000 for ms
+4. **Container rebuild**: Use `--no-cache` after code changes
+
+---
+
+## Documentation
+
+- `.cursorrules` — AI behavioral guidelines
+- `AGENTS.md` — Full technical reference
+- `.cursor/rules/` — Domain-specific rules
 
 ---
 
