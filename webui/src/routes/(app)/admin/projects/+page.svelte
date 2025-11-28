@@ -148,53 +148,71 @@
 	<title>Projects - {$WEBUI_NAME}</title>
 </svelte:head>
 
-<div class="flex flex-col w-full h-full min-h-screen p-6">
-	<!-- Hero Section -->
-	<div
-		class="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10 dark:from-blue-400/5 dark:via-cyan-400/5 dark:to-teal-400/5"
-	>
-		<div class="absolute inset-0 bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl"></div>
-
-		<div class="relative px-8 py-8">
-			<!-- Badge -->
-			<div
-				class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 text-sm font-medium mb-3 backdrop-blur-sm border border-blue-500/20 dark:border-blue-400/20"
-			>
-				<FolderOpen className="size-4" />
-				<span>Project Management</span>
+<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+	<div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+	
+	<!-- Hero Section (Glassmorphism) -->
+	<section class="relative overflow-hidden rounded-3xl border border-white/20 
+	                bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl 
+	                dark:border-gray-700/30 dark:bg-gray-900/60">
+		<!-- Gradient overlay -->
+		<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 
+		            to-accent/20 opacity-60" />
+		<!-- Glow effect -->
+		<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full 
+		            bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
+		
+		<div class="relative flex flex-col gap-5">
+			<!-- Header Row: Badge + Title + Action Button -->
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div class="flex flex-wrap items-center gap-3">
+					<!-- Badge -->
+					<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 
+					             text-xs font-medium text-gray-600 shadow-sm 
+					             dark:bg-gray-800/80 dark:text-gray-200">
+						<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary 
+						             via-secondary to-accent" />
+						Project Management
+					</span>
+					<!-- Title -->
+					<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+						Projects
+					</h1>
+				</div>
+				
+				<!-- Primary Action Button -->
+				<button
+					on:click={openCreateModal}
+					class="flex items-center gap-2 px-4 py-2 rounded-xl 
+					       bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 
+					       text-white font-medium shadow-lg shadow-primary/30 
+					       hover:shadow-xl transition-all hover:scale-105"
+				>
+					<Plus className="size-4" />
+					<span>New Project</span>
+				</button>
 			</div>
-
-			<!-- Title -->
-			<h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-3">Projects</h1>
-
+			
 			<!-- Description -->
-			<p class="text-base text-gray-600 dark:text-gray-300 max-w-3xl">
+			<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
 				프로젝트를 생성하고 관리하세요. 각 프로젝트는 독립적인 모니터링 및 분석 단위입니다.
 			</p>
-
-			<!-- Stats -->
-			<div class="flex items-center gap-6 mt-6">
-				<div
-					class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/20 dark:border-gray-700/20"
-				>
-					<div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{projects.length}</div>
-					<div class="text-sm text-gray-600 dark:text-gray-400">Total Projects</div>
+			
+			<!-- Stats Cards -->
+			<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+				<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 
+				            border border-white/30 dark:border-gray-700/30">
+					<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+						{projects.length}개
+					</div>
+					<div class="text-xs text-gray-500 dark:text-gray-400">Total Projects</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	</section>
 
-	<!-- Actions -->
-	<div class="flex justify-between items-center mb-6">
-		<div class="text-lg font-semibold text-gray-800 dark:text-gray-200">All Projects</div>
-		<button
-			on:click={openCreateModal}
-			class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 shadow-lg shadow-blue-500/25"
-		>
-			<Plus className="size-4" />
-			<span>New Project</span>
-		</button>
-	</div>
+	<!-- Section Title -->
+	<div class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">All Projects</div>
 
 	<!-- Error Message -->
 	{#if error}
@@ -208,7 +226,7 @@
 	<!-- Loading State -->
 	{#if loading}
 		<div class="flex items-center justify-center py-12">
-			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 		</div>
 	{:else if projects.length === 0}
 		<!-- Empty State -->
@@ -222,7 +240,10 @@
 			</p>
 			<button
 				on:click={openCreateModal}
-				class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors"
+				class="flex items-center gap-2 px-4 py-2 rounded-xl 
+				       bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 
+				       text-white font-medium shadow-lg shadow-primary/30 
+				       hover:shadow-xl transition-all"
 			>
 				<Plus className="size-4" />
 				<span>Create Project</span>
@@ -237,7 +258,7 @@
 				>
 					<div class="flex items-start justify-between mb-4">
 						<div
-							class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center"
+							class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center"
 						>
 							<FolderOpen className="size-5 text-blue-600 dark:text-blue-400" />
 						</div>
@@ -305,7 +326,7 @@
 						id="name"
 						bind:value={formName}
 						required
-						class="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
 						placeholder="My Project"
 					/>
 				</div>
@@ -337,7 +358,7 @@
 						type="text"
 						id="defaultModel"
 						bind:value={formDefaultModel}
-						class="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
 						placeholder="gpt-4"
 					/>
 				</div>
@@ -346,13 +367,17 @@
 					<button
 						type="button"
 						on:click={closeModal}
-						class="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+						class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 
+						       text-gray-700 dark:text-gray-200 hover:bg-gray-200 
+						       dark:hover:bg-gray-600 transition-colors"
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						class="px-4 py-2 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors"
+						class="px-4 py-2 rounded-xl bg-gradient-to-br from-primary/90 
+						       via-secondary/90 to-accent/90 text-white font-medium 
+						       shadow-lg shadow-primary/30 hover:shadow-xl transition-all"
 					>
 						{modalMode === 'create' ? 'Create' : 'Save Changes'}
 					</button>
@@ -361,4 +386,4 @@
 		</div>
 	</div>
 {/if}
-
+</div>

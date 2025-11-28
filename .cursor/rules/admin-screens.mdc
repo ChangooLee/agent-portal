@@ -1,103 +1,160 @@
 ---
 alwaysApply: false
 ---
-# Admin Screens Development Rules
+# Admin Screens Design System (MANDATORY)
 
-Rules for developing admin pages with Glassmorphism design.
+**CRITICAL**: All admin screens MUST follow these exact patterns. Deviation is NOT allowed.
 
-## Admin Routes
+---
 
-```
-webui/src/routes/(app)/admin/
-├── +layout.svelte         # Admin layout with navigation
-├── monitoring/            # LLM monitoring dashboard
-├── datacloud/             # Database connector management
-├── mcp/                   # MCP server management
-├── gateway/               # Kong Gateway overview
-├── users/                 # User management
-├── settings/              # Settings
-└── evaluations/           # Leaderboard
-```
+## 1. Hero Section (CANONICAL)
 
-## Hero Section Pattern
+**MUST use this exact structure:**
 
 ```svelte
-<div class="relative mb-8 overflow-hidden rounded-2xl 
-            bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 
-            dark:from-primary/5 dark:via-secondary/5 dark:to-accent/5">
-  <div class="absolute inset-0 bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl"></div>
-  
-  <div class="relative px-8 py-12">
-    <!-- Badge -->
-    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full 
-                bg-primary/10 dark:bg-primary/10 text-primary dark:text-primary-light 
-                text-sm font-medium mb-4 backdrop-blur-sm border border-primary/20">
-      <Icon class="size-4" />
-      <span>Dashboard</span>
-    </div>
+<!-- Page Container -->
+<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+  <div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
     
-    <!-- Title -->
-    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-      Page Title
-    </h1>
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden rounded-3xl border border-white/20 
+                    bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl 
+                    dark:border-gray-700/30 dark:bg-gray-900/60">
+      <!-- Gradient overlay -->
+      <div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 
+                  to-accent/20 opacity-60" />
+      <!-- Glow effect -->
+      <div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full 
+                  bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
+      
+      <div class="relative flex flex-col gap-5">
+        <!-- Header Row: Badge + Title + Action Button -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Badge -->
+            <span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 
+                         text-xs font-medium text-gray-600 shadow-sm 
+                         dark:bg-gray-800/80 dark:text-gray-200">
+              <span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary 
+                           via-secondary to-accent" />
+              Badge Text
+            </span>
+            <!-- Title -->
+            <h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              Page Title
+            </h1>
+          </div>
+          
+          <!-- Primary Action Button -->
+          <button class="flex items-center gap-2 px-4 py-2 rounded-xl 
+                         bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 
+                         text-white font-medium shadow-lg shadow-primary/30 
+                         hover:shadow-xl transition-all hover:scale-105">
+            <Icon class="size-5" />
+            <span>Action</span>
+          </button>
+        </div>
+        
+        <!-- Description -->
+        <p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+          Description text here
+        </p>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
+          {#each stats as stat}
+            <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 
+                        border border-white/30 dark:border-gray-700/30">
+              <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stat.value}
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{stat.label}</div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </section>
     
-    <!-- Description -->
-    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl">
-      Description text here
-    </p>
+    <!-- Content Area -->
+    ...
   </div>
 </div>
 ```
 
-## Stats Cards Pattern
+### Hero Section PROHIBITED Patterns:
 
 ```svelte
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-  <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 
-              border border-white/20 dark:border-gray-700/20 shadow-sm">
-    <div class="flex items-center gap-3">
-      <div class="p-2 rounded-lg bg-primary/10 dark:bg-primary/20">
-        <Icon class="size-5 text-primary dark:text-primary-light" />
-      </div>
-      <div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">1,234</div>
-        <div class="text-xs text-gray-500 dark:text-gray-400">Label</div>
-      </div>
+<!-- WRONG: Solid gradient background with white text -->
+<div class="bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 text-white">
+
+<!-- WRONG: Custom color themes (blue, amber, etc.) -->
+<div class="bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-teal-500/10">
+
+<!-- WRONG: Different badge style -->
+<div class="bg-primary/10 text-primary">  <!-- Should be bg-white/90 -->
+
+<!-- WRONG: p-8 or other padding -->
+<div class="p-8">  <!-- Should be p-6 -->
+```
+
+---
+
+## 2. Button Patterns
+
+| Type | Context | Classes |
+|------|---------|---------|
+| **Primary** | Hero CTA, main actions | `bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 text-white rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl transition-all hover:scale-105` |
+| **Secondary** | Cancel, alternative | `bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600` |
+| **Danger** | Delete, destructive | `bg-red-600 hover:bg-red-700 text-white rounded-xl` |
+| **Icon Only** | Table actions | `p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30` |
+| **Filter Tab Active** | Filter buttons | `bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light rounded-lg px-3 py-1.5` |
+| **Filter Tab Inactive** | Filter buttons | `text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-3 py-1.5` |
+
+### Button PROHIBITED Patterns:
+
+```svelte
+<!-- WRONG: White/transparent in hero -->
+<button class="bg-white/20 hover:bg-white/30">
+
+<!-- WRONG: No hover effects -->
+<button class="bg-primary">
+
+<!-- WRONG: Non-rounded -->
+<button class="rounded">  <!-- Should be rounded-xl or rounded-lg -->
+```
+
+---
+
+## 3. Stats Cards
+
+```svelte
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+  <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 
+              border border-white/30 dark:border-gray-700/30">
+    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      {value}
     </div>
+    <div class="text-xs text-gray-500 dark:text-gray-400">{label}</div>
   </div>
 </div>
 ```
 
-## Admin Navigation
+### Stats PROHIBITED Patterns:
 
 ```svelte
-<script>
-  import { page } from '$app/stores';
-  
-  const navItems = [
-    { path: '/admin/users', icon: UsersSolid, label: 'Users' },
-    { path: '/admin/monitoring', icon: ChartBar, label: 'Monitoring' },
-    { path: '/admin/mcp', icon: Cube, label: 'MCP' },
-    { path: '/admin/gateway', icon: GlobeAlt, label: 'Gateway' },
-    { path: '/admin/datacloud', icon: CircleStack, label: 'Data Cloud' },
-  ];
-</script>
+<!-- WRONG: Transparent white in solid gradient hero -->
+<div class="bg-white/10">
 
-<nav class="flex flex-col gap-1">
-  {#each navItems as item}
-    <a href={item.path}
-       class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all
-              {$page.url.pathname === item.path 
-                ? 'bg-primary/10 text-primary dark:text-primary-light font-medium' 
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}">
-      <svelte:component this={item.icon} class="size-5" />
-      <span>{item.label}</span>
-    </a>
-  {/each}
-</nav>
+<!-- WRONG: White text -->
+<div class="text-white">
+
+<!-- WRONG: No backdrop-blur -->
+<div class="bg-white/60">  <!-- Missing backdrop-blur-sm -->
 ```
 
-## Table with Actions
+---
+
+## 4. Table Pattern
 
 ```svelte
 <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl 
@@ -106,72 +163,161 @@ webui/src/routes/(app)/admin/
     <thead class="bg-gray-50/50 dark:bg-gray-900/50">
       <tr>
         <th class="px-4 py-3 text-left text-xs font-medium 
-                   text-gray-500 dark:text-gray-400 uppercase">
-          Name
-        </th>
-        <th class="px-4 py-3 text-left text-xs font-medium 
-                   text-gray-500 dark:text-gray-400 uppercase">
-          Status
-        </th>
-        <th class="px-4 py-3 text-right text-xs font-medium 
-                   text-gray-500 dark:text-gray-400 uppercase">
-          Actions
+                   text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          Column
         </th>
       </tr>
     </thead>
-    <tbody>
-      {#each items as item}
-      <tr class="border-t border-gray-100 dark:border-gray-700/50 
-                 hover:bg-gray-50/50 dark:hover:bg-gray-700/30">
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/50">
+      <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
         <td class="px-4 py-3 text-gray-900 dark:text-gray-100">
-          {item.name}
-        </td>
-        <td class="px-4 py-3">
-          <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs
-                       {item.status === 'healthy' 
-                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                         : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}">
-            <span class="w-1.5 h-1.5 rounded-full 
-                         {item.status === 'healthy' ? 'bg-green-500' : 'bg-red-500'}"></span>
-            {item.status}
-          </span>
-        </td>
-        <td class="px-4 py-3 text-right">
-          <div class="flex justify-end gap-2">
-            <button class="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 
-                           hover:bg-blue-50 dark:hover:bg-blue-900/30">
-              <Pencil class="size-4" />
-            </button>
-            <button class="p-1.5 rounded-lg text-red-600 dark:text-red-400 
-                           hover:bg-red-50 dark:hover:bg-red-900/30">
-              <Trash class="size-4" />
-            </button>
-          </div>
+          Content
         </td>
       </tr>
-      {/each}
     </tbody>
   </table>
 </div>
 ```
 
-## Color Palette
+---
 
-| Usage | Light | Dark |
-|-------|-------|------|
-| Primary | `bg-primary text-white` | `bg-primary/90 text-white` |
+## 5. Modal Pattern
+
+```svelte
+{#if showModal}
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 
+            flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl 
+              max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 
+                flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Modal Title</h2>
+      <button on:click={() => showModal = false} 
+              class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 
+                     dark:text-gray-400 dark:hover:bg-gray-700">
+        <XMark class="size-5" />
+      </button>
+    </div>
+    
+    <!-- Content -->
+    <div class="p-6 overflow-y-auto max-h-[60vh]">
+      <!-- Modal content -->
+    </div>
+    
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 
+                flex justify-end gap-3">
+      <button class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 
+                     text-gray-700 dark:text-gray-200 hover:bg-gray-200 
+                     dark:hover:bg-gray-600 transition-colors">
+        Cancel
+      </button>
+      <button class="px-4 py-2 rounded-xl bg-gradient-to-br from-primary/90 
+                     via-secondary/90 to-accent/90 text-white font-medium 
+                     shadow-lg shadow-primary/30 hover:shadow-xl transition-all">
+        Confirm
+      </button>
+    </div>
+  </div>
+</div>
+{/if}
+```
+
+---
+
+## 6. Status Badge Pattern
+
+```svelte
+<!-- Healthy/Success -->
+<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs
+             bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+  <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+  Healthy
+</span>
+
+<!-- Error -->
+<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs
+             bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+  <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+  Error
+</span>
+
+<!-- Warning -->
+<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs
+             bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+  Warning
+</span>
+```
+
+---
+
+## 7. Color System
+
+**MANDATORY: Use primary/secondary/accent only. NO custom colors (blue, amber, purple, etc.)**
+
+| Usage | Light Mode | Dark Mode |
+|-------|------------|-----------|
+| Primary button | `from-primary/90 via-secondary/90 to-accent/90` | Same |
 | Primary subtle | `bg-primary/10 text-primary` | `bg-primary/20 text-primary-light` |
-| Success | `bg-green-100 text-green-700` | `bg-green-900/30 text-green-400` |
-| Error | `bg-red-100 text-red-700` | `bg-red-900/30 text-red-400` |
-| Warning | `bg-amber-100 text-amber-700` | `bg-amber-900/30 text-amber-400` |
+| Card background | `bg-white/60` | `bg-gray-800/60` |
+| Text primary | `text-gray-900` | `text-gray-100` |
+| Text secondary | `text-gray-600` | `text-gray-300` |
+| Text muted | `text-gray-500` | `text-gray-400` |
+| Border | `border-white/20` | `border-gray-700/30` |
 
-## Key Requirements
+---
 
-- Always use Glassmorphism: `backdrop-blur-sm bg-white/60 dark:bg-gray-800/60`
-- Support dark mode for all elements
-- Use consistent spacing: `p-4`, `p-6`, `gap-4`
-- Use rounded corners: `rounded-lg`, `rounded-xl`, `rounded-2xl`
-- Add transitions: `transition-all`
+## 8. Spacing & Sizing
+
+| Element | Value |
+|---------|-------|
+| Page container padding | `px-3 py-4 @md:px-6 @md:py-6` |
+| Hero section padding | `p-6` |
+| Card padding | `p-4` or `p-6` |
+| Gap between sections | `gap-6` |
+| Gap within cards | `gap-4` |
+| Border radius (large) | `rounded-3xl` (hero) |
+| Border radius (medium) | `rounded-2xl` (cards, tables) |
+| Border radius (small) | `rounded-xl` (buttons) |
+
+---
+
+## 9. Admin Routes Reference
+
+```
+webui/src/routes/(app)/admin/
+├── +layout.svelte         # Admin layout with navigation
+├── llm/                   # LLM model management
+├── monitoring/            # LLM monitoring dashboard
+├── datacloud/             # Database connector management
+├── mcp/                   # MCP server management
+├── gateway/               # Kong Gateway overview
+├── projects/              # Project management
+├── users/                 # User management
+├── settings/              # Settings
+├── guardrails/            # Guardrails configuration
+├── langfuse/              # Langfuse integration
+└── evaluations/           # Leaderboard
+```
+
+---
+
+## 10. Verification Checklist
+
+Before completing any admin screen, verify:
+
+- [ ] Hero uses `rounded-3xl border border-white/20 bg-white/60 backdrop-blur-2xl`
+- [ ] Gradient overlay uses `from-primary/20 via-secondary/10 to-accent/20`
+- [ ] Badge uses `bg-white/90` background with gradient dot
+- [ ] Title uses `text-gray-900 dark:text-gray-100`
+- [ ] Primary button uses gradient background (NOT white/transparent)
+- [ ] Stats cards use `bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm`
+- [ ] All colors use primary/secondary/accent (NO blue, amber, purple)
+- [ ] All elements support dark mode
+- [ ] Padding is `p-6` for hero, `p-4` for cards
+- [ ] Border radius follows pattern (3xl hero, 2xl cards, xl buttons)
 
 ---
 

@@ -257,35 +257,72 @@
 	});
 </script>
 
-<div class="p-6 space-y-6">
-	<!-- Hero Section -->
-	<div class="bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 dark:from-primary-light/80 dark:via-secondary-light/80 dark:to-accent-light/80 rounded-2xl shadow-lg p-8 text-white">
-		<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-			<div>
-				<h1 class="text-2xl font-bold mb-2">LLM 관리</h1>
-				<p class="text-white/80">LiteLLM을 통해 다양한 LLM Provider와 모델을 관리합니다.</p>
-			</div>
-			<button
-				on:click={() => { resetForm(); showAddModal = true; }}
-				class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-all duration-200 flex items-center gap-2"
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-				</svg>
-				모델 추가
-			</button>
-		</div>
+<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+	<div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+	
+	<!-- Hero Section (Glassmorphism) -->
+	<section class="relative overflow-hidden rounded-3xl border border-white/20 
+	                bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl 
+	                dark:border-gray-700/30 dark:bg-gray-900/60">
+		<!-- Gradient overlay -->
+		<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 
+		            to-accent/20 opacity-60" />
+		<!-- Glow effect -->
+		<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full 
+		            bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
 		
-		<!-- Stats -->
-		<div class="grid grid-cols-3 gap-4 mt-6">
-			{#each heroStats as stat}
-				<div class="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-					<div class="text-2xl font-bold">{stat.value}개</div>
-					<div class="text-sm text-white/80">{stat.label}</div>
+		<div class="relative flex flex-col gap-5">
+			<!-- Header Row: Badge + Title + Action Button -->
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div class="flex flex-wrap items-center gap-3">
+					<!-- Badge -->
+					<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 
+					             text-xs font-medium text-gray-600 shadow-sm 
+					             dark:bg-gray-800/80 dark:text-gray-200">
+						<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary 
+						             via-secondary to-accent" />
+						LLM Management
+					</span>
+					<!-- Title -->
+					<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+						LLM 관리
+					</h1>
 				</div>
-			{/each}
+				
+				<!-- Primary Action Button -->
+				<button
+					on:click={() => { resetForm(); showAddModal = true; }}
+					class="flex items-center gap-2 px-4 py-2 rounded-xl 
+					       bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 
+					       text-white font-medium shadow-lg shadow-primary/30 
+					       hover:shadow-xl transition-all hover:scale-105"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+					</svg>
+					모델 추가
+				</button>
+			</div>
+			
+			<!-- Description -->
+			<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+				LiteLLM을 통해 다양한 LLM Provider와 모델을 관리합니다.
+			</p>
+			
+			<!-- Stats Cards -->
+			<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+				{#each heroStats as stat}
+					<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 
+					            border border-white/30 dark:border-gray-700/30">
+						<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+							{stat.value}개
+						</div>
+						<div class="text-xs text-gray-500 dark:text-gray-400">{stat.label}</div>
+					</div>
+				{/each}
+			</div>
 		</div>
-	</div>
+	</section>
 	
 	<!-- Provider Filter -->
 	<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-sm p-4">
@@ -659,3 +696,5 @@
 </div>
 {/if}
 
+	</div>
+</div>
