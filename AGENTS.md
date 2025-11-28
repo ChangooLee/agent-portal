@@ -26,7 +26,7 @@ Enterprise AI agent management platform built on Open-WebUI, providing:
 | LLM Gateway | LiteLLM Proxy |
 | API Gateway | Kong |
 | Databases | MariaDB (app), ClickHouse (traces), PostgreSQL (LiteLLM) |
-| Observability | OTEL Collector, Prometheus, Langfuse |
+| Observability | OTEL Collector, Prometheus |
 | Infrastructure | Docker Compose |
 
 ---
@@ -114,7 +114,6 @@ MCP Servers → Kong Gateway → Backend Registry → Frontend Admin
 | Service | Port | Container | Purpose |
 |---------|------|-----------|---------|
 | redis | 6379 | agent-portal-redis-1 | Cache |
-| langfuse | 3003 | agent-portal-langfuse-1 | LLM Observability |
 | prometheus | 9090 | agent-portal-prometheus-1 | Metrics |
 | chromadb | 8001 | agent-portal-chromadb-1 | Vector DB |
 | minio | 9000/9001 | agent-portal-minio-1 | Object Storage |

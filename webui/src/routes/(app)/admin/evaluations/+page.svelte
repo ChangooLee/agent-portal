@@ -3,7 +3,7 @@
 
 	const heroStats = [
 		{ label: '핵심 지표', value: '정확도 · 응답속도', hint: 'Stage 3에서 실데이터 연결' },
-		{ label: '랭킹 산출', value: '실시간 업데이트', hint: 'Langfuse/Helicone 통합 예정' },
+		{ label: '랭킹 산출', value: '실시간 업데이트', hint: 'OTEL 기반 분석' },
 		{ label: '운영 목표', value: '품질 모니터링', hint: 'SLA 기반 점수화' }
 	];
 </script>
@@ -25,7 +25,7 @@
 				</div>
 
 				<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-					사용량, 품질 지표, 피드백 데이터를 조합해 모델과 에이전트의 경쟁력을 시각화합니다. Stage 3에서는 Langfuse/Helicone과 연동하여 실시간 랭킹을 제공합니다.
+					사용량, 품질 지표, 피드백 데이터를 조합해 모델과 에이전트의 경쟁력을 시각화합니다. Stage 3에서는 OTEL 기반 트레이스 분석과 연동하여 실시간 랭킹을 제공합니다.
 				</p>
 
 				<div class="grid grid-cols-3 gap-3 @md:grid-cols-4 @lg:grid-cols-6">

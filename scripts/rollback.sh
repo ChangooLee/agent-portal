@@ -140,7 +140,7 @@ sleep 5
 
 # Observability
 echo "  Starting observability services..."
-$COMPOSE_CMD up -d otel-collector clickhouse prometheus langfuse 2>/dev/null || docker compose up -d otel-collector clickhouse prometheus langfuse
+$COMPOSE_CMD up -d otel-collector clickhouse prometheus 2>/dev/null || docker compose up -d otel-collector clickhouse prometheus
 sleep 5
 
 # Application services

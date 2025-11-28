@@ -45,8 +45,6 @@ services:
       - redis
       - minio
       # - litellm  # Using external litellm service
-      - langfuse
-      - helicone
       - kong
       - prometheus
 
@@ -154,48 +152,6 @@ services:
       - ./config/grafana-dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
-
-  langfuse:
-    image: langfuse/langfuse:2
-    ports:
-      - "3007:3000"  # Changed from 3003 to avoid conflict
-    env_file: .env
-    environment:
-      - DATABASE_URL=${LANGFUSE_DATABASE_URL:-postgresql://postgres:postgres@langfuse-db:5432/postgres}
-      - NEXTAUTH_SECRET=mysecret
-      - NEXTAUTH_URL=http://localhost:3007
-      - SALT=mysalt
-    depends_on:
-      langfuse-db:
-        condition: service_healthy
-
-  langfuse-db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - langfuse_db:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  helicone:
-    image: helicone/helicone:latest
-    ports:
-      - "8787:8787"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@helicone-db:5432/postgres
-    depends_on:
-      - helicone-db
-
-  helicone-db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - helicone_db:/var/lib/postgresql/data
 
   # Kong Database (Postgres)
   kong-db:
@@ -424,11 +380,6 @@ services:
       - "5051:5051"
     environment:
       - LITELLM_BASE_URL=http://host.docker.internal:4000
-      - LANGFUSE_HOST=${LANGFUSE_HOST}
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-    depends_on:
-      - langfuse
 
 volumes:
   mariadb:
@@ -436,8 +387,6 @@ volumes:
   redis:
   minio:
   monitoring_clickhouse:
-  langfuse_db:
-  helicone_db:
   kong_db:
   konga_db:
   langflow_data:

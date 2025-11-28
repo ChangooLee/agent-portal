@@ -14,7 +14,6 @@ PORTS=(
     "WebUI:3000"
     "WebUI Dev:3001"
     "Flowise:3002"
-    "Langfuse:3003"
     "MariaDB:3306"
     "LiteLLM:4000"
     "AutoGen Studio:5050"
@@ -24,7 +23,6 @@ PORTS=(
     "ChromaDB:8001"
     "Kong Proxy:8002"
     "Kong Admin:8001"
-    "Helicone:8787"
     "MinIO API:9000"
     "MinIO Console:9001"
 )

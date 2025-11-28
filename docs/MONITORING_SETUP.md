@@ -23,8 +23,6 @@ vLLM / 애플리케이션
               └─> Grafana (시각화)
 ```
 
-**Langfuse**는 별도의 **Agent 품질 관리 도구**로 제공되며 선택적입니다.
-
 ---
 
 ## Quick Start
@@ -39,9 +37,6 @@ AGENTOPS_API_ENDPOINT=http://localhost:8003
 AGENTOPS_APP_URL=http://localhost:3006
 AGENTOPS_EXPORTER_ENDPOINT=http://otel-collector:4318/v1/traces
 
-# Langfuse (선택적, Agent 품질 관리 필요 시에만)
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
 ```
 
 **참고**: AgentOps self-hosted 설정 가이드는 [AGENTOPS_SETUP.md](./AGENTOPS_SETUP.md)를 참조하세요.
@@ -56,7 +51,7 @@ docker-compose up -d otel-collector prometheus grafana
 docker-compose build --no-cache litellm
 docker-compose up -d litellm
 
-# Backend BFF 재빌드 (Grafana/Langfuse 프록시 포함)
+# Backend BFF 재빌드 (Grafana 프록시 포함)
 docker-compose build --no-cache backend
 docker-compose up -d backend
 ```
@@ -75,7 +70,6 @@ docker-compose up -d backend
 | **Grafana** | http://localhost:3005 | admin/admin | LiteLLM 메트릭 대시보드 |
 | **Prometheus** | http://localhost:9090 | - | 메트릭 쿼리 및 타겟 확인 |
 | **Monitoring (Portal)** | http://localhost:3001/admin/monitoring | 관리자 | AgentOps 대시보드 + Grafana 탭 |
-| **Langfuse** | http://localhost:3001/admin/langfuse | 관리자 | Agent 품질 관리 (선택적) |
 
 ---
 
@@ -170,13 +164,6 @@ litellm_settings:
 
 **주의**: API 키가 없으면 주석 처리하여 LiteLLM이 정상 동작하도록 해야 합니다.
 
-### 6. Langfuse (Optional)
-
-Langfuse는 Agent 품질 관리를 위한 별도 도구입니다.
-
-**접속**: Admin 네비게이션 → Langfuse 메뉴
-**기능**: 프롬프트 비교, A/B 테스팅, 트레이스 분석
-
 ---
 
 ## Monitoring Screen
@@ -270,22 +257,6 @@ docker-compose up -d grafana
 #   agentops_api_key: os.environ/AGENTOPS_API_KEY
 ```
 
-### 문제 5: Langfuse iframe이 로드되지 않음
-
-**증상**: `/admin/langfuse` 페이지가 빈 화면
-
-**원인**: Langfuse 컨테이너 미실행 또는 프록시 오류
-
-**해결**:
-```bash
-# Langfuse 상태 확인
-docker-compose ps langfuse langfuse-db
-docker-compose logs langfuse
-
-# 프록시 확인
-curl http://localhost:8000/api/proxy/langfuse/
-```
-
 ---
 
 ## Performance Tuning
@@ -333,7 +304,6 @@ processors:
 - [ ] Prometheus retention 정책 설정 (디스크 관리)
 - [ ] OTEL Collector 로그 레벨 조정 (info → warn)
 - [ ] Grafana 알림 규칙 설정 (예: Error Rate > 5%)
-- [ ] Langfuse 데이터베이스 백업 설정
 - [ ] AgentOps API 키 환경 변수 설정 (필요 시)
 - [ ] Prometheus 외부 접근 차단 (Kong Gateway 경유만)
 - [ ] Grafana 외부 접근 차단 (BFF 프록시만)

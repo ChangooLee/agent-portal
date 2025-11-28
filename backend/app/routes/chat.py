@@ -6,7 +6,6 @@ from typing import List, Optional, Dict, Any
 import json
 import asyncio
 from app.services.litellm_service import litellm_service
-from app.services.langfuse_service import langfuse_service
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -33,17 +32,6 @@ async def chat_stream(request: ChatRequest):
             {"role": msg.role, "content": msg.content}
             for msg in request.messages
         ]
-        
-        # Create trace in Langfuse if configured
-        trace = None
-        if langfuse_service.client:
-            trace = langfuse_service.create_trace(
-                name="chat_completion",
-                metadata={
-                    "model": request.model,
-                    "user_id": "user"  # TODO: Get from auth context
-                }
-            )
         
         # Stream response from LiteLLM
         async def generate():
@@ -76,22 +64,10 @@ async def chat_stream(request: ChatRequest):
                 
                 # End with completion message
                 yield f"data: {json.dumps({'done': True, 'full_response': full_response})}\n\n"
-                
-                # Log to Langfuse if configured
-                if trace:
-                    trace.update(
-                        output=full_response,
-                        metadata={"completed": True}
-                    )
                     
             except Exception as e:
                 error_msg = f"Error during streaming: {str(e)}"
                 yield f"data: {json.dumps({'error': error_msg})}\n\n"
-                if trace:
-                    trace.update(
-                        level="ERROR",
-                        metadata={"error": str(e)}
-                    )
                 raise
         
         return StreamingResponse(

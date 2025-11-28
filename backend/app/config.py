@@ -16,18 +16,7 @@ class Settings(BaseSettings):
     
     # Observability
     OBSERVABILITY_ENABLED: bool = True
-    HELICONE_PROXY_BASE: str = "/embed/helicone"
-    LANGFUSE_PROXY_BASE: str = "/embed/langfuse"
     SECURITY_PROXY_BASE: str = "/embed/security"
-    
-    # Helicone
-    HELICONE_INTERNAL_URL: str = "http://helicone:8787"
-    
-    # Langfuse
-    LANGFUSE_INTERNAL_URL: str = "http://langfuse:3000"
-    LANGFUSE_PUBLIC_KEY: str = ""
-    LANGFUSE_SECRET_KEY: str = ""
-    LANGFUSE_HOST: str = "http://langfuse:3000"
     
     # LiteLLM
     LITELLM_HOST: str = "http://litellm:4000"

@@ -82,7 +82,6 @@ clickhouse:8124:http://localhost:8124/ping
 mariadb:3306:
 kong:8002:http://localhost:8002/status
 redis:6379:
-langfuse:3003:http://localhost:3003
 prometheus:9090:http://localhost:9090/-/healthy
 otel-collector:4317:
 chromadb:8001:

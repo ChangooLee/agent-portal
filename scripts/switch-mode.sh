@@ -159,7 +159,7 @@ if [ "$TARGET_MODE" = "development" ]; then
     sleep 10
     docker compose $COMPOSE_FILES up -d litellm kong
     sleep 5
-    docker compose $COMPOSE_FILES up -d otel-collector monitoring-clickhouse prometheus langfuse
+    docker compose $COMPOSE_FILES up -d otel-collector monitoring-clickhouse prometheus
     sleep 5
     docker compose $COMPOSE_FILES up -d backend chromadb minio
     sleep 5
@@ -187,7 +187,7 @@ else
     sleep 10
     docker compose $COMPOSE_FILES up -d litellm kong
     sleep 5
-    docker compose $COMPOSE_FILES up -d otel-collector monitoring-clickhouse prometheus langfuse
+    docker compose $COMPOSE_FILES up -d otel-collector monitoring-clickhouse prometheus
     sleep 5
     docker compose $COMPOSE_FILES up -d backend chromadb minio
     sleep 5

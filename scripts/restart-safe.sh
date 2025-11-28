@@ -36,7 +36,7 @@ LAYER1="mariadb redis"
 LAYER2="litellm litellm-postgres kong kong-db"
 
 # Layer 3: Observability (depends on Layer 1-2)
-LAYER3="otel-collector monitoring-clickhouse prometheus langfuse langfuse-postgres"
+LAYER3="otel-collector monitoring-clickhouse prometheus"
 
 # Layer 4: Application (depends on Layer 1-3)
 LAYER4="backend chromadb minio"
@@ -50,7 +50,7 @@ get_layer() {
     case "$svc" in
         mariadb|redis) echo 1 ;;
         litellm|litellm-postgres|kong|kong-db) echo 2 ;;
-        otel-collector|monitoring-clickhouse|prometheus|langfuse|langfuse-postgres) echo 3 ;;
+        otel-collector|monitoring-clickhouse|prometheus) echo 3 ;;
         backend|chromadb|minio) echo 4 ;;
         webui) echo 5 ;;
         *) echo 0 ;;
@@ -89,7 +89,7 @@ if [ "$FULL_RESTART" = true ]; then
     echo -e "${YELLOW}Stopping services...${NC}"
     docker compose stop webui 2>/dev/null || true
     docker compose stop backend chromadb minio 2>/dev/null || true
-    docker compose stop otel-collector monitoring-clickhouse prometheus langfuse 2>/dev/null || true
+    docker compose stop otel-collector monitoring-clickhouse prometheus 2>/dev/null || true
     docker compose stop litellm kong 2>/dev/null || true
     echo "Stopped."
     echo ""

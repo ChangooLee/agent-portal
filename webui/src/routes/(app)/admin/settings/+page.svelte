@@ -3,7 +3,7 @@
 
 	const heroStats = [
 		{ label: '구성 범위', value: '테마 · 통합 · 보안', hint: 'BFF를 통해 중앙집중 관리' },
-		{ label: '감사 로그', value: '자동 추적', hint: 'Stage 3에서 Langfuse와 연동' },
+		{ label: '감사 로그', value: '자동 추적', hint: 'Stage 3에서 OTEL과 연동' },
 		{ label: '변경 프로세스', value: '승인 예정', hint: '관리자 워크플로 도입 준비' }
 	];
 </script>

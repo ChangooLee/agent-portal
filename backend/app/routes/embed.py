@@ -92,62 +92,6 @@ async def proxy_request(
 
 
 @router.api_route(
-    "/embed/helicone/{path:path}",
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    include_in_schema=False
-)
-async def proxy_helicone(
-    path: str,
-    request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-):
-    """Proxy requests to Helicone"""
-    if not settings.OBSERVABILITY_ENABLED:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Observability disabled"
-        )
-    
-    # Get user role (simplified - integrate with actual auth)
-    user_info = {"role": "admin"}  # Placeholder - integrate with Open-WebUI auth
-    
-    return await proxy_request(
-        settings.HELICONE_INTERNAL_URL,
-        f"/{path}" if not path.startswith("/") else path,
-        request,
-        user_info
-    )
-
-
-@router.api_route(
-    "/embed/langfuse/{path:path}",
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    include_in_schema=False
-)
-async def proxy_langfuse(
-    path: str,
-    request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-):
-    """Proxy requests to Langfuse"""
-    if not settings.OBSERVABILITY_ENABLED:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Observability disabled"
-        )
-    
-    # Get user role (simplified - integrate with actual auth)
-    user_info = {"role": "admin"}  # Placeholder - integrate with Open-WebUI auth
-    
-    return await proxy_request(
-        settings.LANGFUSE_INTERNAL_URL,
-        f"/{path}" if not path.startswith("/") else path,
-        request,
-        user_info
-    )
-
-
-@router.api_route(
     "/embed/security/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     include_in_schema=False

@@ -7,7 +7,7 @@
 
 ## 1. 서비스 현황
 
-### 1.1 실행 중인 서비스 (19개)
+### 1.1 실행 중인 서비스 (15개)
 
 | 서비스 | 컨테이너명 | 포트 | 상태 | 용도 |
 |--------|-----------|------|------|------|
@@ -17,14 +17,10 @@
 | redis | agent-portal-redis-1 | 6379:6379 | Running | Cache |
 | chromadb | agent-portal-chromadb-1 | 8005:8000 | Running | Vector DB |
 | minio | agent-portal-minio-1 | 9003:9000, 9004:9001 | Running | Object Storage |
-| langfuse | agent-portal-langfuse-1 | 3007:3000 | Running | LLM Observability |
-| langfuse-db | agent-portal-langfuse-db-1 | - | Running (healthy) | Langfuse PostgreSQL |
 | kong | agent-portal-kong-1 | 8004:8000, 8444:8443 | Running (healthy) | API Gateway |
 | kong-db | agent-portal-kong-db-1 | - | Running (healthy) | Kong PostgreSQL |
 | konga | agent-portal-konga-1 | 1337:1337 | Running | Kong Admin UI |
 | konga-db | agent-portal-konga-db-1 | - | Running (healthy) | Konga PostgreSQL |
-| helicone | agent-portal-helicone-1 | 8787:8787 | Running | LLM Proxy |
-| helicone-db | agent-portal-helicone-db-1 | - | Running | Helicone PostgreSQL |
 | litellm | agent-portal-litellm-1 | 4000:4000 | Running | LLM Gateway (external) |
 | prometheus | agent-portal-prometheus-1 | 9092:9090 | Running | Metrics |
 | clickhouse | monitoring-clickhouse | 8124:8123, 9002:9000 | Running | OTEL Traces (external) |
@@ -139,21 +135,7 @@ Database: litellm_db
 - `LiteLLM_UserTable`, `LiteLLM_TeamTable`, `LiteLLM_SpendLogs`
 - `LiteLLM_ModelTable`, `LiteLLM_VerificationToken`, etc.
 
-### 2.5 Langfuse PostgreSQL
-
-**연결 정보**:
-```
-Host: langfuse-db (Docker)
-User: postgres
-Password: postgres
-Database: postgres
-```
-
-**테이블 목록 (40개)**: Prisma 자동 생성
-- `users`, `projects`, `traces`, `observations`, `scores`
-- `datasets`, `prompts`, `api_keys`, etc.
-
-### 2.6 Kong PostgreSQL
+### 2.5 Kong PostgreSQL
 
 **연결 정보**:
 ```
@@ -187,10 +169,8 @@ Database: konga
 | `agent-portal_webui_data` | `/app/backend/data` | WebUI SQLite |
 | `agent-portal_redis` | `/data` | Redis 데이터 |
 | `agent-portal_minio` | `/data` | MinIO 오브젝트 |
-| `agent-portal_langfuse_db` | `/var/lib/postgresql/data` | Langfuse DB |
 | `agent-portal_kong_db` | `/var/lib/postgresql/data` | Kong DB |
 | `agent-portal_konga_db` | `/var/lib/postgresql/data` | Konga DB |
-| `agent-portal_helicone_db` | `/var/lib/postgresql/data` | Helicone DB |
 | `agent-portal_monitoring_clickhouse` | `/var/lib/clickhouse` | ClickHouse 데이터 |
 | `agent-portal_litellm_pg_data` | `/var/lib/postgresql/data` | LiteLLM DB |
 | `agent-portal_prometheus_data` | `/prometheus` | Prometheus 메트릭 |
@@ -205,21 +185,21 @@ Database: konga
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 1: Infrastructure (No Dependencies)                    │
 ├─────────────────────────────────────────────────────────────┤
-│  mariadb, redis, kong-db, konga-db, langfuse-db, helicone-db │
+│  mariadb, redis, kong-db, konga-db                           │
 └──────────────────────────┬──────────────────────────────────┘
                            │ wait: service_healthy
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 2: Core Services                                       │
 ├─────────────────────────────────────────────────────────────┤
-│  kong-migrations → kong, langfuse, helicone, konga           │
+│  kong-migrations → kong, konga                               │
 └──────────────────────────┬──────────────────────────────────┘
                            │ depends_on
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 3: Application                                         │
 ├─────────────────────────────────────────────────────────────┤
-│  backend (→ mariadb, redis, minio, langfuse, kong)           │
+│  backend (→ mariadb, redis, minio, kong)                     │
 │  chromadb, prometheus                                        │
 └──────────────────────────┬──────────────────────────────────┘
                            │ depends_on

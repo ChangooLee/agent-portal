@@ -72,7 +72,6 @@ echo ""
 
 # 6. Test Backend BFF proxy endpoints
 echo "6️⃣  Testing Backend BFF proxy endpoints..."
-test_service "langfuse-proxy" "http://localhost:8000/api/proxy/langfuse/" "Langfuse Proxy"
 test_service "grafana-proxy" "http://localhost:8000/api/proxy/grafana/api/health" "Grafana Proxy"
 echo ""
 
@@ -129,7 +128,6 @@ echo "Access URLs:"
 echo "  • Prometheus:  http://localhost:9090"
 echo "  • Grafana:     http://localhost:3005 (admin/admin)"
 echo "  • Monitoring:  http://localhost:3001/admin/monitoring"
-echo "  • Langfuse:    http://localhost:3001/admin/langfuse"
 echo ""
 echo -e "${GREEN}✅ Monitoring stack is ready!${NC}"
 echo ""

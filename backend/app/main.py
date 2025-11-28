@@ -104,8 +104,6 @@ async def root():
             "observability": "/observability/usage",
             "models": "/observability/models",
             "kong_admin": settings.KONG_ADMIN_PROXY_BASE,
-            "helicone": settings.HELICONE_PROXY_BASE,
-            "langfuse": settings.LANGFUSE_PROXY_BASE,
             "security": settings.SECURITY_PROXY_BASE,
         }
     }
