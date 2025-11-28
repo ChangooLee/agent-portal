@@ -32,3 +32,6 @@
 	path = unstructured
 	url = https://github.com/Unstructured-IO/unstructured.git
 
+[submodule "libs/vanna"]
+	path = libs/vanna
+	url = https://github.com/vanna-ai/vanna.git

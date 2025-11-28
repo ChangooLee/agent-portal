@@ -160,7 +160,9 @@ agent-portal/
 │   │   │   ├── litellm_service.py
 │   │   │   ├── monitoring_adapter.py
 │   │   │   ├── datacloud_service.py
-│   │   │   └── mcp_registry.py
+│   │   │   ├── mcp_registry.py
+│   │   │   ├── vanna_llm_service.py  # LiteLLM adapter for Vanna
+│   │   │   └── vanna_agent_service.py # Vanna Text-to-SQL agents
 │   │   └── middleware/        # RBAC, auth
 │   └── requirements.txt
 │
@@ -182,6 +184,9 @@ agent-portal/
 │   ├── vite.config.ts         # Proxy configuration
 │   └── .skills/               # AI reference files
 │       └── ui-summary.json    # Quick route/pattern lookup
+│
+├── libs/
+│   └── vanna/                 # Vanna AI Text-to-SQL (Git submodule)
 │
 ├── config/
 │   ├── litellm.yaml           # LiteLLM model configuration
@@ -234,6 +239,7 @@ agent-portal/
 | `/chat` | chat.py | LLM chat completions |
 | `/monitoring` | monitoring.py | Trace queries, metrics |
 | `/datacloud` | datacloud.py | Database connections, queries |
+| `/vanna` | vanna.py | Text-to-SQL with Vanna AI (SSE streaming) |
 | `/mcp` | mcp.py | MCP server management |
 | `/gateway` | gateway.py | Kong/service overview |
 | `/projects` | projects.py | Project management |
@@ -244,6 +250,7 @@ agent-portal/
 // webui/vite.config.ts
 '/api/monitoring': → 'http://localhost:8000/monitoring'
 '/api/datacloud':  → 'http://localhost:8000/datacloud'
+'/api/vanna':      → 'http://localhost:8000/vanna'
 '/api/mcp':        → 'http://localhost:8000/mcp'
 '/api/gateway':    → 'http://localhost:8000/gateway'
 '/api/projects':   → 'http://localhost:8000/projects'

@@ -36,9 +36,13 @@ services:
       - CLICKHOUSE_DATABASE=otel_2
       # Data Cloud 암호화 키 (Fernet)
       - DATACLOUD_ENCRYPTION_KEY=LpbushjAoV7u_7Z3tk5TzqsTra79yKjMAanPR0DWz9U=
+      # Text-to-SQL default model
+      - TEXT_TO_SQL_MODEL=gpt-3.5-turbo
     volumes:
       # News data volume mount (서버 환경: NEWS_DATA_PATH 환경변수 설정 필요)
       - ${NEWS_DATA_PATH:-./data/news}:/data/news:ro
+      # Vanna AI submodule mount
+      - ./libs/vanna:/app/libs/vanna:ro
     depends_on:
       - mariadb
       - chromadb

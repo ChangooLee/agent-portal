@@ -849,79 +849,47 @@ class DataCloudService:
         """
         자연어 질문을 SQL로 변환 (Text-to-SQL)
         
-        1. 연결 정보에서 스키마 메타데이터 조회
-        2. 스키마를 프롬프트 컨텍스트로 변환
-        3. LiteLLM을 통해 LLM 호출하여 SQL 생성
+        Vanna AI 에이전트를 사용하여 스키마 인식 SQL 생성.
+        
+        1. 연결 정보 조회
+        2. Vanna 에이전트에 스키마/용어집 학습 (캐시)
+        3. Vanna를 통해 SQL 생성
         """
-        from app.services.litellm_service import litellm_service
+        from app.services.vanna_agent_service import vanna_agent_service
         
-        # 1. 스키마 메타데이터 조회
-        schema = await self.get_schema_metadata(connection_id, refresh=False)
-        if not schema or "tables" not in schema:
-            return {"success": False, "error": "스키마 정보를 가져올 수 없습니다.", "sql": ""}
-        
-        # 2. 스키마를 컨텍스트로 변환
-        schema_context = self._build_schema_context(schema)
-        
-        # 3. 비즈니스 용어집 조회
-        terms = await self.get_business_terms(connection_id)
-        terms_context = self._build_terms_context(terms)
-        
-        # 4. 프롬프트 구성
-        system_prompt = """당신은 SQL 전문가입니다. 사용자의 자연어 질문을 주어진 데이터베이스 스키마에 맞는 SQL 쿼리로 변환합니다.
-
-규칙:
-1. SELECT 쿼리만 생성합니다 (INSERT, UPDATE, DELETE 금지)
-2. 안전을 위해 LIMIT 100을 기본으로 추가합니다
-3. 컬럼명과 테이블명은 정확하게 사용합니다
-4. 비즈니스 용어가 있으면 참고하여 올바른 컬럼을 선택합니다
-5. SQL만 반환하고 설명은 하지 않습니다"""
-
-        user_prompt = f"""### 데이터베이스 스키마
-{schema_context}
-
-### 비즈니스 용어집
-{terms_context}
-
-### 사용자 질문
-{question}
-
-### 생성할 SQL 쿼리 (SELECT만 가능, LIMIT 100 포함)"""
-
-        # 5. LiteLLM 호출 (기본 모델: gpt-4o-mini)
-        default_model = os.environ.get('TEXT_TO_SQL_MODEL', 'gpt-4o-mini')
         try:
-            result = await litellm_service.chat_completion_sync(
-                model=default_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.0,  # 결정적 출력
-                max_tokens=500
+            # 1. 연결 정보 조회
+            connection_info = await self.get_connection_by_id(connection_id)
+            if not connection_info:
+                return {"success": False, "error": "Connection not found", "sql": ""}
+            
+            # 2. 스키마가 캐시에 없으면 로드 및 학습
+            if connection_id not in vanna_agent_service._schema_cache:
+                schema = await self.get_schema_metadata(connection_id, refresh=False)
+                if not schema or "tables" not in schema:
+                    return {"success": False, "error": "스키마 정보를 가져올 수 없습니다.", "sql": ""}
+                
+                terms = await self.get_business_terms(connection_id)
+                
+                # Vanna 에이전트 생성 및 학습
+                await vanna_agent_service.get_or_create_agent(connection_id, connection_info)
+                await vanna_agent_service.train_agent(connection_id, schema, terms)
+            
+            # 3. Vanna를 통해 SQL 생성
+            result = await vanna_agent_service.generate_sql(
+                connection_id=connection_id,
+                question=question,
+                connection_info=connection_info,
             )
             
-            # 응답에서 SQL 추출
-            choices = result.get("choices", [])
-            if not choices:
-                return {"success": False, "error": "LLM 응답이 비어있습니다.", "sql": ""}
-            
-            sql = choices[0].get("message", {}).get("content", "").strip()
-            # SQL 코드 블록 제거
-            if sql.startswith("```sql"):
-                sql = sql[6:]
-            if sql.startswith("```"):
-                sql = sql[3:]
-            if sql.endswith("```"):
-                sql = sql[:-3]
-            sql = sql.strip()
-            
             return {
-                "success": True,
-                "sql": sql,
-                "model": result.get("model", "unknown"),
-                "tokens_used": result.get("usage", {}).get("total_tokens", 0)
+                "success": result.success,
+                "sql": result.sql,
+                "error": result.error,
+                "model": result.model,
+                "tokens_used": result.tokens_used
             }
+            
         except Exception as e:
             logger.error(f"Text-to-SQL 생성 실패: {e}")
             return {"success": False, "error": str(e), "sql": ""}

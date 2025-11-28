@@ -98,11 +98,17 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/llm/, '/llm')
 			},
-			// Embed Proxy (Kong Admin, Langfuse, Helicone) → FastAPI BFF (포트 8000)
+			// Embed Proxy (Kong Admin) → FastAPI BFF (포트 8000)
 			'/api/embed': {
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/embed/, '/embed')
+			},
+			// Vanna Text-to-SQL API → FastAPI BFF (포트 8000)
+			'/api/vanna': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/vanna/, '/vanna')
 			},
 			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
 		// ⚠️ CRITICAL: Docker 환경에서는 localhost (컨테이너 내부 Uvicorn)
