@@ -114,17 +114,51 @@
 
 ### 2.2 When to Use Existing Code vs Create New
 
-**Use Existing**:
-- Similar functionality exists anywhere in codebase
-- Established pattern covers use case
-- Utility function already handles requirement
+**Pre-Code Checklist (MANDATORY)**:
+Before writing ANY new function/component:
+```
+□ 1. Search codebase for similar functionality
+     - grep for keywords related to the task
+     - Check services/, routes/, lib/components/
+     
+□ 2. Check if existing code can be:
+     - Used directly (import and call)
+     - Extended (add parameter, method)
+     - Wrapped (thin wrapper for specific use)
+     
+□ 3. If creating new, ask yourself:
+     - Why can't existing code be modified?
+     - Will this create duplication?
+     - Did I check ALL related files?
+```
+
+**Reuse Criteria**:
+| Similarity | Action |
+|------------|--------|
+| 80%+ same | Use existing, modify if needed |
+| 50-80% same | Extend existing or extract common |
+| <50% same | Create new, document why |
 
 **Create New (Only When)**:
-- No existing solution fits
-- Existing code would require breaking changes
-- New approach is significantly cleaner AND user approves
+- No existing solution after thorough search
+- Existing code requires breaking changes
+- New approach approved by user
 
-**Anti-Pattern**: Creating new functions while similar ones exist
+**Anti-Patterns (PROHIBITED)**:
+```
+❌ Creating fetchData2() when fetchData() exists
+❌ New modal component when Modal.svelte exists  
+❌ Duplicate validation logic in multiple files
+❌ Copy-paste with minor modifications
+```
+
+**Correct Approach**:
+```
+✅ Import and use existing utilities
+✅ Extend existing function with optional parameters
+✅ Create shared component and import everywhere
+✅ Extract common logic to service layer
+```
 
 ### 2.3 When to Refactor vs Patch
 
