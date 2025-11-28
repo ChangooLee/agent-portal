@@ -63,3 +63,47 @@ SpanAttributes['gen_ai.usage.prompt_cost']
 ```
 
 **주의**: `project_id`는 직접 컬럼이 아니라 `ResourceAttributes` Map 안에 있음
+
+---
+
+## 2025-11-28: Konga (Kong Admin UI) iframe 표시 안 됨
+
+### 문제
+Gateway 화면에서 "Kong Admin" 탭 클릭 시 `{"detail":"Not Found"}` 오류
+
+### 원인
+`vite.config.ts`에 `/api/embed` 프록시 설정 누락
+
+```
+요청 흐름:
+Frontend → /api/embed/kong-admin/ → Vite 프록시 → ?
+
+문제:
+- /api/embed 규칙 없음
+- /api 규칙이 WebUI Backend(8080)로 전달
+- WebUI Backend에 /embed 라우트 없음 → 404
+```
+
+### 수정
+`webui/vite.config.ts`에 프록시 추가:
+
+```typescript
+// Embed Proxy (Kong Admin, Langfuse, Helicone) → FastAPI BFF (포트 8000)
+'/api/embed': {
+    target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/embed/, '/embed')
+},
+```
+
+### 테스트
+```bash
+# 프록시 정상 작동 확인
+curl -s http://localhost:3005/api/embed/kong-admin/ -o /dev/null -w "%{http_code}"
+# → 200
+```
+
+### 예방 조치
+1. 새 Backend API 라우트 추가 시 `vite.config.ts` 프록시 설정도 확인
+2. `/api/*` 규칙이 마지막에 있으므로, 새 규칙은 그 위에 추가
+3. Vite 프록시 규칙 순서: 구체적인 경로 → 일반적인 경로
