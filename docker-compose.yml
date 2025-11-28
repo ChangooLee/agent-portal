@@ -1,5 +1,6 @@
 services:
   # Portal Shell (Open-WebUI fork)
+  # Database: Uses SQLite (default) - data stored in webui_data volume
   webui:
     build:
       context: ./webui
@@ -17,6 +18,7 @@ services:
     volumes:
       - ./webui/plugins:/app/plugins
       - ./webui/overrides:/app/overrides
+      - webui_data:/app/backend/data  # SQLite database persistence
 
   # Backend BFF
   backend:
@@ -34,9 +36,9 @@ services:
       - CLICKHOUSE_DATABASE=otel_2
       # Data Cloud 암호화 키 (Fernet)
       - DATACLOUD_ENCRYPTION_KEY=LpbushjAoV7u_7Z3tk5TzqsTra79yKjMAanPR0DWz9U=
-    volumes:
-      # News data volume mount
-      - /home3/llmops/mcp/mcp-naver-news/src/data:/data/news:ro
+    # volumes:
+      # News data volume mount (disabled for local dev)
+      # - /home3/llmops/mcp/mcp-naver-news/src/data:/data/news:ro
     depends_on:
       - mariadb
       - chromadb
@@ -82,6 +84,9 @@ services:
     ports:
       - "4000:4000"
     env_file: .env
+    volumes:
+      - ./config/litellm.yaml:/app/config/litellm.yaml:ro
+    command: ["--config", "/app/config/litellm.yaml"]
     environment:
       # Database connection
       - DATABASE_URL=postgresql://litellm:${LITELLM_DB_PASSWORD:-litellm_secure_password}@litellm-postgres:5432/litellm_db
@@ -91,16 +96,18 @@ services:
       - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
       # LLM Provider Keys
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      # OpenTelemetry integration (LiteLLM specific)
-      - OTEL_EXPORTER=otlp_http
-      - OTEL_ENDPOINT=http://monitoring-otel-collector:4318
+      # OpenTelemetry integration (LiteLLM specific) - gRPC like production
+      - OTEL_EXPORTER=otlp_grpc
+      - OTEL_ENDPOINT=http://monitoring-otel-collector:4317
       # Standard OTEL environment variables
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://monitoring-otel-collector:4318
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://monitoring-otel-collector:4318/v1/traces
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://monitoring-otel-collector:4317
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://monitoring-otel-collector:4317
       - OTEL_SERVICE_NAME=litellm-proxy
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
+      # Resource attributes for project filtering
+      - OTEL_RESOURCE_ATTRIBUTES=project_id=${DEFAULT_PROJECT_ID:-8c59e361-3727-418c-bc68-086b69f7598b}
     # depends_on:
     #   litellm-postgres:
     #     condition: service_healthy
@@ -438,4 +445,5 @@ volumes:
   prometheus_data:
   grafana_data:
   litellm_pg_data:
+  webui_data:  # SQLite database for Open-WebUI
 

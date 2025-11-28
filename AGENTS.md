@@ -122,10 +122,12 @@ MCP Servers → Kong Gateway → Backend Registry → Frontend Admin
 
 ### 3.3 Database Connections
 
-**MariaDB (App Data)**:
+**MariaDB (App Data)** — Used by Backend BFF:
 ```bash
 docker compose exec mariadb mariadb -uroot -prootpass agent_portal
 ```
+
+> **Note**: WebUI (Open-WebUI) uses SQLite by default. Data is stored in `webui_data` Docker volume.
 
 **ClickHouse (Traces)**:
 ```bash

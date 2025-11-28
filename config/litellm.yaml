@@ -1,6 +1,10 @@
 # LiteLLM Configuration
 # LLM Gateway 설정 - 다양한 모델을 통합 관리
 
+# OTEL Resource Attributes (project_id 주입)
+environment_variables:
+  OTEL_RESOURCE_ATTRIBUTES: "project_id=8c59e361-3727-418c-bc68-086b69f7598b"
+
 model_list:
   # OpenRouter Models (Primary)
   - model_name: qwen-235b
@@ -36,6 +40,7 @@ general_settings:
 
 # Langfuse + OTEL Settings
 litellm_settings:
+  callbacks: ["otel"]  # 필수: OTEL 콜백 활성화
   success_callback: ["langfuse", "otel"]
   failure_callback: ["otel"]
   langfuse_public_key: ${LANGFUSE_PUBLIC_KEY}

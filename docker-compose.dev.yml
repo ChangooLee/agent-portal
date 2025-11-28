@@ -22,8 +22,11 @@ services:
       - CLICKHOUSE_DATABASE=otel_2
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Override server-only volume mount (remove /home3 path)
+    volumes: []
 
   # WebUI - Development overrides  
+  # Database: Uses SQLite (default) - data in ./webui/backend/data/webui.db
   webui:
     build:
       context: ./webui
@@ -44,6 +47,7 @@ services:
     volumes:
       - ./webui:/app
       - webui_node_modules:/app/node_modules
+      - ./webui/backend/data:/app/backend/data  # Override webui_data with local path for dev
     command: ["bash", "-c", "chmod +x /app/dev-start.sh && /app/dev-start.sh"]
 
 volumes:

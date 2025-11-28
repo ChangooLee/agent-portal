@@ -4,10 +4,10 @@ processors:
       # For self-hosted deployment, use static project_id from environment
       - key: ProjectId
         action: upsert
-        value: ${env:DEFAULT_PROJECT_ID}
+        value: "8c59e361-3727-418c-bc68-086b69f7598b"
       - key: {{ SEMCONV.PROJECT_ID }}
         action: upsert
-        value: ${env:DEFAULT_PROJECT_ID}
+        value: "8c59e361-3727-418c-bc68-086b69f7598b"
 
   resourcedetection/system:
     detectors: ['system']

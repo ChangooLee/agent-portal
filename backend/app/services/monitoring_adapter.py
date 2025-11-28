@@ -118,7 +118,7 @@ class MonitoringAdapter:
         count_query = f"""
         SELECT count(DISTINCT TraceId) as total
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -152,7 +152,7 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as prompt_tokens,
             sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as completion_tokens
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -263,7 +263,7 @@ class MonitoringAdapter:
             quantile(0.95)(Duration) / 1000000 as p95_duration,
             quantile(0.99)(Duration) / 1000000 as p99_duration
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
@@ -669,7 +669,7 @@ class MonitoringAdapter:
             {time_format} as timestamp,
             sum(toFloat64OrZero(SpanAttributes['gen_ai.usage.cost'])) as cost
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY timestamp
@@ -707,7 +707,7 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as completion_tokens,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.cache_read_input_tokens'])) as cache_hits
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY timestamp
@@ -739,7 +739,7 @@ class MonitoringAdapter:
             sum(Duration) / 1000000 as duration,
             if(countIf(StatusCode = 'ERROR') > 0, 'error', 'success') as status
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         GROUP BY TraceId
@@ -943,7 +943,7 @@ class MonitoringAdapter:
             -- 평균 응답 시간 (가드레일 포함)
             avg(Duration) / 1000000 as avg_latency_ms
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
         """
@@ -1039,7 +1039,7 @@ class MonitoringAdapter:
             avg(Duration) / 1000000 as avg_latency_ms,
             countIf(StatusCode = 'ERROR') as error_count
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '' OR project_id = '')
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {agent_filter}

@@ -20,7 +20,11 @@ import type {
 } from './types';
 
 const API_BASE_URL = '/api/monitoring';
-const WS_BASE_URL = 'ws://localhost:8000/api/monitoring';
+// WebSocket disabled - using HTTP polling instead
+// const WS_BASE_URL = 'ws://localhost:8000/api/monitoring';
+const WS_BASE_URL = typeof window !== 'undefined' 
+  ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/monitoring`
+  : 'ws://localhost:3005/api/monitoring';
 
 // Re-export types for backward compatibility
 export type { Trace, TraceDetail, Metrics } from './types';

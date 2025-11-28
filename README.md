@@ -753,6 +753,7 @@ version: "3.8"
 
 services:
   # Portal Shell (Open-WebUI fork)
+  # Database: Uses SQLite (default) - data in webui_data volume
   webui:
     image: ghcr.io/open-webui/open-webui:latest
     ports:
@@ -763,6 +764,7 @@ services:
     volumes:
       - ./webui/plugins:/app/plugins
       - ./webui/overrides:/app/overrides
+      - webui_data:/app/backend/data  # SQLite database persistence
 
   # Backend BFF
   backend:
