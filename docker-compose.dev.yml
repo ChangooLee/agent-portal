@@ -20,6 +20,9 @@ services:
       - CLICKHOUSE_USER=default
       - CLICKHOUSE_PASSWORD=password
       - CLICKHOUSE_DATABASE=otel_2
+      # External LiteLLM connection
+      - LITELLM_HOST=http://host.docker.internal:4000
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # Override server-only volume mount (remove /home3 path)
