@@ -19,7 +19,7 @@ import type {
 	AgentUsageStats
 } from './types';
 
-const API_BASE_URL = 'http://localhost:8000/api/monitoring';
+const API_BASE_URL = '/api/monitoring';
 const WS_BASE_URL = 'ws://localhost:8000/api/monitoring';
 
 // Re-export types for backward compatibility

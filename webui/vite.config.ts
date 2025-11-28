@@ -81,10 +81,11 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/api\/gateway/, '/gateway')
 			},
 			// Monitoring API → FastAPI BFF (포트 8000)
+			// Note: Backend router uses /api/monitoring prefix, no rewrite needed
 			'/api/monitoring': {
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/api\/monitoring/, '/monitoring')
+				ws: true
 			},
 			// Projects API → FastAPI BFF (포트 8000)
 			'/api/projects': {

@@ -390,14 +390,73 @@ class MonitoringAdapter:
         duration_ms = duration_ns / 1000000 if duration_ns else 0
         
         if event_type == 'llm_call':
+            # Extract prompt from gen_ai.prompt.N.content format
+            prompt = attrs.get('gen_ai.prompt', '')
+            if not prompt:
+                # Try to find gen_ai.prompt.0.content, gen_ai.prompt.1.content, etc.
+                prompt_parts = []
+                for key in sorted(attrs.keys()):
+                    if key.startswith('gen_ai.prompt.') and key.endswith('.content'):
+                        prompt_parts.append(attrs[key])
+                prompt = '\n'.join(prompt_parts) if prompt_parts else ''
+            
+            # Extract response from gen_ai.completion.N.content format
+            response = attrs.get('gen_ai.completion', '')
+            if not response:
+                for key in sorted(attrs.keys()):
+                    if key.startswith('gen_ai.completion.') and key.endswith('.content'):
+                        response = attrs[key]
+                        break
+            
+            # Extract tokens - may be string or int
+            prompt_tokens = attrs.get('gen_ai.usage.prompt_tokens', 0)
+            completion_tokens = attrs.get('gen_ai.usage.completion_tokens', 0)
+            total_tokens = attrs.get('llm.usage.total_tokens', attrs.get('gen_ai.usage.total_tokens', 0))
+            
+            # Convert string to int if needed
+            try:
+                prompt_tokens = int(prompt_tokens) if prompt_tokens else 0
+            except (ValueError, TypeError):
+                prompt_tokens = 0
+            try:
+                completion_tokens = int(completion_tokens) if completion_tokens else 0
+            except (ValueError, TypeError):
+                completion_tokens = 0
+            try:
+                total_tokens = int(total_tokens) if total_tokens else 0
+            except (ValueError, TypeError):
+                total_tokens = prompt_tokens + completion_tokens
+            
+            # Extract cost from hidden_params or metadata.usage_object
+            cost = 0.0
+            hidden_params_str = attrs.get('hidden_params', '')
+            if hidden_params_str:
+                try:
+                    hidden_params = json.loads(hidden_params_str) if isinstance(hidden_params_str, str) else hidden_params_str
+                    cost = float(hidden_params.get('response_cost', 0) or 0)
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    pass
+            
+            # Fallback: try metadata.usage_object
+            if cost == 0:
+                usage_obj_str = attrs.get('metadata.usage_object', '')
+                if usage_obj_str:
+                    try:
+                        # It's Python dict format, use eval carefully or parse
+                        import ast
+                        usage_obj = ast.literal_eval(usage_obj_str) if isinstance(usage_obj_str, str) else usage_obj_str
+                        cost = float(usage_obj.get('cost', 0) or 0)
+                    except (ValueError, SyntaxError, TypeError):
+                        pass
+            
             return {
-                'model': attrs.get('gen_ai.response.model', attrs.get('llm.model', 'unknown')),
-                'prompt': attrs.get('gen_ai.prompt', ''),
-                'response': attrs.get('gen_ai.completion', ''),
-                'prompt_tokens': int(attrs.get('gen_ai.usage.prompt_tokens', 0)),
-                'completion_tokens': int(attrs.get('gen_ai.usage.completion_tokens', 0)),
-                'total_tokens': int(attrs.get('gen_ai.usage.total_tokens', 0)),
-                'cost': float(attrs.get('gen_ai.usage.cost', 0.0)),
+                'model': attrs.get('gen_ai.response.model', attrs.get('gen_ai.request.model', attrs.get('llm.model', 'unknown'))),
+                'prompt': prompt,
+                'response': response,
+                'prompt_tokens': prompt_tokens,
+                'completion_tokens': completion_tokens,
+                'total_tokens': total_tokens,
+                'cost': cost,
                 'latency': duration_ms
             }
         elif event_type == 'tool_use':
