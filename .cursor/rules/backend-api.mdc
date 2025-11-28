@@ -1,272 +1,138 @@
 ---
-name: backend-api
-description: Backend API 개발 규칙
-globs: backend/**/*.py, webui/backend/**/*.py
 alwaysApply: false
-version: 2.0
-lastUpdated: 2025-11-14
 ---
-
 # Backend API Development Rules
 
-Agent Portal의 Backend API 개발 시 반드시 따라야 하는 규칙입니다.
+Rules for developing FastAPI BFF and WebUI Backend APIs.
 
-## Overview
+## Architecture
 
-이 문서는 FastAPI BFF와 WebUI Backend (Open-WebUI 내장)의 개발 패턴을 정의합니다. Singleton 서비스 레이어, 에러 핸들링, Observability 통합, PYTHONPATH 관리 등 프로덕션급 API 개발 규칙을 포함합니다.
-
-## Examples
-
-### Example 1: 서비스 레이어 패턴 (Singleton)
-
-**패턴**:
-```python
-# backend/app/services/news_service.py
-from typing import Dict, Any, List
-import httpx
-from pathlib import Path
-import json
-from fastapi import HTTPException
-
-class NewsService:
-    """뉴스 데이터를 관리하는 서비스 클래스.
-    
-    Attributes:
-        data_path: 뉴스 데이터 디렉토리 경로
-    """
-    
-    def __init__(self, data_path: str):
-        self.data_path = Path(data_path)
-    
-    async def get_articles(
-        self, 
-        offset: int = 0, 
-        limit: int = 20
-    ) -> Dict[str, Any]:
-        """뉴스 기사 목록 조회.
-        
-        Args:
-            offset: 시작 인덱스
-            limit: 조회할 기사 수
-            
-        Returns:
-            기사 목록 및 페이지네이션 정보
-            
-        Raises:
-            HTTPException: 파일 읽기 실패 시
-        """
-        try:
-            today = datetime.now().strftime("%Y%m%d")
-            index_file = self.data_path / today / "articles_index.json"
-            
-            with open(index_file, 'r', encoding='utf-8') as f:
-                all_articles = json.load(f)
-            
-            # 중요도순 정렬
-            sorted_articles = sorted(
-                all_articles,
-                key=lambda x: x.get('importance_score', 0),
-                reverse=True
-            )
-            
-            # 페이지네이션
-            total = len(sorted_articles)
-            articles = sorted_articles[offset:offset + limit]
-            
-            return {
-                "articles": articles,
-                "total": total,
-                "offset": offset,
-                "limit": limit,
-                "has_more": (offset + limit) < total
-            }
-        except FileNotFoundError:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No articles found for date {today}"
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to read articles: {str(e)}"
-            )
-
-# Singleton 인스턴스
-from app.config import settings
-news_service = NewsService(settings.get_news_data_path())
+```
+agent-portal/
+├── backend/                    # FastAPI BFF (port 8000)
+│   ├── app/
+│   │   ├── routes/            # API routers
+│   │   ├── services/          # Business logic (Singleton)
+│   │   ├── middleware/        # RBAC, auth
+│   │   └── main.py            # App entry
+│   └── requirements.txt
+│
+└── webui/backend/              # Open-WebUI backend (port 8080)
+    └── open_webui/
+        ├── routers/           # API routers
+        ├── models/            # SQLAlchemy models
+        └── main.py            # App entry
 ```
 
-**핵심 포인트**:
-- Type hints 필수
-- Docstring (Google 스타일)
-- 에러 핸들링 (try/except)
-- Singleton 패턴
+## Service Layer Pattern (Singleton)
 
-### Example 2: 에러 핸들링 및 타임아웃
-
-**Before** (잘못된 패턴):
-```python
-# ❌ 타임아웃 미설정, 에러 핸들링 누락
-async def call_external_api():
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://api.example.com/data")
-        return response.json()
-```
-
-**After** (권장 패턴):
-```python
-# ✅ 타임아웃 30초, 에러 핸들링
-async def call_external_api() -> Dict[str, Any]:
-    """외부 API 호출.
-    
-    Returns:
-        API 응답 데이터
-        
-    Raises:
-        HTTPException: API 호출 실패 시
-    """
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get("https://api.example.com/data")
-            response.raise_for_status()
-            return response.json()
-    except httpx.TimeoutException:
-        raise HTTPException(
-            status_code=504,
-            detail="External API timeout"
-        )
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"External API error: {e.response.text}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected error: {str(e)}"
-        )
-```
-
-**학습**: 외부 호출 시 타임아웃 30초 설정 필수, 에러 핸들링 3단계 (Timeout, HTTPStatus, General)
-
-### Example 3: PYTHONPATH 설정 (WebUI Backend)
-
-**문제 상황**:
-```bash
-# ❌ PYTHONPATH 없이 실행
-uvicorn open_webui.main:app --reload
-# ModuleNotFoundError: No module named 'open_webui'
-```
-
-**해결**:
-```bash
-# ✅ PYTHONPATH 명시
-cd webui/backend
-PYTHONPATH=. uvicorn open_webui.main:app --reload
-```
-
-**Dockerfile 설정**:
-```dockerfile
-# webui/Dockerfile.dev
-ENV PYTHONPATH=/app/backend:$PYTHONPATH
-```
-
-**학습**: webui/backend 개발 시 PYTHONPATH 설정 필수 (Dockerfile.dev line 29, dev-start.sh line 27)
-
-## 코딩 표준
-
-### Python 스타일
-
-- **PEP 8** 준수
-- **Type hints** 필수
-- **Docstring** 사용 (Google 스타일)
-- **비동기 메서드** 사용 (`async def`)
-
-### 서비스 레이어 패턴 (ALWAYS)
-
-**Singleton 패턴** (모듈 레벨 인스턴스):
 ```python
 # backend/app/services/example_service.py
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 import httpx
+from fastapi import HTTPException
 
 class ExampleService:
-    """External API 호출을 담당하는 서비스 클래스.
-    
-    Attributes:
-        base_url: 외부 API의 기본 URL
-    """
+    """Service for external API calls."""
     
     def __init__(self):
-        self.base_url = "http://example-service:8080"
+        self.base_url = "http://service:8080"
     
     async def get_data(self, id: str) -> Dict[str, Any]:
-        """특정 ID의 데이터를 조회.
+        """Fetch data by ID.
         
         Args:
-            id: 조회할 데이터의 ID
+            id: Resource identifier
             
         Returns:
-            데이터 딕셔너리
+            Data dictionary
             
         Raises:
-            HTTPException: API 호출 실패 시
+            HTTPException: On API failure
         """
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(f"{self.base_url}/data/{id}")
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(f"{self.base_url}/data/{id}")
+                response.raise_for_status()
+                return response.json()
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=504, detail="Timeout")
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
 
-# Singleton 인스턴스
+# Singleton instance
 example_service = ExampleService()
 ```
 
-### 에러 핸들링 (ALWAYS)
+## Router Pattern
 
-**외부 호출 시 타임아웃 설정** (기본 30초):
 ```python
-from fastapi import HTTPException
-import httpx
+# backend/app/routes/example.py
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
 
-async def call_external_api(endpoint: str) -> Dict[str, Any]:
-    """외부 API 호출.
-    
-    Args:
-        endpoint: API 엔드포인트 경로
-        
-    Returns:
-        API 응답 데이터
-        
-    Raises:
-        HTTPException: API 호출 실패 시
-    """
+router = APIRouter(prefix="/example", tags=["example"])
+
+class ExampleRequest(BaseModel):
+    name: str
+    value: int
+
+class ExampleResponse(BaseModel):
+    id: str
+    name: str
+    created_at: datetime
+
+@router.get("/", response_model=List[ExampleResponse])
+async def list_examples(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100)
+):
+    """List all examples with pagination."""
+    return await example_service.list_all(page=page, size=size)
+
+@router.post("/", response_model=ExampleResponse)
+async def create_example(request: ExampleRequest):
+    """Create new example."""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(f"https://api.example.com/{endpoint}")
-            response.raise_for_status()
-            return response.json()
-    except httpx.TimeoutException:
-        raise HTTPException(
-            status_code=504,
-            detail=f"External API timeout: {endpoint}"
-        )
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"External API error: {e.response.text}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected error: {str(e)}"
-        )
+        return await example_service.create(request.dict())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 ```
 
-### 선택적 Import 패턴 (권장)
+## Error Handling (REQUIRED)
 
-**의존성 미설치 시 Graceful Degradation**:
+### External API Calls
+
 ```python
-# backend/app/services/langfuse_service.py
+try:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        return response.json()
+except httpx.TimeoutException:
+    raise HTTPException(status_code=504, detail="External API timeout")
+except httpx.HTTPStatusError as e:
+    raise HTTPException(status_code=e.response.status_code, detail=str(e))
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+```
+
+### Database Operations
+
+```python
+try:
+    result = await db.execute(query, params)
+    return result
+except Exception as e:
+    logger.error(f"Database error: {e}")
+    raise HTTPException(status_code=500, detail="Database operation failed")
+```
+
+## Optional Imports (Graceful Degradation)
+
+```python
 try:
     from langfuse import Langfuse
     LANGFUSE_AVAILABLE = True
@@ -276,906 +142,107 @@ except ImportError:
 
 class LangfuseService:
     def __init__(self):
-        if LANGFUSE_AVAILABLE:
-            self.client = Langfuse()
-        else:
-            self.client = None
+        self.client = Langfuse() if LANGFUSE_AVAILABLE else None
     
     def create_trace(self, name: str):
-        """트레이스 생성 (Langfuse 사용 가능 시).
-        
-        Args:
-            name: 트레이스 이름
-            
-        Returns:
-            트레이스 객체 또는 None
-        """
-        if self.client is not None:
+        if self.client:
             return self.client.trace(name=name)
         return None  # Graceful degradation
-
-langfuse_service = LangfuseService()
 ```
 
-## FastAPI 라우터 패턴
+## Database Queries (CRITICAL)
 
-### 라우터 생성
+### Always Check Schema First
+
+```bash
+# MariaDB
+docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
+  -e "DESCRIBE table_name;"
+
+# ClickHouse
+docker-compose exec monitoring-clickhouse clickhouse-client \
+  --query "DESCRIBE otel_2.otel_traces;"
+```
+
+### ClickHouse Map Access
 
 ```python
-# backend/app/routes/example.py
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
+# ❌ WRONG: project_id is not a direct column
+query = "SELECT * FROM otel_traces WHERE project_id = '...'"
 
-# 라우터 인스턴스 생성
-router = APIRouter(
-    prefix="/example",
-    tags=["example"]
-)
-
-# Request/Response 모델 정의
-class ExampleRequest(BaseModel):
-    """요청 모델.
-    
-    Attributes:
-        field: 필드 설명
-    """
-    field: str
-
-class ExampleResponse(BaseModel):
-    """응답 모델.
-    
-    Attributes:
-        result: 결과 설명
-    """
-    result: str
-
-# 엔드포인트 정의
-@router.post("/", response_model=ExampleResponse)
-async def create_example(request: ExampleRequest) -> ExampleResponse:
-    """Example 생성.
-    
-    Args:
-        request: Example 요청 데이터
-        
-    Returns:
-        생성된 Example 응답
-        
-    Raises:
-        HTTPException: 생성 실패 시
-    """
-    # 비즈니스 로직
-    result = await process_example(request.field)
-    return ExampleResponse(result=result)
+# ✅ CORRECT: Access from ResourceAttributes map
+query = """
+SELECT 
+    TraceId as trace_id,
+    ResourceAttributes['project_id'] as project_id
+FROM otel_2.otel_traces
+WHERE ResourceAttributes['project_id'] = '{project_id}'
+"""
 ```
 
-### 라우터 등록
+### Duration Conversion
+
+```python
+# ClickHouse stores Duration in nanoseconds
+# Convert to milliseconds: Duration / 1000000
+query = "SELECT Duration / 1000000 as duration_ms FROM otel_traces"
+```
+
+## Registering Routes
 
 ```python
 # backend/app/main.py
 from fastapi import FastAPI
-from app.routes import example
+from app.routes import example, monitoring, datacloud
 
-app = FastAPI(
-    title="Agent Portal API",
-    description="Backend for Frontend API",
-    version="1.0.0"
-)
+app = FastAPI(title="Agent Portal API")
 
-# 라우터 등록
+# Register routers
 app.include_router(example.router)
+app.include_router(monitoring.router, prefix="/api/monitoring")
+app.include_router(datacloud.router, prefix="/datacloud")
 ```
 
-## Pydantic 모델 패턴
+## WebUI Backend PYTHONPATH (CRITICAL)
 
-### Request 모델
-
-```python
-from pydantic import BaseModel, Field, validator
-from typing import Optional
-
-class CreateUserRequest(BaseModel):
-    """사용자 생성 요청.
-    
-    Attributes:
-        username: 사용자 이름 (3-50자)
-        email: 이메일 주소
-        role: 사용자 역할 (선택, 기본값: user)
-    """
-    username: str = Field(..., min_length=3, max_length=50, description="사용자 이름")
-    email: str = Field(..., description="이메일 주소")
-    role: Optional[str] = Field("user", description="사용자 역할")
-    
-    @validator('email')
-    def email_must_be_valid(cls, v):
-        """이메일 주소 검증."""
-        if '@' not in v:
-            raise ValueError('invalid email address')
-        return v.lower()
-```
-
-### Response 모델
-
-```python
-from pydantic import BaseModel
-from typing import List
-from datetime import datetime
-
-class UserResponse(BaseModel):
-    """사용자 응답.
-    
-    Attributes:
-        id: 사용자 ID
-        username: 사용자 이름
-        email: 이메일 주소
-        created_at: 생성 일시
-    """
-    id: str
-    username: str
-    email: str
-    created_at: datetime
-    
-    class Config:
-        """Pydantic 설정."""
-        orm_mode = True  # ORM 모델과 호환
-```
-
-## Observability 통합
-
-### Langfuse 트레이싱
-
-```python
-from app.services.langfuse_service import langfuse_service
-
-@router.post("/chat")
-async def chat(request: ChatRequest) -> ChatResponse:
-    """채팅 API.
-    
-    Args:
-        request: 채팅 요청
-        
-    Returns:
-        채팅 응답
-    """
-    # 트레이스 생성
-    trace = langfuse_service.create_trace(name="chat_api")
-    
-    try:
-        # 스팬 생성
-        span = trace.span(name="llm_call") if trace else None
-        
-        # LLM 호출
-        result = await litellm_service.chat_completion(
-            model=request.model,
-            messages=request.messages
-        )
-        
-        # 스팬 종료
-        if span:
-            span.end(output={"result": result})
-        
-        # 트레이스 종료
-        if trace:
-            trace.end()
-        
-        return ChatResponse(result=result)
-    except Exception as e:
-        # 에러 기록
-        if trace:
-            trace.end(status="error", output={"error": str(e)})
-        raise
-```
-
-## 미들웨어 패턴
-
-### RBAC 미들웨어 (TODO)
-
-```python
-# backend/app/middleware/rbac.py
-from fastapi import Request, HTTPException
-from starlette.middleware.base import BaseHTTPMiddleware
-
-class RBACMiddleware(BaseHTTPMiddleware):
-    """RBAC (Role-Based Access Control) 미들웨어."""
-    
-    async def dispatch(self, request: Request, call_next):
-        """요청 처리.
-        
-        Args:
-            request: HTTP 요청
-            call_next: 다음 미들웨어/핸들러
-            
-        Returns:
-            HTTP 응답
-            
-        Raises:
-            HTTPException: 권한 없음 시
-        """
-        # 사용자 인증 확인
-        user = await get_current_user(request)
-        
-        # 관리자 전용 경로 확인
-        if request.url.path.startswith("/admin"):
-            if user.role != "admin":
-                raise HTTPException(status_code=403, detail="Admin access required")
-        
-        response = await call_next(request)
-        return response
-```
-
-## 리버스 프록시 패턴
-
-### Perplexica/Open-Notebook 프록시
-
-```python
-# backend/app/routes/proxy.py
-from fastapi import APIRouter, Request, Response
-import httpx
-
-router = APIRouter(prefix="/proxy", tags=["proxy"])
-
-@router.api_route("/perplexica/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def proxy_perplexica(path: str, request: Request) -> Response:
-    """Perplexica 리버스 프록시.
-    
-    Args:
-        path: Perplexica API 경로
-        request: FastAPI 요청
-        
-    Returns:
-        Perplexica 응답
-    """
-    # 헤더 변환
-    headers = dict(request.headers)
-    headers.pop("host", None)  # Host 헤더 제거
-    
-    # Perplexica API 호출
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.request(
-            method=request.method,
-            url=f"http://perplexica:5173/{path}",
-            headers=headers,
-            content=await request.body()
-        )
-    
-    # 헤더 정규화 (iframe 허용)
-    response_headers = dict(response.headers)
-    response_headers.pop("x-frame-options", None)
-    response_headers["content-security-policy"] = "frame-ancestors 'self'"
-    
-    return Response(
-        content=response.content,
-        status_code=response.status_code,
-        headers=response_headers
-    )
-```
-
-## 데이터베이스 작업 패턴 (CRITICAL)
-
-### SQL 쿼리 작성 시 반드시 스키마 확인
-
-**규칙**: 새 테이블/스키마 작업 시 **반드시 실제 스키마를 먼저 확인**하고 쿼리 작성
-
-**잘못된 예시** (❌):
-```python
-# 추측으로 쿼리 작성 (컬럼명 확인 안 함)
-query = """
-SELECT 
-    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(attributes, '$.service.name')), 'Unknown') as name
-FROM otel_traces
-WHERE JSON_EXTRACT(resource_attributes, '$.project.id') = %s
-"""
-# 결과: (1054, "Unknown column 'attributes' in 'SELECT'")
-```
-
-**올바른 예시** (✅):
-```python
-# 1단계: 실제 스키마 확인
-# docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
-#   -e "DESCRIBE otel_traces;"
-# 
-# 확인 결과:
-# - service_name (VARCHAR)
-# - span_attributes (LONGTEXT, JSON)
-# - resource_attributes (LONGTEXT, JSON)
-# - project_id (VARCHAR)
-# - timestamp (DATETIME)
-
-# 2단계: 실제 컬럼명으로 쿼리 작성
-query = """
-SELECT 
-    COALESCE(service_name, 'Unknown') as name,
-    COALESCE(SUM(CAST(JSON_EXTRACT(span_attributes, '$.llm.usage.total_tokens') AS UNSIGNED)), 0) as total_tokens
-FROM otel_traces
-WHERE project_id = %s
-    AND timestamp >= %s
-    AND timestamp <= %s
-GROUP BY service_name
-"""
-```
-
-### 스키마 확인 체크리스트
-
-**MariaDB/MySQL**:
-```bash
-# 테이블 구조 확인
-docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
-  -e "DESCRIBE table_name;"
-
-# 테이블 생성 구문 확인 (상세 정보)
-docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
-  -e "SHOW CREATE TABLE table_name\G"
-
-# 샘플 데이터 확인
-docker-compose exec mariadb mariadb -uroot -prootpass agent_portal \
-  -e "SELECT * FROM table_name LIMIT 5;"
-```
-
-**PostgreSQL**:
-```bash
-# 테이블 구조 확인
-docker-compose exec postgres-db psql -U username -d database \
-  -c "\d+ table_name"
-
-# 샘플 데이터 확인
-docker-compose exec postgres-db psql -U username -d database \
-  -c "SELECT * FROM table_name LIMIT 5;"
-```
-
-### 데이터베이스 어댑터 패턴
-
-```python
-# backend/app/services/db_adapter.py
-from typing import List, Dict, Any
-import aiomysql
-from datetime import datetime
-
-class DatabaseAdapter:
-    """데이터베이스 어댑터 클래스.
-    
-    Attributes:
-        host: 데이터베이스 호스트
-        port: 데이터베이스 포트
-        user: 사용자명
-        password: 비밀번호
-        database: 데이터베이스명
-    """
-    
-    def __init__(self, host: str, port: int, user: str, password: str, database: str):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.database = database
-    
-    async def _execute_query(
-        self, 
-        query: str, 
-        params: tuple = ()
-    ) -> List[Dict[str, Any]]:
-        """SQL 쿼리 실행 (내부 메서드).
-        
-        Args:
-            query: SQL 쿼리
-            params: 쿼리 파라미터
-            
-        Returns:
-            쿼리 결과 리스트
-            
-        Raises:
-            Exception: 쿼리 실행 실패 시
-        """
-        conn = await aiomysql.connect(
-            host=self.host,
-            port=self.port,
-            user=self.user,
-            password=self.password,
-            db=self.database,
-            charset='utf8mb4'
-        )
-        
-        try:
-            async with conn.cursor(aiomysql.DictCursor) as cursor:
-                await cursor.execute(query, params)
-                result = await cursor.fetchall()
-                await conn.commit()
-                return result
-        finally:
-            conn.close()
-    
-    async def get_records(
-        self,
-        project_id: str,
-        start_time: datetime,
-        end_time: datetime
-    ) -> List[Dict[str, Any]]:
-        """레코드 조회 (공개 메서드).
-        
-        ⚠️  주의: 쿼리 작성 전 반드시 실제 스키마 확인!
-        
-        Args:
-            project_id: 프로젝트 ID
-            start_time: 시작 시간
-            end_time: 종료 시간
-            
-        Returns:
-            레코드 리스트
-        """
-        # ✅ 실제 스키마 확인 후 작성된 쿼리
-        query = """
-        SELECT 
-            COALESCE(service_name, 'Unknown') as name,
-            COUNT(*) as count
-        FROM otel_traces
-        WHERE project_id = %s
-            AND timestamp >= %s
-            AND timestamp <= %s
-        GROUP BY service_name
-        """
-        
-        result = await self._execute_query(query, (project_id, start_time, end_time))
-        return result
-
-# Singleton
-db_adapter = DatabaseAdapter(
-    host="mariadb",
-    port=3306,
-    user="root",
-    password="rootpass",
-    database="agent_portal"
-)
-```
-
-### 데이터베이스 작업 금지 사항
-
-**❌ 절대 하지 말 것**:
-
-1. **스키마 확인 없이 추측으로 쿼리 작성**:
-   - ❌ `SELECT attributes FROM ...` (컬럼명 확인 안 함)
-   - ✅ `DESCRIBE table_name;` 실행 후 쿼리 작성
-
-2. **SQL Injection 취약점**:
-   - ❌ `f"SELECT * FROM users WHERE id = {user_id}"`
-   - ✅ `cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))`
-
-3. **트랜잭션 누락** (INSERT/UPDATE/DELETE 시):
-   - ❌ `cursor.execute("UPDATE ..."); # commit 없음`
-   - ✅ `cursor.execute("UPDATE ..."); await conn.commit()`
-
-4. **컨넥션 누수**:
-   - ❌ `conn = await aiomysql.connect(...); # close 없음`
-   - ✅ `try: ... finally: conn.close()`
-
-5. **에러 핸들링 누락**:
-   - ❌ `result = await cursor.fetchall() # 예외 처리 없음`
-   - ✅ `try: ... except aiomysql.Error as e: ...`
-
-## 테스트 및 검증
-
-### 작업 완료 후 반드시 확인
-
-- [ ] OpenAPI 문서 확인 (`http://localhost:8000/docs`)
-- [ ] API 엔드포인트 직접 호출 테스트 (curl/Postman)
-- [ ] 컨테이너 로그 확인 (`docker-compose logs backend`)
-- [ ] 타임아웃 및 에러 핸들링 테스트
-- [ ] Type hints 및 Docstring 확인
-
-### 컨테이너 재빌드
-
-**코드 변경 시**:
-```bash
-# 캐시 없이 재빌드
-docker-compose build --no-cache backend
-docker-compose restart backend
-
-# 또는 개발 환경에서 볼륨 마운트 사용
-# docker-compose.yml:
-#   volumes:
-#     - ./backend/app:/app/app:ro
-```
-
-## 학습 내용 기록
-
-### 작업 완료 후
+When running webui/backend locally:
 
 ```bash
-# API 패턴 학습 내용 기록
-./scripts/record-learning.sh "API" "외부 호출 시 타임아웃 30초 설정 필수"
+# ❌ WRONG: ModuleNotFoundError
+uvicorn open_webui.main:app --reload
 
-# 또는 수동으로 기록
-echo "## $(date +%Y-%m-%d): 외부 API 호출 패턴
-
-**요청**: LiteLLM API 호출 시 타임아웃 설정
-**적용**: httpx.AsyncClient(timeout=30.0)
-**피드백**: ✅ 잘 잡았어 (안정성 향상)
-**재사용**: 모든 외부 호출에 타임아웃 설정
-" >> .cursor/learnings/api-patterns.md
+# ✅ CORRECT: Set PYTHONPATH
+cd webui/backend
+PYTHONPATH=. uvicorn open_webui.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-## 금지 사항
-
-### ❌ 절대 하지 말 것
-
-1. **기존 패턴 무시**:
-   - ❌ 비슷한 API인데 새로운 서비스 레이어 패턴 사용
-   - ✅ `backend/app/services/` 기존 패턴 재사용
-
-2. **에러 핸들링 누락**:
-   - ❌ 외부 호출 시 try/except 생략
-   - ✅ 모든 외부 호출에 에러 핸들링 적용
-
-3. **타임아웃 미설정**:
-   - ❌ `httpx.AsyncClient()` (기본 타임아웃 5초)
-   - ✅ `httpx.AsyncClient(timeout=30.0)` (명시적 타임아웃)
-
-4. **Type hints 누락**:
-   - ❌ `def get_data(id): ...`
-   - ✅ `async def get_data(id: str) -> Dict[str, Any]: ...`
-
-5. **동기 메서드 사용**:
-   - ❌ `def get_data(): ...`
-   - ✅ `async def get_data(): ...`
-
-## WebUI Backend 개발 규칙 (CRITICAL)
-
-Agent Portal은 두 개의 백엔드 시스템을 운영합니다:
-1. **webui/backend**: Open-WebUI 내장 백엔드 (FastAPI + SQLAlchemy)
-2. **backend/**: FastAPI BFF (Backend for Frontend)
-
-### WebUI Backend 구조
-
-**디렉토리 구조**:
-```
-webui/backend/
-├── open_webui/          # 메인 Python 모듈
-│   ├── main.py         # FastAPI 앱 진입점
-│   ├── routers/        # API 라우터 (OpenAI, Ollama, Chat 등)
-│   ├── models/         # SQLAlchemy 모델
-│   ├── utils/          # 유틸리티 함수
-│   └── retrieval/      # RAG 및 벡터 DB
-├── requirements.txt    # Python 의존성
-├── start.sh           # 프로덕션 시작 스크립트
-└── dev.sh             # (사용되지 않음)
-```
-
-### PYTHONPATH 설정 (ALWAYS)
-
-**규칙**: 모든 Python 서비스는 PYTHONPATH를 명시적으로 설정해야 합니다.
-
-**개발 환경** (Docker Compose):
-```dockerfile
-# webui/Dockerfile.dev
-ENV PYTHONPATH=/app/backend:$PYTHONPATH
-```
-
-**스크립트 실행**:
-```bash
-# webui/dev-start.sh
-cd backend
-PYTHONPATH=. uvicorn open_webui.main:app --host 0.0.0.0 --port 8080 --reload &
-```
-
-**프로덕션**:
-```bash
-# webui/start.sh
-cd backend
-export PYTHONPATH=.
-uvicorn open_webui.main:app --host 0.0.0.0 --port 8080
-```
-
-### 개발 서버 실행 (docker-compose.dev.yml)
-
-**포트 매핑**:
-- `5173:3001`: Vite 프론트엔드 개발 서버 (핫 리로드)
-- `8080:3000`: Open-WebUI 백엔드 API
-
-**볼륨 마운트**:
-```yaml
-volumes:
-  - ./webui:/app                          # 소스 코드 실시간 마운트
-  - webui_node_modules:/app/node_modules  # node_modules 분리
-  - webui_backend_data:/app/backend/data  # DB 데이터 영구 저장
-```
-
-**환경 변수**:
-```yaml
-environment:
-  - DEV_MODE=true
-  - AUTO_RELOAD=true
-  - DEBUG=true
-```
-
-**실행 명령**:
-```bash
-# 개발 모드 시작
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d webui
-
-# 로그 확인
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f webui
-```
-
-### FastAPI BFF 개발 규칙
-
-**디렉토리 구조**:
-```
-backend/
-├── app/
-│   ├── main.py         # FastAPI 앱
-│   ├── routes/         # API 엔드포인트 (Chat, News, Observability)
-│   ├── services/       # 비즈니스 로직 (LiteLLM, Langfuse)
-│   ├── middleware/     # RBAC 등
-│   └── config.py       # 설정 관리
-├── requirements.txt
-└── Dockerfile
-```
-
-**포트**: `8000` (프록시 및 BFF API)
-
-**PYTHONPATH**: 자동 설정됨 (Docker WORKDIR=/app)
-
-### 체크리스트: 새 백엔드 서비스 추가 시
-
-webui/backend 수정 시:
-- [ ] PYTHONPATH 설정 확인 (스크립트 또는 Dockerfile)
-- [ ] `backend/` 디렉토리에서 상대 import 사용 (`from open_webui.xxx import yyy`)
-- [ ] 개발 환경 테스트: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d webui`
-- [ ] 로그 확인: `ModuleNotFoundError` 발생 여부
-
-backend/ (FastAPI BFF) 수정 시:
-- [ ] `app/` 디렉토리 구조 유지
-- [ ] Type hints 및 Docstring 작성
-- [ ] 서비스 레이어 패턴 준수 (Singleton)
-- [ ] 에러 핸들링 및 타임아웃 설정 (30초)
-
-### 가드레일: 절대 하지 말아야 할 것
-
-1. **webui/backend에서 절대 경로 import 금지**:
-   - ❌ `from /app/backend/open_webui import xxx`
-   - ✅ `from open_webui import xxx` (PYTHONPATH 기준 상대 경로)
-
-2. **PYTHONPATH 없이 uvicorn 실행 금지**:
-   - ❌ `uvicorn open_webui.main:app`
-   - ✅ `PYTHONPATH=. uvicorn open_webui.main:app`
-
-3. **dev-start.sh 수정 시 PYTHONPATH 유지**:
-   - 항상 `PYTHONPATH=.`를 uvicorn 명령 앞에 추가
-
-4. **두 백엔드 혼동 금지**:
-   - `webui/backend`: Open-WebUI 내장, port 8080 (컨테이너 내부)
-   - `backend/`: FastAPI BFF, port 8000
-
-5. **AgentOps API 호출 시 Graceful Degradation 금지 (CRITICAL)**:
-   - ❌ `if not self.api_key: return {"traces": [], "total": 0}`
-   - ✅ `if not self.api_key: raise HTTPException(status_code=500, detail="API 키 미설정")`
-   
-6. **AgentOps 세션 쿠키 인증 금지 (CRITICAL)**:
-   - ❌ `headers = {"Cookie": f"session_id={self.session_cookie}"}`
-   - ✅ `headers = {"Authorization": f"Bearer {self.jwt_token}"}`
-   
-7. **AgentOps v4 엔드포인트 경로 오류 (CRITICAL)**:
-   - ❌ `f"{self.api_url}/v4/traces/list/{project_id}"`
-   - ✅ `f"{self.api_url}/v4/traces?project_id={project_id}"`
-
-## AgentOps Self-Hosted API 통합 규칙 (CRITICAL)
-
-### 개요
-
-AgentOps는 필수 서비스이며, 서버가 없으면 명확한 에러를 반환해야 합니다. Graceful degradation (빈 데이터 반환)은 문제를 숨기므로 금지됩니다.
-
-### 인증 방식
-
-**API 키 기반 JWT 인증 (필수)**:
-```python
-# backend/app/services/agentops_adapter.py
-async def _get_jwt_token(self) -> str:
-    """API 키로 JWT 토큰 발급."""
-    if not self.api_key:
-        raise HTTPException(
-            status_code=500,
-            detail="AgentOps API 키가 설정되지 않았습니다."
-        )
-    
-    token_url = f"{self.api_url}/v3/auth/token"
-    payload = {"api_key": self.api_key}
-    
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.post(token_url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("token")
-
-def _get_auth_headers(self) -> Dict[str, str]:
-    """JWT Bearer 토큰 헤더 반환."""
-    return {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {self.jwt_token}"
-    }
-```
-
-**세션 쿠키 인증 (금지)**:
-```python
-# ❌ 절대 사용 금지 (대시보드 UI 전용)
-def _get_auth_headers(self) -> Dict[str, str]:
-    return {
-        "Cookie": f"session_id={self.session_cookie}"
-    }
-```
-
-### v4 엔드포인트 경로
-
-**올바른 경로 (query parameter 사용)**:
-```python
-# ✅ 올바른 v4 엔드포인트
-response = await client.get(
-    f"{self.api_url}/v4/traces",
-    headers=self._get_auth_headers(),
-    params={
-        "project_id": project_id,
-        "start_time": start_time.isoformat(),
-        "end_time": end_time.isoformat(),
-        "limit": 20,
-        "offset": 0
-    }
-)
-```
-
-**잘못된 경로 (path parameter 사용)**:
-```python
-# ❌ 잘못된 v4 엔드포인트 (구식 경로)
-response = await client.get(
-    f"{self.api_url}/v4/traces/list/{project_id}",
-    headers=self._get_auth_headers()
-)
-```
-
-### 에러 처리 원칙
-
-**명확한 HTTPException 발생 (필수)**:
-```python
-# ✅ 올바른 에러 처리
-if not self.api_key:
-    raise HTTPException(
-        status_code=500,
-        detail="AgentOps API 키가 설정되지 않았습니다. AGENTOPS_API_KEY 환경 변수를 설정하세요."
-    )
-
-try:
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(url, headers=headers)
-        response.raise_for_status()
-        return response.json()
-except httpx.ConnectError as e:
-    raise HTTPException(
-        status_code=503,
-        detail=f"AgentOps 서버에 연결할 수 없습니다: {str(e)}"
-    )
-except httpx.TimeoutException as e:
-    raise HTTPException(
-        status_code=504,
-        detail=f"AgentOps 서버 응답 시간 초과: {str(e)}"
-    )
-except httpx.HTTPStatusError as e:
-    raise HTTPException(
-        status_code=e.response.status_code,
-        detail=f"AgentOps API 오류: {e.response.text}"
-    )
-```
-
-**Graceful Degradation (금지)**:
-```python
-# ❌ 절대 사용 금지 (문제를 숨김)
-if not self.api_key:
-    return {"traces": [], "total": 0}  # 빈 데이터 반환
-
-try:
-    # API 호출
-    ...
-except httpx.ConnectError:
-    return {"traces": [], "total": 0}  # 에러 숨김
-```
-
-### 환경 변수 설정
-
-**backend/app/config.py**:
-```python
-class Settings(BaseSettings):
-    # AgentOps (Self-hosted API)
-    AGENTOPS_API_URL: str = "http://agentops-api:8003"
-    AGENTOPS_API_KEY: str = ""  # UUID 형식의 API 키
-```
-
-**.env 파일**:
-```bash
-AGENTOPS_API_URL=http://agentops-api:8003
-AGENTOPS_API_KEY=12345678-1234-1234-1234-123456789abc
-```
-
-**API 키 생성**:
-```bash
-# 자동 스크립트 (권장)
-./scripts/setup-agentops-apikey.sh
-
-# 생성된 계정 정보
-# Email: admin@agent-portal.local
-# Password: agentops-admin-password
-```
-
-### 프론트엔드 에러 처리
-
-**API 클라이언트 (webui/src/lib/agentops/api-client.ts)**:
-```typescript
-export async function getMetrics(params: {
-    project_id: string;
-    start_time: string;
-    end_time: string;
-}): Promise<Metrics> {
-    const response = await fetch(`${API_BASE_URL}/metrics?${queryParams}`);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch metrics: ${response.statusText}`);
-    }
-    return response.json();
-}
-```
-
-**페이지 컴포넌트 (+page.svelte)**:
-```typescript
-async function loadMetrics() {
-    try {
-        metrics = await getMetrics({
-            project_id: projectId,
-            start_time: filters.start_time,
-            end_time: filters.end_time
-        });
-    } catch (e: any) {
-        console.error('Failed to load metrics:', e);
-        // 전역 에러 핸들러로 전달 (사용자에게 알림)
-        throw e;
-    }
-}
-```
-
-**차트 컴포넌트 (CostChart.svelte)**:
-```svelte
-{#if costData.length > 0}
-    <Line data={chartData} options={chartOptions} />
-{:else}
-    <div class="flex items-center justify-center h-full text-gray-500">
-        <p>No data available</p>
-    </div>
-{/if}
-```
-
-### 트러블슈팅
-
-**503 Service Unavailable**:
-- **원인**: AgentOps 서버가 실행 중이지 않음
-- **해결**: `docker-compose up -d agentops-api`
-
-**500 Internal Server Error (API 키 미설정)**:
-- **원인**: `.env`에 `AGENTOPS_API_KEY` 없음
-- **해결**: `./scripts/setup-agentops-apikey.sh` 실행 후 `docker-compose restart backend`
-
-**403 Forbidden**:
-- **원인**: API 키가 유효하지 않음
-- **해결**: `./scripts/setup-agentops-apikey.sh` 재실행
-
-**400 Bad Request**:
-- **원인**: API 키 형식 오류 (UUID 형식이어야 함)
-- **해결**: API 키 형식 확인 (`12345678-1234-1234-1234-123456789abc`)
-
-### 체크리스트: AgentOps API 통합 시
-
-- [ ] API 키 기반 JWT 인증 사용 (`/v3/auth/token`으로 토큰 발급)
-- [ ] v4 엔드포인트 경로 확인 (`/v4/traces?project_id=<id>`)
-- [ ] 명확한 HTTPException 발생 (graceful degradation 금지)
-- [ ] 환경 변수 설정 확인 (`AGENTOPS_API_KEY`, `AGENTOPS_API_URL`)
-- [ ] 프론트엔드 에러 처리 (try/catch + "No data available" 표시)
-- [ ] 타임아웃 설정 (JWT 발급: 10초, API 호출: 30초)
-- [ ] AgentOps 서버 실행 확인 (`docker-compose logs agentops-api`)
-
-## 참고 자료
-
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Pydantic Documentation](https://docs.pydantic.dev/)
-- [HTTPX Documentation](https://www.python-httpx.org/)
-- [PEP 8 Style Guide](https://pep8.org/)
+## Checklist
+
+### Before Coding
+- [ ] Check existing service patterns
+- [ ] Review similar endpoints
+- [ ] Plan error handling
+
+### During Coding
+- [ ] Use `async def`
+- [ ] Add type hints
+- [ ] Set timeout (30s default)
+- [ ] Handle all exceptions
+
+### After Coding
+- [ ] Test with curl
+- [ ] Check `/docs` for OpenAPI
+- [ ] Check container logs
+
+## Prohibited
+
+- ❌ Sync methods for I/O operations
+- ❌ Missing type hints
+- ❌ External calls without timeout
+- ❌ Missing error handling
+- ❌ Hardcoded credentials
+- ❌ Direct SQL without parameter binding
+
+---
+
+**Last Updated**: 2025-11-28

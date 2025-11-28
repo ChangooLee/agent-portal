@@ -1,0 +1,243 @@
+---
+alwaysApply: false
+---
+# Monitoring Development Rules
+
+Rules for the LLM monitoring feature using ClickHouse and OTEL.
+
+## Architecture
+
+```
+LiteLLM (LLM Proxy)
+    ↓ OTLP
+OTEL Collector (port 4317/4318)
+    ↓
+ClickHouse (port 8124, database: otel_2)
+    ↓
+Backend BFF (monitoring_adapter.py)
+    ↓
+Frontend (Admin UI)
+```
+
+## File Locations
+
+```
+backend/app/services/monitoring_adapter.py   # ClickHouse queries
+backend/app/routes/monitoring.py             # API endpoints
+webui/src/lib/monitoring/api-client.ts       # Frontend API client
+webui/src/routes/(app)/admin/monitoring/+page.svelte  # Admin UI
+```
+
+## ClickHouse Schema (CRITICAL)
+
+### Database and Table
+
+```
+Database: otel_2 (NOT "otel")
+Table: otel_traces
+```
+
+### Key Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| TraceId | String | Unique trace ID |
+| SpanId | String | Span ID |
+| ParentSpanId | String | Parent span (empty for root) |
+| SpanName | String | Operation name |
+| Duration | UInt64 | **Nanoseconds** |
+| Timestamp | DateTime64 | Start time |
+| StatusCode | String | OK, ERROR |
+| SpanAttributes | Map(String, String) | Span metadata |
+| ResourceAttributes | Map(String, String) | Resource metadata |
+
+### Accessing Map Columns (CRITICAL)
+
+```sql
+-- ❌ WRONG: project_id is NOT a direct column
+SELECT * FROM otel_traces WHERE project_id = '...'
+
+-- ✅ CORRECT: Access from ResourceAttributes map
+SELECT 
+    TraceId as trace_id,
+    ResourceAttributes['project_id'] as project_id,
+    ResourceAttributes['service.name'] as service_name
+FROM otel_2.otel_traces
+WHERE ResourceAttributes['project_id'] = '{project_id}'
+```
+
+### Duration Conversion (CRITICAL)
+
+```sql
+-- Duration is stored in nanoseconds
+-- Convert to milliseconds: Duration / 1000000
+SELECT 
+    Duration / 1000000 as duration_ms
+FROM otel_2.otel_traces
+```
+
+## API Endpoints
+
+```
+# Trace Queries
+GET /monitoring/traces?project_id=&start_time=&end_time=&page=&size=
+GET /monitoring/traces/{trace_id}
+
+# Metrics
+GET /monitoring/metrics?project_id=&start_time=&end_time=
+
+# Flow Graph
+GET /monitoring/flow?project_id=&start_time=&end_time=
+
+# Session Replay
+GET /monitoring/replay/{session_id}
+```
+
+## Monitoring Adapter Pattern
+
+```python
+# backend/app/services/monitoring_adapter.py
+import httpx
+
+class MonitoringAdapter:
+    def __init__(self):
+        self.clickhouse_url = f"http://{settings.CLICKHOUSE_HOST}:{settings.CLICKHOUSE_HTTP_PORT}"
+    
+    async def _execute_query(self, query: str) -> list:
+        """Execute ClickHouse query via HTTP."""
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                self.clickhouse_url,
+                content=query,
+                headers={"Content-Type": "text/plain"},
+                params={
+                    "user": settings.CLICKHOUSE_USER,
+                    "password": settings.CLICKHOUSE_PASSWORD,
+                    "database": "otel_2"
+                }
+            )
+            response.raise_for_status()
+            return self._parse_response(response.text)
+    
+    async def get_traces(
+        self, 
+        project_id: str,
+        start_time: datetime,
+        end_time: datetime,
+        page: int = 1,
+        size: int = 20
+    ) -> Dict[str, Any]:
+        """Get paginated traces."""
+        offset = (page - 1) * size
+        query = f"""
+        SELECT 
+            TraceId as trace_id,
+            SpanName as span_name,
+            Duration / 1000000 as duration_ms,
+            Timestamp as timestamp,
+            StatusCode as status_code,
+            ResourceAttributes['project_id'] as project_id
+        FROM otel_2.otel_traces
+        WHERE ResourceAttributes['project_id'] = '{project_id}'
+            AND Timestamp >= '{start_time.isoformat()}'
+            AND Timestamp <= '{end_time.isoformat()}'
+        ORDER BY Timestamp DESC
+        LIMIT {size} OFFSET {offset}
+        """
+        return await self._execute_query(query)
+
+monitoring_adapter = MonitoringAdapter()
+```
+
+## Frontend API Client
+
+```typescript
+// webui/src/lib/monitoring/api-client.ts
+const API_BASE_URL = '/api/monitoring';
+
+export async function getTraces(params: TraceParams): Promise<TracesResponse> {
+    const query = new URLSearchParams({
+        project_id: params.project_id,
+        start_time: params.start_time,
+        end_time: params.end_time,
+        page: String(params.page || 1),
+        size: String(params.size || 20)
+    });
+    
+    const response = await fetch(`${API_BASE_URL}/traces?${query}`);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch traces: ${response.statusText}`);
+    }
+    return response.json();
+}
+```
+
+## Vite Proxy Config
+
+```typescript
+// webui/vite.config.ts
+'/api/monitoring': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/monitoring/, '/monitoring')
+}
+```
+
+## Debugging ClickHouse
+
+```bash
+# Connect to ClickHouse
+docker-compose exec monitoring-clickhouse clickhouse-client
+
+# List databases
+SHOW DATABASES;
+
+# Describe table
+DESCRIBE otel_2.otel_traces;
+
+# Check data
+SELECT COUNT(*) FROM otel_2.otel_traces;
+
+# Sample query
+SELECT 
+    TraceId,
+    SpanName,
+    Duration / 1000000 as duration_ms,
+    ResourceAttributes['project_id'] as project_id
+FROM otel_2.otel_traces
+LIMIT 5;
+```
+
+## Common Issues
+
+### "Unknown expression identifier project_id"
+
+**Cause**: project_id is in ResourceAttributes map, not a direct column
+
+**Fix**:
+```python
+# Before
+query = f"WHERE project_id = '{project_id}'"
+
+# After
+query = f"WHERE ResourceAttributes['project_id'] = '{project_id}'"
+```
+
+### Empty trace results
+
+**Check**:
+1. Database name: `otel_2` not `otel`
+2. ResourceAttributes access syntax
+3. Time range filter format
+
+## Key Rules
+
+- Always use `otel_2` database
+- Access project_id via `ResourceAttributes['project_id']`
+- Convert Duration from nanoseconds to milliseconds
+- Use `/api/monitoring/` proxy from frontend
+- Set 30s timeout for ClickHouse queries
+
+---
+
+**Last Updated**: 2025-11-28

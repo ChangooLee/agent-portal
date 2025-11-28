@@ -1,418 +1,198 @@
-# Agent Portal — AI 코딩 가이드라인
+# Agent Portal — AI Coding Guidelines
 
-> **목적**: Cursor AI가 Agent Portal 프로젝트에서 효율적으로 작업할 수 있도록 하는 규칙  
-> **철학**: 계획 중심 개발(Planning-First Development) — 코드 작성 전 깊게 생각하기
+> **Purpose**: Rules for Cursor AI to work effectively on the Agent Portal project  
+> **Philosophy**: Planning-First Development — think deeply before writing code
 
 ---
 
-## 🎯 핵심 원칙
+## Core Principles
 
-### 0. 민감 정보 보호 (CRITICAL - 최우선)
+### 0. Sensitive Information Protection (CRITICAL)
 
-**민감 정보 정의**:
-- API 키 (OpenRouter, OpenAI, Anthropic, etc.)
-- 비밀번호, 토큰, 시크릿 키
-- 데이터베이스 연결 문자열 (실제 자격 증명 포함)
-- 개인 식별 정보 (PII)
+**Definition**: API keys, passwords, tokens, database credentials, PII
 
-**금지 사항**:
-- ❌ `.env` 파일 백업 생성 (`.env.bak`, `.env.backup` 등)
-- ❌ 민감 정보가 포함된 파일을 git에 추가
-- ❌ 로그/출력에 API 키 노출
-- ❌ 코드 주석에 실제 API 키 작성
+**Prohibited**:
+- Creating `.env` backup files (`.env.bak`, `.env.backup`)
+- Adding sensitive files to git
+- Exposing API keys in logs/output
+- Hardcoding credentials in code
 
-**필수 확인 절차**:
+**Required Confirmation** (ask user in Korean):
 ```
-⚠️ 민감 정보 관련 작업 시 반드시 사용자에게 확인:
-
-1. "이 작업은 민감 정보(.env, API 키 등)를 포함합니다. 진행할까요?"
-2. 백업이 필요한 경우: "민감 정보 없이 설정 구조만 백업할까요?"
-3. git 커밋 전: "민감 정보가 포함된 파일이 없는지 확인했습니다. 커밋할까요?"
+⚠️ "이 작업은 민감 정보(.env, API 키 등)를 포함합니다. 진행할까요?"
 ```
 
-**안전한 대안**:
-- `.env.example` 사용 (플레이스홀더만 포함)
-- 환경 변수 참조 사용 (`os.environ.get()`, `${VAR_NAME}`)
-- 민감 정보는 항상 `.gitignore`에 포함 확인
+**Safe Alternatives**:
+- Use `.env.example` with placeholders
+- Reference env vars: `os.environ.get('API_KEY')`
+- Verify `.gitignore` includes sensitive files
 
-### 0.1 테스트 확인 후 완료 판정 (CRITICAL)
+### 0.1 Test Before Completion (CRITICAL)
 
-**작업 완료 기준**:
-- 코드 작성만으로는 완료가 아님
-- **반드시 실제 테스트 수행 후** 완료 판정
-- TODO를 `completed`로 마크하기 전 테스트 필수
+**Completion Criteria**:
+- Code alone is NOT complete
+- Must run actual tests before marking TODO complete
 
-**테스트 절차**:
-1. **Backend API**: curl 또는 브라우저 DevTools로 API 응답 확인
-2. **Frontend**: 브라우저에서 실제 화면 확인, 콘솔 에러 체크
-3. **통합**: 전체 플로우 End-to-End 테스트
+**Test Procedure**:
+1. Backend API: `curl http://localhost:8000/api/...`
+2. Frontend: Browser check, console errors
+3. Integration: End-to-end flow
 
-**금지 사항**:
-- ❌ "구현 완료했습니다" → 테스트 없이 완료 선언
-- ❌ "재시작했습니다" → 실제 동작 확인 없음
-- ❌ "TODO 완료!" → 브라우저/curl 테스트 누락
-
-**올바른 완료 절차**:
+**Correct Flow**:
 ```
-1. 코드 작성/수정
-2. 서비스 재시작 (필요 시)
-3. 실제 테스트 수행 (curl/브라우저)
-4. 결과 확인 및 에러 체크
-5. ✅ 문제 없음 → TODO completed
-6. ❌ 에러 발생 → 수정 후 2번부터 재시도
+1. Write/modify code
+2. Restart service if needed
+3. Run actual test (curl/browser)
+4. Check results
+5. ✅ No errors → TODO completed
+6. ❌ Error → fix and retry from step 2
 ```
 
-### 1. 계획 중심 접근 (ALWAYS)
+### 1. Planning-First Approach (ALWAYS)
 
-**코드 작성 전 15-20분 투자**:
-- 베스트 프랙티스 조사 (웹 검색)
-- 코드베이스 조사 (Skills 시스템 활용)
-- 라이브러리 소스코드 조사 (필요 시)
-- 2-3가지 접근법 비교 (트레이드오프 명시)
+**Before coding (15-20 min)**:
+- Research best practices (web search)
+- Check codebase for existing patterns
+- Compare 2-3 approaches with tradeoffs
 
-**작업 완료 후 5-10분 투자**:
-- 학습 내용 `.cursor/learnings/` 디렉토리에 기록
-- Skills 시스템 업데이트 (UI 작업 시)
-- 문서 동기화 확인
+**After completion (5-10 min)**:
+- Record learnings in `.cursor/learnings/`
+- Update documentation if significant
 
-### 2. 필수 참조 문서 (ALWAYS)
+### 2. Required References
 
-작업 시작 전 **핵심 문서** 우선 순위:
+**Priority 1: Specialized Rules (.cursor/rules/*.mdc)**
+- `backend-api.mdc` — FastAPI, services, error handling
+- `ui-development.mdc` — SvelteKit, Tailwind, patterns
+- `admin-screens.mdc` — Admin UI, Glassmorphism
+- `monitoring-development.mdc` — ClickHouse, OTEL traces
+- `datacloud-development.mdc` — Database connector, Text-to-SQL
+- `mcp-gateway.mdc` — MCP servers, Kong integration
 
-**1단계: .cursor/rules/*.mdc 파일 (특화 규칙)**
-- `ui-development.mdc` — UI 개발 (SvelteKit, Tailwind CSS, Glassmorphism)
-- `backend-api.mdc` — Backend API (FastAPI, 서비스 레이어, 에러 핸들링)
-- `news-feature.mdc` — News 기능 (무한 스크롤, 검색, 중요도 정렬)
-- `admin-screens.mdc` — Admin 화면 (Glassmorphism, 네비게이션)
-- `planning-strategies.mdc` — 8가지 계획 전략 (15-20분 계획 투자)
-- `learning-patterns.mdc` — 학습 축적 시스템 (성문화, 주간 리뷰)
+**Priority 2: Project Documents**
+- `CLAUDE.md` — Quick reference
+- `AGENTS.md` — Project structure, workflows
 
-**2단계: 프로젝트 핵심 문서**
-- `CLAUDE.md` — 프로젝트 가이드 (가드레일, 코딩 표준)
-- `AGENTS.md` — 에이전트 워크플로우 (복잡한 작업 시)
-- `README.md` — 프로젝트 개요 및 아키텍처
-- `DEVELOP.md` — 개발 가이드 및 환경 설정
-
-**3단계: Skills JSON 파일 (보조)**
-- `webui/.skills/*.json` — UI 구조/패턴 분석 결과
-- `backend/.skills/*.json` — Backend 구조 분석 결과
-
-**중요**: .mdc 파일이 **최종 규칙**, Skills JSON은 **중간 분석 결과**입니다.
-
-### 3. Skills 시스템 우선 활용 (UI 작업 시 ALWAYS)
-
-**UI 관련 작업**:
-- `webui/.skills/ui-search-index.json` — 자연어 검색 인덱스
-- `webui/.skills/ui-structure.json` — UI 구조 매핑
-- `webui/.skills/ui-patterns.json` — 스타일 패턴 분석
-- `webui/.skills/ui-layouts.json` — 레이아웃 계층 구조
-- `webui/.skills/ui-class-mapping-guide.json` — 클래스 매핑 가이드
-
-**절차**:
-1. 자연어 요청 분석 (키워드 추출)
-2. `ui-search-index.json`에서 관련 경로 찾기
-3. `ui-structure.json`에서 상세 정보 확인
-4. 정확한 위치 파악 후 수정 수행
-
-**직접 파일 검색은 마지막 수단으로만 사용**
-
-### 4. Backend Skills 시스템 (Backend 작업 시 ALWAYS)
-
-**Backend 관련 작업**:
-- `backend/.skills/backend-structure.json` — FastAPI BFF 구조 매핑
-- `webui/.skills/backend-structure.json` — WebUI Backend 구조 매핑
-- `docs/DEV_CHECKLIST.md` — 개발 환경 체크리스트
-
-**CRITICAL: WebUI Backend 개발 시**:
-- PYTHONPATH 설정 필수 (`webui/Dockerfile.dev` line 29, `webui/dev-start.sh` line 27)
-- 이중 백엔드 구조 인식:
-  - `webui/backend`: Open-WebUI 내장 (포트 8080/3000)
-  - `backend/`: FastAPI BFF (포트 8000)
-- ModuleNotFoundError 발생 시 PYTHONPATH 확인 (`.cursor/learnings/bug-fixes.md` 참조)
-
-**절차**:
-1. Backend Skills 파일에서 서비스/라우터 구조 확인
-2. 기존 패턴 재사용 (Singleton, Type hints, 타임아웃 30초)
-3. DEV_CHECKLIST.md 체크리스트 확인
-4. `.cursor/rules/backend-api.mdc` 규칙 준수
+**Priority 3: Skills (On-Demand Only)**
+- `webui/.skills/ui-summary.json` — Quick route/pattern lookup
+- For detailed queries, use jq on full Skills files
 
 ---
 
-## 📋 8가지 계획 전략
+## File Discovery
 
-작업 복잡도에 따라 적절한 전략 선택:
+### UI Components
+```
+webui/src/routes/(app)/           # Page routes
+webui/src/routes/(app)/admin/     # Admin pages
+webui/src/lib/components/         # Reusable components
+webui/src/lib/monitoring/         # Monitoring API client
+```
 
-### 전략 1: 버그 재현 및 문서화
-- 수정 전 버그를 재현하고 단계별 가이드 생성
-- 재현 과정에서 근본 원인 파악
-- `.cursor/learnings/bug-fixes.md`에 기록
+### Backend
+```
+backend/app/routes/               # API endpoints
+backend/app/services/             # Business logic
+backend/app/middleware/           # RBAC, auth
+backend/app/config.py             # Settings
+```
 
-### 전략 2: 베스트 프랙티스 조사
-- 웹 검색으로 유사 문제 해결 사례 확인
-- 공식 업그레이드 가이드 및 블로그 포스트 참조
-- 발견한 패턴을 `.cursor/learnings/` 디렉토리에 저장
+### Quick Reference (ui-summary.json)
+```json
+{
+  "routes": {
+    "admin/monitoring": "routes/(app)/admin/monitoring/+page.svelte",
+    "admin/datacloud": "routes/(app)/admin/datacloud/+page.svelte"
+  }
+}
+```
 
-### 전략 3: 코드베이스 조사
-- **UI 작업**: Skills 시스템 우선 활용
-- **Backend 작업**: `backend/app/services/`의 기존 패턴 확인
-- 기존 패턴 재사용으로 호환성 유지
-- 중복 구현 방지
-
-### 전략 4: 라이브러리 소스코드 조사
-- 문서가 부족한 라이브러리는 소스 직접 확인
-- GitHub 레포지토리의 예제 및 테스트 코드 참조
-- 발견한 사용법을 `.cursor/learnings/api-patterns.md`에 기록
-
-### 전략 5: Git 히스토리 조사
-- 유사한 기능의 커밋 히스토리 확인
-- 과거 해결 방법 및 의사결정 이유 파악
-- `git log --all --grep="keyword"` 활용
-
-### 전략 6: 프로토타이핑
-- 복잡한 기능은 작은 단위로 먼저 프로토타입 작성
-- 동작 확인 후 본 코드에 통합
-- 임시 파일은 작업 완료 후 삭제
-
-### 전략 7: 옵션 종합
-- 2-3가지 접근법 비교
-- 각 옵션의 장단점 명시 (트레이드오프)
-- 선택 이유를 커밋 메시지에 기록
-
-### 전략 8: 스타일 리뷰
-- **UI 작업**: Skills 시스템 기반 스타일 일관성 체크
-- **Backend 작업**: 서비스 레이어 패턴 준수 확인
-- 기존 코드 스타일과 일관성 유지
-
----
-
-## 🔍 작업별 체크리스트
-
-### UI 개발 작업
-
-**시작 전**:
-- [ ] `ui-search-index.json`에서 관련 키워드로 경로 검색
-- [ ] `ui-structure.json`에서 컴포넌트 구조 확인
-- [ ] `ui-patterns.json`에서 스타일 패턴 확인
-- [ ] 대규모 개편 시 `ui-class-mapping-guide.json` 참조
-
-**작업 중**:
-- [ ] 기존 스타일 패턴 재사용
-- [ ] 레이아웃 영향 범위 확인 (`ui-layouts.json`)
-- [ ] 반응형 디자인 고려 (모바일, 태블릿, 데스크톱)
-
-**완료 후**:
-- [ ] `./scripts/update-ui-skills.sh` 실행 (UI 구조 변경 시)
-- [ ] `.cursor/learnings/ui-patterns.md`에 학습 내용 기록
-- [ ] 브라우저에서 다크/라이트 모드 테스트
-
-### Backend API 개발
-
-**시작 전**:
-- [ ] `backend/app/services/` 기존 패턴 확인
-- [ ] 비슷한 API 엔드포인트 참조
-- [ ] 에러 핸들링 패턴 확인
-
-**작업 중**:
-- [ ] 비동기 메서드 사용 (`async def`)
-- [ ] Type hints 필수 (`from typing import ...`)
-- [ ] 외부 호출 시 타임아웃 설정 (기본 30초)
-- [ ] 선택적 import 패턴 (의존성 미설치 시 graceful degradation)
-
-**완료 후**:
-- [ ] OpenAPI 문서 확인 (`http://localhost:8000/docs`)
-- [ ] `.cursor/learnings/api-patterns.md`에 학습 내용 기록
-- [ ] 컨테이너 재시작 테스트
-
-### 대규모 리팩토링
-
-**시작 전**:
-- [ ] 2-3가지 접근법 비교 (트레이드오프 명시)
-- [ ] 영향 범위 파악 (Skills 시스템 활용)
-- [ ] Git 브랜치 생성 (안전한 작업)
-
-**작업 중**:
-- [ ] 단계별 커밋 (롤백 가능하도록)
-- [ ] 각 단계마다 테스트
-- [ ] 의존성 변경 최소화
-
-**완료 후**:
-- [ ] 전체 테스트 실행
-- [ ] 문서 업데이트 (CLAUDE.md, AGENTS.md 등)
-- [ ] PR 생성 전 최종 리뷰
-
----
-
-## 🚨 가드레일 (실패 사례 기반)
-
-### 금지 사항
-
-1. **Skills 시스템 무시**:
-   - ❌ UI 작업 시 직접 파일 검색부터 시작
-   - ✅ `ui-search-index.json`으로 정확한 경로 먼저 찾기
-
-2. **계획 없이 코드 작성**:
-   - ❌ 요청 받자마자 바로 코드 수정
-   - ✅ 15-20분 투자하여 베스트 프랙티스 조사 및 계획 수립
-
-3. **기존 패턴 무시**:
-   - ❌ 비슷한 기능인데 새로운 방식으로 구현
-   - ✅ 코드베이스 조사로 기존 패턴 재사용
-
-4. **학습 내용 미기록**:
-   - ❌ 작업 완료 후 바로 다음 작업으로 이동
-   - ✅ 5-10분 투자하여 학습 내용을 `.cursor/learnings/`에 기록
-
-5. **문서 미동기화**:
-   - ❌ 코드만 수정하고 문서 방치
-   - ✅ 중요한 변경 시 `CLAUDE.md`, `AGENTS.md` 업데이트
-
-### 대안 제시 (항상)
-
-**예시 1: 라우터가 등록되지 않음**
-- ❌ "등록이 안 됩니다"로 끝내기
-- ✅ 3가지 해결 방법 제시:
-  1. `main.py`에서 import 및 `app.include_router()` 호출 확인
-  2. 컨테이너 내부 파일 확인 (`docker-compose exec backend cat /app/app/main.py`)
-  3. 컨테이너 재시작 또는 재빌드
-
-**예시 2: 의존성 오류**
-- ❌ "모듈을 찾을 수 없습니다"로 끝내기
-- ✅ 2가지 해결 방법 제시:
-  1. 선택적 import 패턴 사용 (권장)
-  2. `requirements.txt`에 의존성 추가 후 재빌드
-
----
-
-## 📚 학습 축적 시스템
-
-### 자동 학습 기록
-
-**Git hook 활용** (설치 후):
-- `post-commit`: 커밋 메시지에서 학습 내용 추출
-- `.cursor/learnings/` 디렉토리에 자동 분류 저장
-
-**수동 기록**:
+### On-Demand Queries
 ```bash
-# 학습 내용 즉시 기록
-./scripts/record-learning.sh "UI" "탭 스타일은 border-b-2 대신 rounded-lg 버튼으로 변경하는 것이 더 모던함"
+# Find route by keyword
+jq '.routes[] | select(.routePath | contains("monitoring"))' webui/.skills/ui-structure.json
+
+# Find pattern by type
+jq '.buttonPatterns[] | select(.type == "tab")' webui/.skills/ui-patterns.json
 ```
-
-### 선호도 기록
-
-**피드백 즉시 기록** (`.cursor/learnings/preferences.md`):
-- "이거 싫어함": 사용자가 특정 패턴을 싫어하는 경우
-- "잘 잡았어": 사용자가 만족한 해결 방법
-- AI가 다음 유사 결정 시 참조
-
-**예시**:
-```markdown
-## 2025-11-12: 탭 스타일 변경
-
-**요청**: "monitoring 페이지의 탭 버튼 스타일 변경"
-**적용**: border-b-2 → rounded-lg 버튼
-**피드백**: ✅ 잘 잡았어 (모던한 디자인)
-**재사용**: 향후 모든 탭 네비게이션에 동일 패턴 적용
-```
-
-### 문서 생성 전 검토 (CRITICAL)
-
-**신규 문서 생성 시 필수 절차**:
-1. 기존 문서 검색 (grep, find 활용)
-2. 유사 내용 확인 (.cursor/learnings/, docs/, .cursor/rules/)
-3. 통합 가능 여부 판단
-4. 통합 우선, 신규 생성은 최후 수단
-
-**검색 명령어**:
-```bash
-# 키워드로 기존 문서 검색
-grep -r "키워드" .cursor/learnings/ docs/ .cursor/rules/
-
-# 파일명으로 검색
-find . -name "*키워드*.md" -o -name "*키워드*.mdc"
-```
-
-**판단 기준**:
-- 기존 문서에 추가 가능? → 통합 (섹션 추가)
-- 완전히 새로운 주제? → 신규 생성
-- 임시 분석/디버깅? → TEMP_*.md (작업 완료 후 정리)
 
 ---
 
-## 🎨 UI 개발 특화 규칙
+## Task Checklists
 
-### 대규모 UI 개편 (Skills 시스템 필수)
+### UI Development
 
-**예시 1: "전체 탭 스타일을 파란색에서 초록색으로 변경"**
+**Before**:
+- [ ] Check ui-summary.json for route paths
+- [ ] Review existing patterns in target file
 
-1. **색상 사용 위치 확인**:
-   ```bash
-   cat webui/.skills/ui-patterns.json | jq '.colorFileMapping["border-blue-500"]'
-   ```
+**During**:
+- [ ] Use Glassmorphism patterns for admin pages
+- [ ] Support dark/light mode
+- [ ] Test responsive design
 
-2. **라우트 페이지 포함 확인**:
-   - `colorFileMapping.border-blue-500.routes` (페이지 파일)
-   - `colorFileMapping.border-blue-500.components` (컴포넌트 파일)
+**After**:
+- [ ] Browser test in multiple viewports
+- [ ] Check console for errors
 
-3. **매핑 가이드 참조**:
-   ```bash
-   cat webui/.skills/ui-class-mapping-guide.json | jq '.colorMappings.blue'
-   ```
+### Backend API Development
 
-4. **스타일 매핑 적용**:
-   - `border-blue-500` → `border-green-500`
-   - `text-blue-600` → `text-green-600`
-   - `bg-blue-50` → `bg-green-50`
-   - 다크 모드: `dark:border-blue-400` → `dark:border-green-400`
+**Before**:
+- [ ] Check existing service patterns in `backend/app/services/`
+- [ ] Review similar endpoints
 
-5. **일괄 수정**: `colorFileMapping`에 나열된 모든 파일에 적용
+**During**:
+- [ ] Use async methods (`async def`)
+- [ ] Add type hints
+- [ ] Set timeout for external calls (default 30s)
+- [ ] Handle errors with HTTPException
 
-**예시 2: "사이드바 메뉴 구조 변경"**
-
-1. **현재 구조 확인**:
-   ```bash
-   cat webui/.skills/ui-navigation.json | jq '.sidebar'
-   ```
-
-2. **메뉴 컴포넌트 위치**:
-   ```bash
-   cat webui/.skills/ui-structure.json | jq '.routes[] | select(.path | contains("Sidebar"))'
-   ```
-
-3. **스타일 패턴 확인**:
-   ```bash
-   cat webui/.skills/ui-patterns.json | jq '.buttonPatterns[] | select(.type == "menu")'
-   ```
-
-4. **수정 수행**: 메뉴 구조 및 스타일 수정
-
-### 반응형 디자인
-
-**Tailwind CSS 브레이크포인트**:
-- 모바일: 기본 (< 640px)
-- 태블릿: `@md:` (≥ 768px)
-- 데스크톱: `@lg:` (≥ 1024px)
-- 와이드: `@2xl:` (≥ 1536px)
-
-**테스트 필수**:
-- Chrome DevTools 모바일 시뮬레이터
-- 다크/라이트 모드 전환
-- 다양한 해상도 (375px, 768px, 1920px)
+**After**:
+- [ ] Test with curl
+- [ ] Check OpenAPI docs at `/docs`
 
 ---
 
-## 🔧 Backend API 특화 규칙
+## Guardrails
 
-### 서비스 레이어 패턴
+### Prohibited
 
-**Singleton 패턴** (모듈 레벨 인스턴스):
+1. **Ignoring existing patterns**
+   - ❌ New style for similar component
+   - ✅ Reuse existing patterns
+
+2. **Skipping tests**
+   - ❌ "Implementation complete" without testing
+   - ✅ Actually run and verify
+
+3. **Missing error handling**
+   - ❌ External call without try/except
+   - ✅ Handle timeout, HTTP errors
+
+4. **Direct API calls from frontend**
+   - ❌ `fetch('http://localhost:8000/...')`
+   - ✅ `fetch('/api/...')` (use Vite proxy)
+
+### Always Provide Alternatives
+
+When something fails, offer 2-3 solutions:
+```
+**Problem**: Router not registered
+**Solutions**:
+1. Check import in main.py
+2. Verify app.include_router() call
+3. Rebuild container: docker-compose build --no-cache backend
+```
+
+---
+
+## Key Patterns
+
+### Backend Service (Singleton)
 ```python
-# app/services/example_service.py
-from typing import Optional, Dict, Any
-import httpx
-
 class ExampleService:
     def __init__(self):
-        self.base_url = "http://example-service:8080"
+        self.base_url = "http://service:8080"
     
     async def get_data(self, id: str) -> Dict[str, Any]:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -420,314 +200,92 @@ class ExampleService:
             response.raise_for_status()
             return response.json()
 
-# Singleton
+# Singleton instance
 example_service = ExampleService()
 ```
 
-### 에러 핸들링 패턴
-
-**외부 호출 시 타임아웃 설정**:
-```python
-from fastapi import HTTPException
-import httpx
-
-async def call_external_api():
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get("https://api.example.com/data")
-            response.raise_for_status()
-            return response.json()
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="External API timeout")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-```
-
-### Observability 통합
-
-**Langfuse 선택적 import**:
+### Error Handling
 ```python
 try:
-    from langfuse import Langfuse
-    LANGFUSE_AVAILABLE = True
-except ImportError:
-    LANGFUSE_AVAILABLE = False
-    Langfuse = None
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        return response.json()
+except httpx.TimeoutException:
+    raise HTTPException(status_code=504, detail="External API timeout")
+except httpx.HTTPStatusError as e:
+    raise HTTPException(status_code=e.response.status_code, detail=str(e))
+```
 
-def create_trace(name: str):
-    if LANGFUSE_AVAILABLE:
-        return langfuse_service.create_trace(name=name)
-    return None  # Graceful degradation
+### Glassmorphism Card
+```svelte
+<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-sm p-6">
+  <!-- Content -->
+</div>
+```
+
+### Modal
+```svelte
+{#if showModal}
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-lg font-semibold">Title</h2>
+    </div>
+    <!-- Content -->
+    <div class="p-6">...</div>
+  </div>
+</div>
+{/if}
 ```
 
 ---
 
-## 🧪 테스트 및 검증
+## Services & Ports
 
-### 코드 작성 후 반드시 확인
-
-**UI 작업**:
-1. 브라우저에서 실제 화면 확인
-2. 다크/라이트 모드 전환 테스트
-3. 모바일/태블릿/데스크톱 반응형 테스트
-4. 브라우저 콘솔 에러 확인
-
-**Backend 작업**:
-1. OpenAPI 문서 확인 (`http://localhost:8000/docs`)
-2. API 엔드포인트 직접 호출 테스트
-3. 컨테이너 로그 확인 (`docker-compose logs backend`)
-4. 타임아웃 및 에러 핸들링 테스트
+| Service | Port | Purpose |
+|---------|------|---------|
+| Backend BFF | 8000 | FastAPI gateway |
+| Open-WebUI | 3001 | Portal UI |
+| LiteLLM | 4000 | LLM proxy |
+| ClickHouse | 8124 | Monitoring traces |
+| MariaDB | 3306 | App database |
+| Kong | 8002 | API Gateway |
 
 ---
 
-## 📝 커밋 메시지 규칙
+## Learning System
 
-**Conventional Commits** 준수:
-```
-<type>(<scope>): <subject>
+### Record Learnings
+After significant work, update `.cursor/learnings/`:
+- `api-patterns.md` — Backend patterns
+- `ui-patterns.md` — Frontend patterns
+- `bug-fixes.md` — Issues and solutions
+- `preferences.md` — User preferences
 
-<body>
-
-<footer>
-```
-
-**타입**:
-- `feat`: 새로운 기능
-- `fix`: 버그 수정
-- `refactor`: 리팩토링
-- `docs`: 문서 변경
-- `style`: 코드 스타일 변경 (기능 변경 없음)
-- `test`: 테스트 추가/수정
-- `chore`: 빌드/도구 변경
-
-**예시**:
-```
-feat(ui): monitoring 페이지 탭 스타일 변경
-
-- border-b-2 → rounded-lg 버튼으로 변경
-- bg-[#0072CE] 활성 상태 스타일 적용
-- ui-patterns.json 업데이트 완료
-
-Closes #123
-```
-
----
-
-## 🔄 문서 동기화
-
-### 중요한 변경 시 문서 업데이트
-
-**언제 업데이트하나?**
-- 새로운 서비스/컴포넌트 추가
-- 아키텍처 변경
-- 새로운 패턴 도입
-- 가드레일 추가 (실패 사례 발견 시)
-
-**어떤 문서를 업데이트하나?**
-- `CLAUDE.md`: 가드레일, 코딩 표준, 주요 작업 가이드
-- `AGENTS.md`: 에이전트 워크플로우, 프로젝트 구조
-- `README.md`: 프로젝트 개요, 아키텍처
-- `DEVELOP.md`: 개발 가이드, 환경 설정
-
-**자동 동기화**:
-```bash
-# Git hook을 통한 자동 동기화 (설치 후)
-git add . && git commit -m "..."
-
-# 수동 동기화
-./scripts/sync-docs.sh
-```
-
----
-
-## 📋 계획 문서(Plans) 관리
-
-대규모 기능 개발 시 `docs/plans/` 디렉토리에 계획 문서를 작성하고 관리합니다.
-
-### 계획 문서 작성 시점
-
-**새 계획 문서가 필요한 경우**:
-- 새로운 대규모 기능 개발 (예: MCP Gateway, Data Cloud)
-- 복잡한 아키텍처 변경
-- 다단계(Phase) 구현이 필요한 작업
-
-### 계획 문서 형식
-
-**파일 위치**: `docs/plans/<FEATURE_NAME>_PLAN.md` 또는 `docs/plans/<FEATURE_NAME>_DEVELOPMENT.md`
-
-**필수 섹션**:
-1. 현재 상태 / 배경
-2. 구현 목표
-3. 아키텍처 다이어그램
-4. Phase별 구현 계획
-5. 수정 파일 목록
-6. 의존성
-7. 예상 시간
-
-### 계획 문서 업데이트 절차 (CRITICAL)
-
-**구현 진행 시**:
+### Format
 ```markdown
-| Phase | 상태 | 완료일 |
-|-------|------|--------|
-| Phase 1 | ✅ 완료 | 2025-11-27 |
-| Phase 2 | 🚧 진행중 | - |
-| Phase 3 | ⏳ 대기 | - |
+## YYYY-MM-DD: Title
+
+**Request**: What was asked
+**Applied**: What was done
+**Feedback**: ✅ Approved / ❌ Rejected
+**Reuse**: How to apply in future
 ```
-
-**구현 완료 시**:
-1. 계획 문서 상단에 `## 구현 완료: ✅` 표시
-2. `docs/CURRENT_STATUS.md` 업데이트
-3. 관련 Stage 진행률 업데이트
-
-### 현재 계획 문서 목록
-
-| 문서 | 상태 | 설명 |
-|------|------|------|
-| `MCP_GATEWAY_PLAN.md` | ✅ 완료 | MCP Gateway 구현 계획 |
-| `DATA_CLOUD_DEVELOPMENT.md` | 🚧 진행중 | Data Cloud 커넥터 구현 |
 
 ---
 
-## 🧹 임시 문서 관리
+## User Communication
 
-### 임시 문서 정의
-
-개발 중 의사결정, 분석, 디버깅을 위해 생성하는 일시적인 문서:
-
-**임시 문서 패턴**:
-- `IMPLEMENTATION_*.md` — 구현 방법 결정 문서
-- `TEMP_*.md` — 임시 메모
-- `TODO_*.md` — 작업 목록 (TODO 앱이 아닌 경우)
-- `DRAFT_*.md` — 초안 문서
-- `WIP_*.md` — 작업 중 문서
-- `DECISION_*.md` — 의사결정 문서
-- `ANALYSIS_*.md` — 분석 문서
-- `DEBUG_*.md` — 디버깅 메모
-- `*_TEMP.md`, `*_WIP.md`, `*_DRAFT.md` — 접미사 형태
-
-### 자동 체크 (Git Hook)
-
-**커밋 시 자동 체크**:
-```bash
-# pre-commit hook이 자동으로 임시 문서 체크
-git add .
-git commit -m "..."
-
-# 출력 예시:
-# 🧹 임시 문서 발견: 2개
-#    - IMPLEMENTATION_CLARIFICATION.md
-#    - TEMP_NOTES.md
-#    권장: ./scripts/clean-temp-docs.sh 실행하여 정리
+Always communicate with the user in Korean:
 ```
-
-### 수동 정리
-
-#### 인터랙티브 모드 (권장)
-
-각 파일을 검증하고 사용자가 직접 선택:
-
-```bash
-./scripts/clean-temp-docs.sh
-
-# 각 파일마다 선택 옵션:
-# - k (보존): 파일 유지
-# - b (백업+삭제): .backup/temp-docs/에 백업 후 삭제
-# - s (건너뛰기): 아무 작업 안 함
+✅ "구현 완료했습니다. 브라우저에서 확인해주세요."
+✅ "이 작업을 진행하기 전에 확인이 필요합니다."
+❌ "Implementation complete. Please check in browser."
 ```
-
-#### 자동 모드
-
-중요 키워드가 있거나 최근 수정된 파일은 보존, 나머지는 자동 백업:
-
-```bash
-./scripts/clean-temp-docs.sh --auto
-```
-
-### 백업 및 복원
-
-**백업 위치**:
-```
-.backup/temp-docs/YYYYMMDD-HHMMSS/
-└─ <원본 파일 경로 구조 유지>
-```
-
-**복원 방법**:
-```bash
-# 특정 파일 복원
-mv .backup/temp-docs/20251119-143022/IMPLEMENTATION_CLARIFICATION.md ./
-
-# 전체 복원
-cp -r .backup/temp-docs/20251119-143022/* ./
-```
-
-**백업 정리** (30일 이상):
-```bash
-find .backup/temp-docs -type d -mtime +30 -exec rm -rf {} \;
-```
-
-### 중요 문서 보호
-
-다음 키워드가 있는 문서는 자동으로 보존:
-- `CRITICAL`
-- `IMPORTANT`
-- `DO NOT DELETE`
-- `KEEP THIS`
-- `PRODUCTION`
-- `LICENSE`
-
-**중요 문서 표시 예시**:
-```markdown
-# Implementation Plan
-
-<!-- IMPORTANT: 프로덕션 배포 전 반드시 검토 필요 -->
-
-...
-```
-
-### 체크리스트
-
-**임시 문서 생성 시**:
-- [ ] 명확한 파일명 사용 (`IMPLEMENTATION_*`, `TEMP_*` 등)
-- [ ] 중요 문서는 키워드 표시 (`IMPORTANT`, `KEEP THIS`)
-- [ ] 작업 완료 후 정리 (commit 전)
-
-**작업 완료 후**:
-- [ ] `./scripts/clean-temp-docs.sh` 실행
-- [ ] 필요 시 핵심 문서로 내용 통합
-- [ ] 백업 확인 (`.backup/temp-docs/`)
-
-**주간 리뷰 시**:
-- [ ] 임시 문서 정리 확인
-- [ ] 오래된 백업 삭제 (30일 이상)
 
 ---
 
-## 📊 주간 리뷰
-
-**매주 금요일** (자동 알림):
-```bash
-./scripts/weekly-review.sh
-```
-
-**리뷰 항목**:
-1. `.cursor/learnings/` 디렉토리의 학습 내용 확인
-2. 반복되는 패턴을 핵심 문서에 통합
-3. 가드레일 업데이트 (새로운 실패 사례 발견 시)
-4. 선호도 기록 검토 및 반영
-
----
-
-## 🎓 참고 자료
-
-- [Planning-Centric AI Coding](https://news.hada.io/topic?id=24266) — AI에게 시니어 엔지니어처럼 생각하도록 가르치기
-- [Cursor AI 사용 가이드](https://news.hada.io/topic?id=24099) — "Shoot and Forget" 방법론
-- `.cursor/rules/` — 추가 규칙 파일 (폴더별 특화 규칙)
-
----
-
-**마지막 업데이트**: 2025-11-12  
-**버전**: 1.0
-
+**Last Updated**: 2025-11-28  
+**Version**: 3.0 (English, optimized context)

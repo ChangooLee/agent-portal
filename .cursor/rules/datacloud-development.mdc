@@ -1,0 +1,227 @@
+---
+alwaysApply: false
+---
+# Data Cloud Development Rules
+
+Rules for the zero-copy database connector feature.
+
+## Overview
+
+Data Cloud provides zero-copy access to enterprise databases:
+- MariaDB, PostgreSQL, ClickHouse support
+- Schema reflection via SQLAlchemy
+- Query execution with limits
+- Text-to-SQL via LiteLLM
+- Business terminology management
+- Permission management
+
+## Architecture
+
+```
+Frontend (Admin UI)
+    ↓
+Backend BFF (/datacloud/*)
+    ↓
+DataCloud Service
+    ↓ (SQLAlchemy)
+Target Database (MariaDB/PostgreSQL/ClickHouse)
+```
+
+## File Locations
+
+```
+backend/app/services/datacloud_service.py   # Core service
+backend/app/routes/datacloud.py             # API endpoints
+webui/src/routes/(app)/admin/datacloud/+page.svelte  # Admin UI
+```
+
+## Database Schema (MariaDB)
+
+```sql
+-- Connection storage
+CREATE TABLE db_connections (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    db_type ENUM('mariadb','postgresql','clickhouse'),
+    host VARCHAR(255),
+    port INT,
+    database_name VARCHAR(255),
+    username VARCHAR(255),
+    encrypted_password TEXT,  -- Fernet encrypted
+    health_status VARCHAR(50),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+-- Business terms
+CREATE TABLE db_business_terms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    connection_id VARCHAR(36),
+    term_type VARCHAR(50),       -- 'table' or 'column'
+    schema_name VARCHAR(255),
+    table_name VARCHAR(255),
+    column_name VARCHAR(255),
+    business_name VARCHAR(255),
+    description TEXT
+);
+
+-- Permissions
+CREATE TABLE db_connection_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    connection_id VARCHAR(36),
+    user_id VARCHAR(255),
+    access_level VARCHAR(50)     -- 'read', 'write', 'admin'
+);
+```
+
+## API Endpoints
+
+```
+# Connection Management
+GET    /datacloud/connections
+POST   /datacloud/connections
+GET    /datacloud/connections/{id}
+PUT    /datacloud/connections/{id}
+DELETE /datacloud/connections/{id}
+
+# Schema & Query
+GET    /datacloud/connections/{id}/schema
+POST   /datacloud/connections/{id}/query
+POST   /datacloud/connections/{id}/generate-sql
+
+# Business Terms
+GET    /datacloud/connections/{id}/terms
+POST   /datacloud/connections/{id}/terms
+DELETE /datacloud/connections/{id}/terms/{term_id}
+
+# Permissions
+GET    /datacloud/connections/{id}/permissions
+POST   /datacloud/connections/{id}/permissions
+DELETE /datacloud/connections/{id}/permissions/{perm_id}
+```
+
+## Service Pattern
+
+```python
+# backend/app/services/datacloud_service.py
+from cryptography.fernet import Fernet
+from sqlalchemy import create_engine, inspect
+
+class DataCloudService:
+    def __init__(self):
+        self.fernet = Fernet(settings.ENCRYPTION_KEY)
+        self.mariadb_url = settings.MARIADB_URL
+    
+    async def get_schema_metadata(self, connection_id: str, refresh: bool = False):
+        """Get schema via SQLAlchemy reflection."""
+        conn_info = await self.get_connection_by_id(connection_id)
+        engine = self._create_engine(conn_info)
+        
+        inspector = inspect(engine)
+        tables = []
+        for table_name in inspector.get_table_names():
+            columns = inspector.get_columns(table_name)
+            tables.append({
+                "name": table_name,
+                "columns": [{"name": c["name"], "type": str(c["type"])} for c in columns]
+            })
+        return {"tables": tables}
+    
+    async def execute_query(self, connection_id: str, sql: str, limit: int = 100):
+        """Execute query with row limit."""
+        conn_info = await self.get_connection_by_id(connection_id)
+        engine = self._create_engine(conn_info)
+        
+        # Add LIMIT if not present
+        if "LIMIT" not in sql.upper():
+            sql = f"{sql} LIMIT {limit}"
+        
+        with engine.connect() as conn:
+            result = conn.execute(text(sql))
+            rows = [dict(row._mapping) for row in result]
+        
+        return {"rows": rows, "column_names": list(rows[0].keys()) if rows else []}
+
+datacloud_service = DataCloudService()
+```
+
+## Text-to-SQL
+
+```python
+async def generate_sql_from_natural_language(
+    self, connection_id: str, question: str
+) -> Dict[str, Any]:
+    """Generate SQL from natural language using LLM."""
+    schema = await self.get_schema_metadata(connection_id, refresh=False)
+    schema_context = self._format_schema_for_llm(schema)
+    
+    messages = [
+        {
+            "role": "system",
+            "content": f"Generate SQL for this schema:\n{schema_context}\n"
+                       "Only return the SQL query, nothing else."
+        },
+        {"role": "user", "content": question}
+    ]
+    
+    response = await litellm_service.chat_completion_sync(
+        model="qwen-235b",
+        messages=messages,
+        temperature=0.1
+    )
+    
+    sql_query = response['choices'][0]['message']['content'].strip()
+    return {"sql_query": sql_query}
+```
+
+## Encryption
+
+```python
+from cryptography.fernet import Fernet
+
+# Encrypt password before storage
+encrypted = self.fernet.encrypt(password.encode()).decode()
+
+# Decrypt when connecting
+password = self.fernet.decrypt(encrypted_password.encode()).decode()
+```
+
+## Frontend API Calls
+
+```typescript
+// Use Vite proxy
+const BACKEND_URL = '/api';
+
+// Fetch connections
+const response = await fetch(`${BACKEND_URL}/datacloud/connections`);
+
+// Execute query
+const result = await fetch(`${BACKEND_URL}/datacloud/connections/${id}/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sql: query, limit: 100 })
+});
+```
+
+## Vite Proxy Config
+
+```typescript
+// webui/vite.config.ts
+'/api/datacloud': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/datacloud/, '/datacloud')
+}
+```
+
+## Key Rules
+
+- Always encrypt passwords with Fernet
+- Add LIMIT to queries to prevent large result sets
+- Check column names match DB schema (avoid `access_level` vs `permission_level` issues)
+- Use SQLAlchemy inspector for schema reflection
+- Use `/api/` proxy from frontend, never direct `localhost:8000`
+
+---
+
+**Last Updated**: 2025-11-28

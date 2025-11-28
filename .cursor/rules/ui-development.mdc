@@ -1,491 +1,242 @@
 ---
-name: ui-development
-description: UI 개발 전용 규칙 (Skills 시스템 활용)
-globs: webui/src/**/*.svelte, webui/src/**/*.ts, webui/src/**/*.css
 alwaysApply: false
-version: 2.0
-lastUpdated: 2025-11-14
 ---
-
 # UI Development Rules
 
-Agent Portal의 UI 개발 시 반드시 따라야 하는 규칙입니다.
+Rules for SvelteKit and Tailwind CSS development in Agent Portal.
 
-## Overview
+## File Structure
 
-이 문서는 SvelteKit 기반 UI 개발의 모든 패턴과 규칙을 정의합니다. Skills 시스템을 활용한 자연어 기반 UI 검색, Glassmorphism 디자인, 무한 스크롤, 실시간 검색 등 현대적인 웹 개발 패턴을 포함합니다.
-
-## Examples
-
-### Example 1: 탭 스타일 변경 (Before/After)
-
-**Before** (구식 패턴):
-```svelte
-<!-- ❌ 사용하지 말 것 -->
-<button class="border-b-2 {activeTab === 'summary' ? 'border-blue-500' : 'border-transparent'}">
-  탭
-</button>
+```
+webui/src/
+├── routes/(app)/              # Page routes
+│   ├── +layout.svelte         # App layout
+│   ├── admin/                 # Admin pages
+│   │   ├── monitoring/
+│   │   ├── datacloud/
+│   │   ├── mcp/
+│   │   └── gateway/
+│   └── c/[id]/                # Chat pages
+├── lib/
+│   ├── components/            # Reusable components
+│   │   ├── icons/             # SVG icons
+│   │   ├── admin/             # Admin components
+│   │   ├── chat/              # Chat components
+│   │   └── common/            # Shared components
+│   └── monitoring/            # Monitoring API client
+└── app.css                    # Global styles
 ```
 
-**After** (모던 패턴):
-```svelte
-<!-- ✅ 권장 패턴 -->
-<button 
-  class="px-4 py-2 rounded-lg {activeTab === 'summary' ? 'bg-[#0072CE] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'} transition-all duration-200"
->
-  탭
-</button>
-```
-
-**학습**: border-b-2 대신 rounded-lg 버튼이 더 모던하고 사용자 친화적
-
-### Example 2: 무한 스크롤 구현
-
-**패턴**:
-```svelte
-<script lang="ts">
-  import { onMount, afterUpdate } from 'svelte';
-  
-  let articles = [];
-  let offset = 0;
-  let hasMore = true;
-  let loadingMore = false;
-  let observerTarget: HTMLElement;
-  let observer: IntersectionObserver;
-  
-  async function fetchMoreArticles() {
-    if (loadingMore || !hasMore) return;
-    loadingMore = true;
-    
-    try {
-      const response = await fetch(`/api/news/articles?offset=${offset}&limit=20`);
-      const data = await response.json();
-      
-      articles = [...articles, ...data.articles];
-      offset += data.articles.length;
-      hasMore = data.has_more;
-    } catch (error) {
-      console.error('Failed to fetch articles:', error);
-    } finally {
-      loadingMore = false;
-    }
-  }
-  
-  afterUpdate(() => {
-    if (observerTarget && !observer) {
-      observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore && !loadingMore) {
-            fetchMoreArticles();
-          }
-        },
-        { threshold: 0.1 }
-      );
-      observer.observe(observerTarget);
-    }
-  });
-  
-  onMount(() => {
-    fetchMoreArticles();
-    
-    return () => {
-      if (observer) observer.disconnect();
-    };
-  });
-</script>
-
-<!-- Article Grid -->
-{#each articles as article}
-  <div class="article-card">{article.title}</div>
-{/each}
-
-<!-- Intersection Observer Target -->
-<div bind:this={observerTarget} class="h-20"></div>
-
-{#if loadingMore}
-  <div class="loading">Loading...</div>
-{/if}
-```
-
-**핵심 포인트**:
-- `afterUpdate`에서 observer 설정 (DOM 준비 보장)
-- `IntersectionObserver`로 스크롤 감지
-- `threshold: 0.1`로 조기 로딩
-
-### Example 3: 실시간 검색 필터링
-
-**패턴**:
-```svelte
-<script lang="ts">
-  let searchQuery = '';
-  let allArticles = [];
-  let filteredArticles = [];
-  
-  function handleSearch() {
-    if (!searchQuery.trim()) {
-      filteredArticles = [];
-      return;
-    }
-    
-    const query = searchQuery.toLowerCase();
-    filteredArticles = allArticles.filter(article => 
-      article.title.toLowerCase().includes(query) ||
-      article.content.toLowerCase().includes(query) ||
-      article.tags?.some(tag => tag.toLowerCase().includes(query))
-    ).sort((a, b) => b.importance_score - a.importance_score);
-  }
-  
-  function clearSearch() {
-    searchQuery = '';
-    filteredArticles = [];
-  }
-</script>
-
-<input
-  type="text"
-  bind:value={searchQuery}
-  on:input={handleSearch}
-  placeholder="제목, 내용, 태그로 검색..."
-  class="w-full px-5 py-3 pl-12 pr-12 rounded-xl bg-white/60 dark:bg-gray-800/60"
-/>
-
-{#if searchQuery}
-  <button on:click={clearSearch}>Clear</button>
-{/if}
-```
-
-**핵심 포인트**:
-- `on:input`으로 실시간 필터링
-- 여러 필드 동시 검색 (title, content, tags)
-- 중요도 순 정렬
-
-## Skills 시스템 우선 활용 (ALWAYS)
-
-### 작업 시작 전
-
-**절대적인 순서**:
-1. `webui/.skills/ui-search-index.json` — 자연어 검색 인덱스로 경로 찾기
-2. `webui/.skills/ui-structure.json` — UI 구조 매핑으로 상세 정보 확인
-3. `webui/.skills/ui-patterns.json` — 스타일 패턴 확인
-4. `webui/.skills/ui-layouts.json` — 레이아웃 계층 구조 확인
-5. **직접 파일 검색은 마지막 수단으로만 사용**
-
-### 자연어 요청 처리 절차
-
-**사용자 요청 예시**: "monitoring 페이지의 탭 버튼 스타일 변경"
-
-**처리 단계**:
-```javascript
-// 1. 키워드 추출
-const keywords = ["monitoring", "탭", "버튼", "스타일"];
-
-// 2. 검색 인덱스 조회
-const searchIndex = require('./webui/.skills/ui-search-index.json');
-const routes = searchIndex.keywordIndex['monitoring'].routes;
-
-// 3. 구조 파일에서 상세 정보 확인
-const structure = require('./webui/.skills/ui-structure.json');
-const route = structure.routes.find(r => r.path.includes('monitoring'));
-
-// 4. 정확한 위치 파악
-// route.components, route.apis, route.keywords 활용
-
-// 5. 패턴 확인
-const patterns = require('./webui/.skills/ui-patterns.json');
-const tabPatterns = patterns.buttonPatterns.filter(p => p.type === 'tab');
-
-// 6. 수정 수행
-```
-
-## 대규모 UI 개편 작업
-
-### 전체 색상 변경
-
-**예시**: "전체 탭 스타일을 파란색에서 초록색으로 변경"
-
-**절차**:
-```bash
-# 1. 색상 사용 위치 확인
-cat webui/.skills/ui-patterns.json | jq '.colorFileMapping["border-blue-500"]'
-
-# 2. 라우트 페이지와 컴포넌트 모두 확인
-jq '.colorFileMapping["border-blue-500"].routes[]' webui/.skills/ui-patterns.json
-jq '.colorFileMapping["border-blue-500"].components[]' webui/.skills/ui-patterns.json
-
-# 3. 매핑 가이드 참조
-cat webui/.skills/ui-class-mapping-guide.json | jq '.colorMappings.blue'
-
-# 4. 스타일 매핑 적용
-# border-blue-500 → border-green-500
-# text-blue-600 → text-green-600
-# bg-blue-50 → bg-green-50
-# dark:border-blue-400 → dark:border-green-400
-
-# 5. 일괄 수정 (모든 파일에 적용)
-```
-
-### 레이아웃 구조 변경
-
-**예시**: "사이드바 메뉴를 2단계에서 3단계로 확장"
-
-**절차**:
-```bash
-# 1. 현재 구조 확인
-cat webui/.skills/ui-navigation.json | jq '.sidebar'
-
-# 2. 메뉴 컴포넌트 위치
-cat webui/.skills/ui-structure.json | jq '.routes[] | select(.path | contains("Sidebar"))'
-
-# 3. 스타일 패턴 확인
-cat webui/.skills/ui-patterns.json | jq '.buttonPatterns[] | select(.type == "menu")'
-
-# 4. 수정 수행
-```
-
-## UI 구조 변경 시 업데이트
-
-### 자동 업데이트 (권장)
+## Quick Reference (ui-summary.json)
 
 ```bash
-# 모든 분석 스크립트 실행
-./scripts/update-ui-skills.sh
+# Route mappings
+cat webui/.skills/ui-summary.json | jq '.routes'
+
+# Color palette
+cat webui/.skills/ui-summary.json | jq '.colors'
+
+# UI patterns
+cat webui/.skills/ui-summary.json | jq '.patterns'
 ```
 
-### 개별 분석 스크립트
+## On-Demand Detailed Queries
 
 ```bash
-# 기본 구조 분석
-node scripts/analyze-ui-structure.js
+# Find route by keyword
+jq '.routes[] | select(.routePath | contains("monitoring"))' \
+  webui/.skills/ui-structure.json
 
-# 스타일 패턴 분석
-node scripts/analyze-ui-patterns.js
-
-# 레이아웃 계층 분석
-node scripts/analyze-layout-hierarchy.js
-
-# 네비게이션 구조 분석
-node scripts/analyze-navigation-structure.js
-
-# 글로벌 스타일 분석
-node scripts/analyze-global-styles.js
-
-# 검색 인덱스 강화
-node scripts/enhance-search-index.js
+# Find button pattern
+jq '.buttonPatterns[] | select(.type == "tab")' \
+  webui/.skills/ui-patterns.json
 ```
 
-## SvelteKit 규칙
+## API Calls (CRITICAL)
 
-### 파일명 규칙
+```typescript
+// ❌ WRONG: Direct backend call (CORS issues)
+const response = await fetch('http://localhost:8000/api/...');
 
-- `+page.svelte` — 페이지 라우트
-- `+layout.svelte` — 레이아웃
-- `+server.ts` — 서버 API 엔드포인트
-- `+page.ts` — 페이지 로드 함수
+// ✅ CORRECT: Use Vite proxy
+const response = await fetch('/api/...');
+```
 
-### 라우트 그룹
+### Vite Proxy Config
 
-- `(app)/` — 메인 앱 라우트
-- `admin/` — 관리자 전용 페이지
-- `workspace/` — 작업 공간 페이지
-- `c/[id]/` — 동적 라우트 (채팅 상세)
+```typescript
+// webui/vite.config.ts
+'/api/datacloud': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/datacloud/, '/datacloud')
+},
+'/api/monitoring': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/monitoring/, '/monitoring')
+}
+```
 
-## Tailwind CSS 규칙
+## Color Palette
 
-### 반응형 디자인
+```css
+/* Primary: Samsung Blue */
+--primary: #0072CE;
+--primary-light: #4A9FE6;
 
-**브레이크포인트**:
-- 모바일: 기본 (< 640px)
-- 태블릿: `@md:` (≥ 768px)
-- 데스크톱: `@lg:` (≥ 1024px)
-- 와이드: `@2xl:` (≥ 1536px)
+/* Secondary */
+--secondary: #1428A0;
+--secondary-light: #3D5ECC;
 
-**컨테이너 쿼리**:
-- `@container` 사용 시 `@sm:`, `@md:`, `@lg:` 프리픽스 사용
+/* Accent */
+--accent: #00B4D8;
+--accent-light: #48CAE4;
+```
 
-### 다크 모드
+## Tailwind Patterns
 
-**조건부 클래스**:
+### Glassmorphism Card
+
 ```svelte
-<div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-  콘텐츠
+<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl 
+            border border-white/20 dark:border-gray-700/20 shadow-sm p-6">
+  <!-- Content -->
 </div>
 ```
 
-**테마 강제**:
-- 프로젝트는 라이트 테마를 기본으로 사용 (Samsung Life 브랜딩)
-- 다크 모드 클래스는 유지하되, 테마 강제 적용
+### Primary Button
 
-## 스타일 일관성
-
-### 버튼 스타일 패턴
-
-**기본 버튼**:
 ```svelte
-<button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200">
-  버튼
+<button class="px-4 py-2 rounded-lg bg-primary text-white 
+               hover:bg-primary/90 transition-all">
+  Button
 </button>
 ```
 
-**탭 버튼** (모던 스타일):
+### Secondary Button
+
 ```svelte
-<button 
-  class="px-4 py-2 rounded-lg {activeTab === 'summary' ? 'bg-[#0072CE] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'} transition-all duration-200"
->
-  탭
+<button class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 
+               hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
+  Button
 </button>
 ```
 
-**구식 탭 스타일 (사용 금지)**:
-```svelte
-<!-- ❌ 사용하지 말 것 -->
-<button class="border-b-2 {activeTab === 'summary' ? 'border-blue-500' : 'border-transparent'}">
-  탭
-</button>
-```
-
-### 카드 스타일 패턴
+### Modal
 
 ```svelte
-<div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-  카드 콘텐츠
+{#if showModal}
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 
+            flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl 
+              max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 
+                flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Title</h2>
+      <button on:click={() => showModal = false}>
+        <XMark class="w-5 h-5" />
+      </button>
+    </div>
+    
+    <!-- Content -->
+    <div class="p-6">...</div>
+    
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 
+                flex justify-end gap-3">
+      <button class="px-4 py-2 rounded-lg bg-gray-100">Cancel</button>
+      <button class="px-4 py-2 rounded-lg bg-primary text-white">Save</button>
+    </div>
+  </div>
 </div>
+{/if}
 ```
 
-### 입력 필드 스타일 패턴
+### Input Field
 
 ```svelte
 <input 
   type="text"
-  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0072CE]/20 focus:border-[#0072CE] transition-all"
-  placeholder="입력하세요"
+  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+         bg-white dark:bg-gray-900 text-gray-900 dark:text-white
+         focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+  placeholder="Enter value..."
 />
 ```
 
-## 성능 최적화
-
-### 이미지 최적화
+### Table
 
 ```svelte
-<img 
-  src="/path/to/image.webp" 
-  alt="설명"
-  loading="lazy"
-  width="500"
-  height="300"
-/>
+<table class="w-full">
+  <thead class="bg-gray-50 dark:bg-gray-900/50">
+    <tr>
+      <th class="px-4 py-3 text-left text-xs font-medium 
+                 text-gray-500 dark:text-gray-400 uppercase">
+        Column
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    {#each items as item}
+    <tr class="border-b border-gray-100 dark:border-gray-700/50 
+               hover:bg-gray-50/50 dark:hover:bg-gray-700/30">
+      <td class="px-4 py-3">{item.name}</td>
+    </tr>
+    {/each}
+  </tbody>
+</table>
 ```
 
-### 코드 스플리팅
-
-```javascript
-// 동적 import
-const HeavyComponent = lazy(() => import('./HeavyComponent.svelte'));
-```
-
-## 접근성 (a11y)
-
-### 필수 속성
+## Responsive Design
 
 ```svelte
-<!-- 버튼 -->
-<button 
-  type="button"
-  aria-label="닫기"
-  aria-pressed={isActive}
->
-  버튼
-</button>
+<!-- Mobile first, then breakpoints -->
+<div class="w-full md:w-1/2 lg:w-1/3">
+  <!-- Full width on mobile, half on tablet, third on desktop -->
+</div>
 
-<!-- 링크 -->
-<a href="/path" aria-current={isActive ? 'page' : undefined}>
-  링크
-</a>
-
-<!-- 이미지 -->
-<img src="/path" alt="의미 있는 설명" />
-```
-
-### 키보드 네비게이션
-
-```svelte
-<div
-  role="button"
-  tabindex="0"
-  on:keydown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      handleClick();
-    }
-  }}
-  on:click={handleClick}
->
-  클릭 가능 요소
+<!-- Grid responsive -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <!-- Cards -->
 </div>
 ```
 
-## 테스트 및 검증
+## Dark Mode
 
-### 작업 완료 후 반드시 확인
+Always support both modes:
 
-- [ ] 브라우저에서 실제 화면 확인
-- [ ] 다크/라이트 모드 전환 테스트
-- [ ] 모바일/태블릿/데스크톱 반응형 테스트 (Chrome DevTools)
-- [ ] 브라우저 콘솔 에러 확인
-- [ ] 접근성 체크 (Lighthouse)
-
-### Skills 시스템 업데이트
-
-```bash
-# UI 구조 변경 시 반드시 실행
-./scripts/update-ui-skills.sh
-
-# Git commit 전에 확인
-git diff webui/.skills/
+```svelte
+<div class="bg-white dark:bg-gray-800 
+            text-gray-900 dark:text-white
+            border-gray-200 dark:border-gray-700">
+</div>
 ```
 
-## 학습 내용 기록
+## Checklist
 
-### 작업 완료 후
+### Before Coding
+- [ ] Check ui-summary.json for existing patterns
+- [ ] Review similar pages for consistency
 
-```bash
-# UI 패턴 학습 내용 기록
-./scripts/record-learning.sh "UI" "탭 스타일은 border-b-2 대신 rounded-lg 버튼으로 변경하는 것이 더 모던함"
+### During Coding
+- [ ] Support dark/light mode
+- [ ] Use Vite proxy for API calls
+- [ ] Follow Glassmorphism patterns for admin
 
-# 또는 수동으로 기록
-echo "## $(date +%Y-%m-%d): 탭 스타일 변경
+### After Coding
+- [ ] Test in multiple viewports
+- [ ] Check console for errors
+- [ ] Test dark/light mode toggle
 
-**요청**: monitoring 페이지의 탭 버튼 스타일 변경
-**적용**: border-b-2 → rounded-lg 버튼
-**피드백**: ✅ 잘 잡았어 (모던한 디자인)
-**재사용**: 향후 모든 탭 네비게이션에 동일 패턴 적용
-" >> .cursor/learnings/ui-patterns.md
-```
+## Prohibited
 
-## 금지 사항
+- ❌ Direct `http://localhost:8000` API calls
+- ❌ Missing dark mode support
+- ❌ Inline styles (use Tailwind)
+- ❌ Hardcoded colors (use CSS variables)
 
-### ❌ 절대 하지 말 것
+---
 
-1. **Skills 시스템 무시**:
-   - ❌ UI 작업 시 직접 파일 검색부터 시작
-   - ✅ `ui-search-index.json`으로 정확한 경로 먼저 찾기
-
-2. **기존 패턴 무시**:
-   - ❌ 비슷한 컴포넌트인데 새로운 스타일로 구현
-   - ✅ `ui-patterns.json`에서 기존 패턴 재사용
-
-3. **반응형 디자인 미적용**:
-   - ❌ 데스크톱 화면만 고려
-   - ✅ 모바일, 태블릿, 데스크톱 모두 테스트
-
-4. **다크 모드 미고려**:
-   - ❌ 라이트 모드만 테스트
-   - ✅ 다크 모드 전환 테스트 (프로젝트는 라이트 테마 강제지만 스타일은 유지)
-
-5. **접근성 무시**:
-   - ❌ `aria-*` 속성 생략
-   - ✅ 접근성 속성 필수 포함
-
-## 참고 자료
-
-- [SvelteKit Documentation](https://kit.svelte.dev/docs)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-- [Svelte Accessibility](https://svelte.dev/docs/accessibility-warnings)
+**Last Updated**: 2025-11-28

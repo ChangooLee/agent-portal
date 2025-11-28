@@ -1,0 +1,313 @@
+---
+alwaysApply: false
+---
+# MCP Gateway Development Rules
+
+Rules for Model Context Protocol (MCP) server management.
+
+## Overview
+
+MCP Gateway enables:
+- MCP server registration and discovery
+- Streamable HTTP and SSE transport
+- Kong Gateway integration for security
+- Tool discovery and invocation
+
+## Architecture
+
+```
+MCP Client (Agent Builder)
+    ↓
+Kong Gateway (port 8002)
+    ↓ (key-auth, rate-limit)
+Backend BFF (MCP Registry)
+    ↓
+MCP Server (Streamable HTTP/SSE)
+```
+
+## File Locations
+
+```
+backend/app/services/mcp_registry.py   # MCP server registry
+backend/app/routes/mcp.py              # API endpoints
+webui/src/routes/(app)/admin/mcp/+page.svelte  # Admin UI
+config/kong.yml                        # Kong configuration
+```
+
+## Database Schema (MariaDB)
+
+```sql
+-- MCP Server Registry
+CREATE TABLE mcp_servers (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    url VARCHAR(512) NOT NULL,
+    transport ENUM('streamable-http', 'sse') DEFAULT 'streamable-http',
+    enabled BOOLEAN DEFAULT TRUE,
+    health_status VARCHAR(50),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+-- Discovered Tools
+CREATE TABLE mcp_tools (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    server_id VARCHAR(36),
+    name VARCHAR(255),
+    description TEXT,
+    input_schema JSON,
+    discovered_at TIMESTAMP,
+    FOREIGN KEY (server_id) REFERENCES mcp_servers(id)
+);
+```
+
+## API Endpoints
+
+```
+# Server Management
+GET    /mcp/servers
+POST   /mcp/servers
+GET    /mcp/servers/{id}
+PUT    /mcp/servers/{id}
+DELETE /mcp/servers/{id}
+
+# Tool Discovery
+GET    /mcp/servers/{id}/tools
+POST   /mcp/servers/{id}/discover
+
+# Tool Invocation
+POST   /mcp/servers/{id}/tools/{tool_name}/invoke
+```
+
+## MCP Registry Service
+
+```python
+# backend/app/services/mcp_registry.py
+import httpx
+
+class MCPRegistry:
+    def __init__(self):
+        self.mariadb_url = settings.MARIADB_URL
+    
+    async def discover_tools(self, server_id: str) -> List[Dict]:
+        """Discover available tools from MCP server."""
+        server = await self.get_server(server_id)
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # MCP protocol: list tools
+            response = await client.post(
+                f"{server['url']}/mcp/v1/tools/list",
+                json={}
+            )
+            response.raise_for_status()
+            tools = response.json().get('tools', [])
+        
+        # Store discovered tools
+        await self._save_tools(server_id, tools)
+        return tools
+    
+    async def invoke_tool(
+        self, 
+        server_id: str, 
+        tool_name: str, 
+        arguments: Dict
+    ) -> Dict:
+        """Invoke a tool on MCP server."""
+        server = await self.get_server(server_id)
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{server['url']}/mcp/v1/tools/call",
+                json={
+                    "name": tool_name,
+                    "arguments": arguments
+                }
+            )
+            response.raise_for_status()
+            return response.json()
+
+mcp_registry = MCPRegistry()
+```
+
+## Kong Integration
+
+### Kong Configuration
+
+```yaml
+# config/kong.yml
+services:
+  - name: mcp-proxy
+    url: http://backend:8000/mcp
+    routes:
+      - name: mcp-route
+        paths:
+          - /mcp
+        strip_path: false
+    plugins:
+      - name: key-auth
+        config:
+          key_names: ["X-API-Key"]
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+```
+
+### Setting Up Kong Service
+
+```python
+async def setup_mcp_server_in_kong(server: Dict) -> None:
+    """Register MCP server as Kong upstream."""
+    kong_admin_url = settings.KONG_ADMIN_URL
+    
+    async with httpx.AsyncClient() as client:
+        # Create service
+        await client.put(
+            f"{kong_admin_url}/services/mcp-{server['id']}",
+            json={
+                "name": f"mcp-{server['id']}",
+                "url": server['url']
+            }
+        )
+        
+        # Create route
+        await client.put(
+            f"{kong_admin_url}/services/mcp-{server['id']}/routes/mcp-{server['id']}-route",
+            json={
+                "paths": [f"/mcp/{server['id']}"],
+                "strip_path": True
+            }
+        )
+        
+        # Add key-auth plugin
+        await client.post(
+            f"{kong_admin_url}/services/mcp-{server['id']}/plugins",
+            json={"name": "key-auth"}
+        )
+```
+
+## Frontend API Calls
+
+```typescript
+// Use Vite proxy
+const MCP_URL = '/api/mcp';
+
+// List servers
+const response = await fetch(`${MCP_URL}/servers`);
+
+// Discover tools
+const tools = await fetch(`${MCP_URL}/servers/${id}/discover`, {
+    method: 'POST'
+});
+
+// Invoke tool
+const result = await fetch(`${MCP_URL}/servers/${id}/tools/${toolName}/invoke`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ arguments: args })
+});
+```
+
+## Vite Proxy Config
+
+```typescript
+// webui/vite.config.ts
+'/api/mcp': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/mcp/, '/mcp')
+}
+```
+
+## MCP Protocol
+
+### Tool List Request
+
+```json
+POST /mcp/v1/tools/list
+Content-Type: application/json
+
+{}
+```
+
+### Tool List Response
+
+```json
+{
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search the web",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string" }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+}
+```
+
+### Tool Call Request
+
+```json
+POST /mcp/v1/tools/call
+Content-Type: application/json
+
+{
+  "name": "search",
+  "arguments": {
+    "query": "AI news"
+  }
+}
+```
+
+## SSE Transport
+
+For SSE (Server-Sent Events) transport:
+
+```python
+async def stream_tool_call(server_url: str, tool_name: str, args: Dict):
+    """Stream tool execution via SSE."""
+    async with httpx.AsyncClient() as client:
+        async with client.stream(
+            'POST',
+            f"{server_url}/mcp/v1/tools/call",
+            json={"name": tool_name, "arguments": args},
+            headers={"Accept": "text/event-stream"}
+        ) as response:
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    yield json.loads(line[6:])
+```
+
+## Health Check
+
+```python
+async def check_server_health(server_id: str) -> str:
+    """Check MCP server health."""
+    server = await mcp_registry.get_server(server_id)
+    
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{server['url']}/health")
+            if response.status_code == 200:
+                return "healthy"
+            return "unhealthy"
+    except:
+        return "unreachable"
+```
+
+## Key Rules
+
+- Use Streamable HTTP as default transport
+- Set 60s timeout for tool invocations (may be slow)
+- Store discovered tools for quick reference
+- Integrate with Kong for API security
+- Use `/api/mcp/` proxy from frontend
+
+---
+
+**Last Updated**: 2025-11-28
