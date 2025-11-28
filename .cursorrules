@@ -1,14 +1,30 @@
-# Agent Portal — AI Behavioral Guidelines
+# Agent Portal — AI Coding Guidelines (Comprehensive)
 
-> **Purpose**: Define HOW the AI should behave, think, and communicate
+> **Purpose**: Complete guide for Cursor AI to work effectively on Agent Portal
 > **Philosophy**: Plan before code, test before complete, ask before breaking
-> **Version**: 5.0 (2025-11-28)
+> **Version**: 5.1 (2025-11-28)
 
 ---
 
-## 1. Core Principles (CRITICAL)
+## Table of Contents
 
-### 1.1 Security & Sensitive Data
+1. [Core Principles](#1-core-principles)
+2. [Decision Framework](#2-decision-framework)
+3. [Development Environment Management](#3-development-environment-management)
+4. [Service Reference](#4-service-reference)
+5. [Task Checklists](#5-task-checklists)
+6. [Troubleshooting](#6-troubleshooting)
+7. [Code Patterns](#7-code-patterns)
+8. [Learning System](#8-learning-system)
+9. [Prohibited Actions](#9-prohibited-actions)
+
+---
+
+## 1. Core Principles
+
+### 1.0 Sensitive Data Protection (CRITICAL)
+
+**Definition**: API keys, passwords, tokens, database credentials, PII
 
 **NEVER**:
 - Create `.env` backup files (`.env.bak`, `.env.backup`)
@@ -16,37 +32,38 @@
 - Expose API keys in logs or output
 - Hardcode credentials in code
 
-**ALWAYS**:
+**Required Confirmation** (in Korean):
+```
+⚠️ "이 작업은 민감 정보(.env, API 키 등)를 포함합니다. 진행할까요?"
+```
+
+**Safe Alternatives**:
 - Use `.env.example` with placeholders
 - Reference via `os.environ.get('API_KEY')`
 - Verify `.gitignore` includes sensitive files
-- Ask user before any operation involving sensitive data:
-  ```
-  ⚠️ "This operation involves sensitive data (.env, API keys). Proceed?"
-  ```
 
-### 1.2 Test Before Complete
+### 1.1 Test Before Complete (CRITICAL)
 
 **Completion Criteria**:
 - Code alone is NOT complete
 - MUST test before marking TODO as done
 
-**Testing Flow**:
+**Testing Procedure**:
+1. Backend API: `curl http://localhost:8000/api/...`
+2. Frontend: Browser check + console errors
+3. Integration: Full flow test
+
+**Correct Flow**:
 ```
 1. Write/modify code
 2. Restart service if needed
 3. Execute actual test (curl/browser)
 4. Verify result
-5. ✅ No errors → Mark complete
+5. ✅ No errors → Mark TODO complete
 6. ❌ Errors found → Fix and retry from step 2
 ```
 
-**Test Methods by Area**:
-- Backend API: `curl http://localhost:8000/...`
-- Frontend: Browser check + console errors
-- Integration: Full flow test
-
-### 1.3 Plan Before Code
+### 1.2 Plan Before Code (ALWAYS)
 
 **Before Coding (15-20 min)**:
 - Research best practices (web search)
@@ -57,14 +74,23 @@
 - Record learnings in `.cursor/learnings/`
 - Update documentation if significant
 
-### 1.4 Ask Before Major Changes
+### 1.3 Required Reference Documents
 
-**MUST ask user before**:
-- Modifying working code
-- Changing database schema
-- Deleting files
-- Restructuring project layout
-- Any operation that cannot be easily undone
+**Priority 1: Domain Rules (`.cursor/rules/*.mdc`)**
+- `backend-api.mdc` — FastAPI, services, error handling
+- `ui-development.mdc` — SvelteKit, Tailwind, patterns
+- `admin-screens.mdc` — Admin UI, Glassmorphism
+- `monitoring-development.mdc` — ClickHouse, OTEL traces
+- `datacloud-development.mdc` — Database connector, Text-to-SQL
+- `mcp-gateway.mdc` — MCP servers, Kong integration
+
+**Priority 2: Project Documents**
+- `CLAUDE.md` — Quick reference
+- `AGENTS.md` — Project structure, workflows
+
+**Priority 3: Skills (On-Demand)**
+- `webui/.skills/ui-summary.json` — Quick route/pattern lookup
+- Query Skills files with jq for detailed lookup
 
 ---
 
@@ -114,16 +140,568 @@
 
 ---
 
-## 3. Communication Rules
+## 3. Development Environment Management
 
-### 3.1 Language
+### 3.1 State Tracking System
+
+**State File Location**: `.cursor/state/services.json`
+
+**Required Before Restart/Build**:
+```bash
+# Always run health check first
+./scripts/health-check.sh
+
+# Check state file
+cat .cursor/state/services.json | jq '.services'
+
+# Check last successful build
+cat .cursor/state/services.json | jq '.last_successful_build'
+```
+
+### 3.2 Docker Compose Environment
+
+**Development Mode** (default):
+```bash
+# Use base compose
+docker compose up -d
+
+# Use development override (optional)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+**Production Mode**:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+### 3.3 Service Restart Procedure
+
+**Single Service Restart**:
+```bash
+# 1. Save current state
+./scripts/pre-build.sh backend
+
+# 2. Restart
+docker compose restart backend
+
+# 3. Verify status
+./scripts/health-check.sh
+```
+
+**Service Rebuild**:
+```bash
+# 1. Pre-build check (creates rollback point)
+./scripts/pre-build.sh backend
+
+# 2. Build (--no-cache for full rebuild)
+docker compose build --no-cache backend
+
+# 3. Start
+docker compose up -d backend
+
+# 4. Verify status
+./scripts/health-check.sh
+
+# 5. On success, state file auto-updates
+# (health-check.sh updates automatically)
+```
+
+### 3.4 Rollback Procedure
+
+On build failure:
+```bash
+# Check rollback points
+ls .cursor/state/rollback/
+
+# Restore previous state
+./scripts/rollback.sh <rollback_id>
+```
+
+---
+
+## 4. Service Reference
+
+### 4.1 Core Services
+
+| Service | Port | Role | Health Endpoint |
+|---------|------|------|-----------------|
+| backend | 8000 | FastAPI BFF | http://localhost:8000/docs |
+| webui | 3001 | Portal UI | http://localhost:3001 |
+| litellm | 4000 | LLM Proxy | http://localhost:4000/health |
+| clickhouse | 8124 | Monitoring Traces | http://localhost:8124/ping |
+| mariadb | 3306 | App Database | - |
+| kong | 8002 | API Gateway | http://localhost:8002/status |
+
+### 4.2 Support Services
+
+| Service | Port | Role |
+|---------|------|------|
+| redis | 6379 | Cache |
+| langfuse | 3003 | LLM Observability |
+| prometheus | 9090 | Metrics |
+| minio | 9000/9001 | Object Storage |
+| chromadb | 8001 | Vector DB |
+| otel-collector | 4317/4318 | Trace Collection |
+
+### 4.3 Service Log Commands
+
+```bash
+# Backend logs
+docker compose logs backend --tail=50 -f
+
+# WebUI logs
+docker compose logs webui --tail=50 -f
+
+# LiteLLM logs
+docker compose logs litellm --tail=50 -f
+
+# All service logs
+docker compose logs --tail=20 -f
+```
+
+### 4.4 Service-Specific Troubleshooting
+
+#### Backend (8000)
+
+**Issue: Container not starting**
+```bash
+# Check logs
+docker compose logs backend --tail=100
+
+# Common causes:
+# 1. Python dependency error → Check requirements.txt
+# 2. Missing env variable → Check .env
+# 3. Port conflict → lsof -i :8000
+```
+
+**Issue: API not responding**
+```bash
+# Check container status
+docker compose ps backend
+
+# Check FastAPI docs
+curl http://localhost:8000/docs
+
+# Check router registration
+docker compose exec backend cat /app/app/main.py | grep include_router
+```
+
+#### WebUI (3001)
+
+**Issue: Blank page**
+```bash
+# Check build errors
+docker compose logs webui --tail=100 | grep -i error
+
+# Check Vite server status
+curl http://localhost:3001
+
+# Check environment variables
+docker compose exec webui printenv | grep -i vite
+```
+
+#### ClickHouse (8124)
+
+**Issue: Query failed**
+```bash
+# Check connection
+curl http://localhost:8124/ping
+
+# List databases
+docker compose exec monitoring-clickhouse clickhouse-client \
+  --query "SHOW DATABASES"
+
+# Check table structure
+docker compose exec monitoring-clickhouse clickhouse-client \
+  --query "DESCRIBE otel_2.otel_traces"
+```
+
+---
+
+## 5. Task Checklists
+
+### 5.1 UI Development
+
+**Before Starting**:
+- [ ] Check route path in `ui-summary.json`
+- [ ] Review existing patterns in target file
+- [ ] Confirm dark/light mode support required
+
+**During Development**:
+- [ ] Use Glassmorphism pattern for Admin pages
+- [ ] Support dark/light mode
+- [ ] Test responsive design
+- [ ] Use `/api/*` proxy for API calls
+
+**After Completion**:
+- [ ] Browser test on multiple viewports
+- [ ] Check console errors
+- [ ] Test dark/light mode toggle
+
+### 5.2 Backend API Development
+
+**Before Starting**:
+- [ ] Check existing service patterns in `backend/app/services/`
+- [ ] Review similar endpoints
+- [ ] Plan error handling
+
+**During Development**:
+- [ ] Use `async def`
+- [ ] Add type hints
+- [ ] Set timeout for external calls (default 30s)
+- [ ] Handle errors with HTTPException
+
+**After Completion**:
+- [ ] Test with curl
+- [ ] Check OpenAPI docs at `/docs`
+- [ ] Test error cases
+
+### 5.3 Service Restart
+
+**Before Starting**:
+- [ ] Run `./scripts/health-check.sh`
+- [ ] Verify current status
+
+**Execution**:
+- [ ] Run `./scripts/pre-build.sh <service>`
+- [ ] Execute build/restart command
+- [ ] Verify with `./scripts/health-check.sh`
+
+**After Completion**:
+- [ ] Confirm service running normally
+- [ ] Check no errors in logs
+
+### 5.4 Database Changes
+
+**Before Starting**:
+- [ ] Check current schema (DESCRIBE)
+- [ ] Confirm if backup needed
+
+**MariaDB Changes**:
+```bash
+# Check schema
+docker compose exec mariadb mariadb -uroot -prootpass agent_portal \
+  -e "DESCRIBE table_name;"
+
+# Modify schema
+docker compose exec mariadb mariadb -uroot -prootpass agent_portal \
+  -e "ALTER TABLE table_name ADD column_name VARCHAR(255);"
+```
+
+**ClickHouse Changes**:
+```bash
+# Check schema
+docker compose exec monitoring-clickhouse clickhouse-client \
+  --query "DESCRIBE otel_2.table_name"
+```
+
+---
+
+## 6. Troubleshooting
+
+### 6.1 Port Conflict
+
+```bash
+# Check port usage
+lsof -i :8000
+lsof -i :3001
+
+# Kill process
+kill -9 <PID>
+
+# Or use different port
+docker compose down
+# Change port in docker-compose.yml
+docker compose up -d
+```
+
+### 6.2 Container Start Failure
+
+```bash
+# Check status
+docker compose ps
+
+# Check logs
+docker compose logs <service> --tail=100
+
+# Force recreate
+docker compose up -d --force-recreate <service>
+
+# Full rebuild
+docker compose build --no-cache <service>
+docker compose up -d <service>
+```
+
+### 6.3 Database Connection Error
+
+**MariaDB**:
+```bash
+# Check container status
+docker compose ps mariadb
+
+# Test connection
+docker compose exec mariadb mariadb -uroot -prootpass -e "SELECT 1;"
+
+# Check logs
+docker compose logs mariadb --tail=50
+```
+
+**ClickHouse**:
+```bash
+# Test connection
+curl http://localhost:8124/ping
+
+# Test query
+curl "http://localhost:8124/?query=SELECT%201"
+
+# Check logs
+docker compose logs monitoring-clickhouse --tail=50
+```
+
+### 6.4 CORS Error
+
+When CORS error occurs in frontend:
+
+```javascript
+// ❌ WRONG: Direct call
+fetch('http://localhost:8000/api/...')
+
+// ✅ CORRECT: Use Vite proxy
+fetch('/api/...')
+```
+
+Check Vite proxy config:
+```typescript
+// webui/vite.config.ts
+'/api/datacloud': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/datacloud/, '/datacloud')
+}
+```
+
+### 6.5 Router Not Registered
+
+```python
+# Check backend/app/main.py
+# Verify router is registered
+app.include_router(example_router, prefix="/example")
+
+# Check container file
+docker compose exec backend cat /app/app/main.py | grep include_router
+
+# If rebuild needed
+docker compose build --no-cache backend
+docker compose up -d backend
+```
+
+### 6.6 ClickHouse Query Error
+
+**project_id not found**:
+```sql
+-- ❌ WRONG: project_id is NOT a direct column
+WHERE project_id = '...'
+
+-- ✅ CORRECT: Access from ResourceAttributes map
+WHERE ResourceAttributes['project_id'] = '...'
+```
+
+**Duration unit**:
+```sql
+-- ClickHouse stores nanoseconds
+-- Convert to milliseconds: Duration / 1000000
+SELECT Duration / 1000000 as duration_ms FROM otel_traces
+```
+
+---
+
+## 7. Code Patterns
+
+### 7.1 Backend Service (Singleton)
+
+```python
+# backend/app/services/example_service.py
+from typing import Dict, Any
+import httpx
+from fastapi import HTTPException
+
+class ExampleService:
+    def __init__(self):
+        self.base_url = "http://service:8080"
+    
+    async def get_data(self, id: str) -> Dict[str, Any]:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(f"{self.base_url}/data/{id}")
+                response.raise_for_status()
+                return response.json()
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=504, detail="External API timeout")
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+
+# Singleton instance
+example_service = ExampleService()
+```
+
+### 7.2 Error Handling
+
+```python
+try:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        return response.json()
+except httpx.TimeoutException:
+    raise HTTPException(status_code=504, detail="External API timeout")
+except httpx.HTTPStatusError as e:
+    raise HTTPException(status_code=e.response.status_code, detail=str(e))
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+```
+
+### 7.3 Glassmorphism Card
+
+```svelte
+<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl 
+            border border-white/20 dark:border-gray-700/20 shadow-sm p-6">
+  <!-- Content -->
+</div>
+```
+
+### 7.4 Modal
+
+```svelte
+{#if showModal}
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 
+            flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl 
+              max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 
+                flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Title</h2>
+      <button on:click={() => showModal = false} 
+              class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <XMark class="w-5 h-5" />
+      </button>
+    </div>
+    
+    <!-- Content -->
+    <div class="p-6">...</div>
+    
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 
+                flex justify-end gap-3">
+      <button class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+        Cancel
+      </button>
+      <button class="px-4 py-2 rounded-lg bg-primary text-white">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+{/if}
+```
+
+### 7.5 API Call (Frontend)
+
+```typescript
+// ✅ Use Vite proxy
+const response = await fetch('/api/datacloud/connections');
+
+// API error handling
+if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'API call failed');
+}
+
+const data = await response.json();
+```
+
+---
+
+## 8. Learning System
+
+### 8.1 Record Learnings
+
+After significant work, record in `.cursor/learnings/`:
+- `api-patterns.md` — Backend patterns
+- `ui-patterns.md` — Frontend patterns
+- `bug-fixes.md` — Issues and solutions
+- `preferences.md` — User preferences
+
+### 8.2 Recording Format
+
+```markdown
+## YYYY-MM-DD: Title
+
+**Request**: What was asked
+**Applied**: What was implemented
+**Feedback**: ✅ Approved / ❌ Rejected
+**Reuse**: How to apply in future
+```
+
+---
+
+## 9. Prohibited Actions
+
+### 9.1 Ignoring Existing Patterns
+```
+❌ Creating new styling approach when similar component exists
+✅ Reusing established patterns from codebase
+```
+
+### 9.2 Skipping Tests
+```
+❌ Marking "complete" without running tests
+✅ Actually executing and verifying functionality
+```
+
+### 9.3 Missing Error Handling
+```
+❌ External calls without try/except
+✅ Timeout handling, HTTP error handling, exception wrapping
+```
+
+### 9.4 Direct API Calls in Frontend
+```
+❌ fetch('http://localhost:8000/...')
+✅ fetch('/api/...')  // Via Vite proxy
+```
+
+### 9.5 Skipping State Check Before Restart
+```
+❌ Immediately running docker restart
+✅ Running ./scripts/health-check.sh first
+```
+
+### 9.6 Hardcoding
+```
+❌ Regex patterns with hardcoded values
+❌ Hardcoded prompts in LLM calls
+✅ Configuration-driven, parameterized approaches
+```
+
+### 9.7 Infinite New Code Creation
+```
+❌ Creating new functions when similar exists
+✅ Maximally reusing existing code
+```
+
+---
+
+## 10. Communication
+
+### 10.1 Language
 
 - **User Interaction**: Korean (한국어)
 - **Code Comments**: English
 - **Documentation**: English (for LLM context efficiency)
-- **Commit Messages**: English with Korean description if needed
+- **Commit Messages**: English
 
-### 3.2 Response Style
+### 10.2 Response Style
 
 **DO**:
 - Be concise, no unnecessary explanation
@@ -137,7 +715,7 @@
 - Over-explain code changes
 - Use emojis unless user does
 
-### 3.3 Critical Analysis Mindset
+### 10.3 Critical Analysis Mindset
 
 **ALWAYS**:
 - Analyze results critically, not positively
@@ -153,219 +731,20 @@
 
 ---
 
-## 4. Code Style Guidelines
+## 11. User Preferences (Learned)
 
-### 4.1 Backend (FastAPI)
-
-**Required**:
-- `async def` for all endpoint handlers
-- Type hints for all parameters and returns
-- 30s timeout for external HTTP calls
-- HTTPException for all error responses
-
-**Pattern**:
-```python
-async def endpoint(param: str) -> Dict[str, Any]:
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            return response.json()
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Timeout")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code)
-```
-
-### 4.2 Frontend (Svelte + Tailwind)
-
-**Required**:
-- Dark/light mode support for all components
-- Responsive design
-- API calls via `/api/*` proxy (never direct localhost)
-
-**Admin UI Pattern**:
-```svelte
-<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl 
-            border border-white/20 dark:border-gray-700/20 shadow-sm p-6">
-  <!-- Glassmorphism card -->
-</div>
-```
-
-### 4.3 Error Handling
-
-**Backend**: Always catch and wrap errors
-```python
-try:
-    # operation
-except SpecificError as e:
-    raise HTTPException(status_code=XXX, detail=str(e))
-except Exception as e:
-    raise HTTPException(status_code=500, detail=f"Unexpected: {e}")
-```
-
-**Frontend**: Check response.ok
-```typescript
-const response = await fetch('/api/...');
-if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Request failed');
-}
-```
-
----
-
-## 5. Workflow Rules
-
-### 5.1 Before Service Restart/Rebuild
-
-**MUST run first**:
-```bash
-./scripts/health-check.sh
-```
-
-**Check state**:
-```bash
-cat .cursor/state/services.json | jq '.services'
-```
-
-### 5.2 Build/Restart Procedure
-
-```bash
-# 1. Save state (creates rollback point)
-./scripts/pre-build.sh <service>
-
-# 2. Rebuild
-docker compose build --no-cache <service>
-
-# 3. Start
-docker compose up -d <service>
-
-# 4. Verify
-./scripts/health-check.sh
-```
-
-### 5.3 After Code Changes
-
-1. If backend code changed → Rebuild container
-2. If frontend code changed → Hot reload or rebuild
-3. Always verify with actual test
-4. Check logs for errors: `docker compose logs <service> --tail=50`
-
----
-
-## 6. Prohibited Actions
-
-### 6.1 Ignoring Existing Patterns
-```
-❌ Creating new styling approach when similar component exists
-✅ Reusing established patterns from codebase
-```
-
-### 6.2 Skipping Tests
-```
-❌ Marking "complete" without running tests
-✅ Actually executing and verifying functionality
-```
-
-### 6.3 Missing Error Handling
-```
-❌ External calls without try/except
-✅ Timeout handling, HTTP error handling, exception wrapping
-```
-
-### 6.4 Direct API Calls in Frontend
-```
-❌ fetch('http://localhost:8000/...')
-✅ fetch('/api/...')  // Via Vite proxy
-```
-
-### 6.5 Skipping State Check Before Restart
-```
-❌ Immediately running docker restart
-✅ Running ./scripts/health-check.sh first
-```
-
-### 6.6 Hardcoding
-```
-❌ Regex patterns with hardcoded values
-❌ Hardcoded prompts in LLM calls
-✅ Configuration-driven, parameterized approaches
-```
-
-### 6.7 Infinite New Code Creation
-```
-❌ Creating new functions when similar exists
-✅ Maximally reusing existing code
-```
-
----
-
-## 7. Reference Documents
-
-### 7.1 Priority Order
-
-1. **Domain Rules** (`.cursor/rules/*.mdc`):
-   - `backend-api.mdc` — FastAPI patterns
-   - `ui-development.mdc` — Svelte/Tailwind
-   - `admin-screens.mdc` — Admin UI patterns
-   - `monitoring-development.mdc` — ClickHouse, OTEL
-   - `datacloud-development.mdc` — Database connector
-   - `mcp-gateway.mdc` — MCP, Kong
-
-2. **Project Reference**:
-   - `AGENTS.md` — Architecture, services, troubleshooting
-   - `CLAUDE.md` — Quick reference
-
-3. **On-Demand**:
-   - `webui/.skills/ui-summary.json` — Route/pattern lookup
-
-### 7.2 When to Consult
-
-- **Before UI work**: Check `ui-summary.json` for routes
-- **Before API work**: Check existing services in `backend/app/services/`
-- **For ClickHouse**: MUST read `monitoring-development.mdc`
-- **For Data Cloud**: MUST read `datacloud-development.mdc`
-
----
-
-## 8. Learning System
-
-### 8.1 Record Learnings
-
-After significant work, record in `.cursor/learnings/`:
-- `api-patterns.md` — Backend patterns discovered
-- `ui-patterns.md` — Frontend patterns discovered  
-- `bug-fixes.md` — Issues and solutions
-- `preferences.md` — User preferences learned
-
-### 8.2 Recording Format
-
-```markdown
-## YYYY-MM-DD: Title
-
-**Request**: What was asked
-**Applied**: What was implemented
-**Feedback**: ✅ Approved / ❌ Rejected
-**Reuse**: How to apply in future
-```
-
----
-
-## 9. User Preferences (Learned)
-
-### 9.1 Communication
+### 11.1 Communication
 - Communicate in Korean
 - Be concise, no unnecessary explanation
 - Report only what changed
 
-### 9.2 Development
+### 11.2 Development
 - Critical analysis over positive interpretation
 - Test before marking complete
 - Ask before modifying working code
 - Think deeply before suggesting changes
 
-### 9.3 Prohibited
+### 11.3 Prohibited
 - Hardcoding values
 - Creating infinite new functions
 - Skipping tests
@@ -373,5 +752,5 @@ After significant work, record in `.cursor/learnings/`:
 
 ---
 
-**Last Updated**: 2025-11-28
-**Version**: 5.0 (AI Behavioral Guidelines)
+**Last Updated**: 2025-11-28  
+**Version**: 5.1 (Comprehensive, English)
