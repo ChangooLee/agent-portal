@@ -24,6 +24,9 @@ model_list:
 
 # General Settings
 general_settings:
+  # Enable DB-based model management (for /model/new, /model/update, /model/delete)
+  store_model_in_db: true
+  
   # Langfuse + OpenTelemetry Integration
   set_verbose: true
   otel: true

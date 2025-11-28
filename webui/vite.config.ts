@@ -92,6 +92,12 @@ export default defineConfig({
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true
 			},
+			// LLM Management API → FastAPI BFF (포트 8000)
+			'/api/llm': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/llm/, '/llm')
+			},
 			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
 		// ⚠️ CRITICAL: Docker 환경에서는 localhost (컨테이너 내부 Uvicorn)
 			'/api': {
