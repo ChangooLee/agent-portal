@@ -266,10 +266,10 @@
 	                dark:border-gray-700/30 dark:bg-gray-900/60">
 		<!-- Gradient overlay -->
 		<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 
-		            to-accent/20 opacity-60" />
+		            to-accent/20 opacity-60"></div>
 		<!-- Glow effect -->
 		<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full 
-		            bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
+		            bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl"></div>
 		
 		<div class="relative flex flex-col gap-5">
 			<!-- Header Row: Badge + Title + Action Button -->
@@ -452,6 +452,8 @@
 			</div>
 		</div>
 	{/if}
+</div>
+
 </div>
 
 <!-- Add Model Modal -->
@@ -695,7 +697,3 @@
 	</div>
 </div>
 {/if}
-
-	</div>
-</div>
-</div>
