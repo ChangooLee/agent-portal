@@ -1,0 +1,81 @@
+# Production Override Docker Compose
+# Extends docker-compose.yml with production-specific settings
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+#
+# Shortcut (create alias in .bashrc/.zshrc):
+#   alias dcprod='docker compose -f docker-compose.yml -f docker-compose.prod.yml'
+
+services:
+  # Backend - Production settings
+  backend:
+    restart: unless-stopped
+    environment:
+      - DEBUG=false
+      - LOG_LEVEL=info
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # WebUI - Production settings
+  webui:
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # LiteLLM - Production settings
+  litellm:
+    restart: unless-stopped
+    environment:
+      - LITELLM_LOG=INFO
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # MariaDB - Production settings
+  mariadb:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # Redis - Production settings
+  redis:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Kong - Production settings
+  kong:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+

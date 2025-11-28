@@ -49,6 +49,10 @@ logs/
 # Docker
 docker-compose.override.yml
 
+# Cursor state files (개발 환경 상태 - 로컬 전용)
+.cursor/state/
+!.cursor/state/.gitkeep
+
 # Temporary files
 *.tmp
 *.temp

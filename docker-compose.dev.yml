@@ -1,64 +1,43 @@
-# 개발 모드 오버라이드 설정
-# 사용법: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up webui
-
-version: "3.8"
+# Development Override Docker Compose
+# Extends docker-compose.yml with development-specific settings
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml build backend
+#
+# Shortcut (create alias in .bashrc/.zshrc):
+#   alias dcdev='docker compose -f docker-compose.yml -f docker-compose.dev.yml'
 
 services:
-  # Portal Shell (Open-WebUI fork) - 개발 모드
+  # Backend - Development overrides
+  backend:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=debug
+    # Uncomment for live code reload:
+    # volumes:
+    #   - ./backend/app:/app/app
+
+  # WebUI - Development overrides  
   webui:
-    build:
-      context: ./webui
-      dockerfile: Dockerfile.dev
-    # 메모리 제한 설정 (Vite + Svelte 컴파일용)
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          memory: 2G
-    volumes:
-      # 소스 코드 실시간 마운트 (Hot reload)
-      - ./webui:/app
-      # node_modules는 볼륨으로 분리하여 성능 최적화
-      - webui_node_modules:/app/node_modules
-      # 백엔드 데이터 볼륨
-      - webui_backend_data:/app/backend/data
-      # 기존 볼륨 유지
-      - ./webui/plugins:/app/plugins
-      - ./webui/overrides:/app/overrides
+    ports:
+      - "3001:3001"    # Dev server port
     environment:
       - NODE_ENV=development
-      - PORT=8080
-      - DOCKER_ENV=true  # Docker 환경임을 명시 (Vite 프록시 설정용)
-      # RAG 기능 비활성화 (빠른 기동)
-      - RAG_EMBEDDING_ENGINE=openai
-      - RAG_EMBEDDING_MODEL=text-embedding-3-small
-      - ENABLE_RAG_WEB_SEARCH=false
-      - ENABLE_RAG_HYBRID_SEARCH=false
-      # Node.js 메모리 제한 증가 (Vite 빌드 시 OOM 방지)
-      - NODE_OPTIONS=--max-old-space-size=4096
-    ports:
-      - "3001:3001"  # Vite dev server 포트 (프론트엔드) - 3000 포트 충돌로 3001 사용
-      - "8080:8080"  # 백엔드 API 포트 (내부용)
-    # 개발 모드에서는 자동 재시작 비활성화 (OOM 시 무한 재시작 방지)
-    restart: "no"
-    # dev-start.sh가 프론트엔드와 백엔드를 함께 실행
-    command: bash dev-start.sh
-    # 개발 모드에서는 depends_on 제거하여 독립 실행 가능
-    # depends_on:
-    #   - backend
+    # Uncomment for live code reload:
+    # volumes:
+    #   - ./webui/src:/app/src
 
-  # Backend BFF - 개발 모드
-  backend:
-    volumes:
-      # 개발 중 로컬 파일 직접 마운트 (이미 설정됨)
-      - ./backend/app:/app/app:ro
-    # 개발 모드 실행은 start.sh에서 dev.sh를 호출하도록 수정 필요
-    # 또는 command로 직접 오버라이드
+  # LiteLLM - Development overrides
+  litellm:
+    environment:
+      - LITELLM_LOG=DEBUG
 
-volumes:
-  webui_node_modules:
-    driver: local
-  webui_backend_data:
-    driver: local
-
+# Development-only volumes (for live reload)
+# volumes:
+#   backend_code:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       device: ${PWD}/backend/app
+#       o: bind
