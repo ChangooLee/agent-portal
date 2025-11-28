@@ -72,3 +72,15 @@ agentops-reference/
 *.bak
 *.backup
 *.old
+
+# Server-specific configuration (서버 환경 전용 - git 제외)
+docker-compose.server.yml
+.env.server
+start-server.sh
+
+
+# Data directory (local data - git 제외)
+data/*
+!data/.gitkeep
+!data/news/.gitkeep
+

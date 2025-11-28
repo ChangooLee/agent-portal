@@ -68,8 +68,8 @@ async def proxy_kong_admin(
             for header in headers_to_remove:
                 response_headers.pop(header, None)
             
-            # Allow iframe embedding from same origin
-            response_headers["Content-Security-Policy"] = "frame-ancestors 'self' http://localhost:3001"
+            # Allow iframe embedding from any origin (for development)
+            response_headers["Content-Security-Policy"] = "frame-ancestors *"
             
             # Handle cookies - make them HttpOnly and SameSite=Lax for security
             if "set-cookie" in response_headers:

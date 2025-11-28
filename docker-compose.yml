@@ -36,9 +36,9 @@ services:
       - CLICKHOUSE_DATABASE=otel_2
       # Data Cloud 암호화 키 (Fernet)
       - DATACLOUD_ENCRYPTION_KEY=LpbushjAoV7u_7Z3tk5TzqsTra79yKjMAanPR0DWz9U=
-    # volumes:
-      # News data volume mount (disabled for local dev)
-      # - /home3/llmops/mcp/mcp-naver-news/src/data:/data/news:ro
+    volumes:
+      # News data volume mount (서버 환경: NEWS_DATA_PATH 환경변수 설정 필요)
+      - ${NEWS_DATA_PATH:-./data/news}:/data/news:ro
     depends_on:
       - mariadb
       - chromadb
