@@ -889,7 +889,7 @@ class DataCloudService:
 ### 생성할 SQL 쿼리 (SELECT만 가능, LIMIT 100 포함)"""
 
         # 5. LiteLLM 호출 (기본 모델: gpt-4o-mini)
-        default_model = os.environ.get('TEXT_TO_SQL_MODEL', 'qwen-235b')
+        default_model = os.environ.get('TEXT_TO_SQL_MODEL', 'gpt-4o-mini')
         try:
             result = await litellm_service.chat_completion_sync(
                 model=default_model,
