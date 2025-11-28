@@ -214,8 +214,85 @@ On build failure:
 ls .cursor/state/rollback/
 
 # Restore previous state
-./scripts/rollback.sh <rollback_id>
+./scripts/rollback.sh latest
+# Or specify a rollback point
+./scripts/rollback.sh 2
 ```
+
+### 3.5 Service Dependency Order (CRITICAL)
+
+**Startup Order** (must follow when restarting):
+
+```
+Layer 1 (Infrastructure) — No dependencies
+├── mariadb (3306)
+└── redis (6379)
+         ↓ wait 10s
+Layer 2 (Core Services) — Depends on Layer 1
+├── litellm (4000)
+├── litellm-postgres (5433)
+├── kong (8002)
+└── kong-db (5432)
+         ↓ wait 10s
+Layer 3 (Observability) — Depends on Layer 1-2
+├── otel-collector (4317/4318)
+├── monitoring-clickhouse (8124)
+├── prometheus (9090)
+├── langfuse (3003)
+└── langfuse-postgres (5434)
+         ↓ wait 10s
+Layer 4 (Application) — Depends on Layer 1-3
+├── backend (8000)
+├── chromadb (8001)
+└── minio (9000/9001)
+         ↓ wait 5s
+Layer 5 (Frontend) — Depends on everything
+└── webui (3001)
+```
+
+**Safe Restart Script**:
+```bash
+# Restart single service (handles dependencies)
+./scripts/restart-safe.sh backend
+
+# Full restart in correct order
+./scripts/restart-safe.sh
+```
+
+### 3.6 Dev/Prod Mode Switching
+
+**Check Current Mode**:
+```bash
+cat .cursor/state/services.json | jq '.mode'
+```
+
+**Switch to Development**:
+```bash
+./scripts/switch-mode.sh dev
+```
+
+**Switch to Production**:
+```bash
+./scripts/switch-mode.sh prod
+```
+
+**Mode Differences**:
+
+| Aspect | Development | Production |
+|--------|-------------|------------|
+| Hot Reload | ✅ Enabled | ❌ Disabled |
+| Volume Mounts | ✅ Code mounted | ❌ Built into image |
+| Debug Ports | ✅ Exposed | ❌ Hidden |
+| Image Build | On-demand | Optimized |
+| NODE_ENV | development | production |
+| FASTAPI_ENV | development | production |
+
+**Pre-Switch Checklist** (automated in switch-mode.sh):
+1. Docker running
+2. Compose files present
+3. Environment file (.env) exists
+4. Disk space > 1GB
+5. Critical ports available
 
 ---
 
