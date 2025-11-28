@@ -93,15 +93,16 @@
 		auth_config: {} as any
 	};
 
-	// Stats
+	// Stats - reactive to update when servers change
 	$: totalServers = servers.length;
 	$: enabledServers = servers.filter((s) => s.enabled).length;
 	$: healthyServers = servers.filter((s) => s.health_status === 'healthy').length;
 
-	const heroStats = [
-		{ label: '등록된 서버', value: () => `${totalServers}개`, hint: 'MCP 서버 총 개수' },
-		{ label: '활성화', value: () => `${enabledServers}개`, hint: '현재 활성화된 서버' },
-		{ label: '정상 상태', value: () => `${healthyServers}개`, hint: '헬스체크 통과' }
+	// heroStats must be reactive to reflect updated server counts
+	$: heroStats = [
+		{ label: '등록된 서버', value: totalServers, hint: 'MCP 서버 총 개수' },
+		{ label: '활성화', value: enabledServers, hint: '현재 활성화된 서버' },
+		{ label: '정상 상태', value: healthyServers, hint: '헬스체크 통과' }
 	];
 
 	onMount(async () => {
@@ -450,7 +451,7 @@
 									{stat.label}
 								</div>
 								<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-									{stat.value()}
+									{stat.value}개
 								</div>
 								<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">{stat.hint}</div>
 							</div>
