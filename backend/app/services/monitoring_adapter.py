@@ -187,7 +187,7 @@ class MonitoringAdapter:
             StatusMessage as status_message,
             SpanAttributes as span_attributes,
             ResourceAttributes as resource_attributes,
-            project_id
+            ResourceAttributes['project_id'] as project_id
         FROM {CLICKHOUSE_DATABASE}.otel_traces
         WHERE TraceId = '{trace_id}'
         ORDER BY Timestamp ASC
@@ -716,7 +716,7 @@ class MonitoringAdapter:
         - Output Guardrail: 출력 검증 (유해 콘텐츠 필터링, 형식 검증)
         - 가드레일 차단 시 StatusCode = 'Error' 또는 특정 패턴으로 감지
         """
-        where_clause = f"project_id = '{project_id}'"
+        where_clause = f"ResourceAttributes['project_id'] = '{project_id}'"
         if trace_id:
             where_clause += f" AND TraceId = '{trace_id}'"
         if start_time and end_time:
