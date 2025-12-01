@@ -14,14 +14,14 @@ services:
     environment:
       - DEBUG=true
       - LOG_LEVEL=debug
-      # External ClickHouse connection (for monitoring)
-      - CLICKHOUSE_HOST=host.docker.internal
-      - CLICKHOUSE_HTTP_PORT=8125  # Changed from 8124 (Cursor IDE conflict)
+      # ClickHouse connection (use Docker internal network to avoid Cursor port conflicts)
+      - CLICKHOUSE_HOST=monitoring-clickhouse
+      - CLICKHOUSE_HTTP_PORT=8123  # Use internal port (external 8125 may conflict with Cursor)
       - CLICKHOUSE_USER=default
       - CLICKHOUSE_PASSWORD=password
       - CLICKHOUSE_DATABASE=otel_2
-      # External LiteLLM connection
-      - LITELLM_HOST=http://host.docker.internal:4000
+      # LiteLLM connection (use Docker internal network to avoid Cursor port conflicts)
+      - LITELLM_HOST=http://litellm:4000
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -41,8 +41,8 @@ services:
       - NODE_ENV=development
       - DOCKER_ENV=true
       - VITE_HMR_PORT=3009  # External port for HMR WebSocket
-      # External LiteLLM connection
-      - OPENAI_API_BASE_URLS=http://host.docker.internal:4000/v1
+      # LiteLLM connection (use Docker internal network to avoid Cursor port conflicts)
+      - OPENAI_API_BASE_URLS=http://litellm:4000/v1
       - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
       - ENABLE_OPENAI_API=true
     extra_hosts:
