@@ -28,7 +28,7 @@ echo ""
 # LiteLLM 헬스체크
 echo -e "${YELLOW}1. LiteLLM 헬스체크...${NC}"
 for i in {1..30}; do
-    if curl -s -f "${LITELLM_HOST}/health" > /dev/null 2>&1; then
+    if curl -s -f "${LITELLM_HOST}/health" -H "Authorization: Bearer ${LITELLM_MASTER_KEY}" > /dev/null 2>&1; then
         echo -e "${GREEN}   ✓ LiteLLM이 정상 동작 중입니다.${NC}"
         break
     fi
