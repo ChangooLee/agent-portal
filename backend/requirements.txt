@@ -18,8 +18,18 @@ sqlalchemy>=2.0.0
 asyncpg>=0.29.0
 psycopg2-binary>=2.9.0  # PostgreSQL 동기 드라이버 (스키마 리플렉션용)
 pymysql>=1.1.0  # MariaDB/MySQL 동기 드라이버 (스키마 리플렉션용)
-clickhouse-connect>=0.7.0
 cryptography>=42.0.0
+
+# ClickHouse SQLAlchemy dialect
+clickhouse-connect>=0.7.0
+clickhouse-sqlalchemy>=0.3.0  # SQLAlchemy dialect for ClickHouse
+
+# Oracle SQLAlchemy dialect
+oracledb>=2.0.0  # Oracle DB 드라이버 (cx_Oracle 후속)
+
+# SAP HANA SQLAlchemy dialect (optional - requires SAP HANA client)
+# hdbcli>=2.0.0  # SAP HANA 드라이버 (별도 설치 필요)
+# sqlalchemy-hana>=0.5.0  # SQLAlchemy dialect for SAP HANA
 
 # Vanna AI Text-to-SQL (dependencies from submodule)
 pandas>=2.0.0

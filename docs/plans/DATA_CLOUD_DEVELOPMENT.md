@@ -251,8 +251,6 @@ git push origin main
 
 | litellm-postgres | litellm-postgres | 5432 | asyncpg |
 
-| langfuse-db | langfuse-db | 5432 | asyncpg |
-
 | helicone-db | helicone-db | 5432 | asyncpg |
 
 | kong-db | kong-db | 5432 | asyncpg |
