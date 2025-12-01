@@ -289,14 +289,14 @@ class VannaAgentService:
         agent_info = None
         
         try:
-            # 1. Auto-register vanna agent (if not exists)
-            agent_name = f"vanna-{connection_id[:8]}"
+            # 1. Auto-register vanna agent (single agent for all Text-to-SQL)
+            agent_name = "vanna-text-to-sql"
             try:
                 agent_info = await agent_registry.register_or_get(
                     name=agent_name,
                     agent_type=AgentType.VANNA,
-                    external_id=connection_id,
-                    description=f"Text-to-SQL agent for connection {connection_id}"
+                    external_id=None,  # No external_id - single agent for all connections
+                    description="Vanna Text-to-SQL Agent for Data Cloud"
                 )
                 logger.debug(f"Vanna agent registered: {agent_info['id']}")
             except Exception as e:
