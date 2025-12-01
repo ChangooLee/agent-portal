@@ -26,6 +26,26 @@ model_list:
       api_base: https://openrouter.ai/api/v1
       api_key: os.environ/OPENROUTER_API_KEY
 
+  # GLM-4.6 (Z.AI)
+  - model_name: glm-4
+    litellm_params:
+      model: openrouter/z-ai/glm-4.6
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  # GPT-OSS (OpenAI Open Source)
+  - model_name: gpt-oss
+    litellm_params:
+      model: openrouter/openai/gpt-oss-120b
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: gpt-oss-free
+    litellm_params:
+      model: openrouter/openai/gpt-oss-20b:free
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
+
 # General Settings
 general_settings:
   # Enable DB-based model management (for /model/new, /model/update, /model/delete)
