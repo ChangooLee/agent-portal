@@ -1035,9 +1035,11 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens'])) as total_tokens,
             sum(
                 greatest(
-                    -- Extract cost from metadata.usage_object using extractAll
+                    -- Primary: get from gen_ai.usage.total_cost (stored by agent_trace_adapter)
+                    toFloat64OrZero(SpanAttributes['gen_ai.usage.total_cost']),
+                    -- Fallback: Extract cost from metadata.usage_object
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
-                    -- Fallback: calculate from tokens (OpenRouter qwen pricing)
+                    -- Last fallback: calculate from tokens (OpenRouter qwen pricing)
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
                 )

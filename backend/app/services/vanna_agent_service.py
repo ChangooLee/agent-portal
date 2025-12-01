@@ -371,6 +371,8 @@ class VannaAgentService:
             
             execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
             tokens_used = response.usage.get('total_tokens', 0) if response.usage else 0
+            # Cost is stored in metadata due to Vanna's usage dict expecting int values
+            cost_used = response.metadata.get('cost', 0.0) if response.metadata else 0.0
             
             # 3. End trace with success
             if trace_id:
@@ -378,7 +380,8 @@ class VannaAgentService:
                     await agent_trace_adapter.end_trace(
                         trace_id=trace_id,
                         outputs={'sql': sql},
-                        tokens=tokens_used
+                        tokens=tokens_used,
+                        cost=cost_used  # Pass LLM cost to trace
                     )
                 except Exception as e:
                     logger.warning(f"Trace end failed: {e}")

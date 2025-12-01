@@ -31,6 +31,7 @@ class LiteLLMService:
         model: str,
         messages: list,
         stream: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
         **kwargs
     ):
         """Create a chat completion via LiteLLM (async generator for stream mode)"""
@@ -45,6 +46,10 @@ class LiteLLMService:
             "stream": stream,
             **kwargs
         }
+        
+        # Add metadata for OTEL tracing (agent_id, parent_trace_id, etc.)
+        if metadata:
+            payload["metadata"] = metadata
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:

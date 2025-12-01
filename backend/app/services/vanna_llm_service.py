@@ -46,10 +46,12 @@ class LiteLLMVannaService(LlmService):
         model: Optional[str] = None,
         temperature: float = 0.0,
         max_tokens: int = 500,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.model = model or os.environ.get('TEXT_TO_SQL_MODEL', 'gpt-4o-mini')
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.metadata = metadata or {}  # Agent context for OTEL tracing
         
         logger.info(f"LiteLLMVannaService initialized with model: {self.model}")
     
@@ -76,9 +78,15 @@ class LiteLLMVannaService(LlmService):
                 kwargs["tools"] = tools_payload
                 kwargs["tool_choice"] = "auto"
             
+            # Merge instance metadata with request metadata
+            effective_metadata = {**self.metadata}
+            if hasattr(request, 'metadata') and request.metadata:
+                effective_metadata.update(request.metadata)
+            
             result = await litellm_service.chat_completion_sync(
                 model=self.model,
                 messages=messages,
+                metadata=effective_metadata if effective_metadata else None,
                 **kwargs
             )
             
@@ -93,19 +101,25 @@ class LiteLLMVannaService(LlmService):
             tool_calls = self._extract_tool_calls(message)
             finish_reason = choice.get("finish_reason")
             
-            # Usage info
+            # Usage info (including cost from LiteLLM)
             usage = result.get("usage", {})
+            # Store cost separately - Vanna's usage dict expects int values
+            cost = usage.get("cost", 0.0)
             usage_dict = {
                 "prompt_tokens": usage.get("prompt_tokens", 0),
                 "completion_tokens": usage.get("completion_tokens", 0),
                 "total_tokens": usage.get("total_tokens", 0),
             } if usage else None
             
+            # Store cost in metadata since usage.cost expects int in Vanna
+            metadata_result = {"cost": cost}
+            
             return LlmResponse(
                 content=content,
                 tool_calls=tool_calls or None,
                 finish_reason=finish_reason,
                 usage=usage_dict,
+                metadata=metadata_result,  # Contains cost as float
             )
             
         except Exception as e:
@@ -138,9 +152,15 @@ class LiteLLMVannaService(LlmService):
             tc_builders: Dict[int, Dict[str, Optional[str]]] = {}
             last_finish: Optional[str] = None
             
+            # Merge instance metadata with request metadata
+            effective_metadata = {**self.metadata}
+            if hasattr(request, 'metadata') and request.metadata:
+                effective_metadata.update(request.metadata)
+            
             async for line in litellm_service.chat_completion(
                 model=self.model,
                 messages=messages,
+                metadata=effective_metadata if effective_metadata else None,
                 stream=True,
                 **kwargs
             ):
