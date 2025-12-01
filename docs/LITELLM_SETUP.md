@@ -21,10 +21,20 @@ LiteLLM은 Agent Portal의 **단일 LLM 게이트웨이**로, 모든 컴포넌�
 
 ### 핵심 장점
 
-- **단일 설정**: `litellm/config.yaml` 한 곳에서 모든 LLM 모델 관리
+- **DB 기반 모델 관리**: PostgreSQL에 모델 저장, UI/API로 동적 추가/수정/삭제
 - **비용/지연 정책 중앙화**: 라우팅, 폴백, 쿼터, 태깅 일원화
 - **관측/모니터링 단일화**: OTEL → ClickHouse로 모든 LLM 호출 추적
 - **보안 관점**: Kong을 통한 키 인증, 레이트리밋, mTLS, 감사 로그 중앙화 (선택)
+
+### DB 기반 모델 관리
+
+LiteLLM은 PostgreSQL DB를 사용하여 모델을 관리합니다:
+
+- **저장 위치**: `litellm-postgres` 서비스 (PostgreSQL 16)
+- **설정**: `store_model_in_db: true` (config/litellm.yaml)
+- **초기 모델 등록**: `./scripts/seed-litellm-models.sh` 스크립트 실행
+- **UI 관리**: Admin > LLM에서 모델 추가/수정/삭제
+- **장점**: 서비스 재시작 후에도 모델 유지, yaml 파일 수정 불필요
 
 ---
 

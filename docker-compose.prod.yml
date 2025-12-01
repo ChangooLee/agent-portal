@@ -52,6 +52,18 @@ services:
           cpus: '1'
           memory: 1G
 
+  # LiteLLM PostgreSQL - Production settings
+  litellm-postgres:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
   # MariaDB - Production settings
   mariadb:
     restart: unless-stopped

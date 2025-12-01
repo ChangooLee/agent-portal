@@ -1,50 +1,15 @@
 # LiteLLM Configuration
-# LLM Gateway 설정 - 다양한 모델을 통합 관리
+# LLM Gateway 설정 - DB 기반 모델 관리
+#
+# 모델 관리:
+# - model_list는 DB에서 관리됨 (store_model_in_db: true)
+# - 초기 모델 등록: scripts/seed-litellm-models.sh 실행
+# - UI에서 모델 추가: Admin > LLM > 모델 추가
+# - 서비스 재시작 후에도 DB에 저장된 모델 유지
 
 # OTEL Resource Attributes (project_id 주입)
 environment_variables:
   OTEL_RESOURCE_ATTRIBUTES: "project_id=8c59e361-3727-418c-bc68-086b69f7598b"
-
-model_list:
-  # OpenRouter Models (Primary)
-  - model_name: qwen-235b
-    litellm_params:
-      model: openrouter/qwen/qwen3-235b-a22b-2507
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-  
-  # Alias for compatibility
-  - model_name: gpt-4
-    litellm_params:
-      model: openrouter/qwen/qwen3-235b-a22b-2507
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-  
-  - model_name: gpt-3.5-turbo
-    litellm_params:
-      model: openrouter/qwen/qwen3-235b-a22b-2507
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # GLM-4.6 (Z.AI)
-  - model_name: glm-4
-    litellm_params:
-      model: openrouter/z-ai/glm-4.6
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # GPT-OSS (OpenAI Open Source)
-  - model_name: gpt-oss
-    litellm_params:
-      model: openrouter/openai/gpt-oss-120b
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  - model_name: gpt-oss-free
-    litellm_params:
-      model: openrouter/openai/gpt-oss-20b:free
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
 
 # General Settings
 general_settings:

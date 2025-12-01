@@ -14,7 +14,7 @@ services:
       - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
     depends_on:
       - backend
-      # - litellm  # Using external litellm service
+      - litellm
     volumes:
       - ./webui/plugins:/app/plugins
       - ./webui/overrides:/app/overrides
@@ -48,7 +48,7 @@ services:
       - chromadb
       - redis
       - minio
-      # - litellm  # Using external litellm service
+      - litellm
       - kong
       - prometheus
 
@@ -58,11 +58,10 @@ services:
   #   ports:
   #     - "8123:8123"
 
-  # LiteLLM Database (PostgreSQL) - Disabled, using external service
+  # LiteLLM Database (PostgreSQL) - DB 기반 모델 관리용
   litellm-postgres:
     image: postgres:16
     container_name: litellm-postgres
-    profiles: ["disabled"]
     restart: unless-stopped
     environment:
       POSTGRES_USER: litellm
@@ -78,11 +77,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # LLM Gateway (uses external service, disabled here)
-  # To use agent-portal's own litellm, uncomment and configure
+  # LLM Gateway - DB 기반 모델 관리
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
-    profiles: ["disabled"]  # Disabled - using external litellm service
     ports:
       - "4000:4000"
     env_file: .env
@@ -90,7 +87,7 @@ services:
       - ./config/litellm.yaml:/app/config/litellm.yaml:ro
     command: ["--config", "/app/config/litellm.yaml"]
     environment:
-      # Database connection
+      # Database connection (모델 DB 저장용)
       - DATABASE_URL=postgresql://litellm:${LITELLM_DB_PASSWORD:-litellm_secure_password}@litellm-postgres:5432/litellm_db
       # Master Key (must start with sk-)
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
@@ -110,11 +107,9 @@ services:
       - OTEL_LOGS_EXPORTER=none
       # Resource attributes for project filtering
       - OTEL_RESOURCE_ATTRIBUTES=project_id=${DEFAULT_PROJECT_ID:-8c59e361-3727-418c-bc68-086b69f7598b}
-    # depends_on:
-    #   litellm-postgres:
-    #     condition: service_healthy
-    #   monitoring-otel-collector:
-    #     condition: service_started
+    depends_on:
+      litellm-postgres:
+        condition: service_healthy
 
   # Observability
   # otel-collector:

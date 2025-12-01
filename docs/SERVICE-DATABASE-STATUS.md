@@ -25,7 +25,7 @@
 | prometheus | agent-portal-prometheus-1 | 9092:9090 | Running | Metrics |
 | clickhouse | monitoring-clickhouse | 8124:8123, 9002:9000 | Running | OTEL Traces (external) |
 | otel-collector | monitoring-otel-collector | 4319:4317, 4320:4318 | Running | Trace Collection (external) |
-| litellm-postgres | litellm-postgres | 5433:5432 | Running (healthy) | LiteLLM PostgreSQL (external) |
+| litellm-postgres | litellm-postgres | 5433:5432 | Running (healthy) | LiteLLM 모델 DB (store_model_in_db: true) |
 
 ### 1.2 외부 서비스 (별도 docker-compose로 실행)
 

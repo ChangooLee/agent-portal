@@ -53,5 +53,15 @@ services:
       - ./webui/backend/data:/app/backend/data  # Override webui_data with local path for dev
     command: ["bash", "-c", "chmod +x /app/dev-start.sh && /app/dev-start.sh"]
 
+  # LiteLLM - Development overrides
+  litellm:
+    environment:
+      - LITELLM_LOG=DEBUG
+
+  # LiteLLM PostgreSQL - Development overrides
+  litellm-postgres:
+    ports:
+      - "5433:5432"  # 개발 환경용 외부 접근
+
 volumes:
   webui_node_modules:
