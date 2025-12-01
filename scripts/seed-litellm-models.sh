@@ -10,7 +10,7 @@
 set -e
 
 # 설정
-LITELLM_HOST="${LITELLM_HOST:-http://localhost:4000}"
+LITELLM_HOST="${LITELLM_HOST:-http://localhost:4001}"
 LITELLM_MASTER_KEY="${LITELLM_MASTER_KEY:-sk-1234}"
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}"
 
@@ -74,13 +74,19 @@ add_model() {
         return 0
     fi
     
+    # API 키 확인 (환경변수에서 직접 읽기)
+    if [ -z "$OPENROUTER_API_KEY" ]; then
+        echo -e "   ${RED}✗ ${model_name}: OPENROUTER_API_KEY가 설정되지 않음${NC}"
+        return 1
+    fi
+    
     local payload=$(cat <<EOF
 {
     "model_name": "${model_name}",
     "litellm_params": {
         "model": "${litellm_model}",
         "api_base": "${api_base}",
-        "api_key": "os.environ/OPENROUTER_API_KEY"
+        "api_key": "${OPENROUTER_API_KEY}"
     }
 }
 EOF

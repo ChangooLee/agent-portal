@@ -81,7 +81,7 @@ services:
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
     ports:
-      - "4000:4000"
+      - "4001:4000"  # 외부 4001 → 내부 4000 (Cursor 포트 충돌 회피)
     env_file: .env
     volumes:
       - ./config/litellm.yaml:/app/config/litellm.yaml:ro
