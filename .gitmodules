@@ -7,15 +7,9 @@
 [submodule "flowise"]
 	path = flowise
 	url = https://github.com/FlowiseAI/Flowise.git
-[submodule "langfuse"]
-	path = langfuse
-	url = https://github.com/langfuse/langfuse.git
 [submodule "perplexica"]
 	path = perplexica
 	url = https://github.com/ItzCrazyKns/Perplexica.git
-[submodule "helicone"]
-	path = helicone
-	url = https://github.com/Helicone/helicone.git
 [submodule "kong"]
 	path = kong
 	url = https://github.com/Kong/kong.git
