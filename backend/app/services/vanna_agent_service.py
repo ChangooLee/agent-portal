@@ -264,6 +264,7 @@ class VannaAgentService:
         connection_id: str,
         question: str,
         connection_info: Optional[Dict[str, Any]] = None,
+        model: Optional[str] = None,
     ) -> TextToSqlResult:
         """
         Generate SQL from natural language question.
@@ -280,6 +281,7 @@ class VannaAgentService:
             connection_id: Database connection ID
             question: Natural language question
             connection_info: Optional connection info for lazy agent creation
+            model: Optional specific LLM model to use (overrides default)
             
         Returns:
             TextToSqlResult with generated SQL or error
@@ -326,9 +328,18 @@ class VannaAgentService:
                     )
             
             agent_wrapper = self._agents[connection_id]
-            llm_service = agent_wrapper['llm_service']
             schema = agent_wrapper.get('schema') or self._schema_cache.get(connection_id)
             terms = agent_wrapper.get('terms') or self._terms_cache.get(connection_id, [])
+            
+            # Use specified model or default
+            if model:
+                # Create temporary LLM service with specified model
+                from app.services.vanna_llm_service import LiteLLMVannaService
+                llm_service = LiteLLMVannaService(model=model)
+                effective_model = model
+            else:
+                llm_service = agent_wrapper['llm_service']
+                effective_model = agent_wrapper['config'].model
             
             # Build prompt
             schema_context = self._build_schema_context(schema) if schema else ""
@@ -389,7 +400,7 @@ class VannaAgentService:
             return TextToSqlResult(
                 success=True,
                 sql=sql,
-                model=agent_wrapper['config'].model,
+                model=effective_model,
                 tokens_used=tokens_used,
                 execution_time_ms=execution_time_ms,
                 metadata={

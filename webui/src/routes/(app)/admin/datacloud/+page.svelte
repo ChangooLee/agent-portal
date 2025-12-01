@@ -89,6 +89,22 @@
 	// Text-to-SQL
 	let naturalLanguageQuery = '';
 	let sqlGenerating = false;
+	
+	// Model Selection
+	let availableModels: { id: string; name: string }[] = [];
+	let selectedModel = '';
+	let modelsLoading = false;
+
+	// DB 타입별 기본 프롬프트 (사용자 친화적)
+	const defaultQueries: Record<string, string> = {
+		mariadb: '테이블별 데이터 건수를 많은 순서로 보여줘',
+		mysql: '테이블별 데이터 건수를 많은 순서로 보여줘',
+		postgresql: '가장 큰 테이블 10개와 크기를 보여줘',
+		clickhouse: '최근 1시간 동안 가장 많이 호출된 서비스 5개를 보여줘',
+		oracle: '테이블별 데이터 건수와 마지막 분석 일자를 보여줘',
+		mssql: '각 테이블의 행 수와 인덱스 정보를 보여줘',
+		sap_hana: '컬럼 저장 테이블의 메모리 사용량을 보여줘'
+	};
 
 	// Form data
 	let formData = {
@@ -301,11 +317,42 @@
 		expandedTables = expandedTables;
 	}
 
-	function openQueryModal(conn: DBConnection) {
+	async function openQueryModal(conn: DBConnection) {
 		selectedConnection = conn;
 		queryText = '';
 		queryResult = null;
 		showQueryModal = true;
+		
+		// DB 타입에 맞는 기본 프롬프트 설정
+		naturalLanguageQuery = defaultQueries[conn.db_type] || '이 데이터베이스의 테이블 목록을 보여줘';
+		
+		// LiteLLM 모델 목록 로드
+		await loadAvailableModels();
+	}
+	
+	async function loadAvailableModels() {
+		if (availableModels.length > 0) return; // 이미 로드됨
+		
+		modelsLoading = true;
+		try {
+			const response = await fetch(`${BACKEND_URL}/llm/models`);
+			if (response.ok) {
+				const data = await response.json();
+				availableModels = data.data?.map((m: any) => ({
+					id: m.id || m.model_name,
+					name: m.id || m.model_name
+				})) || [];
+				
+				// 첫 번째 모델을 기본 선택
+				if (availableModels.length > 0 && !selectedModel) {
+					selectedModel = availableModels[0].id;
+				}
+			}
+		} catch (e) {
+			console.error('Failed to load models:', e);
+		} finally {
+			modelsLoading = false;
+		}
 	}
 
 	async function executeQuery() {
@@ -489,10 +536,19 @@
 
 		sqlGenerating = true;
 		try {
+			const requestBody: { question: string; model?: string } = {
+				question: naturalLanguageQuery
+			};
+			
+			// 선택된 모델이 있으면 포함
+			if (selectedModel) {
+				requestBody.model = selectedModel;
+			}
+			
 			const response = await fetch(`${BACKEND_URL}/datacloud/connections/${selectedConnection.id}/generate-sql`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ question: naturalLanguageQuery })
+				body: JSON.stringify(requestBody)
 			});
 
 			if (response.ok) {
@@ -996,12 +1052,30 @@
 			<div class="p-6 space-y-4">
 				<!-- Text-to-SQL Section -->
 				<div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4">
-					<div class="flex items-center gap-2 mb-2">
-						<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-						</svg>
-						<label class="text-sm font-medium text-blue-700 dark:text-blue-300">AI SQL 생성</label>
-						<span class="text-xs text-gray-500 dark:text-gray-400">(자연어 → SQL)</span>
+					<div class="flex items-center justify-between mb-2">
+						<div class="flex items-center gap-2">
+							<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+							</svg>
+							<label class="text-sm font-medium text-blue-700 dark:text-blue-300">AI SQL 생성</label>
+							<span class="text-xs text-gray-500 dark:text-gray-400">(자연어 → SQL)</span>
+						</div>
+						<!-- Model Selection -->
+						<div class="flex items-center gap-2">
+							<label class="text-xs text-gray-500 dark:text-gray-400">모델:</label>
+							{#if modelsLoading}
+								<div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+							{:else}
+								<select
+									bind:value={selectedModel}
+									class="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+								>
+									{#each availableModels as model}
+										<option value={model.id}>{model.name}</option>
+									{/each}
+								</select>
+							{/if}
+						</div>
 					</div>
 					<div class="flex gap-2">
 						<input

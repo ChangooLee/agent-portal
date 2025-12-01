@@ -844,7 +844,8 @@ class DataCloudService:
     async def generate_sql_from_natural_language(
         self,
         connection_id: str,
-        question: str
+        question: str,
+        model: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         자연어 질문을 SQL로 변환 (Text-to-SQL)
@@ -854,6 +855,11 @@ class DataCloudService:
         1. 연결 정보 조회
         2. Vanna 에이전트에 스키마/용어집 학습 (캐시)
         3. Vanna를 통해 SQL 생성
+        
+        Args:
+            connection_id: DB 연결 ID
+            question: 자연어 질문
+            model: 사용할 LLM 모델 (None이면 자동 선택)
         """
         from app.services.vanna_agent_service import vanna_agent_service
         
@@ -875,11 +881,12 @@ class DataCloudService:
                 await vanna_agent_service.get_or_create_agent(connection_id, connection_info)
                 await vanna_agent_service.train_agent(connection_id, schema, terms)
             
-            # 3. Vanna를 통해 SQL 생성
+            # 3. Vanna를 통해 SQL 생성 (지정된 모델 사용)
             result = await vanna_agent_service.generate_sql(
                 connection_id=connection_id,
                 question=question,
                 connection_info=connection_info,
+                model=model,
             )
             
             return {

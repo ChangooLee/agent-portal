@@ -239,6 +239,7 @@ async def execute_query(
 
 class GenerateSQLRequest(BaseModel):
     question: str
+    model: Optional[str] = Field(None, description="사용할 LLM 모델 (없으면 자동 선택)")
 
 
 class GenerateSQLResponse(BaseModel):
@@ -254,7 +255,8 @@ async def generate_sql(connection_id: str, request: GenerateSQLRequest):
     """자연어 질문을 SQL로 변환 (Text-to-SQL)"""
     result = await datacloud_service.generate_sql_from_natural_language(
         connection_id=connection_id,
-        question=request.question
+        question=request.question,
+        model=request.model
     )
     return result
 
