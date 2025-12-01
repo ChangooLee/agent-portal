@@ -51,21 +51,15 @@ general_settings:
   # Enable DB-based model management (for /model/new, /model/update, /model/delete)
   store_model_in_db: true
   
-  # Langfuse + OpenTelemetry Integration
+  # OpenTelemetry Integration
   set_verbose: true
   otel: true
-  
-  # Helicone Integration (via proxy)
-  # Helicone는 HTTP 프록시로 설정 가능
 
-# Langfuse + OTEL Settings
+# OTEL Settings (ClickHouse 기반 모니터링)
 litellm_settings:
-  callbacks: ["otel"]  # 필수: OTEL 콜백 활성화
-  success_callback: ["langfuse", "otel"]
+  callbacks: ["otel"]
+  success_callback: ["otel"]
   failure_callback: ["otel"]
-  langfuse_public_key: ${LANGFUSE_PUBLIC_KEY}
-  langfuse_secret_key: ${LANGFUSE_SECRET_KEY}
-  langfuse_host: ${LANGFUSE_HOST:-http://langfuse:3000}
   use_client: true
 
 # Rate Limiting

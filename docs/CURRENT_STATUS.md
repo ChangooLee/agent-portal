@@ -170,7 +170,7 @@ docker exec agentops-clickhouse clickhouse-client --query \
 
 **남은 작업**:
 - [ ] Kong Gateway 통합 (API Key 인증, Rate Limiting)
-- [ ] 추가 DB 연결 (langfuse-db, kong-db, konga-db, helicone-db, ClickHouse)
+- [ ] 추가 DB 연결 (kong-db, konga-db 등)
 - [ ] 비즈니스 용어집 UI
 - [ ] 권한 관리 UI
 - [ ] 쿼리 결과 차트 시각화
@@ -222,7 +222,6 @@ docker exec agentops-clickhouse clickhouse-client --query \
 - [x] Flowise (3002 포트) 정상 동작
 - [x] Kong Gateway (8001/8002 포트) 정상 동작
 - [x] Konga (1337 포트) 정상 동작 - [설정 가이드](./KONGA_SETUP.md)
-- [ ] Langfuse (3003 포트) 선택적 (품질 관리용)
 - [ ] AutoGen API (5051 포트) 의존성 오류
 
 ### 테스트 상태

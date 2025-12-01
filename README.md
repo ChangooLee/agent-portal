@@ -634,21 +634,13 @@ Agent Portal은 **두 가지 독립적인 모니터링 스택**을 사용합니�
 - **Grafana**: 실시간 대시보드 시각화
 - **설정 가이드**: [docs/MONITORING_SETUP.md](./docs/MONITORING_SETUP.md)
 
-#### 3. Agent 품질 관리: Langfuse (선택적)
-- **Langfuse**: LLM 체인 추적, 프롬프트 관리, A/B 테스트
-- **관리자 전용**: `/admin/langfuse` iframe 임베드
-
 ### 관측성 도구별 역할
 
-* **AgentOps**: 에이전트 실행 모니터링, 세션 리플레이, 비용 추적 — **LiteLLM SDK 직접 연결**
-* **Langfuse**: LLM 체인/툴콜/세션 추적 — 관리자 패널 **임베드 카드** (선택적)
-* **Helicone**: **비용/지연/성공률/프롬프트 비교** — LiteLLM 앞/뒤 프록시 (선택적)
+* **ClickHouse + OTEL**: LLM 호출 추적, 비용/지연/성공률 모니터링 — **핵심 모니터링 스택**
 * **Prometheus + Grafana**: 인프라 메트릭 수집 및 시각화
-* **(옵션) OTEL → SigNoz/OpenObserve**: FastAPI/LiteLLM/MCP 경로 지연·에러율
 
 **관측성 스택 역할 분담**:
-- **AgentOps**: 에이전트 레벨 추적 (세션, 액션, 비용, 리플레이) — **Self-hosted 필수**
-- **Langfuse**: LLM 체인 레벨 추적 (프롬프트, 응답, 토큰 수) — **선택적, 품질 관리용**
+- **ClickHouse**: LLM 호출 트레이스 저장 및 분석 (OTEL Collector 경유)
 - **Prometheus/Grafana**: 인프라 레벨 추적 (vLLM, 애플리케이션 메트릭)
 
 ---

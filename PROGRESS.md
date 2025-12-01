@@ -51,13 +51,13 @@
 
 ## ✅ Stage 2: Chat 엔드포인트 연동 및 모니터링 (완료)
 
-**목표**: FastAPI BFF 생성, LiteLLM 연동, ClickHouse 기반 모니터링, Langfuse 품질 관리
+**목표**: FastAPI BFF 생성, LiteLLM 연동, ClickHouse 기반 모니터링
 
 **완료 항목**:
 - ✅ Backend BFF 기본 구조 생성
 - ✅ Chat API 구현 (`/chat/stream`, `/chat/completions`)
 - ✅ LiteLLM 통합 (OpenRouter 연동)
-- ✅ Embed 프록시 구현 (`/proxy/langfuse`, `/proxy/grafana`)
+- ✅ Embed 프록시 구현 (`/proxy/grafana`, `/embed/kong-admin` 등)
 - ✅ **Monitoring 시스템 구현** (ClickHouse 기반)
   - ✅ LiteLLM → OTEL Collector → ClickHouse 파이프라인
   - ✅ Backend BFF → ClickHouse 직접 조회 (`monitoring_adapter.py`)
@@ -66,7 +66,7 @@
   - ✅ 프로젝트 CRUD API (`/api/projects`)
   - ✅ 팀 관리 API (`/api/teams`)
   - ✅ Admin 프로젝트 관리 UI
-- ✅ Langfuse 페이지 구현 (관리자 > Langfuse, iframe 임베드)
+- ✅ 모니터링 대시보드 구현 (관리자 > 사용량)
 - ✅ 모니터링 스택 구축
   - ✅ OTEL Collector (4317/4318)
   - ✅ ClickHouse (8124/9002)

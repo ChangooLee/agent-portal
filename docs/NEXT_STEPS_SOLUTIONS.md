@@ -12,18 +12,17 @@
 - Backend BFF 기본 구조 생성
 - Chat API 구현 (`/chat/stream`, `/chat/completions`)
 - Observability API 구현 (`/observability/*`)
-- LiteLLM/Langfuse 서비스 레이어 구현
-- Monitoring 페이지 추가
+- LiteLLM 서비스 레이어 구현
+- Monitoring 페이지 추가 (OTEL + ClickHouse 기반)
 - `config/litellm.yaml`, `config/kong.yml` 설정 파일 생성
-- Docker Compose 서비스 정의 (LiteLLM, Langfuse, Helicone)
+- Docker Compose 서비스 정의 (LiteLLM, Kong, ClickHouse 등)
 
 ### ⚠️ 미완성 항목 (Critical)
 1. **인증/인가 시스템** - RBAC 미들웨어는 있으나 placeholder 상태
 2. **테스트 코드** - 완전 부재
 3. **서비스 통합 테스트** - docker-compose up으로 전체 스택 실행 미완
 4. **LiteLLM 실제 연동** - 환경 설정 및 테스트 필요
-5. **Langfuse 실제 연동** - 환경 설정 및 테스트 필요
-6. **프론트엔드-백엔드 데이터 연동** - BFF API 호출 미완
+5. **프론트엔드-백엔드 데이터 연동** - BFF API 호출 미완
 
 ---
 
@@ -176,8 +175,7 @@ backend/
 │   ├── test_chat.py         # Chat API 테스트
 │   ├── test_observability.py # Observability API 테스트
 │   └── test_services/        # 서비스 레이어 테스트
-│       ├── test_litellm_service.py
-│       └── test_langfuse_service.py
+│       └── test_litellm_service.py
 ```
 
 **`backend/tests/conftest.py`**:
@@ -279,11 +277,6 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 # vLLM API Base (로컬 모델 사용 시)
 VLLM_API_BASE=http://vllm:8000/v1
-
-# Langfuse 설정 (LiteLLM에서 사용)
-LANGFUSE_PUBLIC_KEY=pk-...
-LANGFUSE_SECRET_KEY=sk-...
-LANGFUSE_HOST=http://langfuse:3000
 ```
 
 #### 3.2 LiteLLM 서비스 실행
@@ -353,98 +346,7 @@ echo "LiteLLM test passed!"
 
 ---
 
-### 4. Langfuse 서비스 실행 및 연동
-
-**현재 상태**:
-- `docker-compose.yml`에 Langfuse 서비스 및 DB 정의됨
-- `backend/app/services/langfuse_service.py` 구현 완료
-- 실제 실행 및 연동 테스트 미완
-
-**솔루션**:
-
-#### 4.1 환경변수 설정
-
-**`.env` 파일에 추가**:
-```bash
-# Langfuse 설정
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_HOST=http://langfuse:3000
-```
-
-#### 4.2 Langfuse 서비스 실행
-
-**명령어**:
-```bash
-# Langfuse 및 DB 실행
-docker-compose up -d langfuse langfuse-db
-
-# DB 초기화 대기 (약 30초)
-sleep 30
-
-# 로그 확인
-docker-compose logs -f langfuse
-
-# 헬스체크
-curl http://localhost:3001/api/public/health
-```
-
-#### 4.3 Langfuse API 키 생성
-
-**방법 1: Langfuse UI에서 생성** (권장)
-1. `http://localhost:3001` 접속
-2. 회원가입/로그인
-3. Settings → API Keys에서 키 생성
-4. Public Key와 Secret Key를 `.env`에 추가
-
-**방법 2: 환경변수로 설정** (개발 환경)
-```bash
-# 개발 환경용 기본 키 (프로덕션에서는 반드시 변경)
-LANGFUSE_PUBLIC_KEY=pk-lf-dev-12345
-LANGFUSE_SECRET_KEY=sk-lf-dev-12345
-```
-
-#### 4.4 Langfuse 연동 테스트
-
-**테스트 스크립트** (`scripts/test-langfuse.sh`):
-```bash
-#!/bin/bash
-set -e
-
-echo "Testing Langfuse connection..."
-
-# Langfuse 헬스체크
-curl -f http://localhost:3001/api/public/health || exit 1
-
-# API 키 확인 (환경변수에서)
-if [ -z "$LANGFUSE_PUBLIC_KEY" ] || [ -z "$LANGFUSE_SECRET_KEY" ]; then
-    echo "⚠️  LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY must be set in .env"
-    exit 1
-fi
-
-echo "Langfuse test passed!"
-```
-
-**Python 테스트 코드**:
-```python
-# backend/tests/test_langfuse_service.py
-import pytest
-from app.services.langfuse_service import langfuse_service
-
-@pytest.mark.asyncio
-async def test_langfuse_trace_creation():
-    """Langfuse 트레이스 생성 테스트"""
-    trace = langfuse_service.create_trace(name="test_trace")
-    assert trace is not None
-    
-    span = trace.span(name="test_span")
-    span.end(output={"result": "success"})
-    trace.end()
-```
-
----
-
-### 5. 전체 스택 통합 테스트
+### 4. 전체 스택 통합 테스트
 
 **목적**: 모든 서비스가 정상적으로 연동되는지 확인
 
@@ -498,15 +400,15 @@ echo "✅ Observability API: OK"
 echo "🎉 Integration tests passed!"
 ```
 
-#### 5.2 단계별 서비스 실행
+#### 4.2 단계별 서비스 실행
 
 **개발 환경에서 단계별 실행**:
 ```bash
 # 1단계: 데이터베이스만 실행
-docker-compose up -d langfuse-db helicone-db kong-db mariadb
+docker-compose up -d mariadb kong-db litellm-postgres
 
-# 2단계: 관측성 서비스 실행
-docker-compose up -d langfuse helicone
+# 2단계: 관측성 서비스 실행 (OTEL + ClickHouse)
+docker-compose up -d otel-collector monitoring-clickhouse
 
 # 3단계: LiteLLM 실행
 docker-compose up -d litellm
@@ -576,10 +478,6 @@ docker-compose up -d webui
 ### LiteLLM
 - [LiteLLM Documentation](https://docs.litellm.ai/)
 - [LiteLLM Docker Setup](https://docs.litellm.ai/docs/docker)
-
-### Langfuse
-- [Langfuse Documentation](https://langfuse.com/docs)
-- [Langfuse Python SDK](https://langfuse.com/docs/sdk/python)
 
 ---
 

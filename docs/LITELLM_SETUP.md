@@ -23,7 +23,7 @@ LiteLLM은 Agent Portal의 **단일 LLM 게이트웨이**로, 모든 컴포넌�
 
 - **단일 설정**: `litellm/config.yaml` 한 곳에서 모든 LLM 모델 관리
 - **비용/지연 정책 중앙화**: 라우팅, 폴백, 쿼터, 태깅 일원화
-- **관측/모니터링 단일화**: Langfuse 콜백으로 모든 LLM 호출 추적
+- **관측/모니터링 단일화**: OTEL → ClickHouse로 모든 LLM 호출 추적
 - **보안 관점**: Kong을 통한 키 인증, 레이트리밋, mTLS, 감사 로그 중앙화 (선택)
 
 ---
@@ -81,12 +81,11 @@ general_settings:
   set_verbose: true
   master_key: os.environ/LITELLM_MASTER_KEY
 
-# Observability: Langfuse integration (disabled until Langfuse is set up)
-# litellm_settings:
-#   success_callback: ["langfuse"]
-#   langfuse_public_key: os.environ/LANGFUSE_PUBLIC_KEY
-#   langfuse_secret_key: os.environ/LANGFUSE_SECRET_KEY
-#   langfuse_host: os.environ/LANGFUSE_HOST
+# Observability: OTEL integration (ClickHouse 기반 모니터링)
+litellm_settings:
+  callbacks: ["otel"]
+  success_callback: ["otel"]
+  failure_callback: ["otel"]
 ```
 
 ### 2. 환경 변수 설정
@@ -101,11 +100,6 @@ LITELLM_MASTER_KEY=sk-1234  # 로컬 테스트용
 OPENROUTER_API_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_API_KEY=sk-or-v1-...
 OPENROUTER_MODEL_NAME=qwen/qwen3-235b-a22b-2507
-
-# Langfuse (선택)
-LANGFUSE_PUBLIC_KEY=
-LANGFUSE_SECRET_KEY=
-LANGFUSE_HOST=http://langfuse:3000
 ```
 
 ### 3. Docker Compose 설정
@@ -121,9 +115,6 @@ litellm:
   environment:
     - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
     - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-    - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
-    - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
-    - LANGFUSE_HOST=${LANGFUSE_HOST:-http://langfuse:3000}
 ```
 
 ---
@@ -271,18 +262,7 @@ curl http://localhost:4000/health
 curl http://localhost:4000/health -H "Authorization: Bearer sk-1234"
 ```
 
-### 문제 2: LiteLLM 서비스 실패 (Langfuse 모듈 없음)
-
-**원인**: Langfuse 콜백 활성화 상태에서 `langfuse` Python 모듈 미설치
-
-**해결**:
-`litellm/config.yaml`에서 Langfuse 콜백 주석 처리:
-```yaml
-# litellm_settings:
-#   success_callback: ["langfuse"]
-```
-
-### 문제 3: Backend에서 "Failed to connect to LiteLLM"
+### 문제 2: Backend에서 "Failed to connect to LiteLLM"
 
 **원인**: Backend와 LiteLLM 간 네트워크 연결 실패
 
@@ -300,7 +280,7 @@ curl http://localhost:4000/health -H "Authorization: Bearer sk-1234"
    LITELLM_HOST: str = "http://litellm:4000"
    ```
 
-### 문제 4: Docker 빌드 캐시 이슈
+### 문제 3: Docker 빌드 캐시 이슈
 
 **원인**: LiteLLM 설정 파일 변경 후 캐시로 인해 반영되지 않음
 
@@ -326,7 +306,6 @@ docker-compose up -d litellm
 
 - [LiteLLM 공식 문서](https://docs.litellm.ai/)
 - [OpenRouter API 문서](https://openrouter.ai/docs)
-- [Langfuse 공식 문서](https://langfuse.com/docs)
 
 ---
 

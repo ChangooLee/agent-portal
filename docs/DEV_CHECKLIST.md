@@ -90,7 +90,6 @@ Agent Portal 프로젝트의 개발 환경 설정 및 확인 사항입니다.
 - Backend BFF: 8000
 - WebUI: 3000, 3001 (dev)
 - Flowise: 3002
-- Langfuse: 3003
 - LiteLLM: 4000
 - AutoGen Studio: 5050
 - AutoGen API: 5051

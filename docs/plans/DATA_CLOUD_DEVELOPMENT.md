@@ -56,10 +56,7 @@
 | Agent Portal MariaDB | mariadb:3306 | ✅ 정상 | 스키마/쿼리 테스트 완료 |
 | LiteLLM PostgreSQL | litellm-postgres:5432 | ✅ 정상 | 스키마/쿼리 테스트 완료 |
 | Monitoring ClickHouse | monitoring-clickhouse:8123 | ✅ 정상 | 스키마/쿼리 테스트 완료 |
-| Langfuse PostgreSQL | langfuse-db:5432 | ❌ 미연결 | docker 미실행 |
-| Helicone PostgreSQL | helicone-db:5432 | ❌ 미연결 | docker 미실행 |
-| Kong PostgreSQL | kong-db:5432 | ❌ 미연결 | docker 미실행 |
-| Konga PostgreSQL | konga-db:5432 | ❌ 미연결 | docker 미실행 |
+| Kong PostgreSQL | kong-db:5432 | ✅ 정상 | 스키마/쿼리 테스트 완료 |
 
 ### 우선순위별 남은 작업
 
@@ -177,10 +174,10 @@ table_comment = inspector.get_table_comment(table_name)
 │                        └──────┬───────┘                         │
 │         ┌──────────┬──────────┼──────────┬──────────┐          │
 │         ▼          ▼          ▼          ▼          ▼          │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐  │
-│  │ MariaDB  │ │ LiteLLM  │ │ Langfuse │ │  Kong    │ │Click │  │
-│  │  (3306)  │ │ Postgres │ │ Postgres │ │ Postgres │ │House │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────┘  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐  │
+│  │ MariaDB  │ │ LiteLLM  │ │   Kong   │ │   ClickHouse     │  │
+│  │  (3306)  │ │ Postgres │ │ Postgres │ │ (모니터링 트레이스) │  │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -251,11 +248,7 @@ git push origin main
 
 | litellm-postgres | litellm-postgres | 5432 | asyncpg |
 
-| helicone-db | helicone-db | 5432 | asyncpg |
-
 | kong-db | kong-db | 5432 | asyncpg |
-
-| konga-db | konga-db | 5432 | asyncpg |
 
 | monitoring-clickhouse | monitoring-clickhouse | 8123 | clickhouse-connect |
 
