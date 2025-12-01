@@ -14,6 +14,10 @@ from typing import Dict, Any, Optional, List, AsyncGenerator
 from dataclasses import dataclass, field
 from datetime import datetime
 
+# Agent monitoring imports
+from app.services.agent_registry_service import agent_registry, AgentType
+from app.services.agent_trace_adapter import agent_trace_adapter
+
 # Add Vanna to Python path (works in Docker and local development)
 _vanna_paths = [
     '/app/libs/vanna/src',  # Docker container path
@@ -267,6 +271,11 @@ class VannaAgentService:
         This method integrates with DataCloud's schema and business terms
         to provide context-aware SQL generation.
         
+        Agent Monitoring:
+        - Auto-registers as vanna agent if not exists
+        - Starts/ends trace for monitoring
+        - Includes agent_id in LLM metadata for trace linking
+        
         Args:
             connection_id: Database connection ID
             question: Natural language question
@@ -276,8 +285,36 @@ class VannaAgentService:
             TextToSqlResult with generated SQL or error
         """
         start_time = datetime.now()
+        trace_id = None
+        agent_info = None
         
         try:
+            # 1. Auto-register vanna agent (if not exists)
+            agent_name = f"vanna-{connection_id[:8]}"
+            try:
+                agent_info = await agent_registry.register_or_get(
+                    name=agent_name,
+                    agent_type=AgentType.VANNA,
+                    external_id=connection_id,
+                    description=f"Text-to-SQL agent for connection {connection_id}"
+                )
+                logger.debug(f"Vanna agent registered: {agent_info['id']}")
+            except Exception as e:
+                logger.warning(f"Agent registration failed (continuing without monitoring): {e}")
+            
+            # 2. Start trace for monitoring
+            if agent_info:
+                try:
+                    trace_id = await agent_trace_adapter.start_trace(
+                        agent_id=agent_info['id'],
+                        agent_name=agent_name,
+                        agent_type='vanna',
+                        project_id=agent_info.get('project_id', 'default-project'),
+                        inputs={'question': question, 'connection_id': connection_id}
+                    )
+                except Exception as e:
+                    logger.warning(f"Trace start failed (continuing): {e}")
+            
             # Lazy agent creation if not exists
             if connection_id not in self._agents:
                 if connection_info:
@@ -307,6 +344,15 @@ class VannaAgentService:
             # Create a default user for the request
             default_user = User(id="text-to-sql-user")
             
+            # Add agent metadata for trace linking
+            metadata = {}
+            if agent_info and trace_id:
+                metadata = {
+                    'agent_id': agent_info['id'],
+                    'agent_name': agent_name,
+                    'parent_trace_id': trace_id,
+                }
+            
             request = LlmRequest(
                 system_prompt=system_prompt,
                 messages=[
@@ -314,6 +360,7 @@ class VannaAgentService:
                 ],
                 max_tokens=agent_wrapper['config'].max_tokens,
                 user=default_user,
+                metadata=metadata,
             )
             
             # Send request
@@ -323,22 +370,47 @@ class VannaAgentService:
             sql = self._extract_sql(response.content or "")
             
             execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+            tokens_used = response.usage.get('total_tokens', 0) if response.usage else 0
+            
+            # 3. End trace with success
+            if trace_id:
+                try:
+                    await agent_trace_adapter.end_trace(
+                        trace_id=trace_id,
+                        outputs={'sql': sql},
+                        tokens=tokens_used
+                    )
+                except Exception as e:
+                    logger.warning(f"Trace end failed: {e}")
             
             return TextToSqlResult(
                 success=True,
                 sql=sql,
                 model=agent_wrapper['config'].model,
-                tokens_used=response.usage.get('total_tokens', 0) if response.usage else 0,
+                tokens_used=tokens_used,
                 execution_time_ms=execution_time_ms,
                 metadata={
                     'finish_reason': response.finish_reason,
                     'connection_id': connection_id,
+                    'agent_id': agent_info['id'] if agent_info else None,
+                    'trace_id': trace_id,
                 }
             )
             
         except Exception as e:
             logger.error(f"SQL generation failed for connection {connection_id}: {e}")
             execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+            
+            # End trace with error
+            if trace_id:
+                try:
+                    await agent_trace_adapter.end_trace(
+                        trace_id=trace_id,
+                        error=str(e)
+                    )
+                except Exception:
+                    pass
+            
             return TextToSqlResult(
                 success=False,
                 error=str(e),

@@ -17,8 +17,8 @@ except Exception as e:
     raise
 
 try:
-    from app.routes import proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud, llm, vanna
-    logger.info("✅ New routes (proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud, llm, vanna) imported successfully")
+    from app.routes import proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud, llm, vanna, agent_registry
+    logger.info("✅ New routes (proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud, llm, vanna, agent_registry) imported successfully")
 except Exception as e:
     logger.error(f"❌ New routes import failed: {e}")
     import traceback
@@ -76,6 +76,7 @@ app.include_router(gateway.router)
 app.include_router(datacloud.router)
 app.include_router(llm.router)
 app.include_router(vanna.router)
+app.include_router(agent_registry.router)
 
 # Debug: 라우터 등록 확인
 import logging

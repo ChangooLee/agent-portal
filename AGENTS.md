@@ -237,12 +237,13 @@ agent-portal/
 | Prefix | Router | Purpose |
 |--------|--------|---------|
 | `/chat` | chat.py | LLM chat completions |
-| `/monitoring` | monitoring.py | Trace queries, metrics |
+| `/monitoring` | monitoring.py | Trace queries, metrics, agent stats |
 | `/datacloud` | datacloud.py | Database connections, queries |
 | `/vanna` | vanna.py | Text-to-SQL with Vanna AI (SSE streaming) |
 | `/mcp` | mcp.py | MCP server management |
 | `/gateway` | gateway.py | Kong/service overview |
 | `/projects` | projects.py | Project management |
+| `/agents` | agent_registry.py | Agent registry and tracing |
 
 ### 5.2 Frontend Proxy Rules
 

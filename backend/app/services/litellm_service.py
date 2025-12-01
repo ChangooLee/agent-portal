@@ -62,20 +62,39 @@ class LiteLLMService:
         self,
         model: str,
         messages: list,
+        metadata: Optional[Dict[str, Any]] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """Create a non-streaming chat completion via LiteLLM"""
+        """
+        Create a non-streaming chat completion via LiteLLM.
+        
+        Args:
+            model: Model name
+            messages: Chat messages
+            metadata: Optional metadata for OTEL tracing (agent_id, parent_trace_id, etc.)
+                      LiteLLM's OTEL callback stores this in SpanAttributes
+            **kwargs: Additional LiteLLM parameters
+            
+        Returns:
+            LiteLLM response with choices, usage, etc.
+        """
         url = f"{self.base_url}/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
+        
+        # Build payload with metadata for OTEL tracing
         payload = {
             "model": model,
             "messages": messages,
             "stream": False,
             **kwargs
         }
+        
+        # Add metadata if provided (LiteLLM stores this in OTEL SpanAttributes)
+        if metadata:
+            payload["metadata"] = metadata
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:

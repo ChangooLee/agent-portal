@@ -69,6 +69,8 @@ Database: agent_portal
 | `db_connection_permissions` | DB 연결 권한 | `scripts/init-datacloud-schema.sql` |
 | `db_query_logs` | 쿼리 로그 | `scripts/init-datacloud-schema.sql` |
 | `llm_calls` | LLM 호출 로그 | Backend 자동 생성 |
+| `agents` | 에이전트 레지스트리 | Backend 자동 생성 (agent_registry_service) |
+| `agent_sessions` | 에이전트 세션 로그 | Backend 자동 생성 (agent_trace_adapter) |
 | `otel_traces` | OTEL 트레이스 (미사용) | - |
 | `trace_summaries` | 트레이스 요약 (미사용) | - |
 | `user`, `auth`, `chat`, `file`, ... | WebUI 테이블 (SQLite 마이그레이션) | - |

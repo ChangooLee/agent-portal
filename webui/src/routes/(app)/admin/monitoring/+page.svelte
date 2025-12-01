@@ -708,6 +708,9 @@
 														<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 															Success Rate
 														</th>
+														<th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+															Actions
+														</th>
 													</tr>
 												</thead>
 												<tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -742,6 +745,17 @@
 																<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {agent.success_rate >= 95 ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : agent.success_rate >= 80 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}">
 																	{agent.success_rate.toFixed(1)}%
 																</span>
+															</td>
+															<td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+																<a 
+																	href="/admin/monitoring/agents/{agent.agent_id || agent.agent_name}" 
+																	class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+																>
+																	<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+																	</svg>
+																	Details
+																</a>
 															</td>
 														</tr>
 													{/each}

@@ -1,5 +1,31 @@
 # Bug Fixes Log
 
+## 2025-12-01: Agent Trace ClickHouse 인증 오류 및 필터 문제
+
+### 문제 1: ClickHouse 인증 실패
+- **증상**: 에이전트 트레이스가 ClickHouse에 저장되지 않음 (403 Authentication Error)
+- **원인**: `agent_trace_adapter.py`에서 ClickHouse HTTP 요청 시 인증 정보 누락
+- **해결**: HTTP 요청에 `user=default&password=password` 파라미터 추가
+
+### 문제 2: Agent Usage 0으로 표시
+- **증상**: API는 데이터 반환하지만 UI에서 0 agents 표시
+- **원인 1**: `monitoring_adapter.py`의 `agent_filter`에 Vanna 조건 누락
+- **원인 2**: `project_id` 필터가 `default-project` 허용 안 함
+- **해결**:
+  1. `agent_filter`에 `SpanAttributes['agent.id'] != ''`, `ServiceName LIKE '%vanna%'`, `ServiceName LIKE 'agent-%'` 조건 추가
+  2. 쿼리에 `agent_id` 필드 추가 및 GROUP BY 수정
+  3. project_id 필터에 `'default-project'` 허용 추가
+
+### 수정 파일
+- `backend/app/services/agent_trace_adapter.py`: ClickHouse 인증 파라미터 추가
+- `backend/app/services/monitoring_adapter.py`: agent_filter 및 project_id 필터 수정
+
+### 재발 방지
+- 새 에이전트 타입 추가 시 `agent_filter` 업데이트 확인
+- ClickHouse 인증 정보는 환경 변수로 관리 권장
+
+---
+
 ## 2025-11-28: 모니터링 화면 데이터 표시 안 됨
 
 ### 문제

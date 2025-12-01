@@ -311,6 +311,56 @@ async def get_agent_usage_stats(
         raise HTTPException(status_code=500, detail=f"Failed to fetch agent usage stats: {str(e)}")
 
 
+@router.get("/agents/registry")
+async def get_agents_with_registry(
+    project_id: str = Query(..., description="Project ID"),
+    start_time: datetime = Query(..., description="Start time (ISO 8601)"),
+    end_time: datetime = Query(..., description="End time (ISO 8601)")
+):
+    """
+    에이전트 레지스트리 + OTEL 트레이스 조인 조회.
+    
+    metadata.agent_id로 등록된 에이전트의 사용량 통계.
+    """
+    try:
+        result = await monitoring_adapter.get_agents_with_registry(
+            project_id=project_id,
+            start_time=start_time,
+            end_time=end_time
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch agents: {str(e)}")
+
+
+@router.get("/agents/{agent_id}/detail")
+async def get_agent_detail(
+    agent_id: str,
+    start_time: datetime = Query(..., description="Start time (ISO 8601)"),
+    end_time: datetime = Query(..., description="End time (ISO 8601)")
+):
+    """
+    개별 에이전트 상세 통계 조회.
+    
+    Returns:
+        {
+            "agent_id": str,
+            "metrics": {...},
+            "traces": [...],
+            "trend": [...]
+        }
+    """
+    try:
+        result = await monitoring_adapter.get_agent_detail_stats(
+            agent_id=agent_id,
+            start_time=start_time,
+            end_time=end_time
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch agent detail: {str(e)}")
+
+
 @router.get("/analytics/guardrails")
 async def get_guardrail_stats(
     project_id: str = Query(..., description="Project ID"),

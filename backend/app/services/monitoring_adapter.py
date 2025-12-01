@@ -1009,22 +1009,28 @@ class MonitoringAdapter:
         LiteLLM 프록시 호출은 제외 (LLM 호출은 별도 집계).
         """
         # Agent 호출만 필터링 (LiteLLM 프록시 제외)
+        # SpanAttributes['agent.id']가 있는 트레이스 또는 알려진 에이전트 서비스
         agent_filter = """
           AND (
-            SpanName LIKE '%langflow%'
+            SpanAttributes['agent.id'] != ''
+            OR SpanName LIKE '%langflow%'
             OR SpanName LIKE '%flowise%'
             OR SpanName LIKE '%autogen%'
-            OR SpanName LIKE '%agent%'
+            OR SpanName LIKE '%vanna%'
             OR ServiceName LIKE '%langflow%'
             OR ServiceName LIKE '%flowise%'
             OR ServiceName LIKE '%autogen%'
+            OR ServiceName LIKE '%vanna%'
+            OR ServiceName LIKE 'agent-%'
           )
           AND ServiceName != 'litellm-proxy'
         """
         
         query = f"""
         SELECT 
-            ServiceName as agent_name,
+            SpanAttributes['agent.id'] as agent_id,
+            any(SpanAttributes['agent.name']) as agent_name,
+            any(ServiceName) as service_name,
             count(DISTINCT TraceId) as event_count,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens'])) as total_tokens,
             sum(
@@ -1039,11 +1045,16 @@ class MonitoringAdapter:
             avg(Duration) / 1000000 as avg_latency_ms,
             countIf(StatusCode = 'ERROR') as error_count
         FROM {CLICKHOUSE_DATABASE}.otel_traces
-        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
+        WHERE (
+            ResourceAttributes['project_id'] = '{project_id}' 
+            OR ResourceAttributes['project_id'] = '' 
+            OR ResourceAttributes['project_id'] = 'default-project'
+          )
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {agent_filter}
-        GROUP BY agent_name
+        GROUP BY agent_id
+        HAVING agent_id != ''
         ORDER BY event_count DESC
         """
         results = await self._execute_query(query)
@@ -1055,8 +1066,183 @@ class MonitoringAdapter:
             success_count = event_count - error_count
             success_rate = (success_count / event_count * 100) if event_count > 0 else 100.0
             
+            # agent_name이 없으면 service_name 사용
+            agent_name = row.get('agent_name') or row.get('service_name') or 'Unknown Agent'
+            
             agent_stats.append({
-                'agent_name': row['agent_name'] or 'Unknown Agent',
+                'agent_id': row.get('agent_id', ''),
+                'agent_name': agent_name,
+                'total_tokens': int(row['total_tokens'] or 0),
+                'total_cost': float(row['total_cost'] or 0),
+                'event_count': event_count,
+                'avg_latency': round(float(row['avg_latency_ms'] or 0), 2),
+                'error_count': error_count,
+                'success_rate': round(success_rate, 1)
+            })
+        
+        return agent_stats
+    
+    async def get_agent_detail_stats(
+        self,
+        agent_id: str,
+        start_time: datetime,
+        end_time: datetime
+    ) -> Dict[str, Any]:
+        """
+        개별 에이전트 상세 통계 조회.
+        
+        agent_id (metadata.agent_id)로 필터링하여 해당 에이전트의
+        상세 메트릭과 트레이스 목록을 반환.
+        """
+        # 에이전트 메트릭 쿼리
+        metrics_query = f"""
+        SELECT 
+            count(DISTINCT TraceId) as trace_count,
+            count() as span_count,
+            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens'])) as total_tokens,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as llm_tokens,
+            sum(
+                greatest(
+                    toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
+                )
+            ) as total_cost,
+            avg(Duration) / 1000000 as avg_latency_ms,
+            quantile(0.5)(Duration) / 1000000 as p50_latency,
+            quantile(0.95)(Duration) / 1000000 as p95_latency,
+            countIf(StatusCode = 'ERROR') as error_count
+        FROM {CLICKHOUSE_DATABASE}.otel_traces
+        WHERE SpanAttributes['metadata.agent_id'] = '{agent_id}'
+          AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
+          AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+        """
+        
+        metrics_result = await self._execute_query(metrics_query)
+        
+        # 최근 트레이스 목록
+        traces_query = f"""
+        SELECT 
+            TraceId as trace_id,
+            SpanName as span_name,
+            Duration / 1000000 as duration_ms,
+            StatusCode as status,
+            Timestamp as timestamp,
+            SpanAttributes['metadata.agent_name'] as agent_name
+        FROM {CLICKHOUSE_DATABASE}.otel_traces
+        WHERE SpanAttributes['metadata.agent_id'] = '{agent_id}'
+          AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
+          AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+        ORDER BY Timestamp DESC
+        LIMIT 50
+        """
+        
+        traces_result = await self._execute_query(traces_query)
+        
+        # 시간별 트렌드 (1시간 단위)
+        trend_query = f"""
+        SELECT 
+            toStartOfHour(Timestamp) as hour,
+            count() as call_count,
+            countIf(StatusCode = 'ERROR') as error_count
+        FROM {CLICKHOUSE_DATABASE}.otel_traces
+        WHERE SpanAttributes['metadata.agent_id'] = '{agent_id}'
+          AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
+          AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+        GROUP BY hour
+        ORDER BY hour
+        """
+        
+        trend_result = await self._execute_query(trend_query)
+        
+        # 결과 조합 (None 값 처리)
+        metrics = metrics_result[0] if metrics_result else {}
+        trace_count = int(metrics.get('trace_count') or 0)
+        error_count = int(metrics.get('error_count') or 0)
+        success_rate = ((trace_count - error_count) / trace_count * 100) if trace_count > 0 else 100.0
+        
+        return {
+            'agent_id': agent_id,
+            'metrics': {
+                'trace_count': trace_count,
+                'span_count': int(metrics.get('span_count') or 0),
+                'total_tokens': int(metrics.get('total_tokens') or 0) + int(metrics.get('llm_tokens') or 0),
+                'total_cost': float(metrics.get('total_cost') or 0),
+                'avg_latency_ms': round(float(metrics.get('avg_latency_ms') or 0), 2),
+                'p50_latency_ms': round(float(metrics.get('p50_latency') or 0), 2),
+                'p95_latency_ms': round(float(metrics.get('p95_latency') or 0), 2),
+                'error_count': error_count,
+                'success_rate': round(success_rate, 1)
+            },
+            'traces': [
+                {
+                    'trace_id': r['trace_id'],
+                    'span_name': r['span_name'],
+                    'duration_ms': round(float(r['duration_ms'] or 0), 2),
+                    'status': r['status'],
+                    'timestamp': r['timestamp'].isoformat() if hasattr(r['timestamp'], 'isoformat') else str(r['timestamp']),
+                    'agent_name': r.get('agent_name', '')
+                }
+                for r in traces_result
+            ],
+            'trend': [
+                {
+                    'hour': r['hour'].isoformat() if hasattr(r['hour'], 'isoformat') else str(r['hour']),
+                    'call_count': int(r['call_count']),
+                    'error_count': int(r['error_count'])
+                }
+                for r in trend_result
+            ]
+        }
+    
+    async def get_agents_with_registry(
+        self,
+        project_id: str,
+        start_time: datetime,
+        end_time: datetime
+    ) -> List[Dict[str, Any]]:
+        """
+        에이전트 레지스트리와 OTEL 트레이스를 조인하여 에이전트 목록 조회.
+        
+        metadata.agent_id가 있는 트레이스를 집계하고,
+        에이전트 레지스트리의 정보와 결합.
+        """
+        # ClickHouse에서 agent_id별 집계
+        query = f"""
+        SELECT 
+            SpanAttributes['metadata.agent_id'] as agent_id,
+            SpanAttributes['metadata.agent_name'] as agent_name,
+            count(DISTINCT TraceId) as event_count,
+            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as total_tokens,
+            sum(
+                greatest(
+                    toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
+                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
+                )
+            ) as total_cost,
+            avg(Duration) / 1000000 as avg_latency_ms,
+            countIf(StatusCode = 'ERROR') as error_count
+        FROM {CLICKHOUSE_DATABASE}.otel_traces
+        WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
+          AND SpanAttributes['metadata.agent_id'] != ''
+          AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
+          AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+        GROUP BY agent_id, agent_name
+        ORDER BY event_count DESC
+        """
+        
+        results = await self._execute_query(query)
+        
+        agent_stats = []
+        for row in results:
+            event_count = int(row['event_count'] or 0)
+            error_count = int(row['error_count'] or 0)
+            success_rate = ((event_count - error_count) / event_count * 100) if event_count > 0 else 100.0
+            
+            agent_stats.append({
+                'agent_id': row['agent_id'] or '',
+                'agent_name': row['agent_name'] or 'Unknown',
                 'total_tokens': int(row['total_tokens'] or 0),
                 'total_cost': float(row['total_cost'] or 0),
                 'event_count': event_count,
