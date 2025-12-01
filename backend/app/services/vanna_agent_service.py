@@ -60,18 +60,109 @@ class VannaAgentService:
     - Business term integration
     - Streaming response support
     - Connection-specific agent caching
+    - Dynamic model selection from LiteLLM
     """
+    
+    # Model preference order for Text-to-SQL (best to fallback)
+    MODEL_PREFERENCES = [
+        'gpt-4',
+        'gpt-4o',
+        'gpt-4o-mini',
+        'claude-3-5-sonnet',
+        'claude-3-sonnet',
+        'gpt-3.5-turbo',
+        'qwen-235b',
+    ]
     
     def __init__(self):
         """Initialize the Vanna Agent Service."""
         self._agents: Dict[str, Any] = {}  # Cache of agents by connection_id
         self._schema_cache: Dict[str, Dict] = {}  # Schema cache by connection_id
         self._terms_cache: Dict[str, List[Dict]] = {}  # Business terms cache
+        self._available_models: Optional[List[str]] = None  # Cached available models
+        self._selected_model: Optional[str] = None  # Selected model for Text-to-SQL
         
-        # Default model from environment
-        self.default_model = os.environ.get('TEXT_TO_SQL_MODEL', 'gpt-4o-mini')
+        # Default model from environment (fallback if auto-detection fails)
+        self._env_model = os.environ.get('TEXT_TO_SQL_MODEL')
         
         logger.info("VannaAgentService initialized")
+    
+    async def _get_available_models(self) -> List[str]:
+        """
+        Fetch available models from LiteLLM proxy.
+        
+        Returns:
+            List of available model IDs
+        """
+        if self._available_models is not None:
+            return self._available_models
+        
+        try:
+            from app.services.litellm_service import litellm_service
+            models_response = await litellm_service.list_models()
+            self._available_models = [
+                m.get('id') for m in models_response.get('data', [])
+                if m.get('id')
+            ]
+            logger.info(f"Available LiteLLM models: {self._available_models}")
+            return self._available_models
+        except Exception as e:
+            logger.warning(f"Failed to fetch LiteLLM models: {e}")
+            self._available_models = []
+            return []
+    
+    async def _select_best_model(self) -> str:
+        """
+        Select the best available model for Text-to-SQL.
+        
+        Priority:
+        1. TEXT_TO_SQL_MODEL environment variable (if set and available)
+        2. First match from MODEL_PREFERENCES list
+        3. First available model
+        4. Fallback to 'gpt-3.5-turbo' (may fail if not configured)
+        
+        Returns:
+            Selected model ID
+        """
+        if self._selected_model is not None:
+            return self._selected_model
+        
+        available = await self._get_available_models()
+        
+        # 1. Check environment variable
+        if self._env_model and self._env_model in available:
+            self._selected_model = self._env_model
+            logger.info(f"Using TEXT_TO_SQL_MODEL from env: {self._selected_model}")
+            return self._selected_model
+        
+        # 2. Find first preferred model that's available
+        for preferred in self.MODEL_PREFERENCES:
+            if preferred in available:
+                self._selected_model = preferred
+                logger.info(f"Auto-selected Text-to-SQL model: {self._selected_model}")
+                return self._selected_model
+        
+        # 3. Use first available model
+        if available:
+            self._selected_model = available[0]
+            logger.info(f"Using first available model: {self._selected_model}")
+            return self._selected_model
+        
+        # 4. Fallback (will likely fail, but better than nothing)
+        self._selected_model = self._env_model or 'gpt-3.5-turbo'
+        logger.warning(f"No models available, falling back to: {self._selected_model}")
+        return self._selected_model
+    
+    @property
+    def default_model(self) -> str:
+        """Get the default model (for sync access). Use _select_best_model() for async."""
+        return self._selected_model or self._env_model or 'gpt-3.5-turbo'
+    
+    def invalidate_model_cache(self) -> None:
+        """Invalidate cached model list (call when LiteLLM config changes)."""
+        self._available_models = None
+        self._selected_model = None
+        logger.info("Model cache invalidated")
     
     async def get_or_create_agent(
         self,
@@ -93,6 +184,9 @@ class VannaAgentService:
         if not force_refresh and connection_id in self._agents:
             return self._agents[connection_id]
         
+        # Select best available model from LiteLLM
+        selected_model = await self._select_best_model()
+        
         # Create new agent with LiteLLM backend
         from app.services.vanna_llm_service import LiteLLMVannaService
         
@@ -100,7 +194,7 @@ class VannaAgentService:
             connection_id=connection_id,
             connection_name=connection_info.get('name', 'Unknown'),
             db_type=connection_info.get('db_type', 'postgresql'),
-            model=self.default_model,
+            model=selected_model,
         )
         
         # Create LLM service

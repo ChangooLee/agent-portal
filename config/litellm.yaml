@@ -9,22 +9,22 @@ model_list:
   # OpenRouter Models (Primary)
   - model_name: qwen-235b
     litellm_params:
-      model: openrouter/${OPENROUTER_MODEL_NAME:-qwen/qwen3-235b-a22b-2507}
-      api_base: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
-      api_key: ${OPENROUTER_API_KEY}
+      model: openrouter/qwen/qwen3-235b-a22b-2507
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
   
   # Alias for compatibility
   - model_name: gpt-4
     litellm_params:
-      model: openrouter/${OPENROUTER_MODEL_NAME:-qwen/qwen3-235b-a22b-2507}
-      api_base: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
-      api_key: ${OPENROUTER_API_KEY}
+      model: openrouter/qwen/qwen3-235b-a22b-2507
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
   
   - model_name: gpt-3.5-turbo
     litellm_params:
-      model: openrouter/${OPENROUTER_MODEL_NAME:-qwen/qwen3-235b-a22b-2507}
-      api_base: ${OPENROUTER_API_BASE_URL:-https://openrouter.ai/api/v1}
-      api_key: ${OPENROUTER_API_KEY}
+      model: openrouter/qwen/qwen3-235b-a22b-2507
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
 
 # General Settings
 general_settings:

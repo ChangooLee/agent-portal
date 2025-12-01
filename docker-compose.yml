@@ -293,7 +293,7 @@ services:
     profiles: ["disabled"]
     ports:
       - "9002:9000"
-      - "8124:8123"
+      - "8125:8123"  # Changed from 8124 (Cursor IDE conflict)
     environment:
       - CLICKHOUSE_DB=${CLICKHOUSE_DATABASE:-otel_2}
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}

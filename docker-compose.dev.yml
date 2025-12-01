@@ -16,7 +16,7 @@ services:
       - LOG_LEVEL=debug
       # External ClickHouse connection (for monitoring)
       - CLICKHOUSE_HOST=host.docker.internal
-      - CLICKHOUSE_HTTP_PORT=8124
+      - CLICKHOUSE_HTTP_PORT=8125  # Changed from 8124 (Cursor IDE conflict)
       - CLICKHOUSE_USER=default
       - CLICKHOUSE_PASSWORD=password
       - CLICKHOUSE_DATABASE=otel_2
@@ -35,12 +35,12 @@ services:
       context: ./webui
       dockerfile: Dockerfile.dev
     ports:
-      - "3005:3001"    # Vite dev server (Vite uses port 3001 internally)
+      - "3009:3001"    # Vite dev server (3005-3008 occupied by Cursor/Docker)
       - "3000:8080"    # Backend API
     environment:
       - NODE_ENV=development
       - DOCKER_ENV=true
-      - VITE_HMR_PORT=3005  # External port for HMR WebSocket
+      - VITE_HMR_PORT=3009  # External port for HMR WebSocket
       # External LiteLLM connection
       - OPENAI_API_BASE_URLS=http://host.docker.internal:4000/v1
       - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
