@@ -1,54 +1,12 @@
 # LiteLLM Configuration
-# LLM Gateway 설정
+# LLM Gateway 설정 - DB 기반 모델 관리
 
 # OTEL Resource Attributes (project_id 주입)
 environment_variables:
   OTEL_RESOURCE_ATTRIBUTES: "project_id=8c59e361-3727-418c-bc68-086b69f7598b"
 
-# Model List - OpenRouter 모델 정의
-model_list:
-  # Qwen 235B (Primary)
-  - model_name: qwen-235b
-    litellm_params:
-      model: openrouter/qwen/qwen3-235b-a22b-2507
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-  
-  # GPT-4 alias → Qwen
-  - model_name: gpt-4
-    litellm_params:
-      model: openrouter/qwen/qwen3-235b-a22b-2507
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-  
-  # GPT-3.5-turbo alias → Qwen
-  - model_name: gpt-3.5-turbo
-    litellm_params:
-      model: openrouter/qwen/qwen3-235b-a22b-2507
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # GLM-4
-  - model_name: glm-4
-    litellm_params:
-      model: openrouter/thudm/glm-4-32b-0414
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # GPT-4o-mini
-  - model_name: gpt-4o-mini
-    litellm_params:
-      model: openrouter/openai/gpt-4o-mini
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  # Claude 3.5 Sonnet
-  - model_name: claude-3-5-sonnet
-    litellm_params:
-      model: openrouter/anthropic/claude-3.5-sonnet
-      api_base: https://openrouter.ai/api/v1
-      api_key: os.environ/OPENROUTER_API_KEY
-      max_tokens: 8192
+# Model List: DB에서 관리 (LiteLLM_ProxyModelTable)
+# UI에서 모델 추가/수정/삭제 가능
 
 # General Settings
 general_settings:
