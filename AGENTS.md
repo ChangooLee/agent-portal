@@ -590,5 +590,57 @@ curl http://localhost:4000/health
 
 ---
 
-**Last Updated**: 2025-11-28
-**Version**: 5.0 (Technical Reference)
+## 10. Architecture Integrity Rules (CRITICAL)
+
+### 10.1 No Bypass Policy
+
+**아키텍처 우회 금지**: 문제 발생 시 우회하지 말고 근본 원인을 해결해야 합니다.
+
+### 10.2 Prohibited Bypass Patterns
+
+| Category | ❌ Prohibited | ✅ Required |
+|----------|--------------|-------------|
+| **Environment** | Docker 대신 npm/python 직접 실행 | Docker Compose로만 기동 |
+| **Port Conflict** | docker-compose.yml 포트 변경 | 충돌 프로세스 종료 |
+| **Network** | localhost로 우회 | Docker 내부 네트워크명 사용 |
+| **Configuration** | YAML로 우회 (DB 관리 안될 때) | 근본 원인 분석 |
+| **Failure** | 이전 방식으로 롤백 | 실패 원인 분석 및 보고 |
+
+### 10.3 Service Network Names
+
+Docker 내부에서 서비스 간 통신 시 반드시 아래 네트워크명 사용:
+
+```yaml
+# ✅ Correct (Docker internal)
+LITELLM_HOST: http://litellm:4000
+CLICKHOUSE_HOST: monitoring-clickhouse:8123
+DATABASE_URL: mariadb:3306
+
+# ❌ Wrong (localhost bypass)
+LITELLM_HOST: http://localhost:4000
+CLICKHOUSE_HOST: localhost:8124
+```
+
+### 10.4 When Issues Occur
+
+```
+1. 우회하지 않고 원인 분석
+2. 분석 결과를 사용자에게 명확히 보고
+3. 해결 방안 2-3가지 제시 (우회책 제외)
+4. 사용자 승인 후 진행
+5. 해결 불가 시 아키텍처 재검토 요청
+```
+
+### 10.5 Current Architecture Decisions
+
+| Component | Decision | Status |
+|-----------|----------|--------|
+| LLM Gateway | LiteLLM + PostgreSQL (DB 기반 모델 관리) | 🔧 암호화 문제 조사 중 |
+| Observability | OTEL → ClickHouse | ✅ 정상 |
+| App Database | MariaDB | ✅ 정상 |
+| API Gateway | Kong + Konga | ✅ 정상 |
+
+---
+
+**Last Updated**: 2025-12-02
+**Version**: 5.1 (Technical Reference + Architecture Rules)
