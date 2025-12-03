@@ -1,20 +1,81 @@
-# Production Override Docker Compose
-# Extends docker-compose.yml with production-specific settings
-#
+# Production Docker Compose
+# 
 # Usage:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml build
 #
 # Shortcut (create alias in .bashrc/.zshrc):
-#   alias dcprod='docker compose -f docker-compose.yml -f docker-compose.prod.yml'
+#   alias dcprod='docker compose -f docker-compose.prod.yml'
 
 services:
-  # Backend - Production settings
-  backend:
+  # Portal Shell (Open-WebUI fork)
+  # Database: Uses SQLite (default) - data stored in webui_data volume
+  webui:
+    build:
+      context: ./webui
+      dockerfile: Dockerfile
     restart: unless-stopped
+    ports:
+      - "3000:8080"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - ENABLE_OPENAI_API=true
+      - OPENAI_API_BASE_URLS=http://litellm:4000/v1
+      - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
+    depends_on:
+      - backend
+      - litellm
+    volumes:
+      - ./webui/plugins:/app/plugins
+      - ./webui/overrides:/app/overrides
+      - webui_data:/app/backend/data  # SQLite database persistence
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Backend BFF
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: .env
     environment:
       - DEBUG=false
       - LOG_LEVEL=info
+      - ENVIRONMENT=docker
+      # ClickHouse 연결 설정 (Docker 내부 네트워크 사용)
+      - CLICKHOUSE_HOST=monitoring-clickhouse
+      - CLICKHOUSE_HTTP_PORT=8123
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=password
+      - CLICKHOUSE_DATABASE=otel_2
+      # LiteLLM connection
+      - LITELLM_HOST=http://litellm:4000
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      # Data Cloud 암호화 키 (Fernet)
+      - DATACLOUD_ENCRYPTION_KEY=LpbushjAoV7u_7Z3tk5TzqsTra79yKjMAanPR0DWz9U=
+      # Text-to-SQL default model
+      - TEXT_TO_SQL_MODEL=gpt-3.5-turbo
+    volumes:
+      # News data volume mount (서버 환경: NEWS_DATA_PATH 환경변수 설정 필요)
+      - ${NEWS_DATA_PATH:-./data/news}:/data/news:ro
+      # Vanna AI submodule mount
+      - ./libs/vanna:/app/libs/vanna:ro
+    depends_on:
+      - mariadb
+      - chromadb
+      - redis
+      - minio
+      - litellm
+      - kong
+      - prometheus
     deploy:
       resources:
         limits:
@@ -24,11 +85,22 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # WebUI - Production settings
-  webui:
+  # LiteLLM Database (PostgreSQL) - DB 기반 모델 관리용
+  litellm-postgres:
+    image: postgres:16
+    container_name: litellm-postgres
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:-litellm_secure_password}
+      POSTGRES_DB: litellm_db
+    volumes:
+      - litellm_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -38,11 +110,41 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # LiteLLM - Production settings
+  # LLM Gateway - DB 기반 모델 관리
   litellm:
+    image: ghcr.io/berriai/litellm:main-stable
     restart: unless-stopped
+    ports:
+      - "4001:4000"  # 외부 4001 → 내부 4000 (Cursor 포트 충돌 회피)
+    env_file: .env
+    volumes:
+      - ./config/litellm.yaml:/app/config/litellm.yaml:ro
+    command: ["--config", "/app/config/litellm.yaml"]
     environment:
       - LITELLM_LOG=INFO
+      # Database connection (모델 DB 저장용)
+      - DATABASE_URL=postgresql://litellm:${LITELLM_DB_PASSWORD:-litellm_secure_password}@litellm-postgres:5432/litellm_db
+      # Master Key (must start with sk-)
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      # Salt Key (for API key encryption, never change after first use)
+      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
+      # LLM Provider Keys
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # OpenTelemetry integration (LiteLLM specific) - gRPC like production
+      - OTEL_EXPORTER=otlp_grpc
+      - OTEL_ENDPOINT=http://monitoring-otel-collector:4317
+      # Standard OTEL environment variables
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://monitoring-otel-collector:4317
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://monitoring-otel-collector:4317
+      - OTEL_SERVICE_NAME=litellm-proxy
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      # Resource attributes for project filtering
+      - OTEL_RESOURCE_ATTRIBUTES=project_id=${DEFAULT_PROJECT_ID:-8c59e361-3727-418c-bc68-086b69f7598b}
+    depends_on:
+      litellm-postgres:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -52,42 +154,290 @@ services:
           cpus: '1'
           memory: 1G
 
-  # LiteLLM PostgreSQL - Production settings
-  litellm-postgres:
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
+  # Observability
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9092:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
 
-  # MariaDB - Production settings
-  mariadb:
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3008:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./config/grafana-provisioning:/etc/grafana/provisioning/dashboards
+      - ./config/grafana-dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
 
-  # Redis - Production settings
-  redis:
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
+  # Kong Database (Postgres)
+  kong-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=kong
+      - POSTGRES_USER=kong
+      - POSTGRES_PASSWORD=kongpass
+    volumes:
+      - kong_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Kong - Production settings
+  # Kong Migrations (1회 실행)
+  kong-migrations:
+    image: kong:3.6
+    depends_on:
+      kong-db:
+        condition: service_healthy
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kongpass
+    command: ["kong", "migrations", "bootstrap"]
+    restart: "no"
+
+  # Kong Gateway (Postgres 모드)
   kong:
+    image: kong:3.6
     restart: unless-stopped
+    depends_on:
+      - kong-db
+      - kong-migrations
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-db
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kongpass
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_PLUGINS=bundled,prometheus
+    ports:
+      - "8004:8000"    # Proxy
+      - "8444:8443"    # Proxy TLS
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     deploy:
       resources:
         limits:
           cpus: '2'
           memory: 1G
 
+  # Konga Database (Postgres)
+  konga-db:
+    image: postgres:11-alpine
+    environment:
+      - POSTGRES_DB=konga
+      - POSTGRES_USER=konga
+      - POSTGRES_PASSWORD=kongapass
+    volumes:
+      - konga_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U konga"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Konga (Kong Admin UI)
+  konga:
+    image: pantsel/konga:latest
+    platform: linux/amd64
+    depends_on:
+      konga-db:
+        condition: service_healthy
+      kong:
+        condition: service_healthy
+    environment:
+      - DB_ADAPTER=postgres
+      - DB_HOST=konga-db
+      - DB_USER=konga
+      - DB_PASSWORD=kongapass
+      - DB_DATABASE=konga
+      - NODE_ENV=production
+      - TOKEN_SECRET=kongasecret
+      - KONGA_HOOK_TIMEOUT=120000
+    ports:
+      - "1337:1337"
+
+  # Data Layer
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:latest
+    ports:
+      - "8005:8000"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9003:9000"
+      - "9004:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio:/data
+
+  # Monitoring ClickHouse (for OTLP traces) - Disabled, using external service
+  monitoring-clickhouse:
+    image: clickhouse/clickhouse-server:24.12
+    container_name: monitoring-clickhouse
+    profiles: ["disabled"]
+    ports:
+      - "9002:9000"
+      - "8125:8123"
+    environment:
+      - CLICKHOUSE_DB=${CLICKHOUSE_DATABASE:-otel_2}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-password}
+    volumes:
+      - monitoring_clickhouse:/var/lib/clickhouse
+
+  # Monitoring OTLP Collector (receives traces from LiteLLM)
+  monitoring-otel-collector:
+    build:
+      context: ./otel-collector
+      dockerfile: Dockerfile
+    container_name: monitoring-otel-collector
+    profiles: ["disabled"]
+    ports:
+      - '4319:4317'
+      - '4320:4318'
+    environment:
+      - CLICKHOUSE_ENDPOINT=http://monitoring-clickhouse:8123
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-password}
+      - CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE:-otel_2}
+      - LOGS_TABLE_NAME=otel_logs
+      - TRACES_TABLE_NAME=otel_traces
+      - CLICKHOUSE_TTL=72h
+      - CLICKHOUSE_TIMEOUT=10s
+      - DEFAULT_PROJECT_ID=${DEFAULT_PROJECT_ID:-8c59e361-3727-418c-bc68-086b69f7598b}
+    depends_on:
+      - monitoring-clickhouse
+
+  # 추가 포털 (disabled - build directories not present)
+  open-notebook:
+    build: ./open-notebook
+    profiles: ["disabled"]
+    ports:
+      - "3100:3000"
+    env_file: .env
+
+  perplexica:
+    build: ./perplexica
+    profiles: ["disabled"]
+    ports:
+      - "3210:3000"
+    env_file: .env
+
+  # Agent Builders
+  langflow:
+    image: langflowai/langflow:latest
+    ports:
+      - "7861:7860"
+    environment:
+      - LANGFLOW_HOST=0.0.0.0
+      - LANGFLOW_PORT=7860
+      - LANGFLOW_DEFAULT_OPENAI_BASE_URL=http://host.docker.internal:4000/v1
+      - LANGFLOW_DEFAULT_OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - langflow_data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  flowise:
+    image: flowiseai/flowise:latest
+    ports:
+      - "3002:3000"
+    environment:
+      - PORT=3000
+      - OPENAI_API_BASE=http://host.docker.internal:4000/v1
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - flowise_data:/root/.flowise
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  autogen-studio:
+    build: ./autogen-studio
+    profiles: ["disabled"]
+    ports:
+      - "5050:5050"
+    environment:
+      - LITELLM_BASE_URL=http://host.docker.internal:4000
+
+  autogen-api:
+    build: ./autogen-api
+    profiles: ["disabled"]
+    ports:
+      - "5051:5051"
+    environment:
+      - LITELLM_BASE_URL=http://host.docker.internal:4000
+
+volumes:
+  mariadb:
+  chromadb:
+  redis:
+  minio:
+  monitoring_clickhouse:
+  kong_db:
+  konga_db:
+  langflow_data:
+  flowise_data:
+  prometheus_data:
+  grafana_data:
+  litellm_pg_data:
+  webui_data:
