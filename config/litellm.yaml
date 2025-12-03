@@ -1,17 +1,53 @@
 # LiteLLM Configuration
-# LLM Gateway 설정 - DB 기반 모델 관리
+# LLM Gateway 설정 - YAML 기반 모델 관리
+# 
+# NOTE: store_model_in_db: true 사용 시 litellm_params.model 필드가 암호화되어
+# "LLM Provider NOT provided" 오류 발생 (LiteLLM 버그, GitHub 이슈 등록됨)
+# 임시 해결책으로 YAML 기반 모델 관리 사용
 
 # OTEL Resource Attributes (project_id 주입)
 environment_variables:
   OTEL_RESOURCE_ATTRIBUTES: "project_id=8c59e361-3727-418c-bc68-086b69f7598b"
 
-# Model List: DB에서 관리 (LiteLLM_ProxyModelTable)
-# UI에서 모델 추가/수정/삭제 가능
+# Model List (YAML 기반 관리)
+model_list:
+  # Qwen 3 235B (OpenRouter)
+  - model_name: qwen-235b
+    litellm_params:
+      model: openrouter/qwen/qwen3-235b-a22b-2507
+      api_key: os.environ/OPENROUTER_API_KEY
+      
+  # GPT-4 (OpenRouter)
+  - model_name: gpt-4
+    litellm_params:
+      model: openrouter/openai/gpt-4
+      api_key: os.environ/OPENROUTER_API_KEY
+      
+  # GPT-3.5 Turbo (OpenRouter)
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: openrouter/openai/gpt-3.5-turbo
+      api_key: os.environ/OPENROUTER_API_KEY
+      
+  # GLM-4 (OpenRouter)
+  - model_name: glm-4
+    litellm_params:
+      model: openrouter/thudm/glm-4-9b-chat
+      api_key: os.environ/OPENROUTER_API_KEY
+      
+  # Claude 3.5 Sonnet (OpenRouter)
+  - model_name: claude-3.5-sonnet
+    litellm_params:
+      model: openrouter/anthropic/claude-3.5-sonnet
+      api_key: os.environ/OPENROUTER_API_KEY
 
 # General Settings
 general_settings:
-  # Enable DB-based model management (for /model/new, /model/update, /model/delete)
-  store_model_in_db: true
+  # DB 기반 모델 관리 비활성화 (버그로 인해)
+  store_model_in_db: false
+  
+  # Master Key (환경변수에서 주입)
+  master_key: os.environ/LITELLM_MASTER_KEY
   
   # OpenTelemetry Integration
   set_verbose: true
@@ -32,5 +68,3 @@ router_settings:
 # Cost Tracking
 cost_tracking:
   enabled: true
-
-
