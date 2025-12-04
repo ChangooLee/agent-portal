@@ -1,6 +1,6 @@
 # Agent Portal 서비스 및 데이터베이스 상태 문서
 
-> **Last Updated**: 2025-11-28
+> **Last Updated**: 2025-12-04
 > **Purpose**: 로컬 개발 환경의 서비스 및 DB 상태 기록
 
 ---
@@ -11,7 +11,7 @@
 
 | 서비스 | 컨테이너명 | 포트 | 상태 | 용도 |
 |--------|-----------|------|------|------|
-| webui | agent-portal-webui-1 | 3005:3001, 3000:8080 | Running | Portal UI (SvelteKit) |
+| webui | agent-portal-webui-1 | 3009:3001, 3000:8080 | Running | Portal UI (SvelteKit) |
 | backend | agent-portal-backend-1 | 8000:8000 | Running | FastAPI BFF |
 | mariadb | agent-portal-mariadb-1 | 3306:3306 | Running | App Database |
 | redis | agent-portal-redis-1 | 6379:6379 | Running | Cache |
@@ -176,6 +176,7 @@ Database: konga
 | `agent-portal_monitoring_clickhouse` | `/var/lib/clickhouse` | ClickHouse 데이터 |
 | `agent-portal_litellm_pg_data` | `/var/lib/postgresql/data` | LiteLLM DB |
 | `agent-portal_prometheus_data` | `/prometheus` | Prometheus 메트릭 |
+| (bind mount) `/Users/.../mcp-naver-news/src/data` | `/data/news` | 뉴스 데이터 (Today 화면) |
 
 ---
 
