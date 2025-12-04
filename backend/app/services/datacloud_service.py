@@ -71,6 +71,45 @@ class DataCloudService:
         """비밀번호 복호화 (Fernet)"""
         return fernet.decrypt(encrypted.encode()).decode()
     
+    def _build_sqlalchemy_url(
+        self, db_type: str, username: str, password: str, 
+        host: str, port: int, database_name: str
+    ) -> str:
+        """
+        DB 타입별 SQLAlchemy URL 생성.
+        
+        지원 DB:
+        - MariaDB/MySQL: mysql+pymysql
+        - PostgreSQL: postgresql
+        - ClickHouse: clickhouse
+        - Oracle: oracle+oracledb
+        - SAP HANA: hana+hdbcli
+        - Databricks: databricks
+        """
+        from urllib.parse import quote_plus
+        
+        # 비밀번호 URL 인코딩 (특수문자 처리)
+        password_encoded = quote_plus(password)
+        
+        if db_type in ('mariadb', 'mysql'):
+            return f"mysql+pymysql://{username}:{password_encoded}@{host}:{port}/{database_name}"
+        elif db_type == 'postgresql':
+            return f"postgresql://{username}:{password_encoded}@{host}:{port}/{database_name}"
+        elif db_type == 'clickhouse':
+            return f"clickhouse://{username}:{password_encoded}@{host}:{port}/{database_name}"
+        elif db_type == 'oracle':
+            # Oracle: service_name 방식 (SID 대신)
+            return f"oracle+oracledb://{username}:{password_encoded}@{host}:{port}/?service_name={database_name}"
+        elif db_type in ('hana', 'sap_hana'):
+            # SAP HANA: hdbcli 드라이버 사용
+            return f"hana+hdbcli://{username}:{password_encoded}@{host}:{port}/{database_name}"
+        elif db_type in ('databricks', 'spark'):
+            # Databricks: HTTP 엔드포인트 방식
+            # database_name에 HTTP path가 들어옴 (예: /sql/1.0/warehouses/xxx)
+            return f"databricks://token:{password_encoded}@{host}:{port}{database_name}"
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+    
     async def create_connection(
         self,
         name: str,
@@ -448,14 +487,8 @@ class DataCloudService:
         username = conn_info['username']
         password = self.decrypt_password(conn_info['password_encrypted'])
         
-        if db_type in ('mariadb', 'mysql'):
-            url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database_name}"
-        elif db_type == 'postgresql':
-            url = f"postgresql://{username}:{password}@{host}:{port}/{database_name}"
-        elif db_type == 'clickhouse':
-            url = f"clickhouse://{username}:{password}@{host}:{port}/{database_name}"
-        else:
-            raise ValueError(f"Unsupported database type: {db_type}")
+        # DB 타입별 SQLAlchemy URL 생성
+        url = self._build_sqlalchemy_url(db_type, username, password, host, port, database_name)
         
         engine = create_engine(url, pool_pre_ping=True)
         inspector = inspect(engine)
@@ -654,6 +687,107 @@ class DataCloudService:
                 
                 client.close()
                 success = True
+            
+            elif db_type == 'oracle':
+                # Oracle: oracledb (cx_Oracle 후속) - 동기 드라이버
+                import oracledb
+                import asyncio
+                
+                def _execute_oracle():
+                    conn = oracledb.connect(
+                        user=username, password=password,
+                        dsn=f"{host}:{port}/{database_name}"
+                    )
+                    cursor = conn.cursor()
+                    cursor.execute(query)
+                    
+                    if query_type == 'select':
+                        cols = [desc[0] for desc in cursor.description]
+                        fetched = cursor.fetchmany(max_rows)
+                        result_rows = [dict(zip(cols, row)) for row in fetched]
+                        affected = len(result_rows)
+                    else:
+                        conn.commit()
+                        result_rows = []
+                        cols = []
+                        affected = cursor.rowcount
+                    
+                    cursor.close()
+                    conn.close()
+                    return cols, result_rows, affected
+                
+                # 동기 함수를 비동기로 실행
+                columns, rows, rows_affected = await asyncio.get_event_loop().run_in_executor(
+                    None, _execute_oracle
+                )
+                success = True
+            
+            elif db_type in ('hana', 'sap_hana'):
+                # SAP HANA: hdbcli - 동기 드라이버
+                from hdbcli import dbapi
+                import asyncio
+                
+                def _execute_hana():
+                    conn = dbapi.connect(
+                        address=host, port=port,
+                        user=username, password=password
+                    )
+                    cursor = conn.cursor()
+                    cursor.execute(query)
+                    
+                    if query_type == 'select':
+                        cols = [desc[0] for desc in cursor.description]
+                        fetched = cursor.fetchmany(max_rows)
+                        result_rows = [dict(zip(cols, row)) for row in fetched]
+                        affected = len(result_rows)
+                    else:
+                        conn.commit()
+                        result_rows = []
+                        cols = []
+                        affected = cursor.rowcount
+                    
+                    cursor.close()
+                    conn.close()
+                    return cols, result_rows, affected
+                
+                columns, rows, rows_affected = await asyncio.get_event_loop().run_in_executor(
+                    None, _execute_hana
+                )
+                success = True
+            
+            elif db_type in ('databricks', 'spark'):
+                # Databricks: databricks-sql-connector
+                from databricks import sql as databricks_sql
+                import asyncio
+                
+                def _execute_databricks():
+                    # database_name에는 HTTP path가 들어옴
+                    conn = databricks_sql.connect(
+                        server_hostname=host,
+                        http_path=database_name,
+                        access_token=password  # password 필드에 token 저장
+                    )
+                    cursor = conn.cursor()
+                    cursor.execute(query)
+                    
+                    if query_type == 'select':
+                        cols = [desc[0] for desc in cursor.description]
+                        fetched = cursor.fetchmany(max_rows)
+                        result_rows = [dict(zip(cols, row)) for row in fetched]
+                        affected = len(result_rows)
+                    else:
+                        result_rows = []
+                        cols = []
+                        affected = cursor.rowcount or 0
+                    
+                    cursor.close()
+                    conn.close()
+                    return cols, result_rows, affected
+                
+                columns, rows, rows_affected = await asyncio.get_event_loop().run_in_executor(
+                    None, _execute_databricks
+                )
+                success = True
                 
             else:
                 error_msg = f"Unsupported database type: {db_type}"
@@ -850,51 +984,52 @@ class DataCloudService:
         """
         자연어 질문을 SQL로 변환 (Text-to-SQL)
         
-        Vanna AI 에이전트를 사용하여 스키마 인식 SQL 생성.
+        LangGraph 기반 Text2SQL Agent를 사용하여 스키마 인식 SQL 생성.
         
         1. 연결 정보 조회
-        2. Vanna 에이전트에 스키마/용어집 학습 (캐시)
-        3. Vanna를 통해 SQL 생성
+        2. LangGraph Text-to-SQL Agent를 통해 SQL 생성
         
         Args:
             connection_id: DB 연결 ID
             question: 자연어 질문
             model: 사용할 LLM 모델 (None이면 자동 선택)
         """
-        from app.services.vanna_agent_service import vanna_agent_service
-        
         try:
-            # 1. 연결 정보 조회
-            connection_info = await self.get_connection_by_id(connection_id)
-            if not connection_info:
-                return {"success": False, "error": "Connection not found", "sql": ""}
+            from app.agents.text2sql.graph import text2sql_agent
             
-            # 2. 스키마가 캐시에 없으면 로드 및 학습
-            if connection_id not in vanna_agent_service._schema_cache:
-                schema = await self.get_schema_metadata(connection_id, refresh=False)
-                if not schema or "tables" not in schema:
-                    return {"success": False, "error": "스키마 정보를 가져올 수 없습니다.", "sql": ""}
-                
-                terms = await self.get_business_terms(connection_id)
-                
-                # Vanna 에이전트 생성 및 학습
-                await vanna_agent_service.get_or_create_agent(connection_id, connection_info)
-                await vanna_agent_service.train_agent(connection_id, schema, terms)
-            
-            # 3. Vanna를 통해 SQL 생성 (지정된 모델 사용)
-            result = await vanna_agent_service.generate_sql(
-                connection_id=connection_id,
+            # Text-to-SQL Agent 실행
+            final_state = await text2sql_agent.run(
                 question=question,
-                connection_info=connection_info,
-                model=model,
+                connection_id=connection_id
             )
             
+            # 토큰 및 모델 정보 추출
+            tokens_used = final_state.get("total_tokens", 0)
+            model_used = final_state.get("llm_model") or model
+            
+            # 결과 반환
+            if final_state.get("execution_error") and final_state.get("needs_human_review"):
+                return {
+                    "success": False,
+                    "sql": final_state.get("chosen_sql", ""),
+                    "error": final_state.get("execution_error"),
+                    "model": model_used,
+                    "tokens_used": tokens_used,
+                    "prompt_tokens": final_state.get("total_prompt_tokens", 0),
+                    "completion_tokens": final_state.get("total_completion_tokens", 0)
+                }
+            
             return {
-                "success": result.success,
-                "sql": result.sql,
-                "error": result.error,
-                "model": result.model,
-                "tokens_used": result.tokens_used
+                "success": True,
+                "sql": final_state.get("chosen_sql", ""),
+                "error": None,
+                "model": model_used,
+                "tokens_used": tokens_used,
+                "prompt_tokens": final_state.get("total_prompt_tokens", 0),
+                "completion_tokens": final_state.get("total_completion_tokens", 0),
+                "reasoning": final_state.get("sql_reasoning"),
+                "answer_summary": final_state.get("answer_summary"),
+                "dialect": final_state.get("dialect")
             }
             
         except Exception as e:

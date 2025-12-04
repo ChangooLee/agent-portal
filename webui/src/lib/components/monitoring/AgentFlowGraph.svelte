@@ -15,6 +15,7 @@
 		'Langflow Agent': { bg: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: '#D97706' },
 		'Flowise Agent': { bg: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: '#D97706' },
 		'AutoGen Agent': { bg: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: '#D97706' },
+		'TextToSQL Agent': { bg: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', border: '#0891B2' },
 		'MCP Tools': { bg: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)', border: '#DB2777' },
 		'Output Guardrail': { bg: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', border: '#EA580C' },
 	};

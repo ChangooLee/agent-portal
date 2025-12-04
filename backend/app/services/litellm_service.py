@@ -78,6 +78,7 @@ class LiteLLMService:
             messages: Chat messages
             metadata: Optional metadata for OTEL tracing (agent_id, parent_trace_id, etc.)
                       LiteLLM's OTEL callback stores this in SpanAttributes
+                      W3C Trace Context headers (traceparent, tracestate) are also extracted
             **kwargs: Additional LiteLLM parameters
             
         Returns:
@@ -89,6 +90,14 @@ class LiteLLMService:
             "Content-Type": "application/json"
         }
         
+        # W3C Trace Context headers 추출 (metadata에서 traceparent/tracestate)
+        # 이렇게 하면 LiteLLM의 OTEL callback이 이 trace의 child로 span을 생성
+        if metadata:
+            if "traceparent" in metadata:
+                headers["traceparent"] = metadata["traceparent"]
+            if "tracestate" in metadata:
+                headers["tracestate"] = metadata["tracestate"]
+        
         # Build payload with metadata for OTEL tracing
         payload = {
             "model": model,
@@ -99,7 +108,10 @@ class LiteLLMService:
         
         # Add metadata if provided (LiteLLM stores this in OTEL SpanAttributes)
         if metadata:
-            payload["metadata"] = metadata
+            # traceparent/tracestate는 헤더로 보내므로 payload에서 제외
+            clean_metadata = {k: v for k, v in metadata.items() if k not in ("traceparent", "tracestate")}
+            if clean_metadata:
+                payload["metadata"] = clean_metadata
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:

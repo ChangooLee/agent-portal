@@ -1,13 +1,13 @@
 # Agent Monitoring Guide
 
-> **Version**: 1.0.0 (2025-12-01)
+> **Version**: 2.0.0 (2025-12-03)
 > **Purpose**: 에이전트 모니터링 시스템 설정 및 사용 가이드
 
 ---
 
 ## 1. Overview
 
-Agent Portal은 다양한 AI 에이전트(Vanna, Langflow, Flowise, AutoGen)를 통합 모니터링합니다.
+Agent Portal은 다양한 AI 에이전트(Text2SQL, Langflow, Flowise, AutoGen)를 통합 모니터링합니다.
 
 ### 1.1 주요 기능
 
@@ -21,7 +21,7 @@ Agent Portal은 다양한 AI 에이전트(Vanna, Langflow, Flowise, AutoGen)를 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Agent Execution                             │
-│  (Vanna Text-to-SQL, Langflow Flow, Flowise Chatflow, etc.)     │
+│  (Text2SQL Agent, Langflow Flow, Flowise Chatflow, etc.)        │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -71,7 +71,7 @@ Agent Portal은 다양한 AI 에이전트(Vanna, Langflow, Flowise, AutoGen)를 
 CREATE TABLE agents (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    type ENUM('vanna', 'langflow', 'flowise', 'autogen', 'custom') NOT NULL,
+    type ENUM('text2sql', 'langflow', 'flowise', 'autogen', 'custom') NOT NULL,
     project_id VARCHAR(255) NOT NULL DEFAULT 'default-project',
     external_id VARCHAR(255),
     description TEXT,
@@ -98,7 +98,7 @@ CREATE TABLE agents (
 | `metadata.agent_id` | 에이전트 UUID |
 | `metadata.agent_name` | 에이전트 이름 |
 | `metadata.parent_trace_id` | 상위 트레이스 ID (LLM 호출 연결용) |
-| `agent.type` | 에이전트 유형 (vanna, langflow, flowise, autogen) |
+| `agent.type` | 에이전트 유형 (text2sql, langflow, flowise, autogen) |
 | `agent.inputs` | 입력 데이터 (JSON) |
 | `agent.outputs` | 출력 데이터 (JSON) |
 
@@ -114,8 +114,8 @@ POST /agents/register
 Content-Type: application/json
 
 {
-    "name": "vanna-abc12345",
-    "type": "vanna",
+    "name": "text2sql-abc12345",
+    "type": "text2sql",
     "project_id": "default-project",
     "external_id": "connection-uuid",
     "description": "Text-to-SQL agent for ClickHouse"
@@ -124,7 +124,7 @@ Content-Type: application/json
 
 **List Agents**
 ```http
-GET /agents?project_id=default-project&type=vanna&limit=100
+GET /agents?project_id=default-project&type=text2sql&limit=100
 ```
 
 **Get Agent Detail**
@@ -146,7 +146,7 @@ Response:
 {
     "trace_id": "abc123...",
     "agent_id": "...",
-    "agent_name": "vanna-abc12345"
+    "agent_name": "text2sql-abc12345"
 }
 ```
 
@@ -179,21 +179,34 @@ GET /monitoring/agents/{agent_id}/detail?start_time=...&end_time=...
 
 ## 4. Integration Guide
 
-### 4.1 Vanna Agent (Automatic)
+### 4.1 Text2SQL Agent (Automatic)
 
-Vanna Agent는 `generate_sql` 호출 시 자동으로:
-1. 에이전트 등록 (`vanna-{connection_id[:8]}`)
-2. 트레이스 시작
-3. SQL 생성 (LiteLLM 호출 with metadata)
-4. 트레이스 종료
+Text2SQL Agent는 `run()` 호출 시 자동으로:
+1. 에이전트 등록 (`text2sql-{connection_id[:8]}`)
+2. OTEL 트레이스 시작
+3. SQL 생성 (LangGraph 노드 실행 + LiteLLM 호출)
+4. OTEL 트레이스 종료
 
 ```python
-# vanna_agent_service.py에서 자동 처리
-result = await vanna_agent_service.generate_sql(
+# text2sql_agent.run()에서 자동 처리
+from app.agents.text2sql.graph import text2sql_agent
+
+result = await text2sql_agent.run(
+    question="Show all users",
     connection_id="...",
-    question="Show all users"
+    trace_id=None  # 자동 생성됨
 )
-# result.metadata에 agent_id, trace_id 포함
+# result["trace_id"]에 트레이스 ID 포함
+```
+
+**API 호출 예시:**
+```bash
+curl -X POST http://localhost:8000/text2sql/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "connection_id": "conn-abc123",
+    "question": "Show all users"
+  }'
 ```
 
 ### 4.2 Langflow/Flowise Integration
@@ -291,7 +304,7 @@ docker exec monitoring-clickhouse clickhouse-client \
 ## 7. Best Practices
 
 1. **의미있는 에이전트 이름 사용**
-   - 좋음: `vanna-clickhouse-prod`, `langflow-customer-support`
+   - 좋음: `text2sql-clickhouse-prod`, `langflow-customer-support`
    - 나쁨: `agent-1`, `test`
 
 2. **트레이스 태그 활용**
@@ -303,5 +316,4 @@ docker exec monitoring-clickhouse clickhouse-client \
 
 ---
 
-**Last Updated**: 2025-12-01
-
+**Last Updated**: 2025-12-03

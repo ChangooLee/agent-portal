@@ -98,6 +98,7 @@ class MonitoringAdapter:
         # LLM/Agent 호출만 필터링하는 조건
         # - 토큰이 있는 LLM 호출만 표시 (실제 LLM API 호출)
         # - Agent 빌더 (langflow, flowise, autogen) 호출
+        # - 등록된 에이전트 (ServiceName = 'agent-*') 호출
         # - 토큰이 없는 내부 호출 제외
         llm_filter = """
           AND (
@@ -110,6 +111,8 @@ class MonitoringAdapter:
             OR ServiceName LIKE '%langflow%'
             OR ServiceName LIKE '%flowise%'
             OR ServiceName LIKE '%autogen%'
+            -- 등록된 에이전트 호출 (ServiceName = 'agent-*')
+            OR ServiceName LIKE 'agent-%'
           )
         """
         
@@ -238,12 +241,13 @@ class MonitoringAdapter:
             countIf(StatusCode = 'ERROR') as error_count,
             -- LLM 호출 건수: prompt_tokens가 있는 트레이스
             countDistinctIf(TraceId, SpanAttributes['llm.usage.total_tokens'] != '') as llm_call_count,
-            -- Agent 호출 건수: langflow, flowise, autogen 관련 트레이스
+            -- Agent 호출 건수: langflow, flowise, autogen, 등록된 에이전트
             countDistinctIf(TraceId, 
                 SpanName LIKE '%langflow%' 
                 OR SpanName LIKE '%flowise%' 
                 OR SpanName LIKE '%autogen%'
                 OR SpanName LIKE '%agent%'
+                OR ServiceName LIKE 'agent-%'
             ) as agent_call_count,
             sum(
                 greatest(
@@ -795,6 +799,7 @@ class MonitoringAdapter:
                 WHEN SpanName LIKE '%langflow%' OR ServiceName LIKE '%langflow%' THEN 'Langflow Agent'
                 WHEN SpanName LIKE '%flowise%' OR ServiceName LIKE '%flowise%' THEN 'Flowise Agent'
                 WHEN SpanName LIKE '%autogen%' OR ServiceName LIKE '%autogen%' THEN 'AutoGen Agent'
+                WHEN ServiceName = 'agent-text2sql' OR SpanAttributes['metadata.agent_name'] = 'text2sql-agent' THEN 'Text-to-SQL Agent'
                 WHEN SpanName LIKE '%mcp%' OR SpanAttributes['metadata.mcp_tool_call_metadata'] != '' THEN 'MCP Tools'
                 WHEN SpanName = 'batch_write_to_db' THEN 'Output Guardrail'
                 ELSE NULL
@@ -825,6 +830,7 @@ class MonitoringAdapter:
                 WHEN 'Langflow Agent' THEN 5
                 WHEN 'Flowise Agent' THEN 5
                 WHEN 'AutoGen Agent' THEN 5
+                WHEN 'TextToSQL Agent' THEN 5
                 WHEN 'MCP Tools' THEN 6
                 WHEN 'Output Guardrail' THEN 7
                 ELSE 8
@@ -842,6 +848,7 @@ class MonitoringAdapter:
             'Langflow Agent': '#F59E0B',      # amber
             'Flowise Agent': '#F59E0B',       # amber
             'AutoGen Agent': '#F59E0B',       # amber
+            'TextToSQL Agent': '#06B6D4',     # cyan (Text-to-SQL)
             'MCP Tools': '#EC4899',           # pink
             'Output Guardrail': '#F97316',    # orange (가드레일)
         }
@@ -1016,11 +1023,11 @@ class MonitoringAdapter:
             OR SpanName LIKE '%langflow%'
             OR SpanName LIKE '%flowise%'
             OR SpanName LIKE '%autogen%'
-            OR SpanName LIKE '%vanna%'
+            OR SpanName LIKE '%text2sql%'
             OR ServiceName LIKE '%langflow%'
             OR ServiceName LIKE '%flowise%'
             OR ServiceName LIKE '%autogen%'
-            OR ServiceName LIKE '%vanna%'
+            OR ServiceName LIKE '%text2sql%'
             OR ServiceName LIKE 'agent-%'
           )
           AND ServiceName != 'litellm-proxy'

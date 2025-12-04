@@ -5,7 +5,7 @@ python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 pydantic>=2.5.3
-pydantic-settings==2.1.0
+pydantic-settings>=2.4.0
 
 # LLM & Observability
 litellm==1.35.0
@@ -27,14 +27,27 @@ clickhouse-sqlalchemy>=0.3.0  # SQLAlchemy dialect for ClickHouse
 # Oracle SQLAlchemy dialect
 oracledb>=2.0.0  # Oracle DB 드라이버 (cx_Oracle 후속)
 
-# SAP HANA SQLAlchemy dialect (optional - requires SAP HANA client)
-# hdbcli>=2.0.0  # SAP HANA 드라이버 (별도 설치 필요)
-# sqlalchemy-hana>=0.5.0  # SQLAlchemy dialect for SAP HANA
+# SAP HANA SQLAlchemy dialect
+hdbcli>=2.0.0  # SAP HANA 드라이버
+sqlalchemy-hana>=0.5.0  # SQLAlchemy dialect for SAP HANA
 
-# Vanna AI Text-to-SQL (dependencies from submodule)
+# Databricks SQL Connector
+databricks-sql-connector>=3.0.0  # Databricks 드라이버
+
+# LangChain & LangGraph (Text-to-SQL Agent)
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langgraph>=0.2.0
+
+# OpenTelemetry (Observability)
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp>=1.20.0
+
+# Text-to-SQL utilities
 pandas>=2.0.0
 PyYAML>=6.0.0
 sqlparse>=0.4.0
 tabulate>=0.9.0
-plotly>=5.0.0
 

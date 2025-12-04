@@ -2,7 +2,7 @@
 Agent Registry API Routes
 
 에이전트 등록, 조회, 트레이스 시작/종료 API.
-Langflow, Flowise, Vanna, AutoGen 등 모든 에이전트가 사용.
+Langflow, Flowise, Text2SQL, AutoGen 등 모든 에이전트가 사용.
 """
 
 import logging
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/agents", tags=["agent-registry"])
 class AgentRegisterRequest(BaseModel):
     """에이전트 등록 요청"""
     name: str = Field(..., description="에이전트 이름")
-    type: str = Field(..., description="에이전트 유형 (vanna, langflow, flowise, autogen, custom)")
+    type: str = Field(..., description="에이전트 유형 (text2sql, langflow, flowise, autogen, custom)")
     project_id: str = Field("default-project", description="프로젝트 ID")
     external_id: Optional[str] = Field(None, description="외부 시스템 ID (flow_id 등)")
     description: Optional[str] = Field(None, description="설명")
@@ -103,7 +103,7 @@ async def register_agent(request: AgentRegisterRequest):
     에이전트 등록 또는 기존 에이전트 조회.
     
     동일한 name + project_id가 있으면 기존 에이전트 반환.
-    Langflow, Flowise, Vanna 등이 첫 실행 시 자동 호출.
+    Langflow, Flowise, Text2SQL 등이 첫 실행 시 자동 호출.
     """
     try:
         agent_type = AgentType(request.type)

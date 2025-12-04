@@ -90,6 +90,32 @@
 	let naturalLanguageQuery = '';
 	let sqlGenerating = false;
 	
+	// Agent Thinking Flow (에이전트 사고 흐름)
+	interface AgentStep {
+		node: string;
+		status: 'running' | 'completed' | 'error';
+		description: string;
+		details?: string;
+		timestamp: number;
+	}
+	let agentSteps: AgentStep[] = [];
+	let showAgentThinking = false;
+	let agentReasoning = '';
+	let agentAnswerSummary = '';
+	
+	// 노드별 한글 설명
+	const nodeDescriptions: Record<string, string> = {
+		entry: '질문 분석 중...',
+		dialect_resolver: 'DB 종류 파악 중...',
+		schema_selector: '관련 테이블 선택 중...',
+		planner: '실행 계획 수립 중...',
+		sql_generator: 'SQL 쿼리 생성 중...',
+		sql_executor: 'SQL 실행 검증 중...',
+		sql_repair: 'SQL 수정 중...',
+		answer_formatter: '결과 정리 중...',
+		human_review: '검토 필요'
+	};
+	
 	// Model Selection
 	let availableModels: { id: string; name: string }[] = [];
 	let selectedModel = '';
@@ -321,6 +347,11 @@
 		selectedConnection = conn;
 		queryText = '';
 		queryResult = null;
+		// 에이전트 사고 흐름 상태 초기화
+		showAgentThinking = false;
+		agentSteps = [];
+		agentReasoning = '';
+		agentAnswerSummary = '';
 		showQueryModal = true;
 		
 		// DB 타입에 맞는 기본 프롬프트 설정
@@ -535,6 +566,12 @@
 		}
 
 		sqlGenerating = true;
+		showAgentThinking = true;
+		agentSteps = [];
+		agentReasoning = '';
+		agentAnswerSummary = '';
+		queryText = '';
+		
 		try {
 			const requestBody: { question: string; model?: string } = {
 				question: naturalLanguageQuery
@@ -545,22 +582,100 @@
 				requestBody.model = selectedModel;
 			}
 			
-			const response = await fetch(`${BACKEND_URL}/datacloud/connections/${selectedConnection.id}/generate-sql`, {
+			// SSE 스트리밍 요청
+			const response = await fetch(`${BACKEND_URL}/text2sql/generate/stream`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(requestBody)
+				body: JSON.stringify({
+					question: naturalLanguageQuery,
+					connection_id: selectedConnection.id,
+					model: selectedModel || undefined
+				})
 			});
 
-			if (response.ok) {
-				const result = await response.json();
-				queryText = result.sql;
-				toast.success('SQL이 생성되었습니다. 필요시 수정 후 실행하세요.');
-			} else {
+			if (!response.ok) {
 				const error = await response.json();
-				toast.error(`SQL 생성 실패: ${error.detail}`);
+				throw new Error(error.detail || 'SQL 생성 실패');
+			}
+
+			const reader = response.body?.getReader();
+			const decoder = new TextDecoder();
+			
+			if (!reader) {
+				throw new Error('스트리밍을 지원하지 않습니다');
+			}
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				
+				const chunk = decoder.decode(value, { stream: true });
+				const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+				
+				for (const line of lines) {
+					try {
+						const data = JSON.parse(line.slice(6)); // "data: " 제거
+						
+						if (data.event === 'done') {
+							// 최종 결과
+							if (data.data?.sql) {
+								queryText = data.data.sql;
+							}
+							if (data.data?.answer_summary) {
+								agentAnswerSummary = data.data.answer_summary;
+							}
+							if (data.data?.success === false) {
+								toast.error('SQL 생성 실패');
+							} else {
+								toast.success('SQL이 생성되었습니다. 필요시 수정 후 실행하세요.');
+							}
+							// 마지막 단계 완료 처리
+							agentSteps = agentSteps.map(s => ({ ...s, status: 'completed' as const }));
+						} else if (data.event === 'node_complete') {
+							// 노드 완료 이벤트
+							const nodeName = data.node || data.data?.node;
+							const nodeDesc = nodeDescriptions[nodeName] || nodeName;
+							
+							// 이전 running 상태 완료 처리
+							agentSteps = agentSteps.map(s => 
+								s.status === 'running' ? { ...s, status: 'completed' as const } : s
+							);
+							
+							// SQL이 생성되었으면 표시
+							if (data.data?.sql) {
+								queryText = data.data.sql;
+							}
+							
+							// 새 단계 추가 (완료 상태로)
+							const newStep: AgentStep = {
+								node: nodeName,
+								status: 'completed',
+								description: nodeDesc,
+								details: data.data?.plan ? JSON.stringify(data.data.plan, null, 2) : undefined,
+								timestamp: Date.now()
+							};
+							agentSteps = [...agentSteps, newStep];
+						} else if (data.event === 'start') {
+							// 시작 이벤트 - UI 초기화 (이미 위에서 했지만 확인용)
+							console.log('Text2SQL stream started:', data.data?.trace_id);
+						} else if (data.event === 'error') {
+							// 에러 이벤트
+							toast.error(`SQL 생성 실패: ${data.data?.detail || '알 수 없는 오류'}`);
+							agentSteps = agentSteps.map(s => 
+								s.status === 'running' ? { ...s, status: 'error' as const } : s
+							);
+						}
+					} catch (e) {
+						console.debug('SSE parse error:', e);
+					}
+				}
 			}
 		} catch (e: any) {
 			toast.error(`SQL 생성 실패: ${e.message}`);
+			// 에러 발생 시 모든 단계 에러 처리
+			agentSteps = agentSteps.map(s => 
+				s.status === 'running' ? { ...s, status: 'error' as const } : s
+			);
 		} finally {
 			sqlGenerating = false;
 		}
@@ -1102,6 +1217,66 @@
 					</div>
 					<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">스키마 정보를 기반으로 SQL이 생성됩니다. 생성 후 수정하여 실행하세요.</p>
 				</div>
+
+				<!-- Agent Thinking Flow Section (Compact) -->
+				{#if showAgentThinking && (agentSteps.length > 0 || sqlGenerating)}
+					<div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800 px-4 py-2">
+						{#if sqlGenerating}
+							<!-- 진행 중: 현재 단계만 한 줄로 표시 -->
+							{@const currentStep = agentSteps.find(s => s.status === 'running') || agentSteps[agentSteps.length - 1]}
+							<div class="flex items-center gap-3">
+								<div class="flex items-center gap-2">
+									<svg class="w-4 h-4 text-purple-600 dark:text-purple-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+									</svg>
+									<span class="text-sm font-medium text-purple-700 dark:text-purple-300">
+										{currentStep?.description || '처리 중...'}
+									</span>
+								</div>
+								<div class="flex items-center gap-1 ml-auto">
+									<span class="text-xs text-gray-400 dark:text-gray-500">
+										{agentSteps.length}/7 단계
+									</span>
+									<div class="flex items-center gap-0.5">
+										{#each Array(7) as _, i}
+											<div class="w-1.5 h-1.5 rounded-full {i < agentSteps.length ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}"></div>
+										{/each}
+									</div>
+								</div>
+							</div>
+						{:else if agentAnswerSummary}
+							<!-- 완료: 요약만 표시 -->
+							<div class="flex items-start gap-2">
+								<svg class="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								<div class="flex-1 min-w-0">
+									<p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{agentAnswerSummary}</p>
+								</div>
+								<button
+									on:click={() => showAgentThinking = false}
+									class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+								>
+									닫기
+								</button>
+							</div>
+						{:else}
+							<!-- 완료했지만 요약이 없는 경우 -->
+							<div class="flex items-center gap-2">
+								<svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+								<span class="text-sm text-gray-600 dark:text-gray-400">SQL 생성 완료</span>
+								<button
+									on:click={() => showAgentThinking = false}
+									class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-auto"
+								>
+									닫기
+								</button>
+							</div>
+						{/if}
+					</div>
+				{/if}
 
 				<!-- SQL Editor Section -->
 				<div>

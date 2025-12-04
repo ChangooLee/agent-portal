@@ -28,11 +28,10 @@
 
 		try {
 			traceDetail = await getTraceDetail(traceId);
-			// Auto-expand root spans
-			traceDetail.spans
-				.filter((s) => !s.parent_span_id)
-				.forEach((s) => expandedSpans.add(s.span_id));
-			expandedSpans = expandedSpans; // Trigger reactivity
+			// Auto-expand ALL spans (default fully expanded)
+			const newExpanded = new Set<string>();
+			traceDetail.spans.forEach((s) => newExpanded.add(s.span_id));
+			expandedSpans = newExpanded;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load trace details';
 			console.error('Failed to load trace:', e);
@@ -47,7 +46,8 @@
 		} else {
 			expandedSpans.add(spanId);
 		}
-		expandedSpans = expandedSpans; // Trigger reactivity
+		// Create a new Set to trigger Svelte reactivity
+		expandedSpans = new Set(expandedSpans);
 	}
 
 	function selectSpan(span: Span) {
@@ -70,6 +70,49 @@
 		}
 		return depth;
 	}
+
+	// 모든 스팬을 트리 구조로 정렬하여 flat 리스트로 반환
+	function getOrderedSpans(): Span[] {
+		if (!traceDetail) return [];
+		
+		const result: Span[] = [];
+		const visited = new Set<string>();
+		
+		function visit(span: Span) {
+			if (visited.has(span.span_id)) return;
+			visited.add(span.span_id);
+			result.push(span);
+			
+			// 자식 스팬들을 재귀적으로 방문
+			const children = traceDetail!.spans.filter(s => s.parent_span_id === span.span_id);
+			children.forEach(child => visit(child));
+		}
+		
+		// Root span들부터 시작
+		const rootSpans = traceDetail.spans.filter(s => !s.parent_span_id);
+		rootSpans.forEach(root => visit(root));
+		
+		return result;
+	}
+
+	// 특정 스팬이 보여져야 하는지 확인 (조상이 모두 expanded인 경우에만)
+	function isSpanVisible(span: Span, expanded: Set<string>): boolean {
+		if (!span.parent_span_id) return true; // root는 항상 보임
+		
+		// 조상들을 모두 확인
+		let current = span;
+		while (current.parent_span_id && traceDetail) {
+			const parent = traceDetail.spans.find(s => s.span_id === current.parent_span_id);
+			if (!parent) break;
+			if (!expanded.has(parent.span_id)) return false;
+			current = parent;
+		}
+		return true;
+	}
+
+	// Reactive statements for expandedSpans dependency
+	$: orderedSpans = traceDetail ? getOrderedSpans() : [];
+	$: visibilityMap = new Map(orderedSpans.map(s => [s.span_id, isSpanVisible(s, expandedSpans)]));
 
 	function formatDuration(ms: number): string {
 		if (ms < 1000) return `${ms.toFixed(0)}ms`;
@@ -203,107 +246,41 @@
 					>
 						<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Span Hierarchy</h3>
 						<div class="space-y-1">
-							{#each traceDetail.spans.filter((s) => !s.parent_span_id) as rootSpan}
-								{@const depth = getSpanDepth(rootSpan)}
-								{@const isExpanded = expandedSpans.has(rootSpan.span_id)}
-								{@const hasChildren = getSpanChildren(rootSpan.span_id).length > 0}
+							{#each orderedSpans as span (span.span_id)}
+								{@const depth = getSpanDepth(span)}
+								{@const isExpanded = expandedSpans.has(span.span_id)}
+								{@const hasChildren = getSpanChildren(span.span_id).length > 0}
+								{@const visible = visibilityMap.get(span.span_id) ?? false}
 
-								<!-- Root Span -->
-								<div
-									class="rounded-lg border {getStatusBg(
-										rootSpan.status_code
-									)} p-3 cursor-pointer hover:shadow-md transition-all"
-									style="margin-left: {depth * 20}px"
-									on:click={() => {
-										selectSpan(rootSpan);
-										if (hasChildren) toggleSpan(rootSpan.span_id);
-									}}
-								>
-									<div class="flex items-center justify-between">
-										<div class="flex items-center gap-2 flex-1 min-w-0">
-											{#if hasChildren}
-												<svg
-													class="w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform {isExpanded
-														? 'rotate-90'
-														: ''}"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M9 5l7 7-7 7"
-													/>
-												</svg>
-											{:else}
-												<div class="w-4"></div>
-											{/if}
-											<span class="font-medium text-gray-900 dark:text-gray-100 truncate">
-												{rootSpan.span_name}
-											</span>
-											<span class="text-xs {getStatusColor(rootSpan.status_code)} font-semibold">
-												{rootSpan.status_code}
-											</span>
-										</div>
-										<span class="text-sm text-gray-600 dark:text-gray-400 ml-2">
-											{formatDuration(rootSpan.duration)}
-										</span>
-									</div>
-								</div>
-
-								<!-- Child Spans (Recursive) -->
-								{#if isExpanded}
-									{#each getSpanChildren(rootSpan.span_id) as childSpan}
-										{@const childDepth = getSpanDepth(childSpan)}
-										{@const childExpanded = expandedSpans.has(childSpan.span_id)}
-										{@const childHasChildren = getSpanChildren(childSpan.span_id).length > 0}
-
-										<div
-											class="rounded-lg border {getStatusBg(
-												childSpan.status_code
-											)} p-3 cursor-pointer hover:shadow-md transition-all"
-											style="margin-left: {(childDepth + 1) * 20}px"
-											on:click={() => {
-												selectSpan(childSpan);
-												if (childHasChildren) toggleSpan(childSpan.span_id);
-											}}
-										>
-											<div class="flex items-center justify-between">
-												<div class="flex items-center gap-2 flex-1 min-w-0">
-													{#if childHasChildren}
-														<svg
-															class="w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform {childExpanded
-																? 'rotate-90'
-																: ''}"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M9 5l7 7-7 7"
-															/>
-														</svg>
-													{:else}
-														<div class="w-4"></div>
-													{/if}
-													<span class="font-medium text-gray-900 dark:text-gray-100 truncate">
-														{childSpan.span_name}
-													</span>
-													<span class="text-xs {getStatusColor(childSpan.status_code)} font-semibold">
-														{childSpan.status_code}
-													</span>
-												</div>
-												<span class="text-sm text-gray-600 dark:text-gray-400 ml-2">
-													{formatDuration(childSpan.duration)}
-												</span>
+								{#if visible}
+									<div
+										class="rounded-lg border {getStatusBg(span.status_code)} p-3 cursor-pointer hover:shadow-md transition-all"
+										style="margin-left: {depth * 20}px"
+										on:click={() => {
+											selectSpan(span);
+											if (hasChildren) toggleSpan(span.span_id);
+										}}
+									>
+										<div class="flex items-center justify-between">
+											<div class="flex items-center gap-2 flex-1 min-w-0">
+												{#if hasChildren}
+													<svg
+														class="w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform {isExpanded ? 'rotate-90' : ''}"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+													</svg>
+												{:else}
+													<div class="w-4"></div>
+												{/if}
+												<span class="font-medium text-gray-900 dark:text-gray-100 truncate">{span.span_name}</span>
+												<span class="text-xs {getStatusColor(span.status_code)} font-semibold">{span.status_code}</span>
 											</div>
+											<span class="text-sm text-gray-600 dark:text-gray-400 ml-2">{formatDuration(span.duration)}</span>
 										</div>
-									{/each}
+									</div>
 								{/if}
 							{/each}
 						</div>

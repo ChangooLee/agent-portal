@@ -66,8 +66,6 @@ services:
     volumes:
       # News data volume mount (서버 환경: NEWS_DATA_PATH 환경변수 설정 필요)
       - ${NEWS_DATA_PATH:-./data/news}:/data/news:ro
-      # Vanna AI submodule mount
-      - ./libs/vanna:/app/libs/vanna:ro
     depends_on:
       - mariadb
       - chromadb

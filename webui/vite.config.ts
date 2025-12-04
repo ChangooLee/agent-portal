@@ -104,11 +104,17 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/embed/, '/embed')
 			},
-			// Vanna Text-to-SQL API → FastAPI BFF (포트 8000)
-			'/api/vanna': {
+			// LangGraph Text-to-SQL Agent API → FastAPI BFF (포트 8000)
+			'/api/text2sql': {
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/api\/vanna/, '/vanna')
+				rewrite: (path) => path.replace(/^\/api\/text2sql/, '/text2sql')
+			},
+			// DART 기업공시분석 Agent API → FastAPI BFF (포트 8000)
+			'/api/dart': {
+				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/dart/, '/dart')
 			},
 			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
 		// ⚠️ CRITICAL: Docker 환경에서는 localhost (컨테이너 내부 Uvicorn)

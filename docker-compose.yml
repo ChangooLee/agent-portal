@@ -62,11 +62,14 @@ services:
       - DATACLOUD_ENCRYPTION_KEY=LpbushjAoV7u_7Z3tk5TzqsTra79yKjMAanPR0DWz9U=
       # Text-to-SQL default model
       - TEXT_TO_SQL_MODEL=gpt-3.5-turbo
+      # OpenTelemetry - Text2SQL Agent 트레이스용
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://monitoring-otel-collector:4317
+      - OTEL_SERVICE_NAME=agent-text2sql
+    volumes:
+      # News data from mcp-naver-news project (개발용)
+      - /Users/lchangoo/Workspace/mcp-naver-news/src/data:/data/news:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    volumes:
-      # Vanna AI submodule mount
-      - ./libs/vanna:/app/libs/vanna:ro
     depends_on:
       - mariadb
       - chromadb

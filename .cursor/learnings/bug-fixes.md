@@ -123,7 +123,7 @@ Frontend → /api/embed/kong-admin/ → Vite 프록시 → ?
 ```
 
 ### 테스트
-```bash
+   ```bash
 # 프록시 정상 작동 확인
 curl -s http://localhost:3005/api/embed/kong-admin/ -o /dev/null -w "%{http_code}"
 # → 200

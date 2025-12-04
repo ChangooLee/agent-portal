@@ -11,7 +11,7 @@ Agent Portal은 다음 에이전트 빌더를 지원합니다:
 
 | 에이전트 | 유형 | 포트 | 상태 |
 |---------|------|------|------|
-| Vanna AI | Text-to-SQL | - (내장) | 활성 |
+| Text2SQL Agent | Text-to-SQL | - (내장) | 활성 |
 | Langflow | Visual Flow Builder | 7860 | 선택적 |
 | Flowise | Chatflow Builder | 3000 | 선택적 |
 | AutoGen Studio | Multi-Agent | 8000 | 선택적 |
