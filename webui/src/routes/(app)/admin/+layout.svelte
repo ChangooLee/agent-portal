@@ -34,7 +34,7 @@
 </svelte:head>
 
 {#if loaded}
-	<div class="flex flex-col w-full min-h-full">
+	<div class="flex flex-col w-full">
 		<nav class="sticky top-0 z-30 w-full py-2 flex flex-col items-center drag-region bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg border-b border-white/20 dark:border-gray-700/20">
 			<div class="flex items-center w-full px-1.5">
 				<div class="{$showSidebar ? 'md:hidden' : ''} mr-1 self-start flex flex-none items-center text-gray-600">

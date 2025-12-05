@@ -319,7 +319,7 @@
 	<title>{$i18n.t('Monitoring')} | {$WEBUI_NAME}</title>
 </svelte:head>
 
-<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+<div class="flex w-full flex-col px-3 py-4 @md:px-6 @md:py-6">
 	<div class="flex w-full flex-col gap-6">
 		{#if $user?.role !== 'admin'}
 			<div class="text-red-500">

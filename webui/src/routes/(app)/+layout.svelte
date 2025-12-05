@@ -262,9 +262,9 @@
 	</div>
 {/if} -->
 
-<div class="app relative bg-gray-950 h-screen w-full overflow-hidden">
+<div class="app relative bg-gray-950 min-h-screen w-full">
 	<div
-		class="text-slate-50 h-full flex flex-col w-full"
+		class="text-slate-50 min-h-screen flex flex-col w-full"
 	>
 		{#if !['user', 'admin'].includes($user?.role)}
 			<AccountPending />
@@ -273,20 +273,20 @@
 			<TopNavBar />
 
 			<!-- Main Content Area -->
-			<div class="flex flex-1 min-h-0 overflow-hidden">
+			<div class="flex flex-1">
 				<!-- Chat Sidebar (only for chat pages) -->
 				{#if $page.url.pathname.startsWith('/c') && $showSidebar}
 					<Sidebar />
 				{/if}
 
 				<!-- Main Content -->
-				<div class="flex-1 flex flex-col min-h-0 overflow-y-auto">
+				<div class="flex-1">
 					{#if loaded}
 						<main class="w-full">
 							<slot />
 						</main>
 					{:else}
-						<div class="w-full flex-1 flex items-center justify-center py-12">
+						<div class="w-full flex items-center justify-center py-12">
 							<Spinner />
 						</div>
 					{/if}

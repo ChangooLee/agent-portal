@@ -399,7 +399,7 @@
 		{$i18n.t('Access Denied: Only administrators can view this page.')}
 	</div>
 {:else}
-	<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
+	<div class="flex w-full flex-col px-3 py-4 @md:px-6 @md:py-6">
 		<div class="flex w-full flex-col gap-6">
 			<!-- Hero Section -->
 			<section
