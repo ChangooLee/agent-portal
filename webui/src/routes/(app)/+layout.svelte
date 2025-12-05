@@ -42,7 +42,9 @@
 	import { theme } from '$lib/stores/theme';
 
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
+	import RoleSidebar from '$lib/components/layout/RoleSidebar.svelte';
 	import TopNavbar from '$lib/components/layout/TopNavbar.svelte';
+	import { selectedRole } from '$lib/stores/role';
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
 	import ChangelogModal from '$lib/components/ChangelogModal.svelte';
 	import AccountPending from '$lib/components/layout/Overlay/AccountPending.svelte';
@@ -333,12 +335,11 @@
 		{/if} -->
 		{/if}
 
-	<Sidebar />
+	<!-- New Role-based Sidebar -->
+	<RoleSidebar />
 
 	<div class="flex-1 flex flex-col h-screen max-h-screen">
-		{#if !$page.url.pathname.startsWith('/admin')}
-			<TopNavbar class="flex-shrink-0" />
-		{/if}
+		<!-- TopNavbar disabled - using RoleSidebar instead -->
 			
 		{#if loaded}
 			<main class="flex-1 {$page.url.pathname.startsWith('/c/') || $page.url.pathname === '/' ? 'overflow-hidden' : 'overflow-y-auto'}">

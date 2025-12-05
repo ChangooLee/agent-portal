@@ -18,6 +18,15 @@ export default {
 	theme: {
 		extend: {
 			colors: {
+				// 다크 테마 기본 색상
+				'dark': {
+					bg: '#000000',           // Primary background
+					'bg-secondary': '#0a0a0f', // Secondary background
+					'bg-card': '#141419',     // Card background
+					'bg-elevated': '#1a1a22', // Elevated surfaces
+					border: '#1f2937',        // Border color
+					'border-subtle': '#374151', // Subtle border
+				},
 				// 삼성생명 브랜드 컬러 (파란색 계열)
 				brand: {
 					50: '#e6f2ff',
@@ -36,6 +45,20 @@ export default {
 					DEFAULT: '#0066CC',
 					light: '#e6f2ff',
 					dark: '#0052A3'
+				},
+				// 블루 액센트 (다크 테마용)
+				blue: {
+					50: '#eff6ff',
+					100: '#dbeafe',
+					200: '#bfdbfe',
+					300: '#93c5fd',
+					400: '#60a5fa',
+					500: '#3b82f6', // Primary accent
+					600: '#2563eb', // Hover accent
+					700: '#1d4ed8',
+					800: '#1e40af',
+					900: '#1e3a8a',
+					950: '#172554'
 				},
 				// Monitoring 스타일 색상
 				'monitoring': {
