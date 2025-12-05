@@ -37,8 +37,8 @@ export default {
 					light: '#e6f2ff',
 					dark: '#0052A3'
 				},
-				// AgentOps 스타일 색상 (MIT License - https://github.com/AgentOps-AI/agentops)
-				'agentops': {
+				// Monitoring 스타일 색상
+				'monitoring': {
 					primary: '#141B34', // Primary font color
 					'primary-muted': 'rgba(20, 27, 52, 0.74)', // Secondary font
 					icons: 'rgba(20, 27, 52, 0.68)', // Icons color

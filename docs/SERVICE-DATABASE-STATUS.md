@@ -230,8 +230,7 @@ Database: konga
 2. **외부 서비스 실행** (별도 터미널):
    ```bash
    # LiteLLM + OTEL + ClickHouse
-   cd /path/to/agentops && docker compose up -d
-   cd /path/to/litellm && docker compose up -d
+   docker compose up -d
    ```
 
 3. **Agent Portal 기동**:

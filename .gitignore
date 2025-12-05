@@ -60,14 +60,6 @@ docker-compose.override.yml
 # Backup directory (임시 문서 백업)
 .backup/
 
-# AgentOps submodule build artifacts
-external/agentops/node_modules/
-external/agentops/app/.next/
-external/agentops/app/out/
-external/agentops/__pycache__/
-external/agentops/dist/
-external/agentops/build/
-agentops-reference/
 # Backup files (민감 정보 포함 가능)
 *.bak
 *.backup

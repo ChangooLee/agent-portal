@@ -407,7 +407,7 @@ services:
 
 ### 2.3 3단계: 에이전트 빌더 (Langflow + Flowise + AutoGen Studio) 🚧 **진행 중**
 
-**목표**: Langflow, Flowise, AutoGen Studio를 임베드하고, Langflow UI 재구현, LangGraph 변환 + 실행 + AgentOps 모니터링
+**목표**: Langflow, Flowise, AutoGen Studio를 임베드하고, Langflow UI 재구현, LangGraph 변환 + 실행 + Opentelemetry 모니터링
 
 **상태**: 🚧 **Phase 1-A 완료, Phase 1-B 진행 중**
 
@@ -453,7 +453,6 @@ backend/
    │  ├─ agents.py            # /api/agents/flows/* (목록/상세/삭제/변환/실행)
    │  └─ proxy.py              # /api/proxy/langflow, /api/proxy/flowise, /api/proxy/autogen
    └─ services/
-      ├─ agentops_service.py  # AgentOps SDK 통합 (세션 추적)
       ├─ langflow_converter.py # Langflow → LangGraph 변환
       └─ langgraph_service.py # LangGraph 실행 서비스
 

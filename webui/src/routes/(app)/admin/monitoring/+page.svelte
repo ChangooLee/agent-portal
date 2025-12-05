@@ -254,12 +254,12 @@
 
 	function handleSavePreset(event: CustomEvent<FilterPreset>) {
 		filterPresets = [...filterPresets, event.detail];
-		localStorage.setItem('agentops_filter_presets', JSON.stringify(filterPresets));
+		localStorage.setItem('monitoring_filter_presets', JSON.stringify(filterPresets));
 	}
 
 	function handleDeletePreset(event: CustomEvent<string>) {
 		filterPresets = filterPresets.filter((p) => p.id !== event.detail);
-		localStorage.setItem('agentops_filter_presets', JSON.stringify(filterPresets));
+		localStorage.setItem('monitoring_filter_presets', JSON.stringify(filterPresets));
 	}
 
 	function handlePageChange(newPage: number) {

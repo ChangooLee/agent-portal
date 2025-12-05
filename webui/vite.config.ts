@@ -57,11 +57,6 @@ export default defineConfig({
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
 				changeOrigin: true
 			},
-			// AgentOps API → FastAPI BFF (포트 8000)
-			'/api/agentops': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
-				changeOrigin: true
-			},
 			// DataCloud API → FastAPI BFF (포트 8000)
 			'/api/datacloud': {
 				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',

@@ -16,7 +16,7 @@ from builder.conf import CONFIG_DIR
 from builder.costs import ModelCost, load_model_costs
 
 
-# Semantic Convention constants (previously from agentops.semconv)
+# Semantic Convention constants (based on OpenTelemetry GenAI conventions)
 # Based on OpenTelemetry Semantic Conventions for GenAI
 class SpanAttributes:
     """OpenTelemetry Semantic Conventions for GenAI spans."""
@@ -44,7 +44,7 @@ def _get_shared_context() -> Dict[str, Any]:
     """Get the shared context for rendering templates."""
     return {
         "SEMCONV": {
-            # meta - changed from agentops.project.id to project_id
+            # meta - project identifier
             "PROJECT_ID": "project_id",
             # tokens
             "LLM_USAGE_TOTAL_TOKENS": SpanAttributes.LLM_USAGE_TOTAL_TOKENS,

@@ -95,7 +95,7 @@ LiteLLM (4000) → OTEL Collector (4317/4318) → ClickHouse (otel_2.otel_traces
 **검증 완료**:
 ```bash
 # ClickHouse에 traces 저장 확인
-docker exec agentops-clickhouse clickhouse-client --query \
+docker exec monitoring-clickhouse clickhouse-client --query \
   "SELECT count(*) FROM otel_2.otel_traces"
 # 결과: 35건 이상
 ```

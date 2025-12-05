@@ -38,7 +38,7 @@
 			const url = window.URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `agentops-traces-${Date.now()}.${exportOptions.format}`;
+			a.download = `monitoring-traces-${Date.now()}.${exportOptions.format}`;
 			document.body.appendChild(a);
 			a.click();
 			window.URL.revokeObjectURL(url);
