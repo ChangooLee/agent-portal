@@ -395,75 +395,54 @@
 </svelte:head>
 
 {#if $user?.role !== 'admin'}
-	<div class="text-red-500">
+	<div class="text-red-500 p-6">
 		{$i18n.t('Access Denied: Only administrators can view this page.')}
 	</div>
 {:else}
-	<div class="flex w-full flex-col px-3 py-4 @md:px-6 @md:py-6">
-		<div class="flex w-full flex-col gap-6">
-			<!-- Hero Section -->
-			<section
-				class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60"
-			>
-				<div
-					class="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-rose-500/20 opacity-60"
-				/>
-				<div
-					class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-purple-500/40 to-pink-500/30 blur-3xl"
-				/>
-				<div class="relative flex flex-col gap-5">
-					<div class="flex flex-wrap items-center justify-between gap-3">
-						<div class="flex flex-wrap items-center gap-3">
-							<span
-								class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200"
-							>
-								<span
-									class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500"
-								/>
-								MCP Gateway
-							</span>
-							<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-								Model Context Protocol 서버 관리
-							</h1>
-						</div>
-						<button
-							on:click={openCreateModal}
-							class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white font-medium shadow-lg hover:shadow-xl transition-all hover:scale-105"
-						>
-							<Plus className="size-5" />
-							<span>서버 추가</span>
-						</button>
-					</div>
-
-					<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-						MCP 서버를 등록하고 AI 에이전트에서 외부 도구로 활용할 수 있습니다. 
-						보안 및 요청 제한이 자동으로 적용됩니다.
-					</p>
-
-					<div class="grid grid-cols-3 gap-3 @md:grid-cols-4 @lg:grid-cols-6">
-						{#each heroStats as stat}
-							<div
-								class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-purple-500/10 transition dark:border-gray-700/30 dark:bg-gray-900/50"
-							>
-								<div
-									class="text-[11px] font-medium uppercase tracking-wide text-purple-600 dark:text-purple-400"
-								>
-									{stat.label}
-								</div>
-								<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-									{stat.value}개
-								</div>
-								<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">{stat.hint}</div>
-							</div>
-						{/each}
-					</div>
+	<div class="min-h-full bg-gray-950 text-slate-50">
+		<!-- Hero Section -->
+		<div class="relative overflow-hidden border-b border-slate-800/50">
+			<div class="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-transparent to-pink-600/5"></div>
+			<div class="absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+			
+			<div class="relative px-6 py-12">
+				<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+					<h1 class="text-4xl md:text-5xl font-bold">
+						<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+							🔌 MCP 서버
+						</span>
+					</h1>
+					<button
+						on:click={openCreateModal}
+						class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-lg shadow-purple-500/25 hover:shadow-xl transition-all duration-300"
+					>
+						<Plus className="size-5" />
+						<span>서버 추가</span>
+					</button>
 				</div>
-			</section>
+				<p class="text-lg text-slate-400 max-w-2xl mb-8">
+					MCP 서버를 등록하고 AI 에이전트에서 외부 도구로 활용할 수 있습니다.
+				</p>
 
+				<div class="grid grid-cols-3 gap-4">
+					{#each heroStats as stat}
+						<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-4 shadow-lg shadow-black/20">
+							<div class="text-xs font-medium uppercase tracking-wide text-purple-400 mb-1">
+								{stat.label}
+							</div>
+							<div class="text-2xl font-bold text-white">
+								{stat.value}개
+							</div>
+							<div class="text-xs text-slate-500 mt-1">{stat.hint}</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+
+		<div class="px-6 py-8">
 			<!-- Server List -->
-			<div
-				class="bg-white/60 dark:bg-gray-900/50 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/20 shadow-xl overflow-hidden"
-			>
+			<div class="bg-slate-900/80 border border-slate-800/50 rounded-2xl shadow-xl shadow-black/20 overflow-hidden">
 				{#if loading}
 					<div class="flex items-center justify-center py-12">
 						<div

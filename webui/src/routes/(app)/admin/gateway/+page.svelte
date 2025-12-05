@@ -126,52 +126,53 @@
 	<title>{$i18n.t('Gateway')} | {$WEBUI_NAME}</title>
 </svelte:head>
 
-<div class="flex w-full flex-col px-3 py-4 @md:px-6 @md:py-6">
-	<div class="flex w-full flex-col gap-6">
-		<!-- Hero Section -->
-		<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-4 shadow-xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
-			<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 opacity-60" />
-			<div class="relative flex items-center justify-between">
-				<div class="flex items-center gap-3">
-					<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200">
-						<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-accent" />
-						SFN AI Gateway
+<div class="min-h-full bg-gray-950 text-slate-50">
+	<!-- Hero Section -->
+	<div class="relative overflow-hidden border-b border-slate-800/50">
+		<div class="absolute inset-0 bg-gradient-to-br from-indigo-600/5 via-transparent to-violet-600/5"></div>
+		<div class="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+		
+		<div class="relative px-6 py-12">
+			<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+				<h1 class="text-4xl md:text-5xl font-bold">
+					<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+						🌐 API Gateway
 					</span>
-					<h1 class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-						API 게이트웨이 관리 및 보안 설정
-					</h1>
-				</div>
-				
-				<!-- Status Badge -->
+				</h1>
 				<div class="flex items-center gap-2">
 					{#if gatewayStatus.status === 'healthy'}
-						<span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+						<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-400 border border-emerald-500/30">
 							<Check className="size-3.5" />
 							Gateway 정상
 						</span>
 					{:else}
-						<span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+						<span class="inline-flex items-center gap-1.5 rounded-full bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 border border-red-500/30">
 							<XMark className="size-3.5" />
 							Gateway 오류
 						</span>
 					{/if}
 					<button
 						on:click={() => { loadOverview(); loadStatus(); }}
-						class="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors"
+						class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
 						title="새로고침"
 					>
-						<ArrowPath className="size-4 text-gray-500 dark:text-gray-400" />
+						<ArrowPath className="size-4 text-slate-400" />
 					</button>
 				</div>
 			</div>
-		</section>
+			<p class="text-lg text-slate-400 max-w-2xl">
+				API 게이트웨이 관리 및 보안 설정
+			</p>
+		</div>
+	</div>
 
+	<div class="px-6 py-8 space-y-6">
 		<!-- Tab Navigation -->
 		<div class="flex gap-2">
 			<button
-				class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ease-out flex items-center gap-2 {activeTab === 'overview'
-					? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 text-white backdrop-blur-md shadow-lg shadow-primary/30'
-					: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
+				class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 {activeTab === 'overview'
+					? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+					: 'bg-slate-800 text-slate-300 hover:bg-slate-700'}"
 				on:click={() => {
 					activeTab = 'overview';
 					loadOverview();
@@ -181,9 +182,9 @@
 				개요
 			</button>
 			<button
-				class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ease-out flex items-center gap-2 {activeTab === 'kong-admin'
-					? 'bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 text-white backdrop-blur-md shadow-lg shadow-primary/30'
-					: 'bg-white/40 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-gray-800/60 border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md hover:scale-105'}"
+				class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 {activeTab === 'kong-admin'
+					? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+					: 'bg-slate-800 text-slate-300 hover:bg-slate-700'}"
 				on:click={() => {
 					activeTab = 'kong-admin';
 				}}

@@ -319,49 +319,52 @@
 	<title>{$i18n.t('Monitoring')} | {$WEBUI_NAME}</title>
 </svelte:head>
 
-<div class="flex w-full flex-col px-3 py-4 @md:px-6 @md:py-6">
-	<div class="flex w-full flex-col gap-6">
-		{#if $user?.role !== 'admin'}
-			<div class="text-red-500">
-				{$i18n.t('Access Denied: Only administrators can view this page.')}
-			</div>
-		{:else}
-			<!-- Glassmorphism Hero -->
-			<section
-				class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60"
-			>
-				<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 opacity-60" />
-				<div class="relative flex items-center justify-between">
-					<div>
-						<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-							🔍 Agent Monitoring
-						</h1>
-						<p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
-							실시간 에이전트 실행 모니터링, 비용 추적, 세션 리플레이
-						</p>
-					</div>
+<div class="min-h-full bg-gray-950 text-slate-50">
+	{#if $user?.role !== 'admin'}
+		<div class="text-red-500 p-6">
+			{$i18n.t('Access Denied: Only administrators can view this page.')}
+		</div>
+	{:else}
+		<!-- Hero Section -->
+		<div class="relative overflow-hidden border-b border-slate-800/50">
+			<div class="absolute inset-0 bg-gradient-to-br from-cyan-600/5 via-transparent to-teal-600/5"></div>
+			<div class="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+			
+			<div class="relative px-6 py-12">
+				<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+					<h1 class="text-4xl md:text-5xl font-bold">
+						<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+							📊 Monitoring
+						</span>
+					</h1>
 					<div class="flex items-center gap-3">
 						<button
 							on:click={() => (showFilters = !showFilters)}
-							class="px-4 py-2 rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all backdrop-blur-sm shadow-sm"
+							class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all flex items-center gap-2"
 						>
-							<svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
 							</svg>
 							Filters
 						</button>
 						<button
 							on:click={() => (showExportDialog = true)}
-							class="px-4 py-2 rounded-lg bg-primary text-white hover:opacity-90 transition-opacity shadow-sm"
+							class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-all flex items-center gap-2 shadow-lg shadow-blue-500/25"
 						>
-							<svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
 							</svg>
 							Export
 						</button>
 					</div>
 				</div>
-			</section>
+				<p class="text-lg text-slate-400 max-w-2xl">
+					실시간 에이전트 실행 모니터링, 비용 추적, 세션 리플레이
+				</p>
+			</div>
+		</div>
+		
+		<div class="px-6 py-8 space-y-6">
 
 			<!-- Filter Panel -->
 			{#if showFilters}
@@ -909,8 +912,8 @@
 					{/if}
 				{/if}
 			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>
 
 <!-- Trace Drawer (Slide-out Panel) -->

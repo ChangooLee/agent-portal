@@ -257,45 +257,22 @@
 	});
 </script>
 
-<div class="flex w-full flex-col px-3 py-4 @md:px-6 @md:py-6">
-	<div class="flex w-full flex-col gap-6">
-	
-	<!-- Hero Section (Glassmorphism) -->
-	<section class="relative overflow-hidden rounded-3xl border border-white/20 
-	                bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl 
-	                dark:border-gray-700/30 dark:bg-gray-900/60">
-		<!-- Gradient overlay -->
-		<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 
-		            to-accent/20 opacity-60"></div>
-		<!-- Glow effect -->
-		<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full 
-		            bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl"></div>
+<div class="min-h-full bg-gray-950 text-slate-50">
+	<!-- Hero Section -->
+	<div class="relative overflow-hidden border-b border-slate-800/50">
+		<div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-cyan-600/5"></div>
+		<div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
-		<div class="relative flex flex-col gap-5">
-			<!-- Header Row: Badge + Title + Action Button -->
-			<div class="flex flex-wrap items-center justify-between gap-3">
-				<div class="flex flex-wrap items-center gap-3">
-					<!-- Badge -->
-					<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 
-					             text-xs font-medium text-gray-600 shadow-sm 
-					             dark:bg-gray-800/80 dark:text-gray-200">
-						<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary 
-						             via-secondary to-accent" />
-						LLM Management
+		<div class="relative px-6 py-12">
+			<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+				<h1 class="text-4xl md:text-5xl font-bold">
+					<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+						🧠 LLM 관리
 					</span>
-					<!-- Title -->
-					<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-						LLM 관리
-					</h1>
-				</div>
-				
-				<!-- Primary Action Button -->
+				</h1>
 				<button
 					on:click={() => { resetForm(); showAddModal = true; }}
-					class="flex items-center gap-2 px-4 py-2 rounded-xl 
-					       bg-gradient-to-br from-primary/90 via-secondary/90 to-accent/90 
-					       text-white font-medium shadow-lg shadow-primary/30 
-					       hover:shadow-xl transition-all hover:scale-105"
+					class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-lg shadow-blue-500/25 hover:shadow-xl transition-all duration-300"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -303,18 +280,15 @@
 					모델 추가
 				</button>
 			</div>
-			
-			<!-- Description -->
-			<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+			<p class="text-lg text-slate-400 max-w-2xl mb-8">
 				LiteLLM을 통해 다양한 LLM Provider와 모델을 관리합니다.
 			</p>
 			
 			<!-- Stats Cards -->
-			<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+			<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 				{#each heroStats as stat}
-					<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 
-					            border border-white/30 dark:border-gray-700/30">
-						<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+					<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-4 shadow-lg shadow-black/20">
+						<div class="text-2xl font-bold text-white">
 							{stat.value}개
 						</div>
 						<div class="text-xs text-gray-500 dark:text-gray-400">{stat.label}</div>
@@ -322,40 +296,41 @@
 				{/each}
 			</div>
 		</div>
-	</section>
-	
-	<!-- Provider Filter -->
-	<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-sm p-4">
-		<div class="flex flex-wrap gap-2">
-			<button
-				on:click={() => selectedProvider = 'all'}
-				class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
-					{selectedProvider === 'all'
-						? 'bg-primary text-white'
-						: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-			>
-				전체
-			</button>
-			{#each [...new Set(models.map(m => m.provider))] as providerId}
-				<button
-					on:click={() => selectedProvider = providerId}
-					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2
-						{selectedProvider === providerId
-							? 'bg-primary text-white'
-							: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-				>
-					<span
-						class="w-2 h-2 rounded-full"
-						style="background-color: {getProviderColor(providerId)}"
-					></span>
-					{getProviderName(providerId)}
-				</button>
-			{/each}
-		</div>
 	</div>
 	
-	<!-- Models Table -->
-	<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-gray-700/20 shadow-sm overflow-hidden">
+	<div class="px-6 py-8 space-y-6">
+		<!-- Provider Filter -->
+		<div class="bg-slate-900/80 border border-slate-800/50 rounded-2xl shadow-lg shadow-black/20 p-4">
+			<div class="flex flex-wrap gap-2">
+				<button
+					on:click={() => selectedProvider = 'all'}
+					class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
+						{selectedProvider === 'all'
+							? 'bg-blue-600 text-white'
+							: 'bg-slate-800 text-slate-300 hover:bg-slate-700'}"
+				>
+					전체
+				</button>
+				{#each [...new Set(models.map(m => m.provider))] as providerId}
+					<button
+						on:click={() => selectedProvider = providerId}
+						class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2
+							{selectedProvider === providerId
+								? 'bg-blue-600 text-white'
+								: 'bg-slate-800 text-slate-300 hover:bg-slate-700'}"
+					>
+						<span
+							class="w-2 h-2 rounded-full"
+							style="background-color: {getProviderColor(providerId)}"
+						></span>
+						{getProviderName(providerId)}
+					</button>
+				{/each}
+			</div>
+		</div>
+		
+		<!-- Models Table -->
+		<div class="bg-slate-900/80 border border-slate-800/50 rounded-2xl shadow-xl shadow-black/20 overflow-hidden">
 		{#if loading}
 			<div class="p-8 text-center text-gray-500">로딩 중...</div>
 		{:else if error}
