@@ -262,25 +262,25 @@
 	</div>
 {/if} -->
 
-<div class="app relative bg-gray-950 min-h-screen w-full">
+<div class="app relative bg-gray-950 h-screen w-full overflow-hidden">
 	<div
-		class="text-slate-50 min-h-screen flex flex-col w-full"
+		class="text-slate-50 h-full flex flex-col w-full"
 	>
 		{#if !['user', 'admin'].includes($user?.role)}
 			<AccountPending />
 		{:else}
-			<!-- Top Navigation Bar -->
+			<!-- Top Navigation Bar (고정) -->
 			<TopNavBar />
 
 			<!-- Main Content Area -->
-			<div class="flex flex-1">
+			<div class="flex flex-1 min-h-0">
 				<!-- Chat Sidebar (only for chat pages) -->
 				{#if $page.url.pathname.startsWith('/c') && $showSidebar}
 					<Sidebar />
 				{/if}
 
-				<!-- Main Content -->
-				<div class="flex-1">
+				<!-- Main Content (스크롤 영역) -->
+				<div class="flex-1 overflow-y-auto">
 					{#if loaded}
 						<main class="w-full">
 							<slot />
