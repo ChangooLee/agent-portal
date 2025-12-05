@@ -63,7 +63,7 @@ export const roleMenus: Record<UserRole, MenuItem[]> = {
 
 // Get current role based on pathname
 export function getRoleFromPath(pathname: string): UserRole {
-    if (pathname.startsWith('/use/') || pathname === '/' || pathname.startsWith('/c/') || pathname.startsWith('/c')) {
+    if (pathname.startsWith('/use/') || pathname === '/' || pathname === '/home' || pathname.startsWith('/c/') || pathname.startsWith('/c') || pathname === '/today' || pathname === '/dart') {
         return 'use';
     }
     if (pathname.startsWith('/build/')) {

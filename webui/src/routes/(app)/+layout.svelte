@@ -44,7 +44,9 @@
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import RoleSidebar from '$lib/components/layout/RoleSidebar.svelte';
 	import TopNavbar from '$lib/components/layout/TopNavbar.svelte';
+	import TopNavBar from '$lib/components/layout/TopNavBar.svelte';
 	import { selectedRole } from '$lib/stores/role';
+	import { showSidebar } from '$lib/stores';
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
 	import ChangelogModal from '$lib/components/ChangelogModal.svelte';
 	import AccountPending from '$lib/components/layout/Overlay/AccountPending.svelte';
@@ -274,7 +276,7 @@
 	</div>
 	
 	<div
-		class=" text-gray-800 dark:text-gray-100 bg-transparent min-h-screen flex flex-row justify-end"
+		class="text-gray-800 dark:text-gray-100 bg-transparent min-h-screen flex flex-col"
 	>
 		{#if !['user', 'admin'].includes($user?.role)}
 			<AccountPending />
@@ -333,24 +335,31 @@
 				</div>
 			</div>
 		{/if} -->
-		{/if}
 
-	<!-- New Role-based Sidebar -->
-	<RoleSidebar />
+			<!-- Top Navigation Bar -->
+			<TopNavBar />
 
-	<div class="flex-1 flex flex-col h-screen max-h-screen">
-		<!-- TopNavbar disabled - using RoleSidebar instead -->
-			
-		{#if loaded}
-			<main class="flex-1 {$page.url.pathname.startsWith('/c/') || $page.url.pathname === '/' ? 'overflow-hidden' : 'overflow-y-auto'}">
-				<slot />
-			</main>
-			{:else}
-				<div class="w-full flex-1 flex items-center justify-center py-12">
-					<Spinner />
+			<!-- Main Content Area -->
+			<div class="flex flex-1 overflow-hidden">
+				<!-- Chat Sidebar (only for chat pages) -->
+				{#if $page.url.pathname.startsWith('/c') && $showSidebar}
+					<Sidebar />
+				{/if}
+
+				<!-- Main Content -->
+				<div class="flex-1 flex flex-col min-h-0">
+					{#if loaded}
+						<main class="flex-1 overflow-y-auto">
+							<slot />
+						</main>
+					{:else}
+						<div class="w-full flex-1 flex items-center justify-center py-12">
+							<Spinner />
+						</div>
+					{/if}
 				</div>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	</div>
 </div>
 
