@@ -12,7 +12,7 @@ settings = get_settings()
 async def get_usage_summary(project_id: Optional[str] = Query(None)):
     """Get usage summary from observability tools (LiteLLM only)"""
     try:
-        # LiteLLM usage only (Langfuse/Helicone removed)
+        # LiteLLM usage (OTEL → ClickHouse 기반 모니터링)
         return {
             "litellm": {"status": "active"},
             "status": "ok"

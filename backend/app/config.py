@@ -24,9 +24,12 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     
-    # AgentOps (Self-hosted API)
-    AGENTOPS_API_URL: str = "http://host.docker.internal:8003"  # Docker 외부 AgentOps API
-    AGENTOPS_API_KEY: str = ""  # UUID 형식의 API 키 (scripts/setup-agentops-apikey.sh로 생성)
+    # ClickHouse (Monitoring)
+    CLICKHOUSE_HOST: str = "monitoring-clickhouse"
+    CLICKHOUSE_HTTP_PORT: int = 8123
+    CLICKHOUSE_DATABASE: str = "otel_2"
+    CLICKHOUSE_USER: str = "default"
+    CLICKHOUSE_PASSWORD: str = "password"
     
     # Default workspace filter
     DEFAULT_WORKSPACE_FILTER: str = "ws_default"
