@@ -19,7 +19,7 @@ Agent Portal의 MCP Gateway를 통해 MCP 서버를 등록하고 관리할 수 �
 
 ### 접속 방법
 
-1. **Admin 페이지 접속**: `http://localhost:3001/admin/mcp`
+1. **Admin 페이지 접속**: `http://localhost:3009/admin/mcp`
 2. **서버 추가** 버튼 클릭
 3. 서버 정보 입력:
    - **이름**: MCP 서버 이름

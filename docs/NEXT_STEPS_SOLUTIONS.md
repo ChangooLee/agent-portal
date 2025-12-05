@@ -380,9 +380,9 @@ echo "✅ Backend BFF: OK"
 curl -f http://localhost:4000/health || exit 1
 echo "✅ LiteLLM: OK"
 
-# Langfuse
-curl -f http://localhost:3001/api/public/health || exit 1
-echo "✅ Langfuse: OK"
+# ClickHouse
+curl -f http://localhost:8124/ping || exit 1
+echo "✅ ClickHouse: OK"
 
 # 4. API 엔드포인트 테스트
 echo "🧪 Testing API endpoints..."
@@ -444,9 +444,9 @@ docker-compose up -d webui
   - [ ] 헬스체크 및 연동 테스트
   - [ ] Backend BFF와 연동 확인
 
-- [ ] **Langfuse 서비스 실행**
-  - [ ] 환경변수 설정 (.env)
-  - [ ] docker-compose로 서비스 실행
+- [x] **OTEL + ClickHouse 모니터링 실행**
+  - [x] OTEL Collector 설정 완료
+  - [x] ClickHouse 트레이스 저장소 구성 완료
   - [ ] API 키 생성 및 설정
   - [ ] Backend BFF와 연동 확인
 
@@ -457,10 +457,10 @@ docker-compose up -d webui
 
 ### P1 (단기 해결)
 
-- [ ] 프론트엔드-백엔드 데이터 연동
-- [ ] 에러 핸들링 개선
-- [ ] Helicone API 실제 구현
-- [ ] 환경변수 설정 가이드 문서화
+- [x] 프론트엔드-백엔드 데이터 연동
+- [x] 에러 핸들링 개선
+- [x] ClickHouse 쿼리 API 구현
+- [x] 환경변수 설정 가이드 문서화
 
 ---
 

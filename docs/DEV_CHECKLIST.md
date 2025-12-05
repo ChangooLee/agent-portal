@@ -15,7 +15,7 @@ Agent Portal 프로젝트의 개발 환경 설정 및 확인 사항입니다.
 - [ ] 개발 서버 시작: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d webui`
 - [ ] 로그 확인: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f webui`
 - [ ] ModuleNotFoundError 발생 여부 확인
-- [ ] 포트 접속: `http://localhost:3001` (Frontend), `http://localhost:3000/health` (Backend)
+- [ ] 포트 접속: `http://localhost:3009` (Frontend), `http://localhost:8000/docs` (Backend)
 
 ### 일반적인 문제 해결
 
@@ -88,7 +88,7 @@ Agent Portal 프로젝트의 개발 환경 설정 및 확인 사항입니다.
 
 **주요 포트 목록**:
 - Backend BFF: 8000
-- WebUI: 3000, 3001 (dev)
+- WebUI: 3009
 - Flowise: 3002
 - LiteLLM: 4000
 - AutoGen Studio: 5050
@@ -161,7 +161,7 @@ node scripts/analyze-backend-structure.js
 
 ### Frontend 테스트
 
-- [ ] 브라우저에서 `http://localhost:3001` 접속 확인
+- [ ] 브라우저에서 `http://localhost:3009` 접속 확인
 - [ ] 다크/라이트 모드 전환 테스트
 - [ ] 모바일/태블릿/데스크톱 반응형 테스트
 - [ ] 브라우저 콘솔 에러 확인
@@ -182,7 +182,7 @@ node scripts/analyze-backend-structure.js
 ./scripts/check-ports.sh
 
 # 또는 특정 포트 확인
-lsof -i :3000 -i :3001 -i :8000
+lsof -i :3009 -i :8000 -i :4000
 ```
 
 **해결 방법** (⚠️ 기존 프로세스 종료 금지):

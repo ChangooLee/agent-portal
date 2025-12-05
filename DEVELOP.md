@@ -95,7 +95,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build webui
 
 #### 개발 모드 접속
 
-- **프론트엔드**: http://localhost:3001 (Vite dev server, 백엔드 API 자동 프록시)
+- **프론트엔드**: http://localhost:3009 (Vite dev server, 백엔드 API 자동 프록시)
 - **백엔드 API 직접 접근**: http://localhost:8080 (내부용, 프록시를 통해 사용)
 
 #### 주의사항
@@ -261,7 +261,7 @@ services:
 
 ### 2.2 2단계: Chat 엔드포인트 연동 및 모니터링 ✅ **완료**
 
-**목표**: FastAPI BFF 생성, LiteLLM 연동, Langfuse/Helicone 모니터링 및 관리자 화면 임베드
+**목표**: FastAPI BFF 생성, LiteLLM 연동, OTEL + ClickHouse 모니터링
 
 **상태**: ✅ **코드 레벨 완료** (환경 설정 필요)
 
@@ -273,7 +273,7 @@ services:
    cd backend
    python -m venv venv
    source venv/bin/activate
-   pip install fastapi uvicorn litellm langfuse-sdk
+   pip install fastapi uvicorn litellm httpx
    ```
 
 2. **LiteLLM 설정** ⚠️
@@ -281,13 +281,13 @@ services:
    - 기본 모델 리스트 설정 (테스트용) - 환경 설정 필요
 
 3. **관찰성 도구 설정** ✅
-   - Langfuse 컨테이너 추가 (docker-compose.yml)
-   - Helicone 컨테이너 추가 (docker-compose.yml)
-   - Langfuse/Helicone 서비스 레이어 구현 완료
+   - OTEL Collector 설정 (docker-compose.yml)
+   - ClickHouse 트레이스 저장소 구성
+   - LiteLLM OTEL callback 활성화
 
-4. **관리자 대시보드 임베드** ✅
-   - Langfuse/Helicone iframe 카드 추가
+4. **관리자 대시보드 구현** ✅
    - Monitoring 페이지 구현 (`webui/src/routes/(app)/admin/monitoring/+page.svelte`)
+   - Overview, Analytics, Traces 탭 구현
 
 #### 구현 작업
 
@@ -305,13 +305,13 @@ backend/
 │  │  └─ observability.py     # /observability/*
 │  ├─ services/
 │  │  ├─ litellm_service.py   # LiteLLM 연동
-│  │  └─ langfuse_service.py  # Langfuse 연동
+│  │  └─ monitoring_adapter.py # OTEL/ClickHouse 모니터링
 │  └─ config.py
 ```
 
 **주요 API:**
 - `POST /chat/stream`: 채팅 스트리밍
-- `GET /observability/usage`: Langfuse/Helicone 요약 데이터
+- `GET /monitoring/overview`: 모니터링 요약 데이터
 - `GET /catalog/models`: LiteLLM 모델 카탈로그
 
 **webui 오버라이드:**
@@ -329,8 +329,8 @@ services:
     env_file: .env
     depends_on:
       - litellm
-      - langfuse
-      - helicone
+      - otel-collector
+      - clickhouse
 
   litellm:
     image: ghcr.io/berriai/litellm:main
@@ -340,66 +340,50 @@ services:
     ports:
       - "4000:4000"
 
-  langfuse:
-    image: langfuse/langfuse:latest
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
     ports:
-      - "3001:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@langfuse-db:5432/postgres
-    depends_on:
-      - langfuse-db
-
-  langfuse-db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_PASSWORD=postgres
+      - "4317:4317"  # gRPC
+      - "4318:4318"  # HTTP
     volumes:
-      - langfuse_db:/var/lib/postgresql/data
+      - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml
 
-  helicone:
-    image: helicone/helicone:latest
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
     ports:
-      - "8787:8787"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@helicone-db:5432/postgres
-    depends_on:
-      - helicone-db
-
-  helicone-db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_PASSWORD=postgres
+      - "8124:8123"  # HTTP
+      - "9002:9000"  # Native
     volumes:
-      - helicone_db:/var/lib/postgresql/data
+      - clickhouse_data:/var/lib/clickhouse
 ```
 
 #### 테스트 절차
 
 1. **구동 테스트**
    ```bash
-   docker-compose up -d backend litellm langfuse helicone
+   docker-compose up -d backend litellm otel-collector clickhouse
    ```
 
 2. **API 동작 확인**
    - [ ] `POST /chat/stream` 엔드포인트 동작
-   - [ ] LiteLLM을 통한 모델 호출 성공
-   - [ ] Langfuse에 트레이스 기록
-   - [ ] Helicone에 요청 로깅
+   - [x] LiteLLM을 통한 모델 호출 성공
+   - [x] ClickHouse에 트레이스 기록 (OTEL Collector 경유)
+   - [x] 모니터링 UI에서 데이터 조회
 
 3. **관리자 화면 확인**
-   - [ ] 관리자 대시보드에 Langfuse/Helicone 임베드 카드 표시
-   - [ ] 모니터링 데이터 정상 조회
+   - [x] Monitoring 대시보드 Overview/Analytics/Traces 탭
+   - [x] 모니터링 데이터 정상 조회
 
 #### 완료 기준
 
 - [x] 채팅 스트리밍 API 코드 구현 완료 (`/chat/stream`, `/chat/completions`)
 - [x] LiteLLM 게이트웨이 서비스 레이어 구현 완료 (`litellm_service.py`)
-- [x] Langfuse/Helicone 서비스 레이어 구현 완료 (`langfuse_service.py`)
-- [x] Observability API 엔드포인트 구현 완료 (`/observability/*`)
+- [x] OTEL/ClickHouse 모니터링 어댑터 구현 완료 (`monitoring_adapter.py`)
+- [x] Monitoring API 엔드포인트 구현 완료 (`/monitoring/*`)
 - [x] 관리자 화면에 모니터링 페이지 추가 완료
-- [ ] LiteLLM 서비스 실행 및 설정 (환경 설정 필요)
-- [ ] Langfuse/Helicone 실제 연동 테스트 (환경 설정 필요)
-- [ ] 프론트엔드-백엔드 데이터 연동 (BFF API 호출)
+- [x] LiteLLM 서비스 실행 및 OTEL callback 설정 완료
+- [x] ClickHouse 트레이스 저장/조회 테스트 완료
+- [x] 프론트엔드-백엔드 데이터 연동 완료 (BFF API 호출)
 
 **참고**: 상세 진행 상황은 [PROGRESS.md](./PROGRESS.md) 참조
 
@@ -431,12 +415,12 @@ services:
    - 검색/필터 (Fuse.js)
 
 4. **Langflow UI 재구현 - Phase 1-B** 🚧
-   - AgentOps SDK 통합 (에이전트 실행 모니터링)
+   - OTEL 기반 에이전트 실행 모니터링
    - Langflow → LangGraph 변환기 구현
    - LangGraph 실행 서비스 구현
    - 변환/실행 API 엔드포인트 추가
    - 플로우 카드 컴포넌트 (Export/Run 버튼)
-   - 실행 결과 패널 (비용 정보, AgentOps 리플레이 링크)
+   - 실행 결과 패널 (비용 정보, 트레이스 링크)
 
 5. **Phase 2 (미래)** ❌
    - Flowise/AutoGen 플로우 → LangGraph JSON 변환
@@ -488,7 +472,7 @@ services:
   flowise:
     image: flowiseai/flowise:latest
     ports:
-      - "3002:3000"  # Langfuse UI(3001)와 포트 충돌 방지
+      - "3002:3000"  # Flowise UI
     environment:
       - PORT=3000
     volumes:
@@ -507,11 +491,8 @@ services:
     ports: ["${AUTOGEN_API_PORT:-5051}:5051"]
     environment:
       - LITELLM_BASE_URL=http://litellm:4000
-      - LANGFUSE_HOST=${LANGFUSE_HOST}
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-      - AGENTOPS_API_KEY=${AGENTOPS_API_KEY}
-    depends_on: [litellm, langfuse]
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    depends_on: [litellm, otel-collector]
 
 volumes:
   langflow_data:
@@ -1054,7 +1035,7 @@ services:
 4. **LiteLLM 연동 확인**
    - [ ] Perplexica에서 모델 호출 시 LiteLLM 경유
    - [ ] Open-Notebook에서 모델 호출 시 LiteLLM 경유
-   - [ ] 관측성 통합 확인 (Langfuse/Helicone)
+   - [ ] 관측성 통합 확인 (OTEL/ClickHouse)
 
 5. **헤더 변환 확인**
    - [ ] X-Frame-Options 제거 확인
@@ -1420,7 +1401,8 @@ repo/
 - [Open Notebook](https://www.open-notebook.ai/)
 - [Perplexica GitHub](https://github.com/ItzCrazyKns/Perplexica)
 - [LiteLLM 문서](https://docs.litellm.ai/)
-- [Langfuse 문서](https://langfuse.com/docs)
+- [OpenTelemetry 문서](https://opentelemetry.io/docs/)
+- [ClickHouse 문서](https://clickhouse.com/docs/)
 - [Kong Gateway 문서](https://docs.konghq.com/)
 
 ### B. 유용한 명령어

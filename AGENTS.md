@@ -2,7 +2,7 @@
 
 > **Purpose**: Define WHAT the project is and WHERE things are located
 > **Audience**: AI agents (Claude, Cursor) working on this codebase
-> **Version**: 5.0 (2025-11-28)
+> **Version**: 5.2 (2025-12-05)
 
 ---
 
@@ -38,12 +38,12 @@ Enterprise AI agent management platform built on Open-WebUI, providing:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         User Browser                             │
-│                      http://localhost:3001                       │
+│                      http://localhost:3009                       │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Open-WebUI (port 3001)                        │
+│                    Open-WebUI (port 3009)                        │
 │              SvelteKit Frontend + Vite Proxy                     │
 │    /api/* → Backend BFF    /admin/* → Admin Pages                │
 └─────────────────────────────────────────────────────────────────┘
@@ -103,7 +103,7 @@ MCP Servers → Kong Gateway → Backend Registry → Frontend Admin
 | Service | Port | Container | Health Check | Purpose |
 |---------|------|-----------|--------------|---------|
 | backend | 8000 | agent-portal-backend-1 | http://localhost:8000/docs | FastAPI BFF |
-| webui | 3001 | agent-portal-webui-1 | http://localhost:3001 | Portal UI |
+| webui | 3009 | agent-portal-webui-1 | http://localhost:3009 | Portal UI |
 | litellm | 4000 | agent-portal-litellm-1 | http://localhost:4000/health | LLM Proxy |
 | kong | 8002 | agent-portal-kong-1 | http://localhost:8002/status | API Gateway |
 | mariadb | 3306 | agent-portal-mariadb-1 | - | App Database |
@@ -587,7 +587,7 @@ curl http://localhost:8000/docs
 curl http://localhost:8000/monitoring/health
 
 # Test frontend
-curl http://localhost:3001
+curl http://localhost:3009
 
 # Test LiteLLM
 curl http://localhost:4000/health

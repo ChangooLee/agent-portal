@@ -9,7 +9,7 @@
 
 Konga는 Kong Gateway의 OSS Admin UI입니다. Agent Portal에서 다음 두 가지 방법으로 접근할 수 있습니다:
 
-1. **Agent Portal 임베딩**: `http://localhost:3001/admin/gateway` - "Kong Admin" 탭
+1. **Agent Portal 임베딩**: `http://localhost:3009/admin/gateway` - "Kong Admin" 탭
 2. **직접 접근**: `http://localhost:1337`
 
 ---

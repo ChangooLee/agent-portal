@@ -166,7 +166,7 @@ webui:
 ```
 
 **UI 설정**:
-1. `http://localhost:3001/admin/settings` 접속
+1. `http://localhost:3009/admin/settings` 접속
 2. Connections > OpenAI API 활성화
 3. Base URL: `http://litellm:4000/v1`
 4. API Key: `.env`의 `LITELLM_MASTER_KEY`
