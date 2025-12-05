@@ -49,6 +49,33 @@
 	let currentPage = 1;
 	let pageSize = 20;
 	let selectedTraceId: string | null = null;
+	
+	// Traces sub-tab state
+	let tracesSubTab: 'agent' | 'llm' | 'all' = 'agent';
+	
+	// Filtered traces based on sub-tab
+	$: filteredTraces = traces.filter(trace => {
+		if (tracesSubTab === 'all') return true;
+		if (tracesSubTab === 'agent') {
+			// Agent traces: span_name contains 'agent' or service_name contains 'agent'
+			const spanName = trace.span_name?.toLowerCase() || '';
+			const serviceName = trace.service_name?.toLowerCase() || '';
+			return spanName.includes('agent') || spanName.includes('text2sql') || 
+			       serviceName.includes('agent') || spanName.includes('entry') ||
+			       spanName.includes('analyze') || spanName.includes('generate') ||
+			       spanName.includes('validate') || spanName.includes('execute') ||
+			       spanName.includes('format') || spanName.includes('complete');
+		}
+		if (tracesSubTab === 'llm') {
+			// LLM Call traces: span_name contains 'litellm' or 'chat' or 'completion'
+			const spanName = trace.span_name?.toLowerCase() || '';
+			const serviceName = trace.service_name?.toLowerCase() || '';
+			return spanName.includes('litellm') || spanName.includes('chat_completion') ||
+			       spanName.includes('llm') || serviceName.includes('litellm') ||
+			       (trace.prompt_tokens && trace.prompt_tokens > 0);
+		}
+		return true;
+	});
 
 	// Metrics state
 	let metrics: Metrics | null = null;
@@ -420,9 +447,57 @@
 					<!-- Traces Tab (AgentOps 스타일) -->
 					{#if activeTab === 'traces'}
 						<div class="space-y-4 monitoring-page">
-							<!-- Page Title -->
-							<div class="mt-2 flex items-center gap-2">
+							<!-- Page Title with Sub-tabs -->
+							<div class="mt-2 flex items-center justify-between">
 								<span class="text-2xl font-medium" style="color: hsl(222.2, 44%, 14%);">Traces</span>
+								
+								<!-- Sub-tabs -->
+								<div class="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+									<button
+										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'agent'
+											? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+											: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
+										on:click={() => tracesSubTab = 'agent'}
+									>
+										🤖 Agent
+										<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+											{traces.filter(t => {
+												const s = t.span_name?.toLowerCase() || '';
+												const svc = t.service_name?.toLowerCase() || '';
+												return s.includes('agent') || s.includes('text2sql') || svc.includes('agent') || 
+												       s.includes('entry') || s.includes('analyze') || s.includes('generate') ||
+												       s.includes('validate') || s.includes('execute') || s.includes('format') || s.includes('complete');
+											}).length}
+										</span>
+									</button>
+									<button
+										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'llm'
+											? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
+											: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
+										on:click={() => tracesSubTab = 'llm'}
+									>
+										💬 LLM Call
+										<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+											{traces.filter(t => {
+												const s = t.span_name?.toLowerCase() || '';
+												const svc = t.service_name?.toLowerCase() || '';
+												return s.includes('litellm') || s.includes('chat_completion') || s.includes('llm') || 
+												       svc.includes('litellm') || (t.prompt_tokens && t.prompt_tokens > 0);
+											}).length}
+										</span>
+									</button>
+									<button
+										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'all'
+											? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+											: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
+										on:click={() => tracesSubTab = 'all'}
+									>
+										📋 All
+										<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+											{traces.length}
+										</span>
+									</button>
+								</div>
 							</div>
 
 							<!-- Traces Table (AgentOps 스타일) -->
@@ -442,7 +517,7 @@
 										</tr>
 									</thead>
 									<tbody class="bg-white dark:bg-gray-900/50 divide-y divide-gray-200 dark:divide-gray-700">
-										{#each traces as trace}
+										{#each filteredTraces as trace}
 											{@const maxDuration = 120000}
 											{@const durationPercent = Math.min((trace.duration / maxDuration) * 100, 100)}
 											{@const barColor = trace.duration >= 60000 ? 'bg-amber-400/60' : trace.duration >= 30000 ? 'bg-slate-400/60' : 'bg-emerald-400/60'}
@@ -517,8 +592,8 @@
 													<svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 													</svg>
-													<p class="font-medium">No traces found.</p>
-													<p class="text-xs mt-2">Traces will appear here once agents start processing requests.</p>
+													<p class="font-medium">No {tracesSubTab === 'agent' ? 'agent' : tracesSubTab === 'llm' ? 'LLM call' : ''} traces found.</p>
+													<p class="text-xs mt-2">{tracesSubTab === 'all' ? 'Traces will appear here once agents start processing requests.' : 'Try switching to "All" tab to see all traces.'}</p>
 												</td>
 											</tr>
 										{/each}
