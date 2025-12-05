@@ -328,16 +328,16 @@
 			<TopNavBar />
 
 			<!-- Main Content Area -->
-			<div class="flex flex-1 overflow-hidden">
+			<div class="flex flex-1 min-h-0">
 				<!-- Chat Sidebar (only for chat pages) -->
 				{#if $page.url.pathname.startsWith('/c') && $showSidebar}
 					<Sidebar />
 				{/if}
 
 				<!-- Main Content -->
-				<div class="flex-1 flex flex-col min-h-0">
+				<div class="flex-1 flex flex-col min-h-0 overflow-y-auto">
 					{#if loaded}
-						<main class="flex-1 overflow-y-auto">
+						<main class="flex-1 w-full">
 							<slot />
 						</main>
 					{:else}
