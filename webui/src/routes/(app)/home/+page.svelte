@@ -93,7 +93,7 @@
     <!-- Hero Section -->
     <div class="relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/10 to-transparent"></div>
-        <div class="relative max-w-7xl mx-auto px-6 py-16 text-center">
+        <div class="relative px-6 py-16 text-center">
             <h1 class="text-4xl md:text-5xl font-bold mb-4">
                 안녕하세요, <span class="text-blue-400">{$user?.name || '사용자'}</span>님
             </h1>
@@ -103,7 +103,7 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-6 pb-16 space-y-12">
+    <div class="px-6 pb-16 space-y-12">
         <!-- Agents Section -->
         <section>
             <div class="flex items-center justify-between mb-6">

@@ -127,7 +127,7 @@
 </svelte:head>
 
 <div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
-	<div class="mx-auto flex w-full max-w-[1400px] flex-col gap-6">
+	<div class="flex w-full flex-col gap-6">
 		<!-- Hero Section -->
 		<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-4 shadow-xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
 			<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 opacity-60" />

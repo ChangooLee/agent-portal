@@ -400,7 +400,7 @@
 	</div>
 {:else}
 	<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
-		<div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+		<div class="flex w-full flex-col gap-6">
 			<!-- Hero Section -->
 			<section
 				class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60"

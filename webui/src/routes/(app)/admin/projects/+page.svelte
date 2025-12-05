@@ -149,7 +149,7 @@
 </svelte:head>
 
 <div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
-	<div class="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+	<div class="flex w-full flex-col gap-6">
 	
 	<!-- Hero Section (Glassmorphism) -->
 	<section class="relative overflow-hidden rounded-3xl border border-white/20 
