@@ -418,19 +418,19 @@
 	<title>투데이 | {$WEBUI_NAME}</title>
 </svelte:head>
 
-<div class="h-full w-full flex flex-col overflow-y-auto">
+<div class="min-h-full bg-gray-950 text-slate-50">
 	<!-- Hero Section -->
-	<div class="relative overflow-hidden">
-		<!-- Background Gradient -->
-		<div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/30" />
+	<div class="relative overflow-hidden border-b border-slate-800/50">
+		<div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-purple-600/5"></div>
+		<div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
-		<!-- Hero Content -->
-		<div class="relative px-6 py-4 text-center">
-			<div class="inline-flex items-center justify-center px-6 py-3 mb-2 rounded-full bg-gradient-to-r from-primary/90 to-secondary/90 text-white text-base font-semibold shadow-lg">
-				<span>📰 Today's News</span>
-			</div>
-			
-			<p class="text-sm text-gray-600 dark:text-gray-300">
+		<div class="relative px-6 py-16 text-center">
+			<h1 class="text-4xl md:text-5xl font-bold mb-4">
+				<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+					📰 Today's News
+				</span>
+			</h1>
+			<p class="text-lg text-slate-400 max-w-2xl mx-auto">
 				{#if newsData}
 					{formatDate(newsData.date)} · {newsData.total_articles}개 기사
 				{:else}
@@ -441,17 +441,17 @@
 	</div>
 	
 	<!-- Content Section -->
-	<div class="flex-1 px-6 py-4">
+	<div class="px-6 py-8">
 		<div class="w-full">
 			<!-- Search Bar -->
-			<div class="mb-6">
+			<div class="mb-8">
 				<div class="relative max-w-2xl mx-auto">
 					<input
 						type="text"
 						bind:value={searchQuery}
 						on:input={handleSearch}
 						placeholder="제목, 내용, 태그로 검색..."
-						class="w-full px-5 py-3 pl-12 pr-12 rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+						class="w-full px-5 py-3 pl-12 pr-12 rounded-xl bg-slate-900/80 border border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all text-white placeholder-slate-500"
 					/>
 					<!-- Search Icon -->
 					<svg
