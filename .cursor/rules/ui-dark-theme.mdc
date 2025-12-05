@@ -1,0 +1,360 @@
+# UI Dark Theme Design Guide
+
+> **Version**: 1.0 (2025-12-05)
+> **Purpose**: Standardize dark theme UI design across Agent Portal
+
+---
+
+## 1. Color Palette
+
+### 1.1 Background Layers
+
+```css
+/* Base background - used for main content area */
+bg-gray-950       /* #030712 */
+
+/* Surface - cards, panels, elevated content */
+bg-slate-900/80   /* rgba(15, 23, 42, 0.8) */
+
+/* Elevated - hover states, interactive elements */
+bg-slate-800/80   /* rgba(30, 41, 59, 0.8) */
+```
+
+### 1.2 Border Colors
+
+```css
+/* Subtle borders - default card borders */
+border-slate-800/50   /* rgba(30, 41, 59, 0.5) */
+
+/* Default borders - interactive elements */
+border-slate-700/50   /* rgba(51, 65, 85, 0.5) */
+
+/* Accent borders - hover, focus states */
+border-blue-500/50    /* rgba(59, 130, 246, 0.5) */
+```
+
+### 1.3 Text Colors
+
+```css
+/* Primary text - headings, important content */
+text-white            /* #ffffff */
+text-slate-50         /* #f8fafc */
+
+/* Secondary text - descriptions, body text */
+text-slate-300        /* #cbd5e1 */
+text-slate-400        /* #94a3b8 */
+
+/* Muted text - hints, timestamps */
+text-slate-500        /* #64748b */
+```
+
+### 1.4 Accent Colors
+
+```css
+/* Primary accent - buttons, links, focus */
+bg-blue-600          /* #2563eb */
+text-blue-400        /* #60a5fa */
+border-blue-500/30   /* hover borders */
+
+/* Success */
+bg-emerald-500/20    /* backgrounds */
+text-emerald-400     /* text */
+border-emerald-500/30
+
+/* Warning */
+bg-amber-500/20
+text-amber-400
+border-amber-500/30
+
+/* Error */
+bg-red-500/20
+text-red-400
+border-red-500/30
+```
+
+---
+
+## 2. Depth and Shadows
+
+### 2.1 Shadow System
+
+```css
+/* Base card shadow */
+shadow-lg shadow-black/20
+
+/* Elevated/hover shadow */
+shadow-xl shadow-black/30
+
+/* Glow effect (accent) */
+shadow-lg shadow-blue-500/20   /* for active states */
+shadow-lg shadow-emerald-500/50 /* for status indicators */
+```
+
+### 2.2 Gradient Overlays
+
+```css
+/* Subtle card gradient */
+bg-gradient-to-br from-blue-500/20 to-blue-600/10
+
+/* Hero section gradient */
+bg-gradient-to-br from-blue-600/5 via-transparent to-purple-600/5
+
+/* Text gradient (headings) */
+bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent
+
+/* Navbar gradient */
+bg-gradient-to-b from-slate-900 to-gray-950
+```
+
+---
+
+## 3. Component Patterns
+
+### 3.1 Card Component
+
+```svelte
+<!-- Standard Card -->
+<div class="bg-slate-900/80 border border-slate-800/50 rounded-2xl p-6 
+    shadow-lg shadow-black/20 transition-all duration-300
+    hover:bg-slate-800/80 hover:border-slate-700/50 
+    hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1">
+    <!-- Content -->
+</div>
+```
+
+### 3.2 Interactive Button Card
+
+```svelte
+<button class="group relative bg-slate-900/80 border border-slate-800/50 rounded-2xl p-6 
+    shadow-lg shadow-black/20 transition-all duration-300 text-left
+    cursor-pointer hover:bg-slate-800/80 hover:border-blue-500/50 
+    hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1">
+    
+    <!-- Gradient overlay (optional) -->
+    <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 
+        opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    
+    <div class="relative">
+        <!-- Card content -->
+    </div>
+</button>
+```
+
+### 3.3 Page Header
+
+```svelte
+<!-- Header with gradient text -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold mb-3">
+        <span class="bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+            Page Title
+        </span>
+    </h1>
+    <p class="text-slate-400">Page description text here.</p>
+</div>
+```
+
+### 3.4 Hero Section
+
+```svelte
+<div class="relative overflow-hidden border-b border-slate-800/50">
+    <!-- Subtle gradient overlay -->
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-purple-600/5"></div>
+    <!-- Grid pattern (optional) -->
+    <div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+    
+    <div class="relative px-6 py-16 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">
+            <span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                Hero Title
+            </span>
+        </h1>
+        <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+            Hero description text.
+        </p>
+    </div>
+</div>
+```
+
+### 3.5 Status Badge
+
+```svelte
+<!-- Coming Soon -->
+<span class="inline-block px-4 py-1.5 bg-amber-500/20 text-amber-400 text-sm font-medium 
+    rounded-full border border-amber-500/30">
+    Coming Soon
+</span>
+
+<!-- Active Status Indicator -->
+<div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></div>
+```
+
+### 3.6 Navigation Tab (Active State)
+
+```svelte
+<button class="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out
+    bg-blue-600 text-white shadow-lg shadow-blue-500/25">
+    Active Tab
+</button>
+
+<button class="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out
+    text-slate-400 hover:text-white hover:bg-slate-800/80">
+    Inactive Tab
+</button>
+```
+
+---
+
+## 4. Layout Rules
+
+### 4.1 Full Width
+
+- **Remove** `max-w-6xl`, `max-w-7xl` constraints
+- Use `px-6` for consistent horizontal padding
+- Allow content to fill available width
+
+```svelte
+<!-- Page container -->
+<div class="min-h-full bg-gray-950 text-slate-50 p-6 overflow-y-auto">
+    <!-- Content without max-width -->
+</div>
+```
+
+### 4.2 Scrolling
+
+- Use `min-h-full` instead of `h-full` for proper scrolling
+- Add `overflow-y-auto` on page containers
+- Main layout handles overflow with `flex flex-col min-h-screen`
+
+### 4.3 Grid Layouts
+
+```svelte
+<!-- Responsive card grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <!-- Cards -->
+</div>
+```
+
+---
+
+## 5. Animation Standards
+
+### 5.1 Transitions
+
+```css
+/* Standard transitions */
+transition-all duration-300 ease-out
+
+/* Faster micro-interactions */
+transition-colors duration-200
+
+/* Slower, more dramatic */
+transition-all duration-500
+```
+
+### 5.2 Hover Effects
+
+```css
+/* Scale on hover */
+hover:scale-105
+group-hover:scale-110
+
+/* Lift on hover */
+hover:-translate-y-1
+
+/* Fade in/out */
+opacity-0 group-hover:opacity-100
+
+/* Slide in */
+transform translate-x-2 group-hover:translate-x-0
+```
+
+---
+
+## 6. Prohibited Patterns
+
+### 6.1 DO NOT USE
+
+```css
+/* Light backgrounds */
+❌ bg-white, bg-gray-50, bg-slate-50
+
+/* Backdrop blur (glossy effect) */
+❌ backdrop-blur-sm, backdrop-blur
+
+/* Light mode specific styles */
+❌ dark:hidden with light variants
+
+/* Fixed max-width on page containers */
+❌ max-w-6xl mx-auto (unless specifically needed)
+
+/* Overly bright shadows */
+❌ shadow-2xl (without black tint)
+```
+
+### 6.2 DO USE
+
+```css
+/* Dark backgrounds */
+✅ bg-gray-950, bg-slate-900/80
+
+/* Subtle depth with shadows */
+✅ shadow-lg shadow-black/20
+
+/* Semi-transparent layers */
+✅ bg-slate-800/50, border-slate-700/50
+
+/* Full-width with padding */
+✅ px-6 (no max-width)
+```
+
+---
+
+## 7. Quick Reference
+
+### Page Template
+
+```svelte
+<script lang="ts">
+    // imports
+</script>
+
+<svelte:head>
+    <title>Page Title | SFN AI Portal</title>
+</svelte:head>
+
+<div class="min-h-full bg-gray-950 text-slate-50 p-6 overflow-y-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-3">
+            <span class="bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+                Page Title
+            </span>
+        </h1>
+        <p class="text-slate-400">Page description.</p>
+    </div>
+
+    <!-- Content -->
+    <div class="space-y-6">
+        <!-- Cards, grids, etc. -->
+    </div>
+</div>
+```
+
+### Color Quick Reference
+
+| Purpose | Class |
+|---------|-------|
+| Page background | `bg-gray-950` |
+| Card background | `bg-slate-900/80` |
+| Card border | `border-slate-800/50` |
+| Primary text | `text-white` or `text-slate-50` |
+| Secondary text | `text-slate-400` |
+| Accent blue | `text-blue-400` / `bg-blue-600` |
+| Success | `text-emerald-400` |
+| Warning | `text-amber-400` |
+| Error | `text-red-400` |
+
+---
+
+**Last Updated**: 2025-12-05

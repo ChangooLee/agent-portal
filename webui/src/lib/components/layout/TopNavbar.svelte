@@ -47,23 +47,26 @@
 </script>
 
 <!-- Top Navigation Bar -->
-<header class="sticky top-0 z-50 w-full bg-gray-950 border-b border-gray-800">
+<header class="sticky top-0 z-50 w-full bg-gradient-to-b from-slate-900 to-gray-950 border-b border-slate-800/50 shadow-lg shadow-black/20">
     <!-- Main Nav Row: Logo + Role Tabs + User -->
-    <div class="flex items-center justify-between h-14 px-4">
+    <div class="flex items-center justify-between h-14 px-6">
         <!-- Logo -->
-        <a href="/" class="flex items-center gap-2 text-white font-semibold text-lg">
-            <img src="{WEBUI_BASE_URL}/static/splash.png" alt="logo" class="w-8 h-8 rounded-lg" />
-            <span class="hidden sm:inline">SFN AI Portal</span>
+        <a href="/" class="flex items-center gap-3 group">
+            <div class="relative">
+                <img src="{WEBUI_BASE_URL}/static/splash.png" alt="logo" class="w-9 h-9 rounded-xl shadow-lg shadow-blue-500/10 transition-transform duration-300 group-hover:scale-105" />
+                <div class="absolute inset-0 rounded-xl bg-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
+            <span class="hidden sm:inline text-lg font-semibold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">SFN AI Portal</span>
         </a>
 
         <!-- Role Tabs (Center) -->
-        <nav class="flex items-center gap-1 bg-gray-900/50 rounded-lg p-1">
+        <nav class="flex items-center gap-1 bg-slate-900/80 rounded-xl p-1 border border-slate-800/50">
             {#each tabs as tab}
                 <button
-                    class="px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200
+                    class="px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out
                         {$selectedRole === tab.id 
-                            ? 'bg-blue-600 text-white shadow-sm' 
-                            : 'text-gray-400 hover:text-white hover:bg-gray-800'}"
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' 
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/80'}"
                     on:click={() => handleTabClick(tab)}
                 >
                     {tab.name}
@@ -74,13 +77,13 @@
         <!-- User Menu -->
         <div class="flex items-center gap-3">
             {#if $user}
-                <button class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-800 transition-colors">
+                <button class="flex items-center gap-3 px-3 py-1.5 rounded-xl hover:bg-slate-800/80 border border-transparent hover:border-slate-700/50 transition-all duration-300">
                     <img 
                         src={$user.profile_image_url ?? `${WEBUI_BASE_URL}/static/favicon.png`}
                         alt="User"
-                        class="w-8 h-8 rounded-full object-cover"
+                        class="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700/50"
                     />
-                    <span class="hidden sm:inline text-sm text-gray-300">{$user.name}</span>
+                    <span class="hidden sm:inline text-sm text-slate-300">{$user.name}</span>
                 </button>
             {/if}
         </div>
@@ -88,21 +91,21 @@
 
     <!-- Sub Menu Row (only show when not on home page) -->
     {#if !isHomePage}
-        <div class="flex items-center gap-1 px-4 py-2 bg-gray-900/30 border-t border-gray-800/50 overflow-x-auto">
+        <div class="flex items-center justify-center gap-2 py-2 bg-slate-900/50 border-t border-slate-800/50 overflow-x-auto">
             {#each menuItems as item}
                 <button
-                    class="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-all duration-200
+                    class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm whitespace-nowrap transition-all duration-300 ease-out
                         {isMenuActive(item.href)
-                            ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                             : item.status === 'coming-soon'
-                                ? 'text-gray-500 cursor-not-allowed'
-                                : 'text-gray-400 hover:text-white hover:bg-gray-800'}"
+                                ? 'text-slate-600 cursor-not-allowed'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800'}"
                     on:click={() => handleMenuClick(item)}
                     disabled={item.status === 'coming-soon'}
                 >
                     <span>{item.name}</span>
                     {#if item.status === 'coming-soon'}
-                        <span class="text-xs bg-gray-700 px-1.5 py-0.5 rounded text-gray-400">Soon</span>
+                        <span class="text-xs bg-slate-700 px-1.5 py-0.5 rounded text-slate-500">Soon</span>
                     {/if}
                 </button>
             {/each}
