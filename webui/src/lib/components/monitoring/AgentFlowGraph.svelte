@@ -68,7 +68,7 @@
 				position: node.position,
 				style: {
 					background: colors.bg,
-					color: 'white',
+					color: '#1f2937',
 					border: `2px solid ${colors.border}`,
 					borderRadius: isGuardrail ? '16px' : '12px',
 					padding: '14px',
@@ -80,7 +80,8 @@
 						? '0 4px 12px rgba(249, 115, 22, 0.3)' 
 						: '0 4px 6px rgba(0, 0, 0, 0.15)',
 					whiteSpace: 'pre-line',
-					lineHeight: '1.4'
+					lineHeight: '1.4',
+					textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)'
 				}
 			};
 		})
@@ -96,11 +97,11 @@
 				label: edge.data?.label || '',
 				animated: !isBlocked,
 				style: { 
-					stroke: isBlocked ? '#EF4444' : '#0072CE', 
+					stroke: isBlocked ? '#EF4444' : '#06b6d4', 
 					strokeWidth: 2,
 					strokeDasharray: isBlocked ? '5,5' : 'none'
 				},
-				labelStyle: { fontSize: '10px', fontWeight: 'bold' }
+				labelStyle: { fontSize: '10px', fontWeight: 'bold', fill: '#cbd5e1' }
 			};
 		})
 	);
@@ -110,21 +111,21 @@
 	};
 </script>
 
-<div class="h-[500px] w-full rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+<div class="h-[500px] w-full rounded-lg border border-slate-700/50 overflow-hidden">
 	{#if flowGraph.nodes.length > 0}
-		<SvelteFlow {nodes} {edges} {fitViewOptions} class="bg-gray-50 dark:bg-gray-900">
+		<SvelteFlow {nodes} {edges} {fitViewOptions} class="bg-slate-900">
 			<Controls />
 			<Background />
-			<MiniMap nodeColor={() => '#667eea'} />
+			<MiniMap nodeColor={() => '#06b6d4'} />
 		</SvelteFlow>
 	{:else}
-		<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+		<div class="flex items-center justify-center h-full text-slate-400">
 			<div class="text-center">
-				<svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-16 h-16 mx-auto mb-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
 				</svg>
-				<p class="font-medium">No flow data available</p>
-				<p class="text-sm mt-1">LLM 또는 Agent 호출이 발생하면 흐름이 표시됩니다.</p>
+				<p class="font-medium text-white">No flow data available</p>
+				<p class="text-sm mt-1 text-slate-400">LLM 또는 Agent 호출이 발생하면 흐름이 표시됩니다.</p>
 			</div>
 		</div>
 	{/if}
@@ -134,26 +135,26 @@
 <div class="flex flex-wrap items-center gap-3 mt-4 text-xs">
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded" style="background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)"></div>
-		<span class="text-gray-600 dark:text-gray-400">Client</span>
+		<span class="text-slate-300">Client</span>
 	</div>
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded-full" style="background: linear-gradient(135deg, #F97316 0%, #EA580C 100%)"></div>
-		<span class="text-gray-600 dark:text-gray-400">🛡️ Guardrail</span>
+		<span class="text-slate-300">🛡️ Guardrail</span>
 	</div>
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%)"></div>
-		<span class="text-gray-600 dark:text-gray-400">LiteLLM</span>
+		<span class="text-slate-300">LiteLLM</span>
 	</div>
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded" style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)"></div>
-		<span class="text-gray-600 dark:text-gray-400">LLM Provider</span>
+		<span class="text-slate-300">LLM Provider</span>
 	</div>
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%)"></div>
-		<span class="text-gray-600 dark:text-gray-400">Agent</span>
+		<span class="text-slate-300">Agent</span>
 	</div>
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded" style="background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%)"></div>
-		<span class="text-gray-600 dark:text-gray-400">MCP Tools</span>
+		<span class="text-slate-300">MCP Tools</span>
 	</div>
 </div>

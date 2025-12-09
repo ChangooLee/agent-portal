@@ -266,9 +266,9 @@
 	function getHealthBadgeClass(status: string) {
 		switch (status) {
 			case 'healthy':
-				return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+				return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
 			case 'unhealthy':
-				return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+				return 'bg-red-500/20 text-red-400 border border-red-500/30';
 			default:
 				return 'bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-400';
 		}
@@ -405,24 +405,22 @@
 			<div class="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-transparent to-pink-600/5"></div>
 			<div class="absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 			
-			<div class="relative px-6 py-12">
-				<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-					<h1 class="text-4xl md:text-5xl font-bold">
-						<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-							🔌 MCP 서버
-						</span>
+			<div class="relative px-6 py-8">
+				<div class="text-center mb-4">
+					<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+						🔌 MCP 서버
 					</h1>
+					<p class="text-base text-purple-200/80 mb-6">
+						MCP 서버를 등록하고 AI 에이전트에서 외부 도구로 활용할 수 있습니다.
+					</p>
 					<button
 						on:click={openCreateModal}
-						class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-lg shadow-purple-500/25 hover:shadow-xl transition-all duration-300"
+						class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-lg shadow-purple-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
 					>
 						<Plus className="size-5" />
 						<span>서버 추가</span>
 					</button>
 				</div>
-				<p class="text-lg text-slate-400 max-w-2xl mb-8">
-					MCP 서버를 등록하고 AI 에이전트에서 외부 도구로 활용할 수 있습니다.
-				</p>
 
 				<div class="grid grid-cols-3 gap-4">
 					{#each heroStats as stat}
@@ -469,42 +467,42 @@
 				{:else}
 					<div class="overflow-x-auto">
 						<table class="w-full">
-							<thead class="bg-gray-50/50 dark:bg-gray-800/50">
+							<thead class="bg-slate-800/50 border-b border-slate-700/50">
 								<tr>
 									<th
-										class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+										class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
 										>서버</th
 									>
 									<th
-										class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+										class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
 										>상태</th
 									>
 									<th
-										class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+										class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
 										>타입</th
 									>
 									<th
-										class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+										class="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider"
 										>작업</th
 									>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+							<tbody class="divide-y divide-slate-800/50">
 								{#each servers as server}
-									<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+									<tr class="border-b border-slate-800/50 hover:bg-slate-800/80 hover:border-purple-500/50 transition-all duration-200">
 										<td class="px-6 py-4">
 											<div class="flex items-center gap-3">
 												<div
-													class="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30"
+													class="p-2 rounded-lg bg-purple-500/20"
 												>
-													<Cube className="size-5 text-purple-600 dark:text-purple-400" />
+													<Cube className="size-5 text-purple-400" />
 												</div>
 												<div>
-													<div class="font-medium text-gray-900 dark:text-gray-100">
+													<div class="font-medium text-white">
 														{server.name}
 													</div>
 													<div
-														class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs"
+														class="text-sm text-slate-400 truncate max-w-xs"
 														title={server.endpoint_url}
 													>
 														{server.endpoint_url}
@@ -528,7 +526,7 @@
 												</span>
 												{#if !server.enabled}
 													<span
-														class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+														class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30"
 													>
 														비활성화
 													</span>
@@ -537,7 +535,7 @@
 										</td>
 										<td class="px-6 py-4">
 											<span
-												class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+												class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30"
 											>
 												{server.transport_type}
 											</span>

@@ -209,15 +209,15 @@
 	class="scrollbar-hidden relative whitespace-nowrap overflow-x-auto max-w-full rounded-sm pt-0.5"
 >
 	<table
-		class="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-auto max-w-full rounded-sm"
+		class="w-full text-sm text-left table-auto max-w-full rounded-sm"
 	>
 		<thead
-			class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-850 dark:text-gray-400 -translate-y-0.5"
+			class="text-xs uppercase bg-slate-800/50 border-b border-slate-700/50 text-white -translate-y-0.5"
 		>
 			<tr class="">
 				<th
 					scope="col"
-					class="px-3 py-1.5 cursor-pointer select-none"
+					class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer select-none"
 					on:click={() => setSortKey('role')}
 				>
 					<div class="flex gap-1.5 items-center">
@@ -355,13 +355,13 @@
 					</div>
 				</th>
 
-				<th scope="col" class="px-3 py-2 text-right" />
+				<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider" />
 			</tr>
 		</thead>
-		<tbody class="">
+		<tbody class="divide-y divide-slate-800/50">
 			{#each filteredUsers as user, userIdx}
-				<tr class="bg-white dark:bg-gray-900 dark:border-gray-850 text-xs">
-					<td class="px-3 py-1 min-w-[7rem] w-28">
+				<tr class="border-b border-slate-800/50 hover:bg-slate-800/80 hover:border-blue-500/50 transition-all duration-200 text-xs">
+					<td class="px-6 py-4 min-w-[7rem] w-28">
 						<button
 							class=" translate-y-0.5"
 							on:click={() => {
@@ -380,7 +380,7 @@
 							/>
 						</button>
 					</td>
-					<td class="px-3 py-1 font-medium text-gray-900 dark:text-white w-max">
+					<td class="px-6 py-4 font-medium text-white w-max">
 						<div class="flex flex-row w-max">
 							<img
 								class=" rounded-full w-6 h-6 object-cover mr-2.5"
@@ -395,19 +395,19 @@
 							<div class=" font-medium self-center">{user.name}</div>
 						</div>
 					</td>
-					<td class=" px-3 py-1"> {user.email} </td>
+					<td class="px-6 py-4 text-slate-300"> {user.email} </td>
 
-					<td class=" px-3 py-1">
+					<td class="px-6 py-4 text-slate-300">
 						{dayjs(user.last_active_at * 1000).fromNow()}
 					</td>
 
-					<td class=" px-3 py-1">
+					<td class="px-6 py-4 text-slate-300">
 						{dayjs(user.created_at * 1000).format('LL')}
 					</td>
 
-					<td class=" px-3 py-1"> {user.oauth_sub ?? ''} </td>
+					<td class="px-6 py-4 text-slate-300"> {user.oauth_sub ?? ''} </td>
 
-					<td class="px-3 py-1 text-right">
+					<td class="px-6 py-4 text-right">
 						<div class="flex justify-end w-full">
 							{#if $config.features.enable_admin_chat_access && user.role !== 'admin'}
 								<Tooltip content={$i18n.t('Chats')}>

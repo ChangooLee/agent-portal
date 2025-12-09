@@ -28,16 +28,14 @@
 			<div class="absolute inset-0 bg-gradient-to-br from-red-600/5 via-transparent to-rose-600/5"></div>
 			<div class="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 			
-			<div class="relative px-6 py-16 text-center">
-				<h1 class="text-4xl md:text-5xl font-bold mb-4">
-					<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-						🛡️ 가드레일
-					</span>
-				</h1>
-				<p class="text-lg text-slate-400 max-w-2xl mx-auto">
-					안전하고 책임감 있는 AI 응답을 보장하세요.
-				</p>
-			</div>
+		<div class="relative px-6 py-8 text-center">
+			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+				🛡️ 가드레일
+			</h1>
+			<p class="text-base text-red-200/80">
+				안전하고 책임감 있는 AI 응답을 보장하세요.
+			</p>
+		</div>
 		</div>
 
 		<div class="px-6 py-12">
@@ -52,7 +50,7 @@
 					Coming Soon
 				</span>
 				<h2 class="text-2xl font-semibold text-white mb-3">준비 중입니다</h2>
-				<p class="text-slate-400 mb-8 max-w-lg mx-auto leading-relaxed">
+				<p class="text-slate-300 mb-8 max-w-lg leading-relaxed">
 					가드레일 관리 기능은 향후 버전에서 구현될 예정입니다.
 					콘텐츠 필터링, 정책 설정, 위험 탐지, 감사 로그 등의 기능이 제공됩니다.
 				</p>

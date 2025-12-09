@@ -7,7 +7,7 @@
     const tabs: { id: UserRole; name: string; icon: string; defaultPath: string }[] = [
         { id: 'use', name: 'Use', icon: 'play', defaultPath: '/' },
         { id: 'build', name: 'Build', icon: 'hammer', defaultPath: '/build/agents' },
-        { id: 'operate', name: 'Operate', icon: 'chart-bar', defaultPath: '/operate/monitoring' }
+        { id: 'operate', name: 'Operate', icon: 'chart-bar', defaultPath: '/admin/monitoring' }
     ];
 
     function handleTabClick(tab: typeof tabs[0]) {

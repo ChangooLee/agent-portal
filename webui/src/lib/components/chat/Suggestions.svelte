@@ -64,7 +64,7 @@
 	}
 </script>
 
-<div class="mb-1 flex gap-1 text-xs font-medium items-center text-gray-400 dark:text-gray-600">
+<div class="mb-1 flex gap-1 text-xs font-medium items-center text-slate-400">
 	{#if filteredPrompts.length > 0}
 		<Bolt />
 		{$i18n.t('Suggested')}
@@ -72,7 +72,7 @@
 		<!-- Keine Vorschläge -->
 
 		<div
-			class="flex w-full text-center items-center justify-center self-start text-gray-400 dark:text-gray-600"
+			class="flex w-full text-center items-center justify-center self-start text-slate-500"
 		>
 			{$WEBUI_NAME} ‧ v{WEBUI_VERSION}
 		</div>
@@ -84,10 +84,10 @@
 		{#each filteredPrompts as prompt, idx (prompt.id || prompt.content)}
 			<button
 				class="waterfall flex flex-col flex-1 shrink-0 w-full justify-between
-				       px-3 py-2 rounded-xl bg-white/40 dark:bg-gray-800/40
-				       hover:bg-white/60 dark:hover:bg-gray-800/60
-				       backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30
-				       hover:shadow-md hover:scale-[1.02]
+				       px-3 py-2 rounded-xl bg-slate-900/80 
+				       hover:bg-slate-800/80 hover:border-blue-500/50
+				       border border-slate-800/50
+				       hover:shadow-lg hover:shadow-black/30 hover:-translate-y-0.5
 				       transition-all duration-300 ease-out group"
 				style="animation-delay: {idx * 60}ms"
 				on:click={() => dispatch('select', prompt.content)}
@@ -95,20 +95,20 @@
 				<div class="flex flex-col text-left">
 					{#if prompt.title && prompt.title[0] !== ''}
 						<div
-							class="font-medium dark:text-gray-300 dark:group-hover:text-gray-200 transition line-clamp-1"
+							class="font-medium text-white group-hover:text-blue-100 transition line-clamp-1"
 						>
 							{prompt.title[0]}
 						</div>
-						<div class="text-xs text-gray-500 font-normal line-clamp-1">
+						<div class="text-xs text-slate-400 font-normal line-clamp-1">
 							{prompt.title[1]}
 						</div>
 					{:else}
 						<div
-							class="font-medium dark:text-gray-300 dark:group-hover:text-gray-200 transition line-clamp-1"
+							class="font-medium text-white group-hover:text-blue-100 transition line-clamp-1"
 						>
 							{prompt.content}
 						</div>
-						<div class="text-xs text-gray-500 font-normal line-clamp-1">{$i18n.t('Prompt')}</div>
+						<div class="text-xs text-slate-400 font-normal line-clamp-1">{$i18n.t('Prompt')}</div>
 					{/if}
 				</div>
 			</button>

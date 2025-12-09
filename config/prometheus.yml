@@ -28,6 +28,6 @@ scrape_configs:
   # - vLLM metrics (인프라 모니터링용)
   # - Application metrics (애플리케이션 모니터링용)
   # 
-  # Note: LiteLLM은 AgentOps로 직접 연결 (SDK/콜백)
+  # Note: LiteLLM은 OTEL Collector로 직접 연결
   # Prometheus와는 무관
 

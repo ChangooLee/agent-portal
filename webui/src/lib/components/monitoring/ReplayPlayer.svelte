@@ -124,31 +124,31 @@
 	{#if loading}
 		<div class="flex items-center justify-center h-64">
 			<div class="flex flex-col items-center gap-3">
-				<div class="loading loading-spinner loading-lg text-primary"></div>
-				<p class="text-gray-600 dark:text-gray-400">Loading session replay...</p>
+				<div class="loading loading-spinner loading-lg text-cyan-400"></div>
+				<p class="text-slate-400">Loading session replay...</p>
 			</div>
 		</div>
 	{:else if error}
 		<div
-			class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+			class="bg-red-500/20 border border-red-500/30 rounded-xl p-4"
 		>
-			<p class="text-red-800 dark:text-red-400 font-medium">Error loading replay</p>
-			<p class="text-red-600 dark:text-red-500 text-sm mt-1">{error}</p>
+			<p class="text-red-400 font-medium">Error loading replay</p>
+			<p class="text-red-400/80 text-sm mt-1">{error}</p>
 		</div>
 	{:else if replay}
 		<!-- Player Controls -->
 		<div
-			class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm shadow-sm"
+			class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
 		>
 			<!-- Timeline Scrubber -->
 			<div class="mb-4">
 				<div
-					class="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden"
+					class="relative h-2 bg-slate-700/50 rounded-full cursor-pointer overflow-hidden"
 					on:click={handleScrubberClick}
 				>
 					<!-- Progress Bar -->
 					<div
-						class="absolute inset-y-0 left-0 bg-primary dark:bg-primary-light transition-all"
+						class="absolute inset-y-0 left-0 bg-cyan-500 transition-all"
 						style="width: {progressPercent}%"
 					></div>
 
@@ -156,9 +156,9 @@
 					{#each replay.events as event, i}
 						{@const markerPercent = (i / (replay.events.length - 1)) * 100}
 						<button
-							class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-gray-400 dark:bg-gray-500 hover:bg-primary dark:hover:bg-primary-light transition-colors {i ===
+							class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-slate-500 hover:bg-cyan-500 transition-colors {i ===
 							currentEventIndex
-								? 'ring-2 ring-primary dark:ring-primary-light bg-primary dark:bg-primary-light'
+								? 'ring-2 ring-cyan-500 bg-cyan-500'
 								: ''}"
 							style="left: {markerPercent}%"
 							on:click|stopPropagation={() => seekToEvent(i)}
@@ -167,7 +167,7 @@
 				</div>
 
 				<!-- Time Display -->
-				<div class="flex items-center justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
+				<div class="flex items-center justify-between mt-2 text-sm text-slate-300">
 					<span>{currentEvent ? formatTime(currentEvent.relative_time) : '0:00'}</span>
 					<span>Event {currentEventIndex + 1} / {replay.events.length}</span>
 					<span>{formatTime(replay.total_duration)}</span>
@@ -180,7 +180,7 @@
 				<button
 					on:click={prevEvent}
 					disabled={currentEventIndex === 0}
-					class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+					class="p-2 rounded-lg hover:bg-slate-800/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-slate-300 hover:text-white"
 					aria-label="Previous event"
 				>
 					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,7 +196,7 @@
 				<!-- Play/Pause -->
 				<button
 					on:click={isPlaying ? pause : play}
-					class="p-3 rounded-full bg-primary dark:bg-primary-light text-white hover:opacity-90 transition-opacity"
+					class="p-3 rounded-full bg-cyan-600 text-white hover:bg-cyan-500 transition-colors"
 					aria-label={isPlaying ? 'Pause' : 'Play'}
 				>
 					{#if isPlaying}
@@ -214,7 +214,7 @@
 				<button
 					on:click={nextEvent}
 					disabled={currentEventIndex >= replay.events.length - 1}
-					class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+					class="p-2 rounded-lg hover:bg-slate-800/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-slate-300 hover:text-white"
 					aria-label="Next event"
 				>
 					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +224,7 @@
 
 				<!-- Speed Control -->
 				<div class="ml-4 flex items-center gap-2">
-					<span class="text-sm text-gray-600 dark:text-gray-400">Speed:</span>
+					<span class="text-sm text-slate-300">Speed:</span>
 					<select
 						bind:value={playbackSpeed}
 						on:change={() => {
@@ -232,7 +232,7 @@
 								startPlayback(); // Restart with new speed
 							}
 						}}
-						class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+						class="px-2 py-1 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-300 text-sm"
 					>
 						{#each speedOptions as speed}
 							<option value={speed}>{speed}x</option>
@@ -251,41 +251,41 @@
 
 		<!-- Event Timeline (All Events) -->
 		<div
-			class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm shadow-sm"
+			class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
 		>
-			<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Event Timeline</h3>
+			<h3 class="text-lg font-bold text-white mb-4">Event Timeline</h3>
 			<div class="space-y-2 max-h-96 overflow-y-auto">
 				{#each replay.events as event, i}
 					<button
 						on:click={() => seekToEvent(i)}
 						class="w-full text-left p-3 rounded-lg border transition-all {i === currentEventIndex
-							? 'border-primary bg-primary/10 dark:bg-primary-light/10'
-							: 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}"
+							? 'border-cyan-500/50 bg-cyan-500/10'
+							: 'border-slate-800/50 hover:bg-slate-800/80 hover:border-cyan-500/50'}"
 					>
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-3">
 								<span
-									class="text-xs font-mono text-gray-500 dark:text-gray-400 min-w-[60px]"
+									class="text-xs font-mono text-slate-400 min-w-[60px]"
 								>
 									{formatTime(event.relative_time)}
 								</span>
-								<span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+								<span class="text-sm font-medium text-white">
 									{event.span_name}
 								</span>
 								<span
 									class="text-xs px-2 py-1 rounded-full {event.type === 'llm_call'
-										? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+										? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
 										: event.type === 'tool_use'
-											? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+											? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
 											: event.type === 'error'
-												? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-												: 'bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-300'}"
+												? 'bg-red-500/20 text-red-400 border border-red-500/30'
+												: 'bg-slate-500/20 text-slate-400 border border-slate-500/30'}"
 								>
 									{event.type}
 								</span>
 							</div>
 							{#if i === currentEventIndex}
-								<svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+								<svg class="w-5 h-5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
 									<path
 										fill-rule="evenodd"
 										d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"

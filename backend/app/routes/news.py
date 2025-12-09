@@ -11,15 +11,40 @@ router = APIRouter(prefix="/api/news", tags=["news"])
 settings = get_settings()
 
 
+def get_latest_available_date(data_path: str) -> str:
+    """Find the latest date with valid news data (articles_meta.json exists).
+    
+    Args:
+        data_path: Base path to news data directory
+        
+    Returns:
+        Latest available date in YYYYMMDD format, or None if no data found
+    """
+    base = Path(data_path)
+    if not base.exists():
+        return None
+    
+    # Get all date directories sorted in descending order
+    date_dirs = sorted([d for d in base.iterdir() if d.is_dir() and d.name.isdigit()], 
+                       key=lambda x: x.name, reverse=True)
+    
+    for date_dir in date_dirs:
+        meta_file = date_dir / "articles_meta.json"
+        if meta_file.exists() and meta_file.stat().st_size > 10:  # Check file exists and has content
+            return date_dir.name
+    
+    return None
+
+
 @router.get("/today")
 async def get_today_news() -> Dict[str, Any]:
-    """Get today's news meta data.
+    """Get today's news meta data (with fallback to latest available date).
     
     Returns:
-        Today's featured articles and metadata from articles_meta.json
+        Today's (or latest available) featured articles and metadata from articles_meta.json
         
     Raises:
-        HTTPException: 404 if file not found, 500 for file read errors
+        HTTPException: 404 if no data found, 500 for file read errors
     """
     try:
         # Get current date in YYYYMMDD format
@@ -31,12 +56,17 @@ async def get_today_news() -> Dict[str, Any]:
         # Build path to articles_meta.json
         meta_file = Path(data_path) / today / "articles_meta.json"
         
-        # Check if file exists
-        if not meta_file.exists():
-            raise HTTPException(
-                status_code=404,
-                detail=f"No news data found for date {today} at {meta_file}"
-            )
+        # Check if today's file exists with valid content
+        if not meta_file.exists() or meta_file.stat().st_size <= 10:
+            # Fallback: find latest available date
+            latest_date = get_latest_available_date(data_path)
+            if latest_date:
+                meta_file = Path(data_path) / latest_date / "articles_meta.json"
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No news data found in {data_path}"
+                )
         
         # Read and return JSON
         with open(meta_file, 'r', encoding='utf-8') as f:
@@ -82,12 +112,17 @@ async def get_articles(
         # Build path to articles_index.json
         index_file = Path(data_path) / today / "articles_index.json"
         
-        # Check if file exists
-        if not index_file.exists():
-            raise HTTPException(
-                status_code=404,
-                detail=f"No articles index found for date {today} at {index_file}"
-            )
+        # Check if file exists with valid content, fallback if needed
+        if not index_file.exists() or index_file.stat().st_size <= 10:
+            latest_date = get_latest_available_date(data_path)
+            if latest_date:
+                today = latest_date
+                index_file = Path(data_path) / today / "articles_index.json"
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No articles index found in {data_path}"
+                )
         
         # Read articles index
         with open(index_file, 'r', encoding='utf-8') as f:
@@ -159,12 +194,55 @@ async def get_article_detail(article_id: int) -> Dict[str, Any]:
         # Build path to articles_detail.json
         detail_file = Path(data_path) / today / "articles_detail.json"
         
-        # Check if file exists
-        if not detail_file.exists():
+        # Check if file exists with valid content, fallback if needed
+        if not detail_file.exists() or detail_file.stat().st_size <= 10:
+            latest_date = get_latest_available_date(data_path)
+            if latest_date:
+                detail_file = Path(data_path) / latest_date / "articles_detail.json"
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No news data found in {data_path}"
+                )
+        
+        # Read JSON
+        with open(detail_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # Get article by ID (JSON keys are strings)
+        article_key = str(article_id)
+        if article_key not in data:
             raise HTTPException(
                 status_code=404,
-                detail=f"No news data found for date {today} at {detail_file}"
+                detail=f"Article {article_id} not found"
             )
+        
+        return data[article_key]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to read article detail: {str(e)}"
+        )
+
+
+        data_path = settings.get_news_data_path()
+        
+        # Build path to articles_detail.json
+        detail_file = Path(data_path) / today / "articles_detail.json"
+        
+        # Check if file exists with valid content, fallback if needed
+        if not detail_file.exists() or detail_file.stat().st_size <= 10:
+            latest_date = get_latest_available_date(data_path)
+            if latest_date:
+                detail_file = Path(data_path) / latest_date / "articles_detail.json"
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No news data found in {data_path}"
+                )
         
         # Read JSON
         with open(detail_file, 'r', encoding='utf-8') as f:

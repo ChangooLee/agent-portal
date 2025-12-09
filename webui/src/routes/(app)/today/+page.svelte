@@ -75,13 +75,27 @@
 	
 	const getTagColor = (index: number) => {
 		const colors = [
-			'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-			'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-			'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-			'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
-			'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+			'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+			'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+			'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+			'bg-pink-500/20 text-pink-400 border border-pink-500/30',
+			'bg-amber-500/20 text-amber-400 border border-amber-500/30'
 		];
 		return colors[index % colors.length];
+	};
+	
+	const getCategoryBadgeColor = (category: string) => {
+		const colorMap: Record<string, string> = {
+			'금융규제': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+			'AI디지털': 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
+			'경영전략': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+			'ESG': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+			'금융일반': 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
+			'인사조직': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+			'리스크관리': 'bg-red-500/20 text-red-400 border border-red-500/30',
+			'삼성계열사': 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+		};
+		return colorMap[category] || 'bg-slate-500/20 text-slate-400 border border-slate-500/30';
 	};
 	
 	const fetchTodayNews = async () => {
@@ -424,13 +438,11 @@
 		<div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-purple-600/5"></div>
 		<div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
-		<div class="relative px-6 py-16 text-center">
-			<h1 class="text-4xl md:text-5xl font-bold mb-4">
-				<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-					📰 Today's News
-				</span>
+		<div class="relative px-6 py-8 text-center">
+			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+				📰 Today's News
 			</h1>
-			<p class="text-lg text-slate-400 max-w-2xl mx-auto">
+			<p class="text-base text-blue-200/80">
 				{#if newsData}
 					{formatDate(newsData.date)} · {newsData.total_articles}개 기사
 				{:else}
@@ -494,7 +506,7 @@
 				</div>
 				<!-- Search Results Count -->
 				{#if isSearching}
-					<p class="text-center mt-3 text-sm text-gray-600 dark:text-gray-400">
+					<p class="text-center mt-3 text-sm text-slate-400">
 						🔍 "{searchQuery}" 검색 결과: {filteredArticles.length}개
 					</p>
 				{/if}
@@ -512,40 +524,48 @@
 				<!-- Search Results Section -->
 				{#if filteredArticles.length > 0}
 					<div>
-						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🔍 검색 결과 ({filteredArticles.length}개)</h2>
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						<h2 class="text-2xl font-bold text-white mb-6">🔍 검색 결과 ({filteredArticles.length}개)</h2>
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 							{#each filteredArticles as article}
 								<button
-									class="text-left bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-primary/20 dark:border-primary-light/20 rounded-xl p-6 hover:shadow-xl hover:scale-[1.02] hover:border-primary/40 transition-all duration-300 ease-out cursor-pointer"
+									class="text-left bg-slate-900/80 border border-slate-800/50 rounded-xl p-5 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-slate-700/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
 									on:click={() => fetchArticleDetail(article.id)}
 								>
-									<!-- Importance Badge -->
-									{#if getScoreLabel(article.importance_score)}
-										<div class="flex items-center mb-3">
-											<span class="{getScoreBadgeColor(article.importance_score)} px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+									<!-- Category & Importance Badges -->
+									<div class="flex items-center gap-2 mb-3 flex-wrap">
+										{#if article.category}
+											<span class="{getCategoryBadgeColor(article.category)} px-2.5 py-1 rounded-full text-xs font-medium">
+												{article.category}
+											</span>
+										{/if}
+										{#if getScoreLabel(article.importance_score)}
+											<span class="{getScoreBadgeColor(article.importance_score)} px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm">
 												{getScoreLabel(article.importance_score)}
 											</span>
-										</div>
-									{/if}
+										{/if}
+									</div>
 									
-									<!-- Title (highlight search term) -->
-									<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+									<!-- Title -->
+									<h3 class="text-sm font-medium text-white mb-2 line-clamp-2 leading-relaxed">
 										{article.title}
 									</h3>
 									
 									<!-- Highlight -->
-									<p class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+									<p class="text-xs text-slate-400 mb-3 line-clamp-2 leading-relaxed">
 										{article.highlight}
 									</p>
 									
 									<!-- Tags -->
 									{#if article.tags && article.tags.length > 0}
-										<div class="flex flex-wrap gap-2">
-											{#each article.tags as tag, index}
-												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
+										<div class="flex flex-wrap gap-1.5">
+											{#each article.tags.slice(0, 3) as tag, index}
+												<span class="{getTagColor(index)} px-2 py-0.5 rounded-md text-xs font-medium">
 													{tag}
 												</span>
 											{/each}
+											{#if article.tags.length > 3}
+												<span class="text-xs text-slate-500">+{article.tags.length - 3}</span>
+											{/if}
 										</div>
 									{/if}
 								</button>
@@ -553,8 +573,8 @@
 						</div>
 					</div>
 				{:else}
-					<div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
-						<p class="text-gray-600 dark:text-gray-400">🔍 "{searchQuery}"에 대한 검색 결과가 없습니다.</p>
+					<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center">
+						<p class="text-slate-400">🔍 "{searchQuery}"에 대한 검색 결과가 없습니다.</p>
 					</div>
 				{/if}
 			{:else}
@@ -563,14 +583,14 @@
 					<!-- Tags Section (제목 우측에 태그 배치) -->
 					{#if topTags.length > 0}
 						<div class="flex items-center gap-4 flex-wrap">
-							<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">🏷️ 인기 태그</h3>
+							<h3 class="text-lg font-semibold text-white whitespace-nowrap">🏷️ 인기 태그</h3>
 							<div class="flex flex-wrap gap-2 flex-1">
 								{#each topTags as { tag, count }}
 									<button
 										on:click={() => handleTagToggle(tag)}
-										class="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm transition-all duration-200 ease-out cursor-pointer {selectedTags.includes(tag)
-											? 'bg-gradient-to-r from-primary/90 to-secondary/90 text-white border-2 border-primary shadow-md scale-105' 
-											: 'bg-white/70 dark:bg-gray-800/70 text-blue-700 dark:text-blue-300 border border-blue-300/50 dark:border-blue-600/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all'}"
+									class="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer {selectedTags.includes(tag)
+										? 'bg-blue-600 text-white border border-blue-500 shadow-lg shadow-blue-500/25' 
+										: 'bg-slate-800/80 text-blue-300 border border-slate-700/50 hover:bg-slate-700 hover:border-blue-500/50 hover:text-white'}"
 									>
 										<span>{tag}</span>
 										<span class="ml-1.5 text-[10px] opacity-70">({count})</span>
@@ -584,22 +604,22 @@
 					<div>
 						<!-- 카테고리 설명 (당구장 표시) -->
 						<div class="mb-2">
-							<p class="text-xs text-gray-500 dark:text-gray-400 border-l-2 border-dashed border-gray-300 dark:border-gray-600 pl-3">
+							<p class="text-xs text-slate-400 border-l-2 border-dashed border-slate-600 pl-3">
 								스크롤하여 더 많은 카테고리 기사를 불러오면 활성화됩니다
 							</p>
 						</div>
 						<div class="flex items-center gap-4 flex-wrap">
-							<h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">📂 카테고리</h3>
+							<h3 class="text-lg font-semibold text-white whitespace-nowrap">📂 카테고리</h3>
 							{#if categories.length > 0}
 								<div class="flex flex-wrap gap-2 flex-1">
 									{#each categories as { category, count, isActive }}
 										<button
 											on:click={() => handleCategoryToggle(category)}
 											class="px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm transition-all duration-200 ease-out {!isActive 
-												? 'opacity-30 cursor-not-allowed bg-gray-100/50 dark:bg-gray-800/30 text-gray-400 dark:text-gray-600 border border-gray-200/50 dark:border-gray-700/50'
-												: selectedCategories.includes(category)
-													? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-2 border-indigo-400 shadow-md scale-105 cursor-pointer' 
-													: 'bg-white/70 dark:bg-gray-800/70 text-indigo-700 dark:text-indigo-300 border border-indigo-300/50 dark:border-indigo-600/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer'}"
+												? 'opacity-40 cursor-not-allowed bg-slate-800/30 text-slate-500 border border-slate-700/50'
+											: selectedCategories.includes(category)
+												? 'bg-purple-600 text-white border border-purple-500 shadow-lg shadow-purple-500/25 cursor-pointer' 
+												: 'bg-slate-800/80 text-purple-300 border border-slate-700/50 hover:bg-slate-700 hover:border-purple-500/50 hover:text-white cursor-pointer'}"
 										>
 											<span>{category}</span>
 											<span class="ml-1.5 text-[10px] opacity-70">({count})</span>
@@ -607,14 +627,14 @@
 									{/each}
 								</div>
 							{:else}
-								<p class="text-sm text-gray-500 dark:text-gray-400">카테고리 데이터를 불러오는 중...</p>
+								<p class="text-sm text-slate-400">카테고리 데이터를 불러오는 중...</p>
 							{/if}
 						</div>
 					</div>
 					
 					<!-- Selected Filters Display -->
 					{#if selectedTags.length > 0 || selectedCategories.length > 0}
-						<div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-4 py-3">
+						<div class="flex flex-wrap items-center gap-3 text-sm text-slate-300 bg-slate-800/50 rounded-lg px-4 py-3">
 							{#if selectedTags.length > 0}
 								<div class="flex items-center gap-2">
 									<span class="font-medium">태그:</span>
@@ -649,40 +669,48 @@
 				<!-- Featured Articles Section -->
 				{#if newsData && newsData.featured_articles.length > 0 && selectedTags.length === 0 && selectedCategories.length === 0}
 					<div class="mb-12">
-						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🔥 주요 뉴스</h2>
+						<h2 class="text-2xl font-bold text-white mb-6">🔥 주요 뉴스</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 							{#each newsData.featured_articles as article}
 								<button
-									class="text-left bg-gradient-to-br from-white/60 to-white/40 dark:from-gray-800/60 dark:to-gray-800/40 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-6 hover:shadow-xl hover:scale-[1.02] hover:border-primary/30 transition-all duration-300 ease-out cursor-pointer"
+									class="text-left bg-slate-900/80 border border-slate-800/50 rounded-xl p-5 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-slate-700/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
 									on:click={() => fetchArticleDetail(article.id)}
 								>
-									<!-- Importance Badge -->
-									{#if getScoreLabel(article.importance_score)}
-										<div class="flex items-center mb-3">
-											<span class="{getScoreBadgeColor(article.importance_score)} px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+									<!-- Category & Importance Badges -->
+									<div class="flex items-center gap-2 mb-3 flex-wrap">
+										{#if article.category}
+											<span class="{getCategoryBadgeColor(article.category)} px-2.5 py-1 rounded-full text-xs font-medium">
+												{article.category}
+											</span>
+										{/if}
+										{#if getScoreLabel(article.importance_score)}
+											<span class="{getScoreBadgeColor(article.importance_score)} px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm">
 												{getScoreLabel(article.importance_score)}
 											</span>
-										</div>
-									{/if}
+										{/if}
+									</div>
 									
 									<!-- Title -->
-									<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+									<h3 class="text-sm font-medium text-white mb-2 line-clamp-2 leading-relaxed">
 										{article.title}
 									</h3>
 									
 									<!-- Highlight -->
-									<p class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+									<p class="text-xs text-slate-400 mb-3 line-clamp-2 leading-relaxed">
 										{article.highlight}
 									</p>
 									
 									<!-- Tags -->
 									{#if article.tags && article.tags.length > 0}
-										<div class="flex flex-wrap gap-2">
-											{#each article.tags as tag, index}
-												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
+										<div class="flex flex-wrap gap-1.5">
+											{#each article.tags.slice(0, 3) as tag, index}
+												<span class="{getTagColor(index)} px-2 py-0.5 rounded-md text-xs font-medium">
 													{tag}
 												</span>
 											{/each}
+											{#if article.tags.length > 3}
+												<span class="text-xs text-slate-500">+{article.tags.length - 3}</span>
+											{/if}
 										</div>
 									{/if}
 								</button>
@@ -694,42 +722,50 @@
 				<!-- Filtered Articles Section -->
 				{#if (selectedTags.length > 0 || selectedCategories.length > 0) && filteredArticles.length > 0}
 					<div class="mb-12">
-						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+						<h2 class="text-2xl font-bold text-white mb-6">
 							필터링된 기사 ({filteredArticles.length}개)
 						</h2>
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 							{#each filteredArticles as article}
 								<button
-									class="text-left bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-primary/20 dark:border-primary-light/20 rounded-xl p-6 hover:shadow-xl hover:scale-[1.02] hover:border-primary/40 transition-all duration-300 ease-out cursor-pointer"
+									class="text-left bg-slate-900/80 border border-slate-800/50 rounded-xl p-5 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-slate-700/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
 									on:click={() => fetchArticleDetail(article.id)}
 								>
-									<!-- Importance Badge -->
-									{#if getScoreLabel(article.importance_score)}
-										<div class="flex items-center mb-3">
-											<span class="{getScoreBadgeColor(article.importance_score)} px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+									<!-- Category & Importance Badges -->
+									<div class="flex items-center gap-2 mb-3 flex-wrap">
+										{#if article.category}
+											<span class="{getCategoryBadgeColor(article.category)} px-2.5 py-1 rounded-full text-xs font-medium">
+												{article.category}
+											</span>
+										{/if}
+										{#if getScoreLabel(article.importance_score)}
+											<span class="{getScoreBadgeColor(article.importance_score)} px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm">
 												{getScoreLabel(article.importance_score)}
 											</span>
-										</div>
-									{/if}
+										{/if}
+									</div>
 									
 									<!-- Title -->
-									<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+									<h3 class="text-sm font-medium text-white mb-2 line-clamp-2 leading-relaxed">
 										{article.title}
 									</h3>
 									
 									<!-- Highlight -->
-									<p class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+									<p class="text-xs text-slate-400 mb-3 line-clamp-2 leading-relaxed">
 										{article.highlight}
 									</p>
 									
 									<!-- Tags -->
 									{#if article.tags && article.tags.length > 0}
-										<div class="flex flex-wrap gap-2">
-											{#each article.tags as tag, index}
-												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
+										<div class="flex flex-wrap gap-1.5">
+											{#each article.tags.slice(0, 3) as tag, index}
+												<span class="{getTagColor(index)} px-2 py-0.5 rounded-md text-xs font-medium">
 													{tag}
 												</span>
 											{/each}
+											{#if article.tags.length > 3}
+												<span class="text-xs text-slate-500">+{article.tags.length - 3}</span>
+											{/if}
 										</div>
 									{/if}
 								</button>
@@ -737,50 +773,58 @@
 						</div>
 					</div>
 				{:else if (selectedTags.length > 0 || selectedCategories.length > 0) && filteredArticles.length === 0}
-					<div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
-						<p class="text-gray-600 dark:text-gray-400">선택한 필터 조건에 맞는 기사가 없습니다.</p>
+					<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center">
+						<p class="text-slate-400">선택한 필터 조건에 맞는 기사가 없습니다.</p>
 					</div>
 				{/if}
 				
 				<!-- All Articles Section -->
 				{#if allArticles.length > 0 && selectedTags.length === 0 && selectedCategories.length === 0}
 					<div>
-						<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+						<h2 class="text-2xl font-bold text-white mb-6">
 							📰 전체 뉴스 ({allArticles.length}개 / 전체 {newsData?.total_articles || 0}개)
 						</h2>
-						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 							{#each allArticles as article}
 								<button
-									class="text-left bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 rounded-xl p-6 hover:shadow-lg hover:scale-105 transition-all duration-300 ease-out cursor-pointer"
+									class="text-left bg-slate-900/80 border border-slate-800/50 rounded-xl p-5 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-slate-700/50 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
 									on:click={() => fetchArticleDetail(article.id)}
 								>
-									<!-- Importance Badge -->
-									{#if getScoreLabel(article.importance_score)}
-										<div class="flex items-center mb-3">
-											<span class="{getScoreBadgeColor(article.importance_score)} px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+									<!-- Category & Importance Badges -->
+									<div class="flex items-center gap-2 mb-3 flex-wrap">
+										{#if article.category}
+											<span class="{getCategoryBadgeColor(article.category)} px-2.5 py-1 rounded-full text-xs font-medium">
+												{article.category}
+											</span>
+										{/if}
+										{#if getScoreLabel(article.importance_score)}
+											<span class="{getScoreBadgeColor(article.importance_score)} px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm">
 												{getScoreLabel(article.importance_score)}
 											</span>
-										</div>
-									{/if}
+										{/if}
+									</div>
 									
 									<!-- Title -->
-									<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+									<h3 class="text-sm font-medium text-white mb-2 line-clamp-2 leading-relaxed">
 										{article.title}
 									</h3>
 									
 									<!-- Highlight -->
-									<p class="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+									<p class="text-xs text-slate-400 mb-3 line-clamp-2 leading-relaxed">
 										{article.highlight}
 									</p>
 									
 									<!-- Tags -->
 									{#if article.tags && article.tags.length > 0}
-										<div class="flex flex-wrap gap-2">
-											{#each article.tags as tag, index}
-												<span class="{getTagColor(index)} px-2 py-1 rounded-md text-xs font-medium">
+										<div class="flex flex-wrap gap-1.5">
+											{#each article.tags.slice(0, 3) as tag, index}
+												<span class="{getTagColor(index)} px-2 py-0.5 rounded-md text-xs font-medium">
 													{tag}
 												</span>
 											{/each}
+											{#if article.tags.length > 3}
+												<span class="text-xs text-slate-500">+{article.tags.length - 3}</span>
+											{/if}
 										</div>
 									{/if}
 								</button>
@@ -796,22 +840,22 @@
 						{#if loadingMore}
 							<div class="flex items-center justify-center py-12">
 								<div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-								<p class="ml-3 text-gray-600 dark:text-gray-400">더 많은 기사를 불러오는 중...</p>
+								<p class="ml-3 text-slate-400">더 많은 기사를 불러오는 중...</p>
 							</div>
 						{/if}
 						
 						<!-- No More Articles -->
 						{#if !hasMore && allArticles.length > 0}
 							<div class="text-center py-8">
-								<p class="text-gray-500 dark:text-gray-400">모든 기사를 불러왔습니다.</p>
+								<p class="text-slate-400">모든 기사를 불러왔습니다.</p>
 							</div>
 						{/if}
 					</div>
 				{/if}
 				
 				{#if !newsData?.featured_articles?.length && !allArticles.length}
-					<div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
-						<p class="text-gray-600 dark:text-gray-400">📰 오늘의 뉴스가 없습니다.</p>
+					<div class="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center">
+						<p class="text-slate-400">📰 오늘의 뉴스가 없습니다.</p>
 					</div>
 				{/if}
 			{/if}
@@ -850,12 +894,12 @@
 							{/each}
 						{/if}
 					</div>
-					<h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+					<h2 class="text-2xl font-bold text-white">
 						{selectedArticle.title}
 					</h2>
 				</div>
 				<button
-					class="ml-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+					class="ml-4 p-2 hover:bg-slate-700 rounded-lg transition-colors"
 					on:click={closeModal}
 					aria-label="Close"
 				>
@@ -917,4 +961,5 @@
 		overflow: hidden;
 	}
 </style>
+
 

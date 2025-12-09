@@ -229,13 +229,15 @@
 						<div class="flex {($settings?.chatBubble ?? true) ? 'justify-end pb-1' : 'w-full'}">
 							<div
 								class="rounded-3xl {($settings?.chatBubble ?? true)
-									? `max-w-[90%] px-5 py-2  bg-gray-50 dark:bg-gray-850 ${
+									? `max-w-[90%] px-5 py-2 bg-blue-500/20 text-white border border-blue-500/30 ${
 											message.files ? 'rounded-tr-lg' : ''
 										}`
 									: ' w-full'}"
 							>
 								{#if message.content}
-									<Markdown id={message.id} content={message.content} />
+									<div class="[&_.markdown-prose]:text-white [&_.markdown-prose_prose-p]:text-white [&_.markdown-prose_prose-strong]:text-white [&_.markdown-prose_prose-code]:text-blue-200 [&_.markdown-prose_prose-pre]:text-white [&_.markdown-prose_prose-blockquote]:text-blue-100 [&_.markdown-prose_prose-li]:text-white [&_.markdown-prose_prose-a]:text-blue-300">
+										<Markdown id={message.id} content={message.content} />
+									</div>
 								{/if}
 							</div>
 						</div>

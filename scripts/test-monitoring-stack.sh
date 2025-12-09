@@ -135,5 +135,5 @@ echo "Next steps:"
 echo "1. Set OPENROUTER_API_KEY in .env file"
 echo "2. Make some LLM requests via Chat UI"
 echo "3. Check Grafana dashboard for metrics"
-echo "4. (Optional) Set AGENTOPS_API_KEY for AgentOps integration"
+echo "4. (Optional) Set additional environment variables as needed"
 

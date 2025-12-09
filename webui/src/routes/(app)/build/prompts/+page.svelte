@@ -11,13 +11,11 @@
         <div class="absolute inset-0 bg-gradient-to-br from-amber-600/5 via-transparent to-orange-600/5"></div>
         <div class="absolute inset-0 bg-[linear-gradient(rgba(245,158,11,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
         
-        <div class="relative px-6 py-16 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">
-                <span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                    📝 프롬프트 라이브러리
-                </span>
+        <div class="relative px-6 py-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+                📝 프롬프트 라이브러리
             </h1>
-            <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+            <p class="text-base text-amber-200/80">
                 프롬프트 템플릿을 관리하고 버전을 추적합니다.
             </p>
         </div>

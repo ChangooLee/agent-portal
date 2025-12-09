@@ -263,16 +263,17 @@
 		<div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-cyan-600/5"></div>
 		<div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
-		<div class="relative px-6 py-12">
-			<div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-				<h1 class="text-4xl md:text-5xl font-bold">
-					<span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-						🧠 LLM 관리
-					</span>
+		<div class="relative px-6 py-8">
+			<div class="text-center mb-4">
+				<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+					🧠 LLM 관리
 				</h1>
+				<p class="text-base text-blue-200/80 mb-6">
+					LiteLLM을 통해 다양한 LLM Provider와 모델을 관리합니다.
+				</p>
 				<button
 					on:click={() => { resetForm(); showAddModal = true; }}
-					class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-lg shadow-blue-500/25 hover:shadow-xl transition-all duration-300"
+					class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium shadow-lg shadow-blue-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -280,9 +281,6 @@
 					모델 추가
 				</button>
 			</div>
-			<p class="text-lg text-slate-400 max-w-2xl mb-8">
-				LiteLLM을 통해 다양한 LLM Provider와 모델을 관리합니다.
-			</p>
 			
 			<!-- Stats Cards -->
 			<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -339,21 +337,21 @@
 			<div class="p-8 text-center text-gray-500">등록된 모델이 없습니다.</div>
 		{:else}
 			<table class="w-full">
-				<thead class="bg-gray-50/50 dark:bg-gray-700/50">
+				<thead class="bg-slate-800/50 border-b border-slate-700/50">
 					<tr>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">모델명</th>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Provider</th>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">모델 ID</th>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">API Base</th>
-						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">타입</th>
-						<th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">작업</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">모델명</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Provider</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">모델 ID</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">API Base</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">타입</th>
+						<th class="px-6 py-3 text-right text-xs font-medium text-white uppercase tracking-wider">작업</th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+				<tbody class="divide-y divide-slate-800/50">
 					{#each filteredModels as model}
-						<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+						<tr class="border-b border-slate-800/50 hover:bg-slate-800/80 hover:border-blue-500/50 transition-all duration-200">
 							<td class="px-6 py-4 whitespace-nowrap">
-								<div class="font-medium text-gray-900 dark:text-white">{model.model_name}</div>
+								<div class="font-medium text-white">{model.model_name}</div>
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap">
 								<div class="flex items-center gap-2">
@@ -361,22 +359,22 @@
 										class="w-2 h-2 rounded-full"
 										style="background-color: {getProviderColor(model.provider)}"
 									></span>
-									<span class="text-gray-600 dark:text-gray-300">{getProviderName(model.provider)}</span>
+									<span class="text-slate-300">{getProviderName(model.provider)}</span>
 								</div>
 							</td>
 							<td class="px-6 py-4">
-								<code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-800 dark:text-gray-200">
+								<code class="text-xs bg-slate-800/50 px-2 py-1 rounded text-slate-300">
 									{model.model}
 								</code>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
 								{model.api_base || '-'}
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap">
 								{#if model.db_model}
-									<span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">DB</span>
+									<span class="px-2 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">DB</span>
 								{:else}
-									<span class="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">Config</span>
+									<span class="px-2 py-1 text-xs rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30">Config</span>
 								{/if}
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap text-right">

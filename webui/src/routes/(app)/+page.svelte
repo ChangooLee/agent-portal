@@ -15,12 +15,13 @@
     }
 
     interface NewsItem {
-        id: string;
+        id: number;
         title: string;
-        summary: string;
-        source: string;
-        date: string;
+        highlight: string;
+        link: string;
+        pub_date: string;
         category: string;
+        tags?: string[];
     }
 
     const agents: Agent[] = [
@@ -117,13 +118,11 @@
         <!-- Grid pattern -->
         <div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
         
-        <div class="relative px-6 py-16 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">
-                <span class="bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                    안녕하세요, {$user?.name || '사용자'}님
-                </span>
+		<div class="relative px-6 py-8 text-center">
+			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+                안녕하세요, {$user?.name || '사용자'}님
             </h1>
-            <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+            <p class="text-base text-blue-200/80">
                 AI 에이전트를 활용하여 업무를 자동화하고 인사이트를 얻으세요.
             </p>
         </div>
@@ -218,10 +217,9 @@
                                 <span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30">
                                     {item.category || '뉴스'}
                                 </span>
-                                <span class="text-xs text-slate-500">{item.source}</span>
                             </div>
                             <h3 class="text-sm font-medium text-white mb-2 line-clamp-2 leading-relaxed">{item.title}</h3>
-                            <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.summary}</p>
+                            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">{item.highlight}</p>
                         </a>
                     {/each}
                 </div>

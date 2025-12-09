@@ -64,8 +64,8 @@
 			{
 				label: 'Request Count',
 				data: histogram.counts,
-				backgroundColor: 'rgba(0, 114, 206, 0.7)',
-				borderColor: 'rgba(0, 114, 206, 1)',
+				backgroundColor: 'rgba(6, 182, 212, 0.7)',
+				borderColor: 'rgba(6, 182, 212, 1)',
 				borderWidth: 1
 			}
 		]
@@ -81,10 +81,10 @@
 			tooltip: {
 				mode: 'index' as const,
 				intersect: false,
-				backgroundColor: 'rgba(0, 0, 0, 0.8)',
+				backgroundColor: 'rgba(15, 23, 42, 0.95)',
 				titleColor: '#fff',
 				bodyColor: '#fff',
-				borderColor: '#0072CE',
+				borderColor: 'rgba(6, 182, 212, 1)',
 				borderWidth: 1,
 				padding: 12,
 				displayColors: true,
@@ -97,7 +97,7 @@
 			title: {
 				display: true,
 				text: title,
-				color: '#111827',
+				color: '#ffffff',
 				font: {
 					size: 16,
 					weight: 'bold' as const
@@ -107,10 +107,11 @@
 		scales: {
 			x: {
 				grid: {
-					display: false
+					display: true,
+					color: 'rgba(148, 163, 184, 0.1)'
 				},
 				ticks: {
-					color: '#6B7280',
+					color: '#cbd5e1',
 					font: {
 						size: 10
 					},
@@ -121,10 +122,10 @@
 			y: {
 				beginAtZero: true,
 				grid: {
-					color: 'rgba(0, 0, 0, 0.05)'
+					color: 'rgba(148, 163, 184, 0.1)'
 				},
 				ticks: {
-					color: '#6B7280',
+					color: '#cbd5e1',
 					font: {
 						size: 11
 					},
@@ -148,42 +149,42 @@
 	<!-- Performance Metrics Cards -->
 	<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 		<div
-			class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm"
+			class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300"
 		>
-			<p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Avg Latency</p>
-			<p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+			<p class="text-sm text-slate-400 mb-2">Avg Latency</p>
+			<p class="text-2xl font-bold text-white">
 				{avgDuration.toFixed(0)}ms
 			</p>
 		</div>
 		<div
-			class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm"
+			class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300"
 		>
-			<p class="text-xs text-gray-600 dark:text-gray-400 mb-1">P50</p>
-			<p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{p50.toFixed(0)}ms</p>
+			<p class="text-sm text-slate-400 mb-2">P50</p>
+			<p class="text-2xl font-bold text-white">{p50.toFixed(0)}ms</p>
 		</div>
 		<div
-			class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm"
+			class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300"
 		>
-			<p class="text-xs text-gray-600 dark:text-gray-400 mb-1">P95</p>
-			<p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{p95.toFixed(0)}ms</p>
+			<p class="text-sm text-slate-400 mb-2">P95</p>
+			<p class="text-2xl font-bold text-white">{p95.toFixed(0)}ms</p>
 		</div>
 		<div
-			class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm"
+			class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300"
 		>
-			<p class="text-xs text-gray-600 dark:text-gray-400 mb-1">P99</p>
-			<p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{p99.toFixed(0)}ms</p>
+			<p class="text-sm text-slate-400 mb-2">P99</p>
+			<p class="text-2xl font-bold text-white">{p99.toFixed(0)}ms</p>
 		</div>
 	</div>
 
 	<!-- Error Rate Badge -->
 	<div class="flex items-center gap-2">
-		<span class="text-sm text-gray-600 dark:text-gray-400">Error Rate:</span>
+		<span class="text-sm text-slate-400">Error Rate:</span>
 		<span
-			class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold {parseFloat(
+			class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border {parseFloat(
 				errorRate
 			) > 5
-				? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-				: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'}"
+				? 'bg-red-500/20 text-red-400 border-red-500/30'
+				: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}"
 		>
 			{errorRate}%
 		</span>
@@ -194,7 +195,7 @@
 		{#if performanceData.length > 0}
 			<Bar data={chartData} options={chartOptions} />
 		{:else}
-			<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+			<div class="flex items-center justify-center h-full text-slate-400">
 				<p>No performance data available</p>
 			</div>
 		{/if}

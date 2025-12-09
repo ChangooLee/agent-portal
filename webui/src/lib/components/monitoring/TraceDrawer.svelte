@@ -120,14 +120,14 @@
 	}
 
 	function getStatusColor(status: string): string {
-		if (status === 'ERROR' || status === 'UNSET') return 'text-red-600 dark:text-red-400';
-		return 'text-green-600 dark:text-green-400';
+		if (status === 'ERROR' || status === 'UNSET') return 'text-red-400';
+		return 'text-emerald-400';
 	}
 
 	function getStatusBg(status: string): string {
 		if (status === 'ERROR' || status === 'UNSET')
-			return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-		return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+			return 'bg-red-500/20 border-red-500/30';
+		return 'bg-emerald-500/20 border-emerald-500/30';
 	}
 
 	onMount(() => {
@@ -149,28 +149,28 @@
 
 	<!-- Drawer -->
 	<div
-		class="fixed right-0 top-0 h-full w-full md:w-3/4 lg:w-2/3 xl:w-1/2 bg-white dark:bg-gray-900 shadow-2xl z-50 overflow-hidden flex flex-col"
+		class="fixed right-0 top-0 h-full w-full md:w-3/4 lg:w-2/3 xl:w-1/2 bg-slate-900 shadow-2xl z-50 overflow-hidden flex flex-col"
 		transition:fly={{ x: 500, duration: 300, easing: quintOut }}
 	>
 		<!-- Header -->
 		<div
-			class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary/10 to-secondary/10"
+			class="flex items-center justify-between p-4 border-b border-slate-700/50 bg-slate-800/50"
 		>
 			<div class="flex-1 min-w-0">
-				<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 truncate">
+				<h2 class="text-xl font-semibold text-white truncate">
 					Trace Details
 				</h2>
-				<p class="text-sm text-gray-600 dark:text-gray-400 font-mono truncate mt-1">
+				<p class="text-sm text-slate-400 font-mono truncate mt-1">
 					{traceId}
 				</p>
 			</div>
 			<button
 				on:click={onClose}
-				class="ml-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+				class="ml-4 p-2 rounded-lg hover:bg-slate-800/80 transition-colors text-slate-400 hover:text-white"
 				aria-label="Close drawer"
 			>
 				<svg
-					class="w-6 h-6 text-gray-600 dark:text-gray-400"
+					class="w-6 h-6"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -190,38 +190,38 @@
 			{#if loading}
 				<div class="flex items-center justify-center h-64">
 					<div class="flex flex-col items-center gap-3">
-						<div class="loading loading-spinner loading-lg text-primary"></div>
-						<p class="text-gray-600 dark:text-gray-400">Loading trace details...</p>
+						<div class="loading loading-spinner loading-lg text-cyan-400"></div>
+						<p class="text-slate-400">Loading trace details...</p>
 					</div>
 				</div>
 			{:else if error}
 				<div class="p-6">
 					<div
-						class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+						class="bg-red-500/20 border border-red-500/30 rounded-lg p-4"
 					>
-						<p class="text-red-800 dark:text-red-400 font-medium">Error loading trace</p>
-						<p class="text-red-600 dark:text-red-500 text-sm mt-1">{error}</p>
+						<p class="text-red-400 font-medium">Error loading trace</p>
+						<p class="text-red-300 text-sm mt-1">{error}</p>
 					</div>
 				</div>
 			{:else if traceDetail}
 				<div class="p-6 space-y-6">
 					<!-- Trace Metadata -->
 					<div
-						class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm shadow-sm"
+						class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
 					>
-						<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+						<h3 class="text-lg font-semibold text-white mb-3">
 							Trace Metadata
 						</h3>
 						<div class="grid grid-cols-2 gap-4">
 							<div>
-								<p class="text-sm text-gray-600 dark:text-gray-400">Project ID</p>
-								<p class="text-sm font-mono text-gray-900 dark:text-gray-100 mt-1">
+								<p class="text-sm text-slate-400">Project ID</p>
+								<p class="text-sm font-mono text-white mt-1">
 									{traceDetail.project_id}
 								</p>
 							</div>
 							<div>
-								<p class="text-sm text-gray-600 dark:text-gray-400">Total Spans</p>
-								<p class="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">
+								<p class="text-sm text-slate-400">Total Spans</p>
+								<p class="text-sm font-semibold text-white mt-1">
 									{traceDetail.spans.length}
 								</p>
 							</div>
@@ -231,9 +231,9 @@
 					<!-- Timeline Visualization -->
 					{#if traceDetail.timeline}
 						<div
-							class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm shadow-sm"
+							class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
 						>
-							<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+							<h3 class="text-lg font-semibold text-white mb-3">
 								Timeline
 							</h3>
 							<SpanTimeline timeline={traceDetail.timeline} on:selectSpan={(e) => selectSpan(e.detail)} />
@@ -242,9 +242,9 @@
 
 					<!-- Span Hierarchy -->
 					<div
-						class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm shadow-sm"
+						class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
 					>
-						<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Span Hierarchy</h3>
+						<h3 class="text-lg font-semibold text-white mb-3">Span Hierarchy</h3>
 						<div class="space-y-1">
 							{#each orderedSpans as span (span.span_id)}
 								{@const depth = getSpanDepth(span)}
@@ -254,7 +254,7 @@
 
 								{#if visible}
 									<div
-										class="rounded-lg border {getStatusBg(span.status_code)} p-3 cursor-pointer hover:shadow-md transition-all"
+										class="rounded-lg border {getStatusBg(span.status_code)} p-3 cursor-pointer hover:bg-slate-800/80 hover:shadow-md transition-all"
 										style="margin-left: {depth * 20}px"
 										on:click={() => {
 											selectSpan(span);
@@ -265,7 +265,7 @@
 											<div class="flex items-center gap-2 flex-1 min-w-0">
 												{#if hasChildren}
 													<svg
-														class="w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform {isExpanded ? 'rotate-90' : ''}"
+														class="w-4 h-4 text-slate-400 transition-transform {isExpanded ? 'rotate-90' : ''}"
 														fill="none"
 														stroke="currentColor"
 														viewBox="0 0 24 24"
@@ -275,10 +275,10 @@
 												{:else}
 													<div class="w-4"></div>
 												{/if}
-												<span class="font-medium text-gray-900 dark:text-gray-100 truncate">{span.span_name}</span>
-												<span class="text-xs {getStatusColor(span.status_code)} font-semibold">{span.status_code}</span>
+												<span class="font-medium text-white truncate">{span.span_name}</span>
+												<span class="text-xs {getStatusColor(span.status_code)} font-semibold px-2 py-0.5 rounded-full border {getStatusBg(span.status_code)}">{span.status_code}</span>
 											</div>
-											<span class="text-sm text-gray-600 dark:text-gray-400 ml-2">{formatDuration(span.duration)}</span>
+											<span class="text-sm text-slate-300 ml-2">{formatDuration(span.duration)}</span>
 										</div>
 									</div>
 								{/if}
@@ -289,9 +289,9 @@
 					<!-- Selected Span Details -->
 					{#if selectedSpan}
 						<div
-							class="rounded-lg border border-white/20 bg-white/60 dark:bg-gray-800/60 p-4 backdrop-blur-sm shadow-sm"
+							class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
 						>
-							<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+							<h3 class="text-lg font-semibold text-white mb-3">
 								Span Details
 							</h3>
 							<SpanDetails span={selectedSpan} />

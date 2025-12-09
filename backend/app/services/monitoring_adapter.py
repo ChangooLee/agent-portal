@@ -73,6 +73,15 @@ class MonitoringAdapter:
             if any(err in error_text for err in ["UNKNOWN_TABLE", "does not exist", "UNKNOWN_IDENTIFIER", "Unknown expression"]):
                 logger.warning(f"ClickHouse schema issue, returning empty result: {error_text[:200]}")
                 return []
+            logger.error(f"ClickHouse HTTP error: {e.response.status_code} - {error_text[:200]}")
+            raise
+        except (httpx.ConnectError, httpx.NetworkError, OSError) as e:
+            # ClickHouse 연결 실패 - 서비스가 실행되지 않았거나 네트워크 문제
+            error_msg = str(e)
+            logger.error(f"ClickHouse connection failed ({self.base_url}): {error_msg[:200]}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error executing ClickHouse query: {str(e)[:200]}")
             raise
     
     async def get_traces(

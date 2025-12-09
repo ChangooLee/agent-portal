@@ -67,7 +67,8 @@ services:
       - OTEL_SERVICE_NAME=agent-text2sql
     volumes:
       # News data from mcp-naver-news project (개발용)
-      - /Users/lchangoo/Workspace/mcp-naver-news/src/data:/data/news:ro
+      # .env에서 NEWS_DATA_PATH_HOST 설정 필요
+      - ${NEWS_DATA_PATH_HOST:-./data/news}:/data/news:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -78,6 +79,8 @@ services:
       - litellm
       - kong
       - prometheus
+      - monitoring-clickhouse
+      - monitoring-otel-collector
 
   # LiteLLM Database (PostgreSQL) - DB 기반 모델 관리용
   litellm-postgres:
@@ -291,11 +294,10 @@ services:
     volumes:
       - minio:/data
 
-  # Monitoring ClickHouse (for OTLP traces) - Disabled, using external service
+  # Monitoring ClickHouse (for OTLP traces)
   monitoring-clickhouse:
     image: clickhouse/clickhouse-server:24.12
     container_name: monitoring-clickhouse
-    profiles: ["disabled"]
     ports:
       - "9002:9000"
       - "8125:8123"
@@ -312,7 +314,6 @@ services:
       context: ./otel-collector
       dockerfile: Dockerfile
     container_name: monitoring-otel-collector
-    profiles: ["disabled"]
     ports:
       - '4319:4317'
       - '4320:4318'
@@ -402,3 +403,4 @@ volumes:
   grafana_data:
   litellm_pg_data:
   webui_node_modules:
+
