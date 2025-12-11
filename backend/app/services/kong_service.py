@@ -327,7 +327,7 @@ class KongService:
         data = {
             "name": "key-auth",
             "config": {
-                "key_names": key_names or ["apikey"],
+                "key_names": key_names or ["X-API-Key", "apikey"],
                 "key_in_header": True,
                 "key_in_query": True,
                 "key_in_body": False,
@@ -531,6 +531,115 @@ class KongService:
         # 새 키 발급
         api_key_result = await self.create_api_key(consumer_name)
         return api_key_result["key"]
+    
+    # ==================== DataCloud 연결 등록 헬퍼 ====================
+    
+    async def setup_datacloud_connection(
+        self,
+        connection_id: str,
+        connection_name: str,
+        bff_base_url: str = "http://backend:3009",
+        rate_limit_minute: int = 100
+    ) -> Dict[str, Any]:
+        """DataCloud 연결을 Kong Gateway에 등록하고 보안 설정 적용.
+        
+        이 메서드는 다음 작업을 수행합니다:
+        1. Kong Service 생성 (업스트림: BFF의 쿼리 실행 엔드포인트)
+        2. Kong Route 생성 (경로: /datacloud/{connection_id})
+        3. Key-Auth 플러그인 활성화
+        4. Rate-Limiting 플러그인 활성화
+        5. Consumer 생성 및 API Key 발급
+        
+        Args:
+            connection_id: DataCloud 연결 ID (UUID)
+            connection_name: 연결 이름
+            bff_base_url: BFF 기본 URL (기본값: http://backend:3009)
+            rate_limit_minute: 분당 요청 제한 (기본값: 100)
+            
+        Returns:
+            Kong 리소스 정보 (service_id, route_id, consumer_id, api_key)
+        """
+        # 서비스 이름 (Kong에서 고유해야 함)
+        service_name = f"datacloud-{connection_id}"
+        route_name = f"datacloud-route-{connection_id}"
+        consumer_name = f"datacloud-consumer-{connection_id}"
+        
+        # BFF의 쿼리 실행 엔드포인트 URL
+        upstream_url = f"{bff_base_url}/datacloud/connections/{connection_id}"
+        
+        try:
+            # 1. Service 생성
+            service = await self.create_service(
+                name=service_name,
+                url=upstream_url,
+                tags=["datacloud", connection_name]
+            )
+            
+            # 2. Route 생성
+            route = await self.create_route(
+                service_name_or_id=service["id"],
+                name=route_name,
+                paths=[f"/datacloud/{connection_id}"],
+                methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                strip_path=True
+            )
+            
+            # 3. Key-Auth 플러그인 활성화
+            await self.enable_key_auth(service["id"])
+            
+            # 4. Rate-Limiting 플러그인 활성화
+            await self.enable_rate_limiting(
+                service["id"],
+                minute=rate_limit_minute
+            )
+            
+            # 5. Consumer 생성
+            consumer = await self.create_consumer(
+                username=consumer_name,
+                custom_id=connection_id,
+                tags=["datacloud"]
+            )
+            
+            # 6. API Key 발급
+            api_key_result = await self.create_api_key(consumer["id"])
+            
+            return {
+                "service_id": service["id"],
+                "route_id": route["id"],
+                "consumer_id": consumer["id"],
+                "api_key": api_key_result["key"],
+            }
+            
+        except HTTPException:
+            # 실패 시 생성된 리소스 정리
+            await self.cleanup_datacloud_connection(connection_id)
+            raise
+    
+    async def cleanup_datacloud_connection(self, connection_id: str) -> None:
+        """DataCloud 연결의 Kong 리소스 정리.
+        
+        Args:
+            connection_id: DataCloud 연결 ID
+        """
+        service_name = f"datacloud-{connection_id}"
+        route_name = f"datacloud-route-{connection_id}"
+        consumer_name = f"datacloud-consumer-{connection_id}"
+        
+        # 순서 중요: Route → Service → Consumer
+        try:
+            await self.delete_route(route_name)
+        except:
+            pass
+        
+        try:
+            await self.delete_service(service_name)
+        except:
+            pass
+        
+        try:
+            await self.delete_consumer(consumer_name)
+        except:
+            pass
     
     async def health_check(self) -> Dict[str, Any]:
         """Kong Gateway 상태 확인.

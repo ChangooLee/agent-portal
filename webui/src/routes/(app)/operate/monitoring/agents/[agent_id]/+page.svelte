@@ -106,7 +106,7 @@
 	<!-- Header -->
 	<div class="mb-6">
 		<button 
-			on:click={() => goto('/admin/monitoring')}
+			on:click={() => goto('/operate/monitoring')}
 			class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
 		>
 			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -7,7 +7,7 @@
 
 	onMount(async () => {
 		if ($user?.role === 'admin') {
-			await goto('/admin/monitoring');
+			await goto('/operate/monitoring');
 		} else {
 			await goto('/');
 		}

@@ -31,54 +31,42 @@ AI 에이전트의 설계, 실행, 모니터링, 관리를 위한 통합 플랫�
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              User Browser                                │
-│                         http://localhost:3009                            │
-└───────────────────────────────────┬─────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Portal UI (port 3009)                             │
-│                    SvelteKit + Open-WebUI Fork                           │
-│  ┌─────────┬──────────┬───────────┬─────────┬──────────┬─────────────┐  │
-│  │  Chat   │ Data     │ Text-to-  │ MCP     │Monitoring│   Admin     │  │
-│  │  View   │ Cloud    │ SQL Agent │ Gateway │Dashboard │   Settings  │  │
-│  └─────────┴──────────┴───────────┴─────────┴──────────┴─────────────┘  │
-│                         Vite Proxy → /api/*                              │
-└───────────────────────────────────┬─────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      Backend BFF (port 8000)                             │
-│                            FastAPI                                       │
-│  ┌─────────────┬────────────┬────────────┬────────────┬──────────────┐  │
-│  │   /chat     │ /datacloud │  /text2sql │   /mcp     │  /monitoring │  │
-│  │   /models   │ /projects  │  /agents   │  /gateway  │              │  │
-│  └──────┬──────┴──────┬─────┴─────┬──────┴──────┬─────┴──────┬───────┘  │
-└─────────┼─────────────┼───────────┼─────────────┼────────────┼──────────┘
-          │             │           │             │            │
-          ▼             ▼           ▼             ▼            ▼
-     ┌─────────┐  ┌──────────┐ ┌─────────┐  ┌─────────┐  ┌──────────┐
-     │ LiteLLM │  │ MariaDB  │ │LangGraph│  │  Kong   │  │ClickHouse│
-     │  :4000  │  │  :3306   │ │  Agent  │  │  :8002  │  │  :8124   │
-     │ LLM GW  │  │ App Data │ │Text2SQL │  │ API GW  │  │  Traces  │
-     └────┬────┘  └──────────┘ └─────────┘  └─────────┘  └────▲─────┘
-          │                                                    │
-          │          ┌────────────────────────────┐            │
-          └─────────►│      OTEL Collector        │────────────┘
-                     │    :4317 (gRPC) :4318 (HTTP)│
-                     └────────────────────────────┘
+**Single Port Architecture (Port 3009)**
+
+모든 서비스가 단일 포트(3009)를 통해 접근됩니다. BFF(Backend for Frontend)가 메인 엔트리 포인트로 동작하며, WebUI Backend와 Kong Gateway를 프록시합니다.
+
+```mermaid
+graph TB
+    Browser[User Browser<br/>http://localhost:3009]
+    BFF[BFF FastAPI<br/>Port 3009]
+    WebUI[WebUI Container<br/>Vite:3001, Backend:8080]
+    Kong[Kong Gateway<br/>Port 8000 internal]
+    LiteLLM[LiteLLM<br/>Port 4000]
+    MCP[MCP Servers]
+    DB[Databases]
+    ClickHouse[ClickHouse<br/>Port 8124]
+    
+    Browser -->|All requests| BFF
+    BFF -->|/api/webui/*| WebUI
+    BFF -->|/api/mcp/*| Kong
+    BFF -->|/api/datacloud/*| Kong
+    BFF -->|Direct APIs| LiteLLM
+    Kong -->|Routes| MCP
+    Kong -->|Routes| DB
+    LiteLLM -->|Traces| ClickHouse
 ```
 
-### Data Flows
+### Network Flows
 
 | Pipeline | Flow |
 |----------|------|
-| **LLM Call** | User → Backend → LiteLLM → Claude/GPT/etc → Response |
-| **Monitoring** | LiteLLM → OTEL → ClickHouse → Backend → Dashboard |
-| **Text-to-SQL** | Question → LangGraph Agent → DB Query → Results |
-| **MCP Gateway** | Frontend → Backend → Kong → MCP Servers |
+| **WebUI Frontend** | Browser → BFF (3009) → Vite Dev Server (3001) or Static Files |
+| **WebUI Backend** | Browser → BFF (3009) → WebUI Backend (8080) |
+| **LLM Call** | Browser → BFF (3009) → LiteLLM (4000) → Claude/GPT/etc |
+| **Monitoring** | LiteLLM → OTEL → ClickHouse → BFF → Dashboard |
+| **Text-to-SQL** | Browser → BFF (3009) → LangGraph Agent → DB |
+| **MCP Gateway** | Browser → BFF (3009) → Kong (8000) → MCP Servers |
+| **DataCloud** | Browser → BFF (3009) → Kong (8000) → Databases |
 
 ---
 
@@ -86,15 +74,15 @@ AI 에이전트의 설계, 실행, 모니터링, 관리를 위한 통합 플랫�
 
 ### Core Services
 
-| Service | Port | Purpose | Health Check |
-|---------|------|---------|--------------|
-| **webui** | 3009 | Portal UI (SvelteKit) | http://localhost:3009 |
-| **backend** | 8000 | FastAPI BFF | http://localhost:8000/docs |
-| **litellm** | 4000 | LLM Gateway | http://localhost:4000/health |
-| **mariadb** | 3306 | App Database | - |
-| **clickhouse** | 8124 | Trace Storage | http://localhost:8124/ping |
-| **kong** | 8002 | API Gateway | http://localhost:8002/status |
-| **konga** | 1337 | Kong Admin UI | http://localhost:1337 |
+| Service | External Port | Internal Port | Purpose | Health Check |
+|---------|--------------|---------------|---------|--------------|
+| **backend** | 3009 | 3009 | FastAPI BFF (Main Entry Point) | http://localhost:3009/health |
+| **webui** | - | 3001 (Vite), 8080 (Backend) | Portal UI (SvelteKit + Open-WebUI) | Via BFF proxy |
+| **litellm** | 4000 | 4000 | LLM Gateway | http://localhost:4000/health |
+| **mariadb** | 3306 | 3306 | App Database | - |
+| **clickhouse** | 8124 | 8123 | Trace Storage | http://localhost:8124/ping |
+| **kong** | 8004 | 8000 | API Gateway (Internal only) | http://localhost:8004/status |
+| **konga** | 1337 | 1337 | Kong Admin UI | http://localhost:1337 |
 
 ### Support Services
 
@@ -179,16 +167,35 @@ cp .env.example .env
 ### 2. Start Services
 
 ```bash
+# Start all services
 docker compose up -d
+
+# Run health check
 ./scripts/health-check.sh
+
+# Or use automated start and test script
+./scripts/start-and-test.sh
 ```
 
 ### 3. Access
 
+**Single Port Access (Port 3009)**
+
+모든 서비스는 포트 3009를 통해 접근됩니다:
+
 | URL | Description |
 |-----|-------------|
-| http://localhost:3009 | Portal UI |
-| http://localhost:8000/docs | Backend API Docs |
+| http://localhost:3009 | Portal UI (Main Entry Point) |
+| http://localhost:3009/docs | Backend API Docs |
+| http://localhost:3009/api/webui/* | WebUI Backend API (via BFF proxy) |
+| http://localhost:3009/monitoring/* | Monitoring API |
+| http://localhost:3009/mcp/* | MCP API |
+| http://localhost:3009/datacloud/* | DataCloud API |
+
+**Other Services**
+
+| URL | Description |
+|-----|-------------|
 | http://localhost:4000/ui | LiteLLM Admin |
 | http://localhost:1337 | Kong Admin (Konga) |
 
@@ -250,18 +257,53 @@ agent-portal/
 
 ## Development
 
+### Port Structure
+
+**Single Port Architecture (3009)**
+
+- **BFF (Backend for Frontend)**: Port 3009 (Main Entry Point)
+  - 모든 API 요청 처리
+  - WebUI Backend 프록시 (`/api/webui/*`)
+  - Kong Gateway 프록시 (`/api/mcp/*`, `/api/datacloud/*`)
+  - 정적 파일 서빙 (개발: Vite Dev Server 프록시, 프로덕션: 빌드 파일)
+
+- **WebUI Container**: 내부 포트만 사용
+  - Vite Dev Server: 3001 (내부)
+  - WebUI Backend: 8080 (내부)
+
+- **Kong Gateway**: 내부 네트워크만 사용
+  - Proxy: 8000 (내부)
+  - Admin: 8001 (내부)
+
 ### Local Development
 
 ```bash
 # Backend (hot reload)
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3009
 
 # Frontend (hot reload)
 cd webui
 npm install && npm run dev
+# Vite Dev Server runs on port 3001 internally
+# BFF proxies to Vite Dev Server for static files
 ```
+
+### Testing
+
+```bash
+# Run automated start and test
+./scripts/start-and-test.sh
+
+# Run regression tests
+./scripts/regression-test.sh
+
+# Verify network paths
+./scripts/verify-network-paths.sh
+```
+
+자세한 테스트 절차는 [docs/TESTING.md](./docs/TESTING.md)를 참조하세요.
 
 ### Service Rebuild
 

@@ -59,28 +59,7 @@
 		<div class=" flex max-w-full w-full mx-auto px-1 pt-0.5 bg-transparent">
 			<div class="flex items-center w-full max-w-full">
 				<div
-					class="{$showSidebar
-						? 'md:hidden'
-						: ''} mr-1 self-start flex flex-none items-center text-gray-600"
-				>
-					<button
-						id="sidebar-toggle-button"
-						class="cursor-pointer px-3 py-2 flex rounded-lg hover:bg-gray-100 transition-all duration-200 ease-in-out text-gray-600"
-						on:click={() => {
-							showSidebar.set(!$showSidebar);
-						}}
-						aria-label="Toggle Sidebar"
-					>
-						<div class=" m-auto self-center">
-							<MenuLines />
-						</div>
-					</button>
-				</div>
-
-				<div
-					class="flex-1 overflow-hidden max-w-full py-0.5
-			{$showSidebar ? 'ml-1' : ''}
-			"
+					class="flex-1 overflow-hidden max-w-full py-0.5"
 				>
 					<div class="flex items-center gap-2 overflow-x-auto scrollbar-none">
 						{#if showModelSelector}

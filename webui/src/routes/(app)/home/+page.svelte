@@ -197,7 +197,7 @@
                     <div class="text-2xl mb-2">📈</div>
                     <span class="text-sm text-gray-300">Monitoring</span>
                 </a>
-                <a href="/operate/llm" class="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all text-center">
+                <a href="/build/llm" class="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all text-center">
                     <div class="text-2xl mb-2">🧠</div>
                     <span class="text-sm text-gray-300">LLM 관리</span>
                 </a>

@@ -16,6 +16,7 @@ from app.services.datacloud_service import datacloud_service
 
 
 router = APIRouter(prefix="/gateway", tags=["gateway"])
+api_router = APIRouter(prefix="/api/gateway", tags=["gateway"])
 
 
 # ==================== Response 모델 ====================
@@ -91,6 +92,7 @@ class GatewayOverviewResponse(BaseModel):
 # ==================== API 엔드포인트 ====================
 
 @router.get("/status", response_model=GatewayStatusResponse)
+@api_router.get("/status", response_model=GatewayStatusResponse)
 async def get_gateway_status():
     """Kong Gateway 상태 조회.
     
@@ -136,6 +138,7 @@ async def get_gateway_status():
 
 
 @router.get("/overview", response_model=GatewayOverviewResponse)
+@api_router.get("/overview", response_model=GatewayOverviewResponse)
 async def get_gateway_overview():
     """Gateway 개요 조회.
     
@@ -190,6 +193,7 @@ async def get_gateway_overview():
 
 
 @router.get("/services", response_model=List[Dict[str, Any]])
+@api_router.get("/services", response_model=List[Dict[str, Any]])
 async def list_kong_services():
     """Kong Services 목록 조회.
     
@@ -209,6 +213,7 @@ async def list_kong_services():
 
 
 @router.get("/consumers", response_model=List[Dict[str, Any]])
+@api_router.get("/consumers", response_model=List[Dict[str, Any]])
 async def list_kong_consumers():
     """Kong Consumers 목록 조회.
     
@@ -230,6 +235,7 @@ async def list_kong_consumers():
 
 
 @router.get("/routes", response_model=List[Dict[str, Any]])
+@api_router.get("/routes", response_model=List[Dict[str, Any]])
 async def list_kong_routes():
     """Kong Routes 목록 조회.
     
@@ -249,6 +255,7 @@ async def list_kong_routes():
 
 
 @router.get("/plugins", response_model=List[Dict[str, Any]])
+@api_router.get("/plugins", response_model=List[Dict[str, Any]])
 async def list_kong_plugins():
     """Kong Plugins 목록 조회.
     

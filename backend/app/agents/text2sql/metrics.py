@@ -295,6 +295,13 @@ def start_agent_span(
     if state.get("dialect"):
         attrs["dialect"] = state["dialect"]
     
+    # agent.id와 agent.name은 root span에서 상속받거나 기본값 사용
+    # root span에서 이미 설정되었으므로 여기서는 기본값만 설정 (없는 경우)
+    if "agent.id" not in attrs:
+        attrs["agent.id"] = "text2sql-agent"
+    if "agent.name" not in attrs:
+        attrs["agent.name"] = "Text-to-SQL Agent"
+    
     try:
         from opentelemetry import trace
         from opentelemetry.context import attach, detach

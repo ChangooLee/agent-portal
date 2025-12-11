@@ -10,7 +10,11 @@ from pydantic import BaseModel, Field
 
 from app.services.datacloud_service import datacloud_service
 
+# DataCloud 라우터: /datacloud/*와 /api/datacloud/* 모두 처리
+# Single Port Architecture에서 Vite 프록시가 /api/datacloud/*를 /datacloud/*로 리라이트하지만,
+# 직접 /api/datacloud/*로 접근하는 경우도 처리하기 위해 두 개의 라우터를 생성
 router = APIRouter(prefix="/datacloud", tags=["datacloud"])
+api_router = APIRouter(prefix="/api/datacloud", tags=["datacloud"])
 
 
 # =====================
@@ -111,6 +115,7 @@ class PermissionRequest(BaseModel):
 # =====================
 
 @router.get("/connections", response_model=List[ConnectionResponse])
+@api_router.get("/connections", response_model=List[ConnectionResponse])
 async def list_connections(
     include_disabled: bool = Query(False, description="비활성 연결 포함 여부")
 ):
@@ -120,6 +125,7 @@ async def list_connections(
 
 
 @router.post("/connections", response_model=ConnectionResponse)
+@api_router.post("/connections", response_model=ConnectionResponse)
 async def create_connection(request: ConnectionCreateRequest):
     """새 DB 연결 생성"""
     try:
@@ -141,6 +147,7 @@ async def create_connection(request: ConnectionCreateRequest):
 
 
 @router.get("/connections/{connection_id}", response_model=ConnectionResponse)
+@api_router.get("/connections/{connection_id}", response_model=ConnectionResponse)
 async def get_connection(connection_id: str):
     """특정 DB 연결 조회"""
     conn = await datacloud_service.get_connection_by_id(connection_id)
@@ -153,6 +160,7 @@ async def get_connection(connection_id: str):
 
 
 @router.put("/connections/{connection_id}")
+@api_router.put("/connections/{connection_id}")
 async def update_connection(connection_id: str, request: ConnectionUpdateRequest):
     """DB 연결 수정"""
     success = await datacloud_service.update_connection(
@@ -175,6 +183,7 @@ async def update_connection(connection_id: str, request: ConnectionUpdateRequest
 
 
 @router.delete("/connections/{connection_id}")
+@api_router.delete("/connections/{connection_id}")
 async def delete_connection(connection_id: str):
     """DB 연결 삭제"""
     success = await datacloud_service.delete_connection(connection_id)
@@ -189,6 +198,7 @@ async def delete_connection(connection_id: str):
 # =====================
 
 @router.post("/connections/{connection_id}/test", response_model=ConnectionTestResult)
+@api_router.post("/connections/{connection_id}/test", response_model=ConnectionTestResult)
 async def test_connection(connection_id: str):
     """DB 연결 테스트"""
     result = await datacloud_service.test_connection(connection_id)
@@ -200,6 +210,7 @@ async def test_connection(connection_id: str):
 # =====================
 
 @router.get("/connections/{connection_id}/schema")
+@api_router.get("/connections/{connection_id}/schema")
 async def get_schema(
     connection_id: str,
     refresh: bool = Query(False, description="캐시 무시하고 새로 조회")
@@ -218,6 +229,7 @@ async def get_schema(
 # =====================
 
 @router.post("/connections/{connection_id}/query", response_model=QueryResult)
+@api_router.post("/connections/{connection_id}/query", response_model=QueryResult)
 async def execute_query(
     connection_id: str,
     request: QueryRequest,
@@ -251,6 +263,7 @@ class GenerateSQLResponse(BaseModel):
 
 
 @router.post("/connections/{connection_id}/generate-sql", response_model=GenerateSQLResponse)
+@api_router.post("/connections/{connection_id}/generate-sql", response_model=GenerateSQLResponse)
 async def generate_sql(connection_id: str, request: GenerateSQLRequest):
     """자연어 질문을 SQL로 변환 (Text-to-SQL)"""
     result = await datacloud_service.generate_sql_from_natural_language(
@@ -266,6 +279,7 @@ async def generate_sql(connection_id: str, request: GenerateSQLRequest):
 # =====================
 
 @router.get("/connections/{connection_id}/terms")
+@api_router.get("/connections/{connection_id}/terms")
 async def get_business_terms(connection_id: str):
     """비즈니스 용어집 조회"""
     terms = await datacloud_service.get_business_terms(connection_id)
@@ -273,6 +287,7 @@ async def get_business_terms(connection_id: str):
 
 
 @router.post("/connections/{connection_id}/terms")
+@api_router.post("/connections/{connection_id}/terms")
 async def add_business_term(connection_id: str, request: BusinessTermRequest):
     """비즈니스 용어 추가"""
     result = await datacloud_service.add_business_term(
@@ -294,6 +309,7 @@ async def add_business_term(connection_id: str, request: BusinessTermRequest):
 # =====================
 
 @router.get("/connections/{connection_id}/permissions")
+@api_router.get("/connections/{connection_id}/permissions")
 async def get_permissions(connection_id: str):
     """연결 권한 목록 조회"""
     permissions = await datacloud_service.get_connection_permissions(connection_id)
@@ -301,6 +317,7 @@ async def get_permissions(connection_id: str):
 
 
 @router.post("/connections/{connection_id}/permissions")
+@api_router.post("/connections/{connection_id}/permissions")
 async def grant_permission(
     connection_id: str,
     request: PermissionRequest,
@@ -318,6 +335,7 @@ async def grant_permission(
 
 
 @router.delete("/permissions/{permission_id}")
+@api_router.delete("/permissions/{permission_id}")
 async def revoke_permission(permission_id: str):
     """권한 회수"""
     success = await datacloud_service.revoke_permission(permission_id)
@@ -332,6 +350,7 @@ async def revoke_permission(permission_id: str):
 # =====================
 
 @router.get("/stats")
+@api_router.get("/stats")
 async def get_stats():
     """Data Cloud 통계"""
     connections = await datacloud_service.list_connections(include_disabled=True)

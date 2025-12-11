@@ -194,9 +194,16 @@
 	}
 
 	onMount(async () => {
-		if ($user !== undefined) {
+		// Wait for user store to be properly initialized
+		// Check if user is actually logged in (not just undefined)
+		// Also check if token exists in localStorage to prevent redirect loop
+		if ($user !== undefined && $user !== null && localStorage.token) {
 			const redirectPath = querystringValue('redirect') || '/';
-			goto(redirectPath);
+			// Only redirect if not already on the target path
+			if (window.location.pathname !== redirectPath) {
+				goto(redirectPath);
+			}
+			return;
 		}
 		await checkOauthCallback();
 

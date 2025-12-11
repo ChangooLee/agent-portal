@@ -2,7 +2,7 @@
 
 > **Purpose**: Define WHAT the project is and WHERE things are located
 > **Audience**: AI agents (Claude, Cursor) working on this codebase
-> **Version**: 5.2 (2025-12-05)
+> **Version**: 5.3 (2025-12-11)
 
 ---
 
@@ -35,6 +35,10 @@ Enterprise AI agent management platform built on Open-WebUI, providing:
 
 ### 2.1 System Topology
 
+**Single Port Architecture (Port 3009)**
+
+모든 서비스가 단일 포트(3009)를 통해 접근됩니다. BFF가 메인 엔트리 포인트로 동작하며, WebUI Backend와 Kong Gateway를 프록시합니다.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         User Browser                             │
@@ -43,55 +47,66 @@ Enterprise AI agent management platform built on Open-WebUI, providing:
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Open-WebUI (port 3009)                        │
-│              SvelteKit Frontend + Vite Proxy                     │
-│    /api/* → Backend BFF    /admin/* → Admin Pages                │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   Backend BFF (port 8000)                        │
+│                   Backend BFF (port 3009)                       │
 │                         FastAPI                                  │
 │  ┌──────────┬──────────┬──────────┬──────────┬──────────┐       │
 │  │   Chat   │ Monitor  │DataCloud │   MCP    │ Gateway  │       │
 │  │  /chat   │/monitor  │/datacloud│  /mcp    │/gateway  │       │
+│  │/api/webui│          │          │          │          │       │
 │  └────┬─────┴────┬─────┴────┬─────┴────┬─────┴────┬─────┘       │
 └───────┼──────────┼──────────┼──────────┼──────────┼─────────────┘
         │          │          │          │          │
+        │          │          │          │          │
         ▼          ▼          ▼          ▼          ▼
    ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
-   │ LiteLLM │ │ClickHs  │ │ MariaDB │ │  Kong   │ │  Kong   │
-   │  :4000  │ │  :8124  │ │  :3306  │ │  :8002  │ │  Admin  │
+   │ WebUI   │ │ LiteLLM │ │ClickHs  │ │ MariaDB │ │  Kong   │
+   │:3001/8080│ │  :4000  │ │  :8124  │ │  :3306  │ │  :8000  │
+   │(internal)│ │         │ │         │ │         │ │(internal)│
    └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘
-        │
-        ▼
-   ┌─────────────────────────────────────────┐
-   │           OTEL Collector                 │
-   │         :4317 (gRPC) :4318 (HTTP)       │
-   └─────────────────────────────────────────┘
-        │
-        ▼
-   ┌─────────────────────────────────────────┐
-   │              ClickHouse                  │
-   │    otel_2.otel_traces (trace storage)   │
-   └─────────────────────────────────────────┘
+        │          │          │          │          │
+        │          │          │          │          │
+        │          │          ▼          │          ▼
+        │          │    ┌─────────┐     │    ┌─────────┐
+        │          │    │  OTEL   │     │    │   MCP   │
+        │          │    │Collector│     │    │ Servers │
+        │          │    │ :4317/8 │     │    └─────────┘
+        │          │    └─────────┘     │
+        │          │          │         │
+        │          │          ▼         │
+        │          │    ┌─────────┐     │
+        │          │    │ClickHouse│     │
+        │          │    │  :8124  │     │
+        │          │    └─────────┘     │
+        │          │                    │
+        └──────────┴────────────────────┘
+                    (All via BFF)
 ```
 
 ### 2.2 Data Flows
 
+**WebUI Frontend Flow**:
+```
+Browser → BFF (3009) → Vite Dev Server (3001, internal) or Static Files
+```
+
+**WebUI Backend Flow**:
+```
+Browser → BFF (3009) → WebUI Backend (8080, internal)
+```
+
 **Monitoring Pipeline**:
 ```
-LiteLLM → OTEL Collector → ClickHouse → Backend BFF → Frontend
+LiteLLM → OTEL Collector → ClickHouse → Backend BFF (3009) → Frontend
 ```
 
 **Data Cloud Pipeline**:
 ```
-MariaDB/PostgreSQL/ClickHouse → SQLAlchemy → Backend BFF → Frontend
+Browser → BFF (3009) → Kong (8000, internal) → Databases
 ```
 
 **MCP Gateway Pipeline**:
 ```
-MCP Servers → Kong Gateway → Backend Registry → Frontend Admin
+Browser → BFF (3009) → Kong (8000, internal) → MCP Servers
 ```
 
 ---
@@ -100,14 +115,14 @@ MCP Servers → Kong Gateway → Backend Registry → Frontend Admin
 
 ### 3.1 Core Services
 
-| Service | Port | Container | Health Check | Purpose |
-|---------|------|-----------|--------------|---------|
-| backend | 8000 | agent-portal-backend-1 | http://localhost:8000/docs | FastAPI BFF |
-| webui | 3009 | agent-portal-webui-1 | http://localhost:3009 | Portal UI |
-| litellm | 4000 | agent-portal-litellm-1 | http://localhost:4000/health | LLM Proxy |
-| kong | 8002 | agent-portal-kong-1 | http://localhost:8002/status | API Gateway |
-| mariadb | 3306 | agent-portal-mariadb-1 | - | App Database |
-| clickhouse | 8124 | monitoring-clickhouse | http://localhost:8124/ping | Trace Storage |
+| Service | External Port | Internal Port | Container | Health Check | Purpose |
+|---------|--------------|---------------|-----------|--------------|---------|
+| backend | 3009 | 3009 | agent-portal-backend-1 | http://localhost:3009/health | FastAPI BFF (Main Entry Point) |
+| webui | - | 3001 (Vite), 8080 (Backend) | agent-portal-webui-1 | Via BFF proxy | Portal UI (SvelteKit + Open-WebUI) |
+| litellm | 4000 | 4000 | agent-portal-litellm-1 | http://localhost:4000/health | LLM Proxy |
+| kong | 8004 | 8000 (Proxy), 8001 (Admin) | agent-portal-kong-1 | http://localhost:8004/status | API Gateway (Internal only) |
+| mariadb | 3306 | 3306 | agent-portal-mariadb-1 | - | App Database |
+| clickhouse | 8124 | 8123 | monitoring-clickhouse | http://localhost:8124/ping | Trace Storage |
 
 ### 3.2 Support Services
 
@@ -176,13 +191,19 @@ agent-portal/
 │   │   ├── routes/
 │   │   │   └── (app)/
 │   │   │       ├── +page.svelte       # Chat page
-│   │   │       └── admin/
-│   │   │           ├── +layout.svelte # Admin nav
-│   │   │           ├── monitoring/    # Monitoring dashboard
-│   │   │           ├── datacloud/     # Data Cloud management
-│   │   │           ├── mcp/           # MCP server management
-│   │   │           ├── gateway/       # Gateway overview
-│   │   │           └── projects/      # Project management
+│   │   │       ├── build/              # Build menu pages
+│   │   │       │   ├── agents/        # Agent development
+│   │   │       │   ├── llm/           # LLM model management
+│   │   │       │   ├── mcp/           # MCP server management
+│   │   │       │   ├── datacloud/     # Data Cloud management
+│   │   │       │   ├── guardrails/    # Guardrails configuration
+│   │   │       │   └── evaluations/   # Model evaluations
+│   │   │       ├── operate/            # Operate menu pages
+│   │   │       │   ├── monitoring/    # Monitoring dashboard
+│   │   │       │   ├── gateway/       # Gateway overview
+│   │   │       │   ├── users/         # User management
+│   │   │       │   └── settings/      # System settings
+│   │   │       └── projects/          # Project management
 │   │   └── lib/
 │   │       ├── components/    # Shared components
 │   │       └── monitoring/    # Monitoring-specific components
@@ -229,13 +250,62 @@ agent-portal/
 |--------------|----------|
 | New API endpoint | `backend/app/routes/<domain>.py` |
 | New service logic | `backend/app/services/<name>_service.py` |
-| New admin page | `webui/src/routes/(app)/admin/<name>/+page.svelte` |
+| New Build page | `webui/src/routes/(app)/build/<name>/+page.svelte` |
+| New Operate page | `webui/src/routes/(app)/operate/<name>/+page.svelte` |
 | New shared component | `webui/src/lib/components/<Name>.svelte` |
 | New AI rule | `.cursor/rules/<domain>.mdc` |
 
 ---
 
-## 5. API Reference
+## 5. Menu Structure
+
+### 5.1 Navigation Structure
+
+Agent Portal uses a three-tier navigation structure:
+
+- **Use**: User-facing features (Chat, Agents, Data Cloud, etc.)
+- **Build**: Development and configuration tools
+- **Operate**: Operations and administration
+
+### 5.2 Build Menu
+
+| Menu Item | Path | Description |
+|-----------|------|-------------|
+| Agents | `/build/agents` | Agent development |
+| Workflows | `/build/workflows` | Workflow builder |
+| LLM | `/build/llm` | LLM model management |
+| MCP | `/build/mcp` | MCP server management |
+| Data Cloud | `/build/datacloud` | Database connections |
+| Knowledge | `/build/knowledge` | Knowledge base |
+| Guardrails | `/build/guardrails` | Safety configuration |
+| Evaluations | `/build/evaluations` | Model evaluations |
+
+### 5.3 Operate Menu
+
+| Menu Item | Path | Description |
+|-----------|------|-------------|
+| Monitoring | `/operate/monitoring` | Monitoring dashboard |
+| Gateway | `/operate/gateway` | API Gateway overview |
+| 사용자관리 | `/operate/users` | User management |
+| 설정 | `/operate/settings` | System settings |
+
+### 5.4 Legacy Path Redirects
+
+For backward compatibility, old `/admin/*` paths automatically redirect to new paths:
+
+- `/admin/llm` → `/build/llm`
+- `/admin/mcp` → `/build/mcp`
+- `/admin/datacloud` → `/build/datacloud`
+- `/admin/guardrails` → `/build/guardrails`
+- `/admin/evaluations` → `/build/evaluations`
+- `/admin/monitoring` → `/operate/monitoring`
+- `/admin/gateway` → `/operate/gateway`
+- `/admin/users` → `/operate/users`
+- `/admin/settings` → `/operate/settings`
+
+---
+
+## 6. API Reference
 
 ### 5.1 Backend Routes
 
@@ -280,7 +350,7 @@ const response = await fetch('/api/datacloud/connections', {
 
 ---
 
-## 6. Domain Knowledge
+## 7. Domain Knowledge
 
 ### 6.1 ClickHouse Specifics
 
@@ -345,7 +415,7 @@ POST /services/{service}/plugins { name: 'key-auth' }
 
 ---
 
-## 7. Code Patterns
+## 8. Code Patterns
 
 ### 7.1 Backend Service (Singleton)
 
@@ -473,7 +543,7 @@ async def get_example(id: str):
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 ### 8.1 Service Not Starting
 
@@ -547,7 +617,7 @@ Check proxy config in `webui/vite.config.ts`
 
 ---
 
-## 9. Quick Commands
+## 10. Quick Commands
 
 ### 9.1 Development
 
@@ -582,9 +652,9 @@ curl "http://localhost:8124/?query=SELECT+count()+FROM+otel_2.otel_traces"
 ### 9.3 Testing
 
 ```bash
-# Test backend API
-curl http://localhost:8000/docs
-curl http://localhost:8000/monitoring/health
+# Test backend API (Single Port Architecture)
+curl http://localhost:3009/health
+curl http://localhost:3009/docs
 
 # Test frontend
 curl http://localhost:3009
@@ -595,7 +665,95 @@ curl http://localhost:4000/health
 
 ---
 
-## 10. Architecture Integrity Rules (CRITICAL)
+## 11. Testing and Validation
+
+### 10.1 Test Scripts
+
+**기동 및 기본 테스트**:
+```bash
+./scripts/start-and-test.sh
+```
+- Docker Compose 서비스 기동
+- 서비스 헬스 체크 대기 (최대 120초)
+- 기본 연결 테스트 자동 실행
+- 실패 시 로그 출력 및 종료
+
+**회귀 테스트**:
+```bash
+./scripts/regression-test.sh
+```
+- 모든 핵심 경로 테스트 실행
+- 테스트 결과 리포트 생성 (JSON)
+- 실패한 테스트 상세 로그
+- 테스트 실행 시간 측정
+
+**네트워크 경로 검증**:
+```bash
+./scripts/verify-network-paths.sh
+```
+- 각 네트워크 경로별 연결 확인
+- 응답 시간 측정
+- 에러율 통계
+- 네트워크 토폴로지 검증
+
+### 10.2 Test Scenarios
+
+핵심 네트워크 경로별 테스트 케이스:
+
+1. **기본 연결 테스트**: Browser → WebUI Frontend (3009)
+   - `GET http://localhost:3009/` → 200 OK
+   - HTML 응답, 정적 파일 로드 확인
+
+2. **WebUI Backend 프록시**: Browser → BFF (3009) → WebUI Backend (8080)
+   - `GET http://localhost:3009/api/webui/health`
+   - `POST http://localhost:3009/api/webui/v1/chat`
+   - 인증 토큰 전달 확인
+
+3. **BFF 직접 API**: Browser → BFF (3009)
+   - `GET http://localhost:3009/health`
+   - `GET http://localhost:3009/monitoring/traces`
+   - `GET http://localhost:3009/mcp/servers`
+
+4. **Kong Gateway 통합**: Browser → BFF (3009) → Kong (8000) → MCP Server
+   - MCP 서버 등록 → Kong에 서비스/라우트 생성 확인
+   - `GET http://localhost:3009/api/mcp/servers/{id}/tools` → Kong 경유 MCP 호출
+   - API Key 인증 확인
+   - Rate Limiting 동작 확인
+
+5. **DataCloud Kong 통합**: Browser → BFF (3009) → Kong (8000) → Database
+   - DB 연결 생성 → Kong에 서비스/라우트 생성 확인
+   - `POST http://localhost:3009/api/datacloud/connections/{id}/query` → Kong 경유 DB 쿼리
+   - 연결 정보 암호화 확인
+
+6. **WebSocket 연결**: Browser → BFF (3009) → WebUI Backend (8080)
+   - WebSocket 연결 수립
+   - 실시간 메시지 전송/수신
+   - 연결 유지 및 재연결
+
+자세한 테스트 절차는 [docs/TESTING.md](./docs/TESTING.md)를 참조하세요.
+
+### 10.3 Network Path Verification
+
+**단일 포트 구조 검증**:
+
+- 모든 요청이 포트 3009를 통해 접근되는지 확인
+- BFF가 WebUI Backend를 올바르게 프록시하는지 확인
+- BFF가 Kong Gateway를 올바르게 경유하는지 확인
+- 내부 네트워크 서비스 간 통신이 정상인지 확인
+
+**검증 명령어**:
+```bash
+# External access (Port 3009)
+curl http://localhost:3009/health
+
+# Internal network verification
+docker compose exec backend curl http://webui:8080/health
+docker compose exec backend curl http://kong:8000/status
+```
+
+---
+
+## 12. Architecture Integrity Rules (CRITICAL)
 
 ### 10.1 No Bypass Policy
 
@@ -647,5 +805,68 @@ CLICKHOUSE_HOST: localhost:8124
 
 ---
 
-**Last Updated**: 2025-12-02
-**Version**: 5.1 (Technical Reference + Architecture Rules)
+## 13. Single Port Architecture Implementation Status
+
+### 11.1 Implementation Summary
+
+**Status**: ✅ **완료** (2025-12-09)
+
+모든 서비스가 단일 포트(3009)를 통해 접근 가능하도록 구현 완료:
+
+| 경로 | 상태 | 설명 |
+|------|------|------|
+| WebUI Frontend | ✅ | `http://localhost:3009/` → Vite Dev Server (3001, internal) |
+| WebUI Backend | ✅ | `http://localhost:3009/api/v1/*` → WebUI Backend (8080, internal) |
+| BFF 직접 API | ✅ | `http://localhost:3009/health`, `/monitoring/*`, `/chat/*` 등 |
+| MCP Gateway | ✅ | `http://localhost:3009/api/mcp/*` → BFF → Kong → MCP Servers |
+| DataCloud | ✅ | `http://localhost:3009/api/datacloud/*` → BFF → Kong → Databases |
+| Kong Gateway | ✅ | 내부 네트워크(`kong:8000`)로만 접근, BFF를 통해서만 외부 노출 |
+
+### 11.2 Router Configuration
+
+**BFF 라우터 등록 순서** (`backend/app/main.py`):
+
+```python
+# 1. BFF 직접 처리 라우터들 (우선순위 높음)
+app.include_router(mcp.router)  # /mcp/*
+app.include_router(mcp.api_router)  # /api/mcp/* (Vite 프록시용)
+app.include_router(datacloud.router)  # /datacloud/*
+app.include_router(datacloud.api_router)  # /api/datacloud/* (Vite 프록시용)
+
+# 2. WebUI Backend 프록시 (catch-all, 마지막)
+app.include_router(webui_proxy.api_router)  # /api/* 직접 프록시
+app.include_router(webui_proxy.router)  # /api/webui/* 프록시
+```
+
+**중요**: `/api/mcp/*`와 `/api/datacloud/*`는 BFF에서 직접 처리하므로, `webui_proxy.api_router`보다 먼저 등록되어야 합니다.
+
+### 11.3 Test Results (2025-12-09)
+
+**포트 3009를 통한 모든 경로 검증**:
+
+```
+✅ WebUI Frontend (Root): HTTP 200
+✅ WebUI Backend API (/api/v1/auths/signin): HTTP 400 (정상 - 인증 실패이지만 경로 작동)
+✅ BFF 직접 API (/health): HTTP 200
+✅ MCP API (/api/mcp/servers): HTTP 200
+✅ DataCloud API (/api/datacloud/connections): HTTP 200
+⚠️ Monitoring API (/monitoring/traces): HTTP 404 (프로젝트 ID 필요, 경로는 정상)
+```
+
+**브라우저 테스트**:
+- ✅ 로그인 (`lchangoo@gmail.com`): 성공
+- ✅ MCP 서버 목록: 정상 로드 (2개 서버 표시)
+- ✅ DataCloud 연결 목록: 정상 로드 (4개 연결 표시)
+
+### 11.4 Known Issues
+
+1. **Vite HMR WebSocket**: 현재 비활성화됨 (연속 리프레시 문제 해결을 위해)
+   - 해결책: `webui/vite.config.ts`에서 `hmr: false` 설정
+   - 향후 개선: WebSocket 프록시 안정화 후 재활성화
+
+2. **Monitoring API 404**: 프로젝트 ID가 없을 때 404 반환 (정상 동작)
+
+---
+
+**Last Updated**: 2025-12-09
+**Version**: 5.2 (Single Port Architecture + Testing)

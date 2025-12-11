@@ -49,19 +49,18 @@ export const roleMenus: Record<UserRole, MenuItem[]> = {
     build: [
         { id: 'agents', name: '에이전트', href: '/build/agents', icon: 'cube', status: 'active', description: '에이전트 개발' },
         { id: 'workflows', name: '워크플로우', href: '/build/workflows', icon: 'workflow', status: 'coming-soon', description: '워크플로우 빌더' },
-        { id: 'prompts', name: '프롬프트', href: '/build/prompts', icon: 'document', status: 'coming-soon', description: '프롬프트 라이브러리' },
+        { id: 'llm', name: 'LLM', href: '/build/llm', icon: 'cpu', status: 'active', description: 'LLM 모델 관리' },
+        { id: 'mcp', name: 'MCP', href: '/build/mcp', icon: 'server', status: 'active', description: 'MCP 서버 관리' },
+        { id: 'datacloud', name: 'Data Cloud', href: '/build/datacloud', icon: 'database', status: 'active', description: '데이터베이스 연결' },
         { id: 'knowledge', name: 'Knowledge', href: '/build/knowledge', icon: 'book', status: 'coming-soon', description: '지식 베이스' },
+        { id: 'guardrails', name: '가드레일', href: '/build/guardrails', icon: 'shield', status: 'active', description: '안전 설정' },
+        { id: 'evaluations', name: '리더보드', href: '/build/evaluations', icon: 'chart', status: 'active', description: '모델 평가' },
     ],
     operate: [
-        { id: 'monitoring', name: 'Monitoring', href: '/admin/monitoring', icon: 'chart-bar', status: 'active', description: '모니터링 대시보드' },
-        { id: 'llm', name: 'LLM', href: '/admin/llm', icon: 'cpu', status: 'active', description: 'LLM 모델 관리' },
-        { id: 'mcp', name: 'MCP', href: '/admin/mcp', icon: 'server', status: 'active', description: 'MCP 서버 관리' },
-        { id: 'datacloud', name: 'Data Cloud', href: '/admin/datacloud', icon: 'database', status: 'active', description: '데이터베이스 연결' },
-        { id: 'gateway', name: 'Gateway', href: '/admin/gateway', icon: 'globe', status: 'active', description: 'API 게이트웨이' },
-        { id: 'guardrails', name: '가드레일', href: '/admin/guardrails', icon: 'shield', status: 'active', description: '안전 설정' },
-        { id: 'evaluations', name: '리더보드', href: '/admin/evaluations', icon: 'chart', status: 'active', description: '모델 평가' },
-        { id: 'users', name: '사용자관리', href: '/admin/users', icon: 'users', status: 'active', description: '사용자 관리' },
-        { id: 'settings', name: '설정', href: '/admin/settings', icon: 'cog', status: 'active', description: '시스템 설정' },
+        { id: 'monitoring', name: 'Monitoring', href: '/operate/monitoring', icon: 'chart-bar', status: 'active', description: '모니터링 대시보드' },
+        { id: 'gateway', name: 'Gateway', href: '/operate/gateway', icon: 'globe', status: 'active', description: 'API 게이트웨이' },
+        { id: 'users', name: '사용자관리', href: '/operate/users', icon: 'users', status: 'active', description: '사용자 관리' },
+        { id: 'settings', name: '설정', href: '/operate/settings', icon: 'cog', status: 'active', description: '시스템 설정' },
     ]
 };
 
@@ -77,8 +76,13 @@ export function getRoleFromPath(pathname: string): UserRole {
         return 'build';
     }
     
-    // Operate role paths (all admin pages)
-    if (pathname.startsWith('/operate/') || pathname.startsWith('/admin/')) {
+    // Operate role paths
+    if (pathname.startsWith('/operate/')) {
+        return 'operate';
+    }
+    
+    // Legacy admin paths (for backward compatibility)
+    if (pathname.startsWith('/admin/')) {
         return 'operate';
     }
     

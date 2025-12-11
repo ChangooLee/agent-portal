@@ -367,8 +367,23 @@ async def proxy_mcp(
             }
         )
     
-    # MCP 서버 URL 구성
-    mcp_url = f"{server['endpoint_url'].rstrip('/')}/{path}"
+    # Kong Gateway를 통해 MCP 서버 호출
+    from app.config import get_settings
+    settings = get_settings()
+    
+    # Kong에 등록된 경우 Kong을 통해 호출, 아니면 직접 호출 (fallback)
+    kong_service_id = server.get('kong_service_id')
+    kong_api_key = server.get('kong_api_key')
+    
+    if kong_service_id and kong_api_key:
+        # Kong Gateway를 통해 호출
+        kong_proxy_url = settings.KONG_PROXY_URL
+        mcp_url = f"{kong_proxy_url}/mcp/{server_id}/{path}"
+        # Kong API Key 인증 추가
+        headers['X-API-Key'] = kong_api_key
+    else:
+        # Kong에 등록되지 않은 경우 직접 호출 (fallback)
+        mcp_url = f"{server['endpoint_url'].rstrip('/')}/{path}"
     
     start_time = time.time()
     status = "success"

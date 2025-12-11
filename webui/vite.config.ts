@@ -18,6 +18,9 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 // };
 
 const devPort = Number(process.env.VITE_DEV_PORT ?? '3001');
+// Single Port Architecture: 모든 API 요청을 BFF (포트 3009)로 프록시
+// BFF가 WebUI Backend, Kong Gateway 등을 프록시합니다.
+const bffTarget = process.env.DOCKER_ENV ? 'http://backend:3009' : 'http://localhost:3009';
 
 export default defineConfig({
 	plugins: [
@@ -46,95 +49,142 @@ export default defineConfig({
 		host: '0.0.0.0', // Docker 내부에서 접근 가능하도록
 		port: devPort, // 기본 3001, 필요 시 VITE_DEV_PORT로 오버라이드
 		proxy: {
-			// Proxy API (Langflow, Flowise, AutoGen) → FastAPI BFF (포트 8000)
+			// Single Port Architecture: 모든 API 요청을 BFF (포트 3009)로 프록시
+			// BFF가 WebUI Backend, Kong Gateway 등을 프록시합니다.
+			// Proxy API (Langflow, Flowise, AutoGen) → FastAPI BFF (포트 3009)
 			'/api/proxy': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true
 			},
-			// News API → FastAPI BFF (포트 8000)
-			// Docker 환경: 컨테이너 이름 사용, 로컬 환경: localhost 사용
+			// News API → FastAPI BFF (포트 3009)
 			'/api/news': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true
 			},
-			// DataCloud API → FastAPI BFF (포트 8000)
+			// DataCloud API → FastAPI BFF (포트 3009)
 			'/api/datacloud': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/datacloud/, '/datacloud')
 			},
-			// MCP API → FastAPI BFF (포트 8000)
+			// MCP API → FastAPI BFF (포트 3009)
 			'/api/mcp': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/mcp/, '/mcp')
 			},
-			// Gateway API → FastAPI BFF (포트 8000)
+			// Gateway API → FastAPI BFF (포트 3009)
 			'/api/gateway': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/gateway/, '/gateway')
 			},
-			// Monitoring API → FastAPI BFF (포트 8000)
-			// Note: Backend router uses /api/monitoring prefix, no rewrite needed
+			// Monitoring API → FastAPI BFF (포트 3009)
 			'/api/monitoring': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				ws: true
 			},
-			// Projects API → FastAPI BFF (포트 8000)
+			// Projects API → FastAPI BFF (포트 3009)
 			'/api/projects': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true
 			},
-			// LLM Management API → FastAPI BFF (포트 8000)
+			// LLM Management API → FastAPI BFF (포트 3009)
 			'/api/llm': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/llm/, '/llm')
 			},
-			// Embed Proxy (Kong Admin) → FastAPI BFF (포트 8000)
+			// Embed Proxy (Kong Admin) → FastAPI BFF (포트 3009)
 			'/api/embed': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/embed/, '/embed')
 			},
-			// LangGraph Text-to-SQL Agent API → FastAPI BFF (포트 8000)
+			// LangGraph Text-to-SQL Agent API → FastAPI BFF (포트 3009)
 			'/api/text2sql': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/text2sql/, '/text2sql')
 			},
-			// DART 기업공시분석 Agent API → FastAPI BFF (포트 8000)
+			// DART 기업공시분석 Agent API → FastAPI BFF (포트 3009)
 			'/api/dart': {
-				target: process.env.DOCKER_ENV ? 'http://backend:8000' : 'http://localhost:8000',
+				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/dart/, '/dart')
 			},
-			// 백엔드 API 프록시 (WebUI Backend - 포트 8080)
-		// ⚠️ CRITICAL: Docker 환경에서는 localhost (컨테이너 내부 Uvicorn)
+			// WebUI Backend API → FastAPI BFF (포트 3009) → WebUI Backend (8080)
+			// BFF의 /api/webui/* 라우터가 WebUI Backend로 프록시합니다.
+			// WebUI Backend의 /api/config, /api/v1/* 등을 /api/webui/*로 리라이트
+			'/api/config': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/config/, '/api/webui/config')
+			},
+			'/api/v1': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/v1/, '/api/webui/v1')
+			},
+			'/api/models': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/models/, '/api/webui/models')
+			},
+			'/api/chat': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/chat/, '/api/webui/chat')
+			},
+			'/api/tasks': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/tasks/, '/api/webui/tasks')
+			},
+			'/api/changelog': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/changelog/, '/api/webui/changelog')
+			},
+			'/api/version': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/version/, '/api/webui/version')
+			},
+			'/api/webhook': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/webhook/, '/api/webui/webhook')
+			},
+			'/api/community_sharing': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/community_sharing/, '/api/webui/community_sharing')
+			},
+			// 기타 /api/* 요청도 BFF로 프록시 (나중에 처리)
 			'/api': {
-			target: 'http://localhost:8080',
+				target: bffTarget,
 				changeOrigin: true,
 				ws: true
 			},
+			// WebUI Backend 직접 경로도 BFF를 통해 프록시
 			'/ollama': {
-			target: 'http://localhost:8080',
+				target: bffTarget,
 				changeOrigin: true
 			},
 			'/openai': {
-			target: 'http://localhost:8080',
+				target: bffTarget,
 				changeOrigin: true
 			},
 			'/health': {
-			target: 'http://localhost:8080',
+				target: bffTarget,
 				changeOrigin: true
 			}
 		},
-		hmr: {
-			// Docker 환경에서 HMR이 정상 작동하도록 설정
-			clientPort: Number(process.env.VITE_HMR_PORT ?? devPort) // 외부 포트 매핑
-		},
+		hmr: false,  // Single Port Architecture에서 BFF를 통한 WebSocket 프록시가 복잡하므로 HMR 비활성화
+		// 파일 변경 감지는 watch 옵션으로 처리되며, 개발자는 수동으로 새로고침하면 됩니다
+		// 또는 나중에 WebSocket 프록시가 완벽하게 구현되면 다시 활성화할 수 있습니다
 		watch: {
 			// 파일 변경 감지 최적화
 			usePolling: true

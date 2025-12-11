@@ -21,8 +21,8 @@
 	// Role tabs configuration
 	const roleTabs: { id: UserRole; name: string; icon: string; defaultPath: string }[] = [
 		{ id: 'use', name: 'Use', icon: 'play', defaultPath: '/' },
-		{ id: 'build', name: 'Build', icon: 'hammer', defaultPath: '/build/agents' },
-		{ id: 'operate', name: 'Operate', icon: 'chart-bar', defaultPath: '/admin/monitoring' }
+		{ id: 'build', name: 'Build', icon: 'hammer', defaultPath: '/build/llm' },
+		{ id: 'operate', name: 'Operate', icon: 'chart-bar', defaultPath: '/operate/monitoring' }
 	];
 
 	// Get current menu items based on selected role
@@ -88,16 +88,20 @@
 <nav class="sticky top-0 z-50 w-full bg-gray-950 border-b border-gray-800/50">
 	<!-- Top Row: Role Tabs (Use/Build/Operate) + User Actions -->
 	<div class="flex items-center justify-between px-4 py-1.5">
-		<!-- Left: Sidebar Toggle -->
+		<!-- Left: Portal Name with Logo -->
 		<div class="flex items-center gap-3">
-			<button
-				id="sidebar-toggle-button"
-				class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all duration-200"
-				on:click={() => showSidebar.set(!$showSidebar)}
-				aria-label="Toggle Sidebar"
-			>
-				<MenuLines />
-			</button>
+			<a href="/" class="flex items-center gap-2">
+				<img
+					crossorigin="anonymous"
+					src="/static/favicon.png"
+					class="size-7 rounded-lg"
+					alt="logo"
+					draggable="false"
+				/>
+				<span class="text-base font-bold text-white" style="font-family: 'Samsung Gothic', sans-serif;">
+					SFN AI Portal
+				</span>
+			</a>
 		</div>
 
 		<!-- Center: Role Tabs -->

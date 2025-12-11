@@ -274,8 +274,8 @@
 
 			<!-- Main Content Area -->
 			<div class="flex flex-1 min-h-0">
-				<!-- Chat Sidebar (only for chat pages) -->
-				{#if $page.url.pathname.startsWith('/c') && $showSidebar}
+				<!-- Chat Sidebar (always visible for chat pages) -->
+				{#if $page.url.pathname.startsWith('/c')}
 					<Sidebar />
 				{/if}
 

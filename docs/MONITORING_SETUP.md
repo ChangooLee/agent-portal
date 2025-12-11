@@ -129,7 +129,7 @@ curl http://localhost:4000/health
 
 | 서비스 | URL | 설명 |
 |--------|-----|------|
-| **Monitoring Dashboard** | http://localhost:3009/admin/monitoring | Overview/Analytics/Traces/Replay |
+| **Monitoring Dashboard** | http://localhost:3009/operate/monitoring | Overview/Analytics/Traces/Replay |
 | **LiteLLM Admin** | http://localhost:4000/ui | 모델 관리, 사용량 확인 |
 | **Prometheus** | http://localhost:9090 | 메트릭 쿼리 |
 

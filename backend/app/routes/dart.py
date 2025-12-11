@@ -9,6 +9,7 @@ import json
 import logging
 import uuid
 from typing import Any, Dict, Optional
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -19,6 +20,24 @@ from app.services.agent_trace_adapter import agent_trace_adapter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dart", tags=["DART Analysis"])
+api_router = APIRouter(prefix="/api/dart", tags=["DART Analysis"])
+
+# Debug logging helper
+def _debug_log(location: str, message: str, data: Dict[str, Any], hypothesis_id: str):
+    try:
+        log_entry = {
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(datetime.now().timestamp() * 1000),
+            "sessionId": "debug-session",
+            "runId": "run1",
+            "hypothesisId": hypothesis_id
+        }
+        with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+    except:
+        pass
 
 
 # =============================================================================
@@ -59,16 +78,16 @@ def _format_sse(event_data: Dict[str, Any]) -> str:
 # =============================================================================
 
 @router.get("/health", summary="DART Agent Health Check")
+@api_router.get("/health", summary="DART Agent Health Check")
 async def health_check():
     """DART 에이전트 헬스 체크"""
-    from app.agents.dart_agent.mcp_client import MCPHTTPClient
+    from app.agents.dart_agent.mcp_client import get_opendart_mcp_client
     
-    # MCP 연결 테스트
+    # MCP 연결 테스트 (등록된 서버 사용)
     try:
-        client = MCPHTTPClient("http://121.141.60.219:8089/mcp", timeout=10.0)
-        connected = await client.connect()
+        client = await get_opendart_mcp_client()
+        connected = client.is_connected
         tool_count = client.tool_count if connected else 0
-        await client.disconnect()
         
         return {
             "status": "ok" if connected else "degraded",
@@ -91,6 +110,7 @@ async def health_check():
 # =============================================================================
 
 @router.post("/chat", response_model=DartChatResponse, summary="DART Analysis Chat")
+@api_router.post("/chat", response_model=DartChatResponse, summary="DART Analysis Chat")
 async def chat(request_data: DartChatRequest):
     """
     DART 분석 채팅 (동기 응답).
@@ -186,6 +206,7 @@ async def chat(request_data: DartChatRequest):
 
 
 @router.post("/chat/stream", summary="DART Analysis Chat (Streaming)")
+@api_router.post("/chat/stream", summary="DART Analysis Chat (Streaming)")
 async def chat_stream(request_data: DartChatRequest):
     """
     DART 분석 채팅 (SSE 스트리밍).
@@ -195,6 +216,13 @@ async def chat_stream(request_data: DartChatRequest):
     from app.agents.dart_agent.agent import get_dart_agent
     
     logger.info(f"DART stream request: {request_data.question[:50]}...")
+    
+    # #region agent log
+    _debug_log("dart.py:197", "DART stream request received", {
+        "question_length": len(request_data.question),
+        "has_session": bool(request_data.session_id)
+    }, "A")
+    # #endregion
     
     trace_id = str(uuid.uuid4())
     session_id = request_data.session_id or trace_id
@@ -226,6 +254,13 @@ async def chat_stream(request_data: DartChatRequest):
                 logger.warning(f"Trace start failed: {e}")
         
         try:
+            # #region agent log
+            _debug_log("dart.py:229", "Starting event generator", {
+                "trace_id": trace_id,
+                "session_id": session_id
+            }, "A")
+            # #endregion
+            
             # 시작 이벤트
             yield _format_sse({
                 "event": "start",
@@ -233,16 +268,38 @@ async def chat_stream(request_data: DartChatRequest):
                 "question": request_data.question
             })
             
+            # #region agent log
+            _debug_log("dart.py:237", "Getting MCP client", {}, "B")
+            # #endregion
+            
             # MCP 연결 확인
             from app.agents.dart_agent.mcp_client import get_opendart_mcp_client
             mcp_client = await get_opendart_mcp_client()
+            
+            # #region agent log
+            _debug_log("dart.py:243", "MCP client obtained", {
+                "client_type": type(mcp_client).__name__,
+                "is_connected": mcp_client.is_connected if hasattr(mcp_client, 'is_connected') else None
+            }, "B")
+            # #endregion
             
             yield _format_sse({
                 "event": "analyzing",
                 "message": "MCP 서버 연결 확인 중..."
             })
             
+            # #region agent log
+            _debug_log("dart.py:250", "Attempting MCP connect", {}, "B")
+            # #endregion
+            
             mcp_connected = await mcp_client.connect()
+            
+            # #region agent log
+            _debug_log("dart.py:252", "MCP connect result", {
+                "connected": mcp_connected
+            }, "B")
+            # #endregion
+            
             if not mcp_connected:
                 yield _format_sse({
                     "event": "error",
@@ -259,15 +316,47 @@ async def chat_stream(request_data: DartChatRequest):
                 "message": "MCP 연결 성공, 분석 시작..."
             })
             
+            # #region agent log
+            _debug_log("dart.py:262", "Getting DART agent", {
+                "model": request_data.model or "qwen-235b"
+            }, "C")
+            # #endregion
+            
             agent = get_dart_agent(model=request_data.model or "qwen-235b")
+            
+            # #region agent log
+            _debug_log("dart.py:265", "Starting analyze_stream", {
+                "question_length": len(request_data.question),
+                "session_id": session_id
+            }, "C")
+            # #endregion
+            
             final_answer = ""
+            event_count = 0
             
             async for event in agent.analyze_stream(
                 question=request_data.question,
                 session_id=session_id
             ):
+                event_count += 1
+                # #region agent log
+                _debug_log("dart.py:275", "Event received from agent", {
+                    "event_type": event.get('event'),
+                    "event_count": event_count
+                }, "D")
+                # #endregion
+                
                 # 이벤트 전달
-                yield _format_sse(event)
+                sse_formatted = _format_sse(event)
+                
+                # #region agent log
+                _debug_log("dart.py:280", "Yielding SSE event", {
+                    "sse_length": len(sse_formatted),
+                    "event_type": event.get('event')
+                }, "D")
+                # #endregion
+                
+                yield sse_formatted
                 
                 # 최종 답변 저장
                 if event.get("event") == "answer":
@@ -290,6 +379,14 @@ async def chat_stream(request_data: DartChatRequest):
                     
         except Exception as e:
             logger.error(f"DART stream error: {e}")
+            
+            # #region agent log
+            _debug_log("dart.py:292", "Exception caught in event_generator", {
+                "error_type": type(e).__name__,
+                "error_message": str(e)[:200]
+            }, "E")
+            # #endregion
+            
             yield _format_sse({
                 "event": "error",
                 "error": str(e)
@@ -320,6 +417,7 @@ async def chat_stream(request_data: DartChatRequest):
 # =============================================================================
 
 @router.get("/tools", summary="List Available MCP Tools")
+@api_router.get("/tools", summary="List Available MCP Tools")
 async def list_tools():
     """
     사용 가능한 MCP 도구 목록 조회.

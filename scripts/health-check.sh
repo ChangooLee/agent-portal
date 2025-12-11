@@ -74,13 +74,14 @@ printf "%-20s %-10s %-10s %-10s\n" "SERVICE" "PORT" "STATUS" "HEALTH"
 printf "%-20s %-10s %-10s %-10s\n" "-------" "----" "------" "------"
 
 # Service list (service:port:health_url)
+# Single Port Architecture: BFF is main entry point at port 3009
 SERVICES="
-backend:8000:http://localhost:8000/docs
+backend:3009:http://localhost:3009/health
 webui:3001:http://localhost:3001
 litellm:4000:http://localhost:4000/health
 clickhouse:8124:http://localhost:8124/ping
 mariadb:3306:
-kong:8002:http://localhost:8002/status
+kong:8004:http://localhost:8004/status
 redis:6379:
 prometheus:9090:http://localhost:9090/-/healthy
 otel-collector:4317:

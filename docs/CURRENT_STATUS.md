@@ -30,7 +30,7 @@
 - ✅ 트레이스 필터링 기능 강화
 - ✅ AgentOps 참조 제거 및 이름 통일 (`monitoring`)
 
-**접속 경로**: http://localhost:3009/admin/monitoring
+**접속 경로**: http://localhost:3009/operate/monitoring
 
 ### 2. Text-to-SQL Agent (LangGraph) ✨
 
@@ -42,7 +42,7 @@
 - ✅ 에러 자동 복구 (최대 3회 재시도)
 - ✅ 복잡 쿼리 테스트 완료
 
-**접속 경로**: http://localhost:3009/admin/datacloud → SQL 채팅 기능
+**접속 경로**: http://localhost:3009/build/datacloud → SQL 채팅 기능
 
 ### 3. 코드베이스 정리 ✨
 

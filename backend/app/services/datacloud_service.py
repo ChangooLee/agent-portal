@@ -134,11 +134,10 @@ class DataCloudService:
         
         if register_kong:
             try:
-                kong_result = await kong_service.setup_mcp_server(
-                    name=f"datacloud-{name}",
-                    upstream_url=f"http://{host}:{port}",
-                    enable_key_auth=True,
-                    enable_rate_limiting=True,
+                kong_result = await kong_service.setup_datacloud_connection(
+                    connection_id=connection_id,
+                    connection_name=name,
+                    bff_base_url="http://backend:3009",
                     rate_limit_minute=100
                 )
                 kong_service_id = kong_result.get('service_id')
@@ -222,7 +221,8 @@ class DataCloudService:
                 await cur.execute("""
                     SELECT id, name, description, db_type, host, port, database_name,
                            username, password_encrypted, extra_config, enabled, 
-                           health_status, last_health_check, created_at, updated_at
+                           health_status, last_health_check, created_at, updated_at,
+                           kong_service_id, kong_route_id, kong_consumer_id, kong_api_key
                     FROM db_connections WHERE id = %s
                 """, (connection_id,))
                 row = await cur.fetchone()
@@ -308,17 +308,11 @@ class DataCloudService:
         if not row:
             return False
         
-        if row.get('kong_service_id'):
-            try:
-                await kong_service.delete_service(row['kong_service_id'])
-            except Exception as e:
-                logger.warning(f"Failed to delete Kong service: {e}")
-        
-        if row.get('kong_consumer_id'):
-            try:
-                await kong_service.delete_consumer(row['kong_consumer_id'])
-            except Exception as e:
-                logger.warning(f"Failed to delete Kong consumer: {e}")
+        # Kong Gateway 리소스 정리
+        try:
+            await kong_service.cleanup_datacloud_connection(connection_id)
+        except Exception as e:
+            logger.warning(f"Failed to cleanup Kong resources: {e}")
         
         async with self.get_connection() as conn:
             async with conn.cursor() as cur:
@@ -596,7 +590,7 @@ class DataCloudService:
         user_id: str,
         max_rows: int = 1000
     ) -> Dict[str, Any]:
-        """SQL 쿼리 실행"""
+        """SQL 쿼리 실행 (Kong Gateway를 통해 또는 직접 연결)"""
         conn_info = await self.get_connection_by_id(connection_id)
         if not conn_info:
             return {'success': False, 'error': 'Connection not found'}
@@ -613,6 +607,22 @@ class DataCloudService:
         else:
             query_type = 'other'
         
+        # Kong Gateway를 통해 실행할지 결정
+        kong_service_id = conn_info.get('kong_service_id')
+        kong_api_key = conn_info.get('kong_api_key')
+        
+        if kong_service_id and kong_api_key:
+            # Kong Gateway를 통해 쿼리 실행
+            return await self._execute_query_via_kong(
+                connection_id=connection_id,
+                query=query,
+                query_type=query_type,
+                user_id=user_id,
+                max_rows=max_rows,
+                kong_api_key=kong_api_key
+            )
+        
+        # Kong에 등록되지 않은 경우 직접 연결 (fallback)
         db_type = conn_info['db_type']
         host = conn_info['host']
         port = conn_info['port']
@@ -823,6 +833,134 @@ class DataCloudService:
             'execution_time_ms': execution_time_ms,
             'error': error_msg
         }
+    
+    async def _execute_query_via_kong(
+        self,
+        connection_id: str,
+        query: str,
+        query_type: str,
+        user_id: str,
+        max_rows: int,
+        kong_api_key: str
+    ) -> Dict[str, Any]:
+        """Kong Gateway를 통해 쿼리 실행"""
+        from app.config import get_settings
+        import httpx
+        
+        settings = get_settings()
+        kong_proxy_url = settings.KONG_PROXY_URL
+        
+        # Kong Gateway를 통해 BFF의 쿼리 실행 엔드포인트 호출
+        # Kong Route: /datacloud/{connection_id} → BFF: /datacloud/connections/{connection_id}/query
+        kong_url = f"{kong_proxy_url}/datacloud/{connection_id}/query"
+        
+        start_time = datetime.now()
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    kong_url,
+                    json={
+                        "query": query,
+                        "max_rows": max_rows
+                    },
+                    headers={
+                        "X-API-Key": kong_api_key,
+                        "Content-Type": "application/json"
+                    },
+                    params={"user_id": user_id}
+                )
+                
+                execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    # 쿼리 로그 기록
+                    log_id = str(uuid.uuid4())
+                    async with self.get_connection() as conn:
+                        async with conn.cursor() as cur:
+                            await cur.execute("""
+                                INSERT INTO db_query_logs 
+                                (id, connection_id, user_id, query_text, query_type, 
+                                 execution_time_ms, rows_affected, status, error_message)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """, (log_id, connection_id, user_id, query[:5000], query_type, 
+                                  execution_time_ms, result.get('rows_affected', 0), 
+                                  'success', None))
+                    
+                    return result
+                else:
+                    error_msg = response.text
+                    execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+                    
+                    # 에러 로그 기록
+                    log_id = str(uuid.uuid4())
+                    async with self.get_connection() as conn:
+                        async with conn.cursor() as cur:
+                            await cur.execute("""
+                                INSERT INTO db_query_logs 
+                                (id, connection_id, user_id, query_text, query_type, 
+                                 execution_time_ms, rows_affected, status, error_message)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """, (log_id, connection_id, user_id, query[:5000], query_type, 
+                                  execution_time_ms, 0, 'error', error_msg))
+                    
+                    return {
+                        'success': False,
+                        'columns': [],
+                        'rows': [],
+                        'rows_affected': 0,
+                        'execution_time_ms': execution_time_ms,
+                        'error': error_msg
+                    }
+                    
+        except httpx.TimeoutException:
+            execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+            error_msg = "Kong Gateway timeout"
+            
+            log_id = str(uuid.uuid4())
+            async with self.get_connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute("""
+                        INSERT INTO db_query_logs 
+                        (id, connection_id, user_id, query_text, query_type, 
+                         execution_time_ms, rows_affected, status, error_message)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (log_id, connection_id, user_id, query[:5000], query_type, 
+                          execution_time_ms, 0, 'timeout', error_msg))
+            
+            return {
+                'success': False,
+                'columns': [],
+                'rows': [],
+                'rows_affected': 0,
+                'execution_time_ms': execution_time_ms,
+                'error': error_msg
+            }
+        except Exception as e:
+            execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+            error_msg = str(e)
+            logger.error(f"Kong Gateway query execution failed: {e}")
+            
+            log_id = str(uuid.uuid4())
+            async with self.get_connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute("""
+                        INSERT INTO db_query_logs 
+                        (id, connection_id, user_id, query_text, query_type, 
+                         execution_time_ms, rows_affected, status, error_message)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (log_id, connection_id, user_id, query[:5000], query_type, 
+                          execution_time_ms, 0, 'error', error_msg))
+            
+            return {
+                'success': False,
+                'columns': [],
+                'rows': [],
+                'rows_affected': 0,
+                'execution_time_ms': execution_time_ms,
+                'error': error_msg
+            }
     
     async def add_business_term(
         self,

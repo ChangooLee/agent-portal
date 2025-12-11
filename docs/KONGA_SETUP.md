@@ -9,7 +9,7 @@
 
 Konga는 Kong Gateway의 OSS Admin UI입니다. Agent Portal에서 다음 두 가지 방법으로 접근할 수 있습니다:
 
-1. **Agent Portal 임베딩**: `http://localhost:3009/admin/gateway` - "Kong Admin" 탭
+1. **Agent Portal 임베딩**: `http://localhost:3009/operate/gateway` - "Kong Admin" 탭
 2. **직접 접근**: `http://localhost:1337`
 
 ---
@@ -45,7 +45,7 @@ Konga를 처음 시작하면 관리자 계정 생성 화면이 표시됩니다.
 
 ## Agent Portal 임베딩 화면에서 연결 활성화
 
-Agent Portal의 Gateway 페이지(`/admin/gateway`)에서 Konga를 사용할 때:
+Agent Portal의 Gateway 페이지(`/operate/gateway`)에서 Konga를 사용할 때:
 
 1. "Kong Admin" 탭 클릭
 2. iframe 내에서 **CONNECTIONS** 메뉴 클릭
@@ -84,7 +84,7 @@ Agent Portal의 Gateway 페이지(`/admin/gateway`)에서 Konga를 사용할 때
 
 ### 1. 새 MCP 서버 등록 시 Kong 리소스 확인
 
-MCP 서버를 Admin UI(`/admin/mcp`)에서 등록하면 자동으로 Kong 리소스가 생성됩니다:
+MCP 서버를 Build UI(`/build/mcp`)에서 등록하면 자동으로 Kong 리소스가 생성됩니다:
 
 1. **SERVICES** 메뉴에서 새 서비스 확인
 2. **ROUTES** 메뉴에서 라우트 확인
@@ -173,7 +173,7 @@ docker-compose restart kong
 ## 아키텍처
 
 ```
-Agent Portal (/admin/gateway)
+Agent Portal (/operate/gateway)
     |
     +-- 개요 탭 (Services, MCP, API Keys)
     |

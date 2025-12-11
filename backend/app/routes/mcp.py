@@ -14,7 +14,11 @@ from app.services.mcp_service import mcp_service
 from app.services.kong_service import kong_service
 
 
+# MCP 라우터: /mcp/*와 /api/mcp/* 모두 처리
+# Single Port Architecture에서 Vite 프록시가 /api/mcp/*를 /mcp/*로 리라이트하지만,
+# 직접 /api/mcp/*로 접근하는 경우도 처리하기 위해 두 개의 라우터를 생성
 router = APIRouter(prefix="/mcp", tags=["mcp"])
+api_router = APIRouter(prefix="/api/mcp", tags=["mcp"])
 
 
 # ==================== Request/Response 모델 ====================
@@ -120,6 +124,7 @@ class MCPPermissionResponse(BaseModel):
 # ==================== API 엔드포인트 ====================
 
 @router.get("/servers", response_model=MCPServerListResponse)
+@api_router.get("/servers", response_model=MCPServerListResponse)
 async def list_mcp_servers(
     enabled_only: bool = Query(False, description="활성화된 서버만 조회"),
     page: int = Query(1, ge=1, description="페이지 번호"),
@@ -144,6 +149,7 @@ async def list_mcp_servers(
 
 
 @router.post("/servers", response_model=MCPServerResponse)
+@api_router.post("/servers", response_model=MCPServerResponse)
 async def create_mcp_server(request: MCPServerCreate):
     """MCP 서버 등록.
     
@@ -168,6 +174,7 @@ async def create_mcp_server(request: MCPServerCreate):
 
 
 @router.get("/servers/{server_id}", response_model=MCPServerResponse)
+@api_router.get("/servers/{server_id}", response_model=MCPServerResponse)
 async def get_mcp_server(server_id: str):
     """MCP 서버 상세 조회.
     
@@ -184,6 +191,7 @@ async def get_mcp_server(server_id: str):
 
 
 @router.put("/servers/{server_id}", response_model=MCPServerResponse)
+@api_router.put("/servers/{server_id}", response_model=MCPServerResponse)
 async def update_mcp_server(server_id: str, request: MCPServerUpdate):
     """MCP 서버 수정.
     
@@ -210,6 +218,7 @@ async def update_mcp_server(server_id: str, request: MCPServerUpdate):
 
 
 @router.delete("/servers/{server_id}")
+@api_router.delete("/servers/{server_id}")
 async def delete_mcp_server(server_id: str):
     """MCP 서버 삭제.
     
@@ -226,6 +235,7 @@ async def delete_mcp_server(server_id: str):
 
 
 @router.post("/servers/{server_id}/test", response_model=MCPTestResult)
+@api_router.post("/servers/{server_id}/test", response_model=MCPTestResult)
 async def test_mcp_server(server_id: str):
     """MCP 서버 연결 테스트.
     
@@ -572,6 +582,7 @@ def _parse_sse_response(response_text: str) -> Optional[Dict[str, Any]]:
 
 
 @router.get("/servers/{server_id}/tools", response_model=List[MCPToolResponse])
+@api_router.get("/servers/{server_id}/tools", response_model=List[MCPToolResponse])
 async def get_mcp_server_tools(server_id: str):
     """MCP 서버의 도구 목록 조회.
     
@@ -592,6 +603,7 @@ async def get_mcp_server_tools(server_id: str):
 # ==================== 권한 관리 API ====================
 
 @router.get("/servers/{server_id}/permissions", response_model=List[MCPPermissionResponse])
+@api_router.get("/servers/{server_id}/permissions", response_model=List[MCPPermissionResponse])
 async def get_mcp_server_permissions(server_id: str):
     """MCP 서버의 권한 목록 조회.
     
@@ -610,6 +622,7 @@ async def get_mcp_server_permissions(server_id: str):
 
 
 @router.post("/servers/{server_id}/permissions", response_model=MCPPermissionResponse)
+@api_router.post("/servers/{server_id}/permissions", response_model=MCPPermissionResponse)
 async def grant_mcp_permission(server_id: str, request: MCPPermissionCreate):
     """MCP 서버 접근 권한 부여.
     
@@ -630,6 +643,7 @@ async def grant_mcp_permission(server_id: str, request: MCPPermissionCreate):
 
 
 @router.delete("/servers/{server_id}/permissions/{permission_id}")
+@api_router.delete("/servers/{server_id}/permissions/{permission_id}")
 async def revoke_mcp_permission(server_id: str, permission_id: str):
     """MCP 서버 접근 권한 회수.
     

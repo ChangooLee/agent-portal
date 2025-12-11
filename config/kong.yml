@@ -1,12 +1,17 @@
 _format_version: "3.0"
 
+# Kong Gateway Configuration for Single Port Architecture
+# All services are accessed via BFF (port 3009) internally
+
 services:
+  # BFF Service (internal only - accessed via BFF at port 3009)
   - name: backend-proxy
-    url: http://backend:8000
+    url: http://backend:3009
     plugins:
       - name: prometheus
 
 routes:
+  # BFF Route (internal only)
   - name: backend-route
     service: backend-proxy
     paths:

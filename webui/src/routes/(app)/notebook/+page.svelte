@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, getContext } from 'svelte';
-	import { WEBUI_NAME, showSidebar } from '$lib/stores';
+	import { WEBUI_NAME } from '$lib/stores';
 	import BookOpen from '$lib/components/icons/BookOpen.svelte';
 
 	const i18n = getContext('i18n');
@@ -23,53 +23,50 @@
 </svelte:head>
 
 {#if loaded}
-	<div class="flex w-full flex-col min-h-full px-3 py-4 @md:px-6 @md:py-6">
-		<div class="flex w-full flex-col gap-6">
-			<!-- Hero Section -->
-			<section class="relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl dark:border-gray-700/30 dark:bg-gray-900/60">
-				<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20 opacity-60" />
-				<div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-primary/40 to-secondary/30 blur-3xl" />
-				<div class="relative flex flex-col gap-5">
-					<div class="flex flex-wrap items-center gap-3">
-						<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200">
-							<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-accent" />
-							SFN AI Notebook
-						</span>
-						<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-							AI 노트북으로 지식을 체계화하세요
-						</h1>
-					</div>
-
-					<p class="max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+	<div class="min-h-full bg-gray-950 text-slate-50">
+		<!-- Hero Section -->
+		<div class="relative overflow-hidden border-b border-slate-800/50">
+			<div class="absolute inset-0 bg-gradient-to-br from-amber-600/5 via-transparent to-orange-600/5"></div>
+			<div class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+			
+			<div class="relative px-6 py-8">
+				<div class="text-center mb-6">
+					<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+						📓 Notebook
+					</h1>
+					<p class="text-base text-amber-200/80 mb-6">
 						노트 중심 인터페이스와 광범위한 모델 프로바이더 지원으로 연구 워크플로를 최적화합니다.
 					</p>
-
-					<div class="grid grid-cols-3 gap-3 @md:grid-cols-4 @lg:grid-cols-6">
+					
+					<!-- Stats Grid -->
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto mt-8">
 						{#each heroStats as stat}
-							<div class="rounded-2xl border border-white/30 bg-white/70 px-4 py-3 text-left shadow-md shadow-primary/10 transition dark:border-gray-700/30 dark:bg-gray-900/50">
-								<div class="text-[11px] font-medium uppercase tracking-wide text-primary dark:text-primary-light">
+							<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-4 text-center">
+								<div class="text-xs font-medium uppercase tracking-wide text-amber-400/80 mb-1">
 									{stat.label}
 								</div>
-								<div class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+								<div class="text-2xl font-bold text-white mb-1">
 									{stat.value}
 								</div>
-								<div class="pt-1 text-xs text-gray-500 dark:text-gray-400">{stat.hint}</div>
+								<div class="text-xs text-slate-400">{stat.hint}</div>
 							</div>
 						{/each}
 					</div>
 				</div>
-			</section>
+			</div>
+		</div>
 
-			<!-- Coming Soon Card -->
-			<div class="bg-white/60 dark:bg-gray-900/50 backdrop-blur-xl rounded-xl border border-white/20 dark:border-gray-700/20 shadow-xl p-8 text-center">
-				<div class="mb-4 inline-flex p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+		<!-- Content Section -->
+		<div class="px-6 py-8">
+			<div class="bg-slate-900/80 border border-slate-800/50 rounded-2xl shadow-xl shadow-black/20 p-8 text-center">
+				<div class="mb-6 inline-flex p-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
 					<BookOpen className="size-16 text-white" />
 				</div>
-				<h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">준비 중입니다</h2>
-				<p class="text-gray-600 dark:text-gray-300 mb-4">
+				<h2 class="text-2xl font-semibold mb-3 text-white">준비 중입니다</h2>
+				<p class="text-slate-300 mb-4 max-w-2xl mx-auto">
 					Open-Notebook 기능은 Stage 8에서 구현될 예정입니다.
 				</p>
-				<p class="text-sm text-gray-500 dark:text-gray-400">
+				<p class="text-sm text-slate-400 max-w-2xl mx-auto">
 					향후 iframe으로 임베드되어 포털 Apps 탭에서 사용할 수 있습니다.
 				</p>
 			</div>

@@ -1044,8 +1044,49 @@ class MonitoringAdapter:
         
         query = f"""
         SELECT 
-            SpanAttributes['agent.id'] as agent_id,
-            any(SpanAttributes['agent.name']) as agent_name,
+            -- Use agent.id if available, otherwise use SpanName or ServiceName as identifier
+            if(
+                SpanAttributes['agent.id'] != '',
+                SpanAttributes['agent.id'],
+                if(
+                    SpanName LIKE '%text2sql%',
+                    'text2sql-agent',
+                    if(
+                        SpanName LIKE '%langflow%',
+                        'langflow-agent',
+                        if(
+                            SpanName LIKE '%flowise%',
+                            'flowise-agent',
+                            if(
+                                SpanName LIKE '%autogen%',
+                                'autogen-agent',
+                                ServiceName
+                            )
+                        )
+                    )
+                )
+            ) as agent_id,
+            any(if(
+                SpanAttributes['agent.name'] != '',
+                SpanAttributes['agent.name'],
+                if(
+                    SpanName LIKE '%text2sql%',
+                    'Text-to-SQL Agent',
+                    if(
+                        SpanName LIKE '%langflow%',
+                        'Langflow Agent',
+                        if(
+                            SpanName LIKE '%flowise%',
+                            'Flowise Agent',
+                            if(
+                                SpanName LIKE '%autogen%',
+                                'AutoGen Agent',
+                                ServiceName
+                            )
+                        )
+                    )
+                )
+            )) as agent_name,
             any(ServiceName) as service_name,
             count(DISTINCT TraceId) as event_count,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens'])) as total_tokens,
@@ -1072,7 +1113,7 @@ class MonitoringAdapter:
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {agent_filter}
         GROUP BY agent_id
-        HAVING agent_id != ''
+        HAVING agent_id != '' AND agent_id IS NOT NULL
         ORDER BY event_count DESC
         """
         results = await self._execute_query(query)

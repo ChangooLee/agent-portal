@@ -24,6 +24,7 @@
 		models
 	} from '$lib/stores';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
+	import { page } from '$app/stores';
 
 	const i18n = getContext('i18n');
 
@@ -70,8 +71,7 @@
 	let selectedChatId = null;
 	let showDropdown = false;
 	let showPinnedChat = true;
-	let showChatsSection = true;
-	let showAgentsSection = true;
+	let showFoldersSection = true;
 
 	let showCreateChannel = false;
 
@@ -82,30 +82,6 @@
 	let folders = {};
 	let newFolderId = null;
 
-	// Agent state
-	interface AgentFlow {
-		id: string;
-		name: string;
-		description?: string;
-		updated_at?: string;
-		href?: string;  // 커스텀 링크 (하드코딩 에이전트용)
-		icon?: string;  // 아이콘 타입
-	}
-	
-	// 하드코딩된 에이전트 (Agent Portal 내장)
-	const builtInAgents: AgentFlow[] = [
-		{
-			id: 'dart-agent',
-			name: '기업공시분석',
-			description: 'DART 전자공시 분석 에이전트',
-			href: '/dart',
-			icon: 'document'
-		}
-	];
-	
-	let agents: AgentFlow[] = [];
-	let agentsLoading = false;
-	let filteredAgents: AgentFlow[] = [];
 
 	const initFolders = async () => {
 		const folderList = await getFolders(localStorage.token).catch((error) => {
@@ -193,27 +169,6 @@
 		await channels.set(await getChannels(localStorage.token));
 	};
 
-	const initAgents = async () => {
-		agentsLoading = true;
-		try {
-			const response = await fetch('/api/agents/flows?offset=0&limit=50');
-			if (response.ok) {
-				const data = await response.json();
-				// 하드코딩된 에이전트 + 동적 에이전트 병합
-				agents = [...builtInAgents, ...(data.flows || [])];
-			} else {
-				// API 실패해도 내장 에이전트는 표시
-				agents = [...builtInAgents];
-			}
-		} catch (error) {
-			console.error('Failed to load agents:', error);
-			// API 실패해도 내장 에이전트는 표시
-			agents = [...builtInAgents];
-		} finally {
-			agentsLoading = false;
-		}
-	};
-
 	const initChatList = async () => {
 		// Reset pagination variables
 		tags.set(await getAllTags(localStorage.token));
@@ -265,7 +220,6 @@
 
 		if (search === '') {
 			await initChatList();
-			filteredAgents = [];
 			return;
 		} else {
 			searchDebounceTimeout = setTimeout(async () => {
@@ -273,13 +227,6 @@
 				currentChatPage.set(1);
 				await chats.set(await getChatListBySearchText(localStorage.token, search));
 
-				// 에이전트도 필터링
-				const searchLower = search.toLowerCase();
-				filteredAgents = agents.filter(
-					(agent) =>
-						agent.name.toLowerCase().includes(searchLower) ||
-						(agent.description && agent.description.toLowerCase().includes(searchLower))
-				);
 
 				if ($chats.length === 0) {
 					tags.set(await getAllTags(localStorage.token));
@@ -408,29 +355,44 @@
 		selectedChatId = null;
 	};
 
+	// 채팅 화면에서는 항상 사이드바 열기
+	$: if ($page.url.pathname.startsWith('/c')) {
+		showSidebar.set(true);
+	}
+
 	onMount(async () => {
 		showPinnedChat = localStorage?.showPinnedChat ? localStorage.showPinnedChat === 'true' : true;
 
-		mobile.subscribe((value) => {
-			if ($showSidebar && value) {
-				showSidebar.set(false);
-			}
-
-			if ($showSidebar && !value) {
-				const navElement = document.getElementsByTagName('nav')[0];
-				if (navElement) {
-					navElement.style['-webkit-app-region'] = 'drag';
+		// 채팅 화면에서는 항상 사이드바 열기
+		if ($page.url.pathname.startsWith('/c')) {
+			showSidebar.set(true);
+		} else {
+			// 채팅 화면이 아닐 때만 기본 사이드바 동작
+			mobile.subscribe((value) => {
+				if ($showSidebar && value) {
+					showSidebar.set(false);
 				}
-			}
 
-			if (!$showSidebar && !value) {
-				showSidebar.set(true);
-			}
-		});
+				if ($showSidebar && !value) {
+					const navElement = document.getElementsByTagName('nav')[0];
+					if (navElement) {
+						navElement.style['-webkit-app-region'] = 'drag';
+					}
+				}
 
-		showSidebar.set(!$mobile ? localStorage.sidebar === 'true' : false);
+				if (!$showSidebar && !value) {
+					showSidebar.set(true);
+				}
+			});
+
+			showSidebar.set(!$mobile ? localStorage.sidebar === 'true' : false);
+		}
+		
 		showSidebar.subscribe((value) => {
-			localStorage.sidebar = value;
+			// 채팅 화면에서는 사이드바 상태를 localStorage에 저장하지 않음
+			if (!$page.url.pathname.startsWith('/c')) {
+				localStorage.sidebar = value;
+			}
 
 			// nav element is not available on the first render
 			const navElement = document.getElementsByTagName('nav')[0];
@@ -450,11 +412,9 @@
 
 		await initChannels();
 		await initChatList();
-		await initAgents();
 
-		// 섹션 열림/닫힘 상태 복원
-		showChatsSection = localStorage.getItem('showChatsSection') !== 'false';
-		showAgentsSection = localStorage.getItem('showAgentsSection') !== 'false';
+		// 폴더 섹션 열림/닫힘 상태 복원
+		showFoldersSection = localStorage.getItem('showFoldersSection') !== 'false';
 
 		window.addEventListener('keydown', onKeyDown);
 		window.addEventListener('keyup', onKeyUp);
@@ -536,7 +496,7 @@
 		? 'md:relative w-[260px] max-w-[260px]'
 		: '-translate-x-[260px] w-[0px]'} {$isApp
 		? `ml-[4.5rem] md:ml-0 `
-		: 'transition-width duration-200 ease-in-out'}  shrink-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-gray-800 dark:text-gray-100 text-sm fixed z-50 top-0 left-0 overflow-x-hidden border-r border-white/20 dark:border-gray-700/20 shadow-xl
+		: 'transition-width duration-200 ease-in-out'}  shrink-0 bg-gray-950 text-gray-100 text-sm fixed z-50 top-0 left-0 overflow-x-hidden border-r border-gray-800/50 shadow-xl
         "
 	data-state={$showSidebar}
 >
@@ -545,55 +505,6 @@
 			? ''
 			: 'invisible'}"
 	>
-		<div class="px-1.5 flex items-center space-x-1 text-gray-600">
-			<button
-				class=" cursor-pointer p-[7px] flex rounded-xl bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 backdrop-blur-md border border-gray-200/30 dark:border-gray-700/30 shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 ease-out"
-				on:click={() => {
-					showSidebar.set(!$showSidebar);
-				}}
-			>
-				<div class=" m-auto self-center">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="2"
-						stroke="currentColor"
-						class="size-5"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-						/>
-					</svg>
-				</div>
-			</button>
-
-		<!-- 상단 로고/타이틀 영역 -->
-		<div class="flex items-center gap-2 flex-1 py-2">
-			<img
-				crossorigin="anonymous"
-				src="{WEBUI_BASE_URL}/static/favicon.png"
-				class="size-6 rounded-full flex-shrink-0"
-				alt="logo"
-			/>
-			<a
-				href="/"
-				class="text-base text-gray-800 dark:text-gray-100 font-primary hover:text-gray-900 dark:hover:text-gray-50 transition-colors cursor-pointer"
-				style="font-weight: 700; font-family: 'Samsung Gothic', sans-serif;"
-				on:click={() => {
-					selectedChatId = null;
-					chatId.set('');
-					if ($mobile) {
-						showSidebar.set(false);
-					}
-				}}
-			>
-				SFN AI Portal
-			</a>
-		</div>
-		</div>
 
 		<div class="relative {$temporaryChatEnabled ? 'opacity-20' : ''}">
 			{#if $temporaryChatEnabled}
@@ -603,15 +514,15 @@
 			<SearchInput
 				bind:value={search}
 				on:input={searchDebounceHandler}
-				placeholder="채팅, 에이전트 검색..."
+				placeholder="채팅 검색..."
 				showClearButton={true}
 			/>
 		</div>
 
 		<!-- 새 채팅 버튼 (검색바 아래) -->
-		<div class="px-1.5 flex justify-center text-gray-800 mt-2">
+		<div class="px-1.5 flex justify-center mt-2">
 			<button
-				class="grow flex items-center justify-center gap-2 rounded-xl px-2 py-[7px] bg-white/40 dark:bg-gray-800/40 hover:bg-white/60 dark:hover:bg-gray-800/60 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md transition-all duration-300 ease-out"
+				class="grow flex items-center justify-center gap-2 rounded-xl px-2 py-[7px] bg-gray-800/50 hover:bg-gray-800/70 backdrop-blur-sm border border-gray-700/50 hover:shadow-md transition-all duration-300 ease-out text-gray-200 hover:text-white"
 				on:click={async () => {
 					selectedChatId = null;
 					
@@ -659,336 +570,249 @@
 				? 'opacity-20'
 				: ''}"
 		>
-			<!-- 에이전트 섹션 (상단 고정) -->
+			{#if $temporaryChatEnabled}
+				<div class="absolute z-40 w-full h-full flex justify-center"></div>
+			{/if}
+
+			<!-- 프로젝트 섹션 (폴더만 collapsible) -->
+			<div class="px-2 mt-2">
 				<Folder
 					collapsible={true}
-				className="px-2 mt-2"
-				name="에이전트"
-				bind:open={showAgentsSection}
-				on:change={(e) => {
-					localStorage.setItem('showAgentsSection', e.detail.toString());
-				}}
-					dragAndDrop={false}
-				onAdd={() => {
-					goto('/agent');
-					if ($mobile) {
-						showSidebar.set(false);
-					}
-				}}
-				onAddLabel="새 에이전트"
-			>
-				{#if agentsLoading}
-					<div class="w-full flex justify-center py-2 text-xs animate-pulse items-center gap-2">
-						<Spinner className="size-4" />
-						<div>Loading...</div>
-					</div>
-				{:else if search ? filteredAgents.length === 0 : agents.length === 0}
-					<div class="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-						<p class="mb-2">등록된 에이전트가 없습니다</p>
-						<a
-							href="/agent"
-							class="text-[#0072CE] hover:underline text-xs"
-							on:click={() => {
-								if ($mobile) {
-									showSidebar.set(false);
+					className=""
+					name="프로젝트"
+					bind:open={showFoldersSection}
+					on:change={(e) => {
+						localStorage.setItem('showFoldersSection', e.detail.toString());
+					}}
+					onAdd={() => {
+						createFolder();
+					}}
+					onAddLabel={$i18n.t('New Folder')}
+					on:import={(e) => {
+						importChatHandler(e.detail);
+					}}
+					on:drop={async (e) => {
+						const { type, id, item } = e.detail;
+
+						if (type === 'chat') {
+							let chat = await getChatById(localStorage.token, id).catch((error) => {
+								return null;
+							});
+							if (!chat && item) {
+								chat = await importChat(localStorage.token, item.chat, item?.meta ?? {});
+							}
+
+							if (chat) {
+								console.log(chat);
+								if (chat.folder_id) {
+									const res = await updateChatFolderIdById(localStorage.token, chat.id, null).catch(
+										(error) => {
+											toast.error(`${error}`);
+											return null;
+										}
+									);
 								}
+
+								if (chat.pinned) {
+									const res = await toggleChatPinnedStatusById(localStorage.token, chat.id);
+								}
+
+								initChatList();
+							}
+						} else if (type === 'folder') {
+							if (folders[id].parent_id === null) {
+								return;
+							}
+
+							const res = await updateFolderParentIdById(localStorage.token, id, null).catch(
+								(error) => {
+									toast.error(`${error}`);
+									return null;
+								}
+							);
+
+							if (res) {
+								await initFolders();
+							}
+						}
+					}}
+				>
+					<!-- Pinned 채팅 -->
+					{#if !search && $pinnedChats.length > 0}
+						<div class="flex flex-col space-y-1 rounded-xl mb-2">
+							<Folder
+								className=""
+								bind:open={showPinnedChat}
+								on:change={(e) => {
+									localStorage.setItem('showPinnedChat', e.detail);
+									console.log(e.detail);
+								}}
+								on:import={(e) => {
+									importChatHandler(e.detail, true);
+								}}
+								on:drop={async (e) => {
+									const { type, id, item } = e.detail;
+
+									if (type === 'chat') {
+										let chat = await getChatById(localStorage.token, id).catch((error) => {
+											return null;
+										});
+										if (!chat && item) {
+											chat = await importChat(localStorage.token, item.chat, item?.meta ?? {});
+										}
+
+										if (chat) {
+											console.log(chat);
+											if (chat.folder_id) {
+												const res = await updateChatFolderIdById(
+													localStorage.token,
+													chat.id,
+													null
+												).catch((error) => {
+													toast.error(`${error}`);
+													return null;
+												});
+											}
+
+											if (!chat.pinned) {
+												const res = await toggleChatPinnedStatusById(localStorage.token, chat.id);
+											}
+
+											initChatList();
+										}
+									}
+								}}
+								name={$i18n.t('Pinned')}
+							>
+								<div
+									class="ml-3 pl-1 mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-s border-gray-700/50"
+								>
+									{#each $pinnedChats as chat, idx}
+										<ChatItem
+											className=""
+											id={chat.id}
+											title={chat.title}
+											{shiftKey}
+											selected={selectedChatId === chat.id}
+											on:select={() => {
+												selectedChatId = chat.id;
+											}}
+											on:unselect={() => {
+												selectedChatId = null;
+											}}
+											on:change={async () => {
+												initChatList();
+											}}
+											on:tag={(e) => {
+												const { type, name } = e.detail;
+												tagEventHandler(type, name, chat.id);
+											}}
+										/>
+									{/each}
+								</div>
+							</Folder>
+						</div>
+					{/if}
+
+					<!-- 폴더들 (collapsible) -->
+					{#if !search && folders}
+						<Folders
+							{folders}
+							on:import={(e) => {
+								const { folderId, items } = e.detail;
+								importChatHandler(items, false, folderId);
 							}}
-						>
-							에이전트 빌더에서 만들기 →
-						</a>
-					</div>
-				{:else}
-					<div class="flex flex-col">
-						{#each (search ? filteredAgents : agents) as agent (agent.id)}
-							<a
-								href={agent.href || '/agent'}
-								class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
-								on:click={() => {
-									if ($mobile) {
-										showSidebar.set(false);
+							on:update={async (e) => {
+								initChatList();
+							}}
+							on:change={async () => {
+								initChatList();
+							}}
+						/>
+					{/if}
+				</Folder>
+			</div>
+
+			<!-- 채팅 목록 (항상 표시, 프로젝트 섹션 밖) -->
+			<div class="px-2 flex-1 flex flex-col overflow-y-auto scrollbar-hidden">
+				<div class="pt-1.5">
+					{#if $chats}
+						{#each $chats as chat, idx}
+							{#if idx === 0 || (idx > 0 && chat.time_range !== $chats[idx - 1].time_range)}
+								<div
+									class="w-full pl-2.5 text-xs text-gray-400 font-medium {idx ===
+									0
+										? ''
+										: 'pt-5'} pb-1.5"
+								>
+									{$i18n.t(chat.time_range)}
+									<!-- localisation keys for time_range to be recognized from the i18next parser (so they don't get automatically removed):
+						{$i18n.t('Today')}
+						{$i18n.t('Yesterday')}
+						{$i18n.t('Previous 7 days')}
+						{$i18n.t('Previous 30 days')}
+						{$i18n.t('January')}
+						{$i18n.t('February')}
+						{$i18n.t('March')}
+						{$i18n.t('April')}
+						{$i18n.t('May')}
+						{$i18n.t('June')}
+						{$i18n.t('July')}
+						{$i18n.t('August')}
+						{$i18n.t('September')}
+						{$i18n.t('October')}
+						{$i18n.t('November')}
+						{$i18n.t('December')}
+						-->
+								</div>
+							{/if}
+
+							<ChatItem
+								className=""
+								id={chat.id}
+								title={chat.title}
+								{shiftKey}
+								selected={selectedChatId === chat.id}
+								on:select={() => {
+									selectedChatId = chat.id;
+								}}
+								on:unselect={() => {
+									selectedChatId = null;
+								}}
+								on:change={async () => {
+									initChatList();
+								}}
+								on:tag={(e) => {
+									const { type, name } = e.detail;
+									tagEventHandler(type, name, chat.id);
+								}}
+							/>
+						{/each}
+
+						{#if $scrollPaginationEnabled && !allChatsLoaded}
+							<Loader
+								on:visible={(e) => {
+									if (!chatListLoading) {
+										loadMoreChats();
 									}
 								}}
 							>
-								<div class="flex-shrink-0 w-6 h-6 rounded-lg {agent.icon === 'document' ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20' : 'bg-gradient-to-br from-blue-500/20 to-purple-500/20'} flex items-center justify-center">
-									{#if agent.icon === 'document'}
-										<!-- 문서 아이콘 (DART) -->
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke-width="1.5"
-											stroke="currentColor"
-											class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-											/>
-										</svg>
-									{:else}
-										<!-- 기본 큐브 아이콘 -->
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke-width="1.5"
-											stroke="currentColor"
-											class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
-											/>
-										</svg>
-									{/if}
-								</div>
-								<span class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">{agent.name}</span>
-							</a>
-						{/each}
-					</div>
-				{/if}
-			</Folder>
-
-			<!-- 채팅 섹션 -->
-			<Folder
-				collapsible={true}
-				className="px-2 mt-2"
-				name={$i18n.t('Chats')}
-				bind:open={showChatsSection}
-				on:change={(e) => {
-					localStorage.setItem('showChatsSection', e.detail.toString());
-				}}
-				onAdd={() => {
-					createFolder();
-				}}
-				onAddLabel={$i18n.t('New Folder')}
-				on:import={(e) => {
-					importChatHandler(e.detail);
-				}}
-				on:drop={async (e) => {
-					const { type, id, item } = e.detail;
-
-					if (type === 'chat') {
-						let chat = await getChatById(localStorage.token, id).catch((error) => {
-							return null;
-						});
-						if (!chat && item) {
-							chat = await importChat(localStorage.token, item.chat, item?.meta ?? {});
-						}
-
-						if (chat) {
-							console.log(chat);
-							if (chat.folder_id) {
-								const res = await updateChatFolderIdById(localStorage.token, chat.id, null).catch(
-									(error) => {
-										toast.error(`${error}`);
-										return null;
-									}
-								);
-							}
-
-							if (chat.pinned) {
-								const res = await toggleChatPinnedStatusById(localStorage.token, chat.id);
-							}
-
-							initChatList();
-						}
-					} else if (type === 'folder') {
-						if (folders[id].parent_id === null) {
-							return;
-						}
-
-						const res = await updateFolderParentIdById(localStorage.token, id, null).catch(
-							(error) => {
-								toast.error(`${error}`);
-								return null;
-							}
-						);
-
-						if (res) {
-							await initFolders();
-						}
-					}
-				}}
-			>
-				{#if $temporaryChatEnabled}
-					<div class="absolute z-40 w-full h-full flex justify-center"></div>
-				{/if}
-
-				{#if !search && $pinnedChats.length > 0}
-					<div class="flex flex-col space-y-1 rounded-xl">
-						<Folder
-							className=""
-							bind:open={showPinnedChat}
-							on:change={(e) => {
-								localStorage.setItem('showPinnedChat', e.detail);
-								console.log(e.detail);
-							}}
-							on:import={(e) => {
-								importChatHandler(e.detail, true);
-							}}
-							on:drop={async (e) => {
-								const { type, id, item } = e.detail;
-
-								if (type === 'chat') {
-									let chat = await getChatById(localStorage.token, id).catch((error) => {
-										return null;
-									});
-									if (!chat && item) {
-										chat = await importChat(localStorage.token, item.chat, item?.meta ?? {});
-									}
-
-									if (chat) {
-										console.log(chat);
-										if (chat.folder_id) {
-											const res = await updateChatFolderIdById(
-												localStorage.token,
-												chat.id,
-												null
-											).catch((error) => {
-												toast.error(`${error}`);
-												return null;
-											});
-										}
-
-										if (!chat.pinned) {
-											const res = await toggleChatPinnedStatusById(localStorage.token, chat.id);
-										}
-
-										initChatList();
-									}
-								}
-							}}
-							name={$i18n.t('Pinned')}
-						>
-							<div
-								class="ml-3 pl-1 mt-[1px] flex flex-col overflow-y-auto scrollbar-hidden border-s border-gray-100 dark:border-gray-900"
-							>
-								{#each $pinnedChats as chat, idx}
-									<ChatItem
-										className=""
-										id={chat.id}
-										title={chat.title}
-										{shiftKey}
-										selected={selectedChatId === chat.id}
-										on:select={() => {
-											selectedChatId = chat.id;
-										}}
-										on:unselect={() => {
-											selectedChatId = null;
-										}}
-										on:change={async () => {
-											initChatList();
-										}}
-										on:tag={(e) => {
-											const { type, name } = e.detail;
-											tagEventHandler(type, name, chat.id);
-										}}
-									/>
-								{/each}
-							</div>
-						</Folder>
-					</div>
-				{/if}
-
-				{#if !search && folders}
-					<Folders
-						{folders}
-						on:import={(e) => {
-							const { folderId, items } = e.detail;
-							importChatHandler(items, false, folderId);
-						}}
-						on:update={async (e) => {
-							initChatList();
-						}}
-						on:change={async () => {
-							initChatList();
-						}}
-					/>
-				{/if}
-
-				<div class=" flex-1 flex flex-col overflow-y-auto scrollbar-hidden">
-					<div class="pt-1.5">
-						{#if $chats}
-							{#each $chats as chat, idx}
-								{#if idx === 0 || (idx > 0 && chat.time_range !== $chats[idx - 1].time_range)}
-									<div
-										class="w-full pl-2.5 text-xs text-gray-500 dark:text-gray-500 font-medium {idx ===
-										0
-											? ''
-											: 'pt-5'} pb-1.5"
-									>
-										{$i18n.t(chat.time_range)}
-										<!-- localisation keys for time_range to be recognized from the i18next parser (so they don't get automatically removed):
-							{$i18n.t('Today')}
-							{$i18n.t('Yesterday')}
-							{$i18n.t('Previous 7 days')}
-							{$i18n.t('Previous 30 days')}
-							{$i18n.t('January')}
-							{$i18n.t('February')}
-							{$i18n.t('March')}
-							{$i18n.t('April')}
-							{$i18n.t('May')}
-							{$i18n.t('June')}
-							{$i18n.t('July')}
-							{$i18n.t('August')}
-							{$i18n.t('September')}
-							{$i18n.t('October')}
-							{$i18n.t('November')}
-							{$i18n.t('December')}
-							-->
-									</div>
-								{/if}
-
-								<ChatItem
-									className=""
-									id={chat.id}
-									title={chat.title}
-									{shiftKey}
-									selected={selectedChatId === chat.id}
-									on:select={() => {
-										selectedChatId = chat.id;
-									}}
-									on:unselect={() => {
-										selectedChatId = null;
-									}}
-									on:change={async () => {
-										initChatList();
-									}}
-									on:tag={(e) => {
-										const { type, name } = e.detail;
-										tagEventHandler(type, name, chat.id);
-									}}
-								/>
-							{/each}
-
-							{#if $scrollPaginationEnabled && !allChatsLoaded}
-								<Loader
-									on:visible={(e) => {
-										if (!chatListLoading) {
-											loadMoreChats();
-										}
-									}}
+								<div
+									class="w-full flex justify-center py-1 text-xs animate-pulse items-center gap-2"
 								>
-									<div
-										class="w-full flex justify-center py-1 text-xs animate-pulse items-center gap-2"
-									>
-										<Spinner className=" size-4" />
-										<div class=" ">Loading...</div>
-									</div>
-								</Loader>
-							{/if}
-						{:else}
-							<div class="w-full flex justify-center py-1 text-xs animate-pulse items-center gap-2">
-								<Spinner className=" size-4" />
-								<div class=" ">Loading...</div>
-							</div>
+									<Spinner className=" size-4" />
+									<div class=" ">Loading...</div>
+								</div>
+							</Loader>
 						{/if}
-					</div>
+					{:else}
+						<div class="w-full flex justify-center py-1 text-xs animate-pulse items-center gap-2">
+							<Spinner className=" size-4" />
+							<div class=" ">Loading...</div>
+						</div>
+					{/if}
 				</div>
-			</Folder>
+			</div>
 
 			<!-- 채널 섹션 -->
 			{#if $config?.features?.enable_channels && ($user?.role === 'admin' || $channels.length > 0) && !search}
@@ -1031,7 +855,7 @@
 						}}
 					>
 						<button
-							class=" flex items-center rounded-lg py-2.5 px-2.5 w-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+							class=" flex items-center rounded-lg py-2.5 px-2.5 w-full hover:bg-gray-800/50 transition-colors text-gray-200"
 							on:click={() => {
 								showDropdown = !showDropdown;
 							}}
@@ -1043,7 +867,7 @@
 									alt="User profile"
 								/>
 							</div>
-							<div class=" self-center font-medium">{$user?.name}</div>
+							<div class=" self-center font-medium text-gray-200">{$user?.name}</div>
 						</button>
 					</UserMenu>
 				{/if}

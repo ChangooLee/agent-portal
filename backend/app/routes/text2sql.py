@@ -18,7 +18,11 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
+# Text-to-SQL 라우터: /text2sql/*와 /api/text2sql/* 모두 처리
+# Single Port Architecture에서 Vite 프록시가 /api/text2sql/*를 /text2sql/*로 리라이트하지만,
+# 직접 /api/text2sql/*로 접근하는 경우도 처리하기 위해 두 개의 라우터를 생성
 router = APIRouter(prefix="/text2sql", tags=["text2sql"])
+api_router = APIRouter(prefix="/api/text2sql", tags=["text2sql"])
 
 
 # ========== Request/Response Models ==========
@@ -53,6 +57,7 @@ class StreamEvent(BaseModel):
 # ========== Endpoints ==========
 
 @router.post("/generate", response_model=GenerateResponse)
+@api_router.post("/generate", response_model=GenerateResponse)
 async def generate_sql(request: GenerateRequest):
     """
     자연어 질문으로 SQL 생성.
@@ -98,11 +103,16 @@ async def generate_sql(request: GenerateRequest):
             except Exception as e:
                 logger.warning(f"Trace start failed: {e}")
         
-        # Agent 실행
+        # Agent 실행 (agent_id와 agent_name 전달)
+        agent_id = agent_info.get("id", "text2sql-agent") if agent_info else "text2sql-agent"
+        agent_name = agent_info.get("name", "Text-to-SQL Agent") if agent_info else "Text-to-SQL Agent"
+        
         final_state = await text2sql_agent.run(
             question=request.question,
             connection_id=request.connection_id,
-            trace_id=trace_id
+            trace_id=trace_id,
+            agent_id=agent_id,
+            agent_name=agent_name
         )
         
         # 트레이스 종료
@@ -148,6 +158,7 @@ async def generate_sql(request: GenerateRequest):
 
 
 @router.post("/generate/stream")
+@api_router.post("/generate/stream")
 async def generate_sql_stream(request: GenerateRequest):
     """
     자연어 질문으로 SQL 생성 (SSE 스트리밍).
@@ -234,6 +245,7 @@ async def generate_sql_stream(request: GenerateRequest):
 
 
 @router.get("/health")
+@api_router.get("/health")
 async def health_check():
     """헬스체크"""
     return {"status": "ok", "service": "text2sql"}

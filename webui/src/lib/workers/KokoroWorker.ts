@@ -1,5 +1,3 @@
-import WorkerInstance from '$lib/workers/kokoro.worker?worker';
-
 export class KokoroWorker {
 	private worker: Worker | null = null;
 	private initialized: boolean = false;
@@ -22,7 +20,16 @@ export class KokoroWorker {
 			return;
 		}
 
-		this.worker = new WorkerInstance();
+		try {
+			// Dynamic import to avoid default export issue
+			const workerModule = await import('$lib/workers/kokoro.worker.ts?worker');
+			const WorkerClass = workerModule.default || workerModule;
+			this.worker = new WorkerClass();
+		} catch (error) {
+			console.warn('Failed to load Kokoro worker, TTS feature will be disabled:', error);
+			// Worker를 생성하지 않고 에러를 반환하지 않음 (선택적 기능)
+			return;
+		}
 
 		// Handle worker messages
 		this.worker.onmessage = (event) => {
@@ -72,7 +79,7 @@ export class KokoroWorker {
 
 	public async generate({ text, voice }: { text: string; voice: string }): Promise<string> {
 		if (!this.initialized || !this.worker) {
-			throw new Error('KokoroTTS Worker is not initialized yet.');
+			throw new Error('KokoroTTS Worker is not available. TTS feature is disabled.');
 		}
 
 		return new Promise<string>((resolve, reject) => {

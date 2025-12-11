@@ -247,7 +247,7 @@
                     <div class="text-3xl mb-3 transform group-hover:scale-110 transition-transform duration-300">📈</div>
                     <span class="text-sm text-slate-300 font-medium group-hover:text-white transition-colors">Monitoring</span>
                 </a>
-                <a href="/operate/llm" class="group p-5 rounded-xl bg-slate-900/80 border border-slate-800/50 
+                <a href="/build/llm" class="group p-5 rounded-xl bg-slate-900/80 border border-slate-800/50 
                     shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30
                     hover:bg-slate-800/80 hover:border-slate-700/50 
                     transition-all duration-300 text-center hover:-translate-y-1">

@@ -154,12 +154,20 @@
 		setTimeout(scrollToBottom, 50);
 		
 		try {
+			// #region agent log
+			fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:158',message:'Starting SSE fetch',data:{question_length:question.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+			// #endregion
+			
 			// SSE 스트리밍
 			const response = await fetch('/api/dart/chat/stream', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ question })
 			});
+			
+			// #region agent log
+			fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:166',message:'Fetch response received',data:{ok:response.ok,status:response.status,contentType:response.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+			// #endregion
 			
 			if (!response.ok) {
 				throw new Error('API 요청 실패');
@@ -172,21 +180,41 @@
 				throw new Error('스트림을 읽을 수 없습니다');
 			}
 			
+			// #region agent log
+			fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:175',message:'Starting to read stream',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+			// #endregion
+			
 			let buffer = '';
+			let chunk_count = 0;
 			
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
 				
+				chunk_count++;
 				buffer += decoder.decode(value, { stream: true });
 				const lines = buffer.split('\n\n');
 				buffer = lines.pop() || '';
 				
+				// #region agent log
+				if (chunk_count <= 3) {
+					fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:185',message:'Chunk received',data:{chunk_count,lines_count:lines.length,buffer_length:buffer.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+				}
+				// #endregion
+				
 				for (const line of lines) {
 					if (!line.startsWith('data: ')) continue;
 					
+					// #region agent log
+					fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:192',message:'Parsing SSE line',data:{line_length:line.length,line_preview:line.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+					// #endregion
+					
 					try {
 						const data = JSON.parse(line.slice(6));
+						
+						// #region agent log
+						fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:196',message:'SSE data parsed',data:{event:data.event},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+						// #endregion
 						
 						switch (data.event) {
 							case 'start':
@@ -291,12 +319,18 @@
 						
 					} catch (e) {
 						console.error('SSE parse error:', e);
+						// #region agent log
+						fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:293',message:'SSE parse error',data:{error:String(e),line_preview:line.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+						// #endregion
 					}
 				}
 			}
 			
 		} catch (error) {
 			console.error('Stream error:', error);
+			// #region agent log
+			fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:298',message:'Stream error caught',data:{error_type:error?.constructor?.name,error_message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+			// #endregion
 			toast.error('분석 중 오류가 발생했습니다');
 			messages = [...messages, {
 				id: generateId(),
@@ -347,57 +381,62 @@
 	<title>기업공시분석 | DART Agent</title>
 </svelte:head>
 
-<div class="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-	<!-- 헤더 -->
-	<header class="flex-shrink-0 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-10">
-		<div class="px-6 py-3 flex items-center justify-between">
-			<div class="flex items-center gap-3">
-				<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-white">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-					</svg>
+<div class="min-h-screen bg-gray-950 text-slate-50">
+	<!-- Hero Section -->
+	<div class="relative overflow-hidden border-b border-slate-800/50">
+		<div class="absolute inset-0 bg-gradient-to-br from-emerald-600/5 via-transparent to-teal-600/5"></div>
+		<div class="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+		
+		<div class="relative px-6 py-6">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+						</svg>
+					</div>
+					<div>
+						<h1 class="text-2xl font-bold text-white">📊 기업공시분석</h1>
+						<p class="text-sm text-emerald-200/80">DART AI Agent</p>
+					</div>
 				</div>
-				<div>
-					<h1 class="text-lg font-bold text-slate-900 dark:text-white">기업공시분석</h1>
-					<p class="text-xs text-slate-500 dark:text-slate-400">DART AI Agent</p>
+				
+				<!-- MCP 상태 -->
+				<div class="flex items-center gap-4">
+					{#if mcpStatus === 'checking'}
+						<div class="flex items-center gap-2 text-xs text-gray-400 px-3 py-1.5 rounded-full bg-gray-800/60 border border-gray-700/50">
+							<div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+							<span>연결 확인 중...</span>
+						</div>
+					{:else if mcpStatus === 'connected'}
+						<div class="flex items-center gap-2 text-xs text-emerald-400 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+							<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+							<span>MCP 연결됨 ({mcpToolCount} tools)</span>
+						</div>
+					{:else}
+						<div class="flex items-center gap-2 text-xs text-amber-400 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30">
+							<div class="w-2 h-2 rounded-full bg-amber-500"></div>
+							<span>MCP 오프라인</span>
+						</div>
+					{/if}
 				</div>
-			</div>
-			
-			<!-- MCP 상태 -->
-			<div class="flex items-center gap-4">
-				{#if mcpStatus === 'checking'}
-					<div class="flex items-center gap-2 text-xs text-slate-500 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
-						<div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-						<span>연결 확인 중...</span>
-					</div>
-				{:else if mcpStatus === 'connected'}
-					<div class="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30">
-						<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-						<span>MCP 연결됨 ({mcpToolCount} tools)</span>
-					</div>
-				{:else}
-					<div class="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/30">
-						<div class="w-2 h-2 rounded-full bg-amber-500"></div>
-						<span>MCP 오프라인</span>
-					</div>
-				{/if}
 			</div>
 		</div>
-	</header>
+	</div>
 	
 	<!-- 메인 콘텐츠 (좌우 분할) -->
-	<div class="flex-1 flex overflow-hidden">
+	<div class="flex">
 		<!-- 좌측: 채팅 영역 -->
-		<div class="w-1/2 flex flex-col border-r border-slate-200/50 dark:border-slate-700/50">
+		<div class="w-1/2 flex flex-col border-r border-gray-800/50 min-h-[calc(100vh-120px)] relative">
 			<!-- 채팅 헤더 -->
-			<div class="px-4 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-				<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+			<div class="px-4 py-3 border-b border-gray-800/50 bg-gray-900/60 backdrop-blur-sm">
+				<div class="flex items-center gap-2 text-sm text-gray-300">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
 					</svg>
 					<span class="font-medium">에이전트 로그</span>
 					{#if isLoading}
-						<span class="ml-auto flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+						<span class="ml-auto flex items-center gap-1.5 text-emerald-400">
 							<span class="relative flex h-2 w-2">
 								<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
 								<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -409,23 +448,23 @@
 			</div>
 			
 			<!-- 메시지 목록 -->
-			<div bind:this={messagesContainer} class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+			<div bind:this={messagesContainer} class="flex-1 overflow-y-auto px-4 py-4 pb-32 space-y-3 bg-gray-950">
 				{#each messages as message (message.id)}
 					<div 
 						class="flex {message.role === 'user' ? 'justify-end' : 'justify-start'}"
 						in:fly={{ y: 10, duration: 200 }}
 					>
 						{#if message.role === 'system'}
-							<div class="max-w-[90%] p-3 rounded-xl bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 text-sm">
-								<p class="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{message.content}</p>
+							<div class="max-w-[90%] p-3 rounded-xl bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 text-sm">
+								<p class="text-gray-300 whitespace-pre-wrap">{message.content}</p>
 							</div>
 						{:else if message.role === 'user'}
 							<div class="max-w-[85%] px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm shadow-md shadow-emerald-500/20">
 								<p class="whitespace-pre-wrap">{message.content}</p>
 							</div>
 						{:else if message.role === 'tool'}
-							<div class="max-w-[90%] px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200/50 dark:border-purple-800/50 text-sm">
-								<div class="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+							<div class="max-w-[90%] px-3 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-sm">
+								<div class="flex items-center gap-2 text-purple-300">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
 									</svg>
@@ -433,8 +472,8 @@
 								</div>
 							</div>
 						{:else}
-							<div class="max-w-[90%] px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 shadow-sm text-sm">
-								<p class="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{message.content}</p>
+							<div class="max-w-[90%] px-3 py-2 rounded-xl bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 shadow-sm text-sm">
+								<p class="text-gray-300 whitespace-pre-wrap">{message.content}</p>
 							</div>
 						{/if}
 					</div>
@@ -442,8 +481,8 @@
 				
 				{#if currentToolCall}
 					<div class="flex justify-start" in:fade={{ duration: 150 }}>
-						<div class="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-800/50 text-sm">
-							<div class="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+						<div class="px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-sm">
+							<div class="flex items-center gap-2 text-amber-300">
 								<svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -455,14 +494,14 @@
 				{/if}
 			</div>
 			
-			<!-- 입력 영역 -->
-			<div class="flex-shrink-0 border-t border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-4">
+			<!-- 입력 영역 (최하단 고정) -->
+			<div class="sticky bottom-0 z-10 border-t border-gray-800/50 bg-gray-900/60 backdrop-blur-sm p-4">
 				<!-- 예시 질문 -->
 				{#if messages.length <= 1}
 					<div class="mb-3 flex flex-wrap gap-2">
 						{#each exampleQuestions as q}
 							<button
-								class="px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition-colors border border-slate-200/50 dark:border-slate-700/50"
+								class="px-2.5 py-1 rounded-lg text-xs bg-gray-800/60 hover:bg-gray-700/60 text-gray-300 transition-colors border border-gray-700/50"
 								on:click={() => { inputValue = q; sendMessage(); }}
 							>
 								{q}
@@ -480,7 +519,7 @@
 							placeholder="기업 공시에 대해 질문하세요..."
 							rows="1"
 							disabled={isLoading}
-							class="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:opacity-50"
+							class="w-full resize-none rounded-xl border border-gray-700/50 bg-gray-800/60 backdrop-blur-sm px-4 py-2.5 text-sm text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all disabled:opacity-50"
 							style="min-height: 42px; max-height: 120px;"
 						></textarea>
 					</div>
@@ -506,11 +545,11 @@
 		</div>
 		
 		<!-- 우측: 분석 레포트 -->
-		<div class="w-1/2 flex flex-col bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950">
+		<div class="w-1/2 flex flex-col bg-gray-950 min-h-full">
 			<!-- 레포트 헤더 -->
-			<div class="px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+			<div class="px-6 py-3 border-b border-gray-800/50 bg-gray-900/60 backdrop-blur-sm">
 				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+					<div class="flex items-center gap-2 text-sm text-gray-300">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
 						</svg>
@@ -518,7 +557,7 @@
 					</div>
 					
 					{#if report && report.latency_ms > 0}
-						<div class="flex items-center gap-3 text-xs text-slate-500">
+						<div class="flex items-center gap-3 text-xs text-gray-400">
 							<span>{report.tokens.total.toLocaleString()} tokens</span>
 							<span>{(report.latency_ms / 1000).toFixed(1)}s</span>
 						</div>
@@ -527,22 +566,22 @@
 			</div>
 			
 			<!-- 레포트 내용 -->
-			<div bind:this={reportContainer} class="flex-1 overflow-y-auto">
+			<div bind:this={reportContainer} class="flex-1 overflow-y-auto bg-gray-950">
 				{#if report && (report.summary || report.sections.length > 0)}
 					<div class="p-6 space-y-6" in:fade={{ duration: 300 }}>
 						<!-- 회사 정보 헤더 -->
 						{#if report.company_name || report.domain}
-							<div class="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+							<div class="flex items-center gap-3 pb-4 border-b border-gray-800/50">
 								<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
 									</svg>
 								</div>
 								<div>
-									<h2 class="text-xl font-bold text-slate-900 dark:text-white">
+									<h2 class="text-xl font-bold text-white">
 										{report.company_name || '분석 결과'}
 									</h2>
-									<p class="text-sm text-slate-500 dark:text-slate-400">
+									<p class="text-sm text-gray-400">
 										{getDomainLabel(report.domain)} 분석 레포트
 									</p>
 								</div>
@@ -553,7 +592,7 @@
 						{#if report.toolsUsed.length > 0}
 							<div class="flex flex-wrap gap-2">
 								{#each [...new Set(report.toolsUsed)] as tool}
-									<span class="px-2 py-1 text-xs rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200/50 dark:border-purple-800/50">
+									<span class="px-2 py-1 text-xs rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
 										{tool}
 									</span>
 								{/each}
@@ -563,14 +602,14 @@
 						<!-- 섹션들 -->
 						{#each report.sections as section, i}
 							<div class="space-y-3" in:fly={{ y: 20, duration: 300, delay: i * 100 }}>
-								<h3 class="flex items-center gap-2 text-lg font-semibold text-slate-800 dark:text-slate-200">
-									<span class="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm font-bold">
+								<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
+									<span class="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold border border-emerald-500/30">
 										{i + 1}
 									</span>
 									{section.title}
 								</h3>
-								<div class="prose prose-sm prose-slate dark:prose-invert max-w-none pl-8">
-									<p class="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">
+								<div class="prose prose-sm prose-invert max-w-none pl-8">
+									<p class="text-gray-300 whitespace-pre-wrap leading-relaxed">
 										{section.content.trim()}
 									</p>
 								</div>
@@ -579,7 +618,7 @@
 						
 						<!-- 스트리밍 중 표시 -->
 						{#if reportStreaming}
-							<div class="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 pl-8" in:fade>
+							<div class="flex items-center gap-2 text-sm text-emerald-400 pl-8" in:fade>
 								<div class="flex space-x-1">
 									<div class="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" style="animation-delay: 0ms"></div>
 									<div class="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" style="animation-delay: 150ms"></div>
@@ -593,15 +632,15 @@
 					<!-- 빈 상태 -->
 					<div class="flex-1 flex items-center justify-center h-full">
 						<div class="text-center px-6 py-12">
-							<div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-10 h-10 text-slate-400 dark:text-slate-500">
+							<div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 flex items-center justify-center">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-10 h-10 text-gray-500">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
 								</svg>
 							</div>
-							<h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
+							<h3 class="text-lg font-semibold text-gray-300 mb-2">
 								분석 레포트가 여기에 표시됩니다
 							</h3>
-							<p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+							<p class="text-sm text-gray-400 max-w-sm mx-auto">
 								좌측에서 기업 공시에 대해 질문하시면, AI가 분석한 결과가 구조화된 레포트로 나타납니다.
 							</p>
 						</div>

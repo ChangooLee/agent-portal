@@ -17,9 +17,9 @@ services:
     build:
       context: ./webui
       dockerfile: Dockerfile.dev
-    ports:
-      - "3009:3001"    # Vite dev server (3005-3008 occupied by Cursor/Docker)
-      - "3000:8080"    # Backend API
+    # No external ports - accessed via BFF proxy
+    # Vite dev server runs on 3001 internally (for HMR)
+    # Backend API runs on 8080 internally (for BFF proxy)
     env_file: .env
     environment:
       - NODE_ENV=development
@@ -43,7 +43,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "3009:3009"    # Single port architecture - BFF is main entry point
     env_file: .env
     environment:
       - DEBUG=true

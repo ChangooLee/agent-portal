@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     # Kong Admin
     KONG_ADMIN_INTERNAL_URL: str = "http://konga:1337"
     KONG_ADMIN_PROXY_BASE: str = "/embed/kong-admin"
+    # Kong Gateway (internal network only)
+    KONG_PROXY_URL: str = "http://kong:8000"  # Kong proxy port (internal)
     
     # Observability
     OBSERVABILITY_ENABLED: bool = True

@@ -11,7 +11,11 @@ from app.services.llm_management_service import (
     ModelInfo
 )
 
+# LLM 라우터: /llm/*와 /api/llm/* 모두 처리
+# Single Port Architecture에서 Vite 프록시가 /api/llm/*를 /llm/*로 리라이트하지만,
+# 직접 /api/llm/*로 접근하는 경우도 처리하기 위해 두 개의 라우터를 생성
 router = APIRouter(prefix="/llm", tags=["LLM Management"])
+api_router = APIRouter(prefix="/api/llm", tags=["LLM Management"])
 
 
 # Request/Response models for API documentation
@@ -66,6 +70,7 @@ class UpdateModelRequestBody(BaseModel):
 
 
 @router.get("/providers", response_model=List[ProviderResponse])
+@api_router.get("/providers", response_model=List[ProviderResponse])
 async def get_providers():
     """
     Get list of supported LLM providers.
@@ -81,6 +86,7 @@ async def get_providers():
 
 
 @router.get("/models")
+@api_router.get("/models")
 async def list_models(
     provider: Optional[str] = Query(None, description="Filter by provider ID")
 ):
@@ -103,6 +109,7 @@ async def list_models(
 
 
 @router.get("/models/{model_id}")
+@api_router.get("/models/{model_id}")
 async def get_model(model_id: str):
     """
     Get details of a specific model.
@@ -121,6 +128,7 @@ async def get_model(model_id: str):
 
 
 @router.post("/models")
+@api_router.post("/models")
 async def add_model(request: AddModelRequestBody):
     """
     Add a new LLM model.
@@ -145,6 +153,7 @@ async def add_model(request: AddModelRequestBody):
 
 
 @router.patch("/models/{model_id}")
+@api_router.patch("/models/{model_id}")
 async def update_model(model_id: str, request: UpdateModelRequestBody):
     """
     Update an existing model.
@@ -166,6 +175,7 @@ async def update_model(model_id: str, request: UpdateModelRequestBody):
 
 
 @router.delete("/models/{model_id}")
+@api_router.delete("/models/{model_id}")
 async def delete_model(model_id: str):
     """
     Delete a model.
@@ -181,6 +191,7 @@ async def delete_model(model_id: str):
 
 
 @router.post("/models/{model_id}/test", response_model=TestModelResponse)
+@api_router.post("/models/{model_id}/test", response_model=TestModelResponse)
 async def test_model(model_id: str):
     """
     Test a model connection.
@@ -200,6 +211,7 @@ async def test_model(model_id: str):
 
 
 @router.get("/health")
+@api_router.get("/health")
 async def get_health():
     """
     Get health status of LLM models.

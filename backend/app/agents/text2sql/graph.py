@@ -133,7 +133,9 @@ class Text2SQLAgent:
         self,
         question: str,
         connection_id: str,
-        trace_id: Optional[str] = None
+        trace_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        agent_name: Optional[str] = None
     ) -> SqlAgentState:
         """
         Agent 실행 (트리 형태 트레이스 지원).
@@ -163,15 +165,29 @@ class Text2SQLAgent:
             from .metrics import _get_tracer
             tracer = _get_tracer()
             
+            # Agent ID와 Name 설정 (모니터링을 위해 필수)
+            attrs = {
+                "service.name": "agent-text2sql",
+                "component": "text2sql",
+                "span.kind": "server",
+                "question_length": len(question),
+                "connection_id": connection_id
+            }
+            
+            # agent.id와 agent.name 추가 (모니터링 쿼리에서 사용)
+            if agent_id:
+                attrs["agent.id"] = agent_id
+            else:
+                attrs["agent.id"] = "text2sql-agent"  # 기본값
+                
+            if agent_name:
+                attrs["agent.name"] = agent_name
+            else:
+                attrs["agent.name"] = "Text-to-SQL Agent"  # 기본값
+            
             with tracer.start_as_current_span(
                 "text2sql.agent",
-                attributes={
-                    "service.name": "agent-text2sql",
-                    "component": "text2sql",
-                    "span.kind": "server",
-                    "question_length": len(question),
-                    "connection_id": connection_id
-                }
+                attributes=attrs
             ) as root_span:
                 # External trace_id가 있으면 속성으로 저장
                 if trace_id:
@@ -206,7 +222,9 @@ class Text2SQLAgent:
         self,
         question: str,
         connection_id: str,
-        trace_id: Optional[str] = None
+        trace_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        agent_name: Optional[str] = None
     ):
         """
         Agent 실행 (스트리밍).
