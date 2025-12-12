@@ -56,6 +56,11 @@ class _NoOpSpan:
     
     def record_exception(self, exception):
         pass
+
+    def add_event(self, name: str, attributes: Optional[Dict[str, Any]] = None):
+        # Match OpenTelemetry Span API shape (best-effort).
+        # This is intentionally a no-op.
+        pass
     
     def end(self):
         pass

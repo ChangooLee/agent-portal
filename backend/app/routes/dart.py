@@ -270,6 +270,40 @@ async def chat_stream(request_data: DartChatRequest):
     session_id = request_data.session_id or trace_id
     
     async def event_generator():
+        # OTEL span for full HTTP stream lifetime (Langfuse-like timeline reconstruction)
+        from app.agents.dart_agent.metrics import start_dart_span, record_counter
+
+        def _safe_preview(val, limit: int = 200) -> str:
+            try:
+                s = str(val or "")
+            except Exception:
+                return ""
+            s = s.replace("\n", " ").replace("\r", " ").strip()
+            return s[:limit] + ("..." if len(s) > limit else "")
+
+        def _otel_record_stream_event(span, payload: dict):
+            try:
+                event_type = str(payload.get("event") or "unknown")
+                record_counter("dart_http_stream_events_total", {"event": event_type})
+                if span is not None and hasattr(span, "add_event"):
+                    attrs = {
+                        "dart.stream.event": event_type,
+                        "dart.trace_id": trace_id,
+                        "dart.session_id": session_id,
+                        "dart.http.route": "/api/dart/chat/stream",
+                    }
+                    if event_type in {"error"}:
+                        attrs["dart.error"] = _safe_preview(payload.get("error"), 300)
+                    if event_type in {"answer", "done"}:
+                        content = payload.get("content") or payload.get("answer") or ""
+                        try:
+                            attrs["dart.report_length"] = int(len(str(content)))
+                        except Exception:
+                            pass
+                    span.add_event(f"http_sse.{event_type}", attributes=attrs)
+            except Exception:
+                pass
+
         # 에이전트 레지스트리 등록
         agent_info = None
         try:
@@ -295,162 +329,183 @@ async def chat_stream(request_data: DartChatRequest):
             except Exception as e:
                 logger.warning(f"Trace start failed: {e}")
         
+        span = None
         try:
-            # #region agent log
-            _debug_log("dart.py:229", "Starting event generator", {
-                "trace_id": trace_id,
-                "session_id": session_id
-            }, "A")
-            # #endregion
-            
-            # 시작 이벤트
-            yield _format_sse({
-                "event": "start",
-                "trace_id": trace_id,
-                "question": request_data.question
-            })
-            
-            # #region agent log
-            _debug_log("dart.py:237", "Getting MCP client", {}, "B")
-            # #endregion
-            
-            # MCP 연결 확인
-            from app.agents.dart_agent.mcp_client import get_opendart_mcp_client
-            mcp_client = await get_opendart_mcp_client()
-            
-            # #region agent log
-            _debug_log("dart.py:243", "MCP client obtained", {
-                "client_type": type(mcp_client).__name__,
-                "is_connected": mcp_client.is_connected if hasattr(mcp_client, 'is_connected') else None
-            }, "B")
-            # #endregion
-            
-            yield _format_sse({
-                "event": "analyzing",
-                "message": "MCP 서버 연결 확인 중..."
-            })
-            
-            # #region agent log
-            _debug_log("dart.py:250", "Attempting MCP connect", {}, "B")
-            # #endregion
-            
-            mcp_connected = await mcp_client.connect()
-            
-            # #region agent log
-            _debug_log("dart.py:252", "MCP connect result", {
-                "connected": mcp_connected
-            }, "B")
-            # #endregion
-            
-            if not mcp_connected:
-                yield _format_sse({
-                    "event": "error",
-                    "error": "MCP 서버에 연결할 수 없습니다. OpenDART MCP 서버가 오프라인 상태입니다. 서버 관리자에게 문의하세요."
-                })
-                yield _format_sse({
-                    "event": "complete",
-                    "success": False
-                })
-                return
-            
-            yield _format_sse({
-                "event": "analyzing",
-                "message": "MCP 연결 성공, 분석 시작..."
-            })
-            
-            # #region agent log
-            _debug_log("dart.py:262", "Getting DART agent", {
-                "model": request_data.model or "qwen-235b"
-            }, "C")
-            # #endregion
-            
-            agent = get_dart_agent(model=request_data.model or "qwen-235b")
-            
-            # #region agent log
-            _debug_log("dart.py:265", "Starting analyze_stream", {
-                "question_length": len(request_data.question),
-                "session_id": session_id
-            }, "C")
-            # #endregion
-            
-            final_answer = ""
-            event_count = 0
-            
-            # agent.analyze_stream()을 async generator로 가져오기
-            agent_stream = agent.analyze_stream(
-                question=request_data.question,
-                session_id=session_id
-            )
-            
-            # 참고 프로젝트 패턴: async for 루프를 try-except로 감싸서 예외를 내부에서 처리
-            try:
-                async for event in agent_stream:
-                    event_count += 1
-                    # #region agent log
-                    _debug_log("dart.py:275", "Event received from agent", {
-                        "event_type": event.get('event'),
-                        "event_count": event_count
-                    }, "D")
-                    # #endregion
-                    
-                    # 이벤트 전달
-                    sse_formatted = _format_sse(event)
-                    
-                    # #region agent log
-                    _debug_log("dart.py:280", "Yielding SSE event", {
-                        "sse_length": len(sse_formatted),
-                        "event_type": event.get('event')
-                    }, "D")
-                    # #endregion
-                    
-                    yield sse_formatted
-                    
-                    # 최종 답변 저장
-                    if event.get("event") == "answer":
-                        final_answer = event.get("content", "")
-                    elif event.get("event") == "done":
-                        final_answer = event.get("answer", final_answer)
-            except StopAsyncIteration:
-                # 정상 종료
-                pass
-            except GeneratorExit:
-                # Generator가 종료됨
-                pass
-            except Exception as stream_error:
-                # 예외를 내부에서 처리하고 에러 이벤트 yield (예외를 상위로 전파하지 않음)
-                # 참고 프로젝트 패턴: 예외를 상위로 전파하지 않고 내부에서 처리
-                logger.error(f"Error in agent stream: {stream_error}", exc_info=True)
-                
+            with start_dart_span(
+                "dart.http.chat_stream",
+                {"question_length": len(request_data.question), "trace_id": trace_id},
+            ) as span:
                 # #region agent log
-                _debug_log("dart.py:stream_error", "Exception in agent stream", {
-                    "error_type": type(stream_error).__name__,
-                    "error_message": str(stream_error)[:200]
-                }, "E")
+                _debug_log("dart.py:229", "Starting event generator", {
+                    "trace_id": trace_id,
+                    "session_id": session_id
+                }, "A")
                 # #endregion
-                
-                # 에러 이벤트 yield (예외를 전파하지 않음)
-                try:
-                    yield _format_sse({
+            
+                # 시작 이벤트
+                start_payload = {
+                    "event": "start",
+                    "trace_id": trace_id,
+                    "question": request_data.question
+                }
+                _otel_record_stream_event(span, start_payload)
+                yield _format_sse(start_payload)
+            
+                # #region agent log
+                _debug_log("dart.py:237", "Getting MCP client", {}, "B")
+                # #endregion
+            
+                # MCP 연결 확인
+                from app.agents.dart_agent.mcp_client import get_opendart_mcp_client
+                mcp_client = await get_opendart_mcp_client()
+            
+                # #region agent log
+                _debug_log("dart.py:243", "MCP client obtained", {
+                    "client_type": type(mcp_client).__name__,
+                    "is_connected": mcp_client.is_connected if hasattr(mcp_client, 'is_connected') else None
+                }, "B")
+                # #endregion
+            
+                analyzing_payload = {
+                    "event": "analyzing",
+                    "message": "MCP 서버 연결 확인 중..."
+                }
+                _otel_record_stream_event(span, analyzing_payload)
+                yield _format_sse(analyzing_payload)
+            
+                # #region agent log
+                _debug_log("dart.py:250", "Attempting MCP connect", {}, "B")
+                # #endregion
+            
+                mcp_connected = await mcp_client.connect()
+            
+                # #region agent log
+                _debug_log("dart.py:252", "MCP connect result", {
+                    "connected": mcp_connected
+                }, "B")
+                # #endregion
+            
+                if not mcp_connected:
+                    err_payload = {
                         "event": "error",
-                        "error": str(stream_error)
-                    })
-                    yield _format_sse({
+                        "error": "MCP 서버에 연결할 수 없습니다. OpenDART MCP 서버가 오프라인 상태입니다. 서버 관리자에게 문의하세요."
+                    }
+                    _otel_record_stream_event(span, err_payload)
+                    yield _format_sse(err_payload)
+                    done_payload = {
                         "event": "complete",
-                        "success": False,
-                        "error": str(stream_error)
-                    })
-                except Exception as yield_error:
-                    logger.error(f"Failed to yield error events: {yield_error}")
-            finally:
-                # async generator를 항상 정리 (예외 발생 여부와 관계없이)
+                        "success": False
+                    }
+                    _otel_record_stream_event(span, done_payload)
+                    yield _format_sse(done_payload)
+                    return
+            
+                analyzing_payload = {
+                    "event": "analyzing",
+                    "message": "MCP 연결 성공, 분석 시작..."
+                }
+                _otel_record_stream_event(span, analyzing_payload)
+                yield _format_sse(analyzing_payload)
+            
+                # #region agent log
+                _debug_log("dart.py:262", "Getting DART agent", {
+                    "model": request_data.model or "qwen-235b"
+                }, "C")
+                # #endregion
+            
+                agent = get_dart_agent(model=request_data.model or "qwen-235b")
+            
+                # #region agent log
+                _debug_log("dart.py:265", "Starting analyze_stream", {
+                    "question_length": len(request_data.question),
+                    "session_id": session_id
+                }, "C")
+                # #endregion
+            
+                final_answer = ""
+                event_count = 0
+            
+                # agent.analyze_stream()을 async generator로 가져오기
+                agent_stream = agent.analyze_stream(
+                    question=request_data.question,
+                    session_id=session_id
+                )
+            
+                # 참고 프로젝트 패턴: async for 루프를 try-except로 감싸서 예외를 내부에서 처리
                 try:
-                    await agent_stream.aclose()
-                except (StopAsyncIteration, GeneratorExit):
-                    # 정상 종료 또는 이미 종료됨
+                    async for event in agent_stream:
+                        event_count += 1
+                        # #region agent log
+                        _debug_log("dart.py:275", "Event received from agent", {
+                            "event_type": event.get('event'),
+                            "event_count": event_count
+                        }, "D")
+                        # #endregion
+                        
+                        # 이벤트 전달
+                        sse_formatted = _format_sse(event)
+                        
+                        # #region agent log
+                        _debug_log("dart.py:280", "Yielding SSE event", {
+                            "sse_length": len(sse_formatted),
+                            "event_type": event.get('event')
+                        }, "D")
+                        # #endregion
+                        
+                        # Record the structured event (not SSE string) to OTEL
+                        _otel_record_stream_event(span, event)
+                        yield sse_formatted
+                        
+                        # 최종 답변 저장
+                        if event.get("event") == "answer":
+                            final_answer = event.get("content", "")
+                        elif event.get("event") == "done":
+                            final_answer = event.get("answer", final_answer)
+                except StopAsyncIteration:
+                    # 정상 종료
                     pass
-                except Exception as close_error:
-                    # aclose() 실패는 무시 (이미 정리된 경우 등)
-                    logger.debug(f"Agent stream already closed or close failed: {close_error}")
+                except GeneratorExit:
+                    # Generator가 종료됨
+                    pass
+                except Exception as stream_error:
+                    # 예외를 내부에서 처리하고 에러 이벤트 yield (예외를 상위로 전파하지 않음)
+                    # 참고 프로젝트 패턴: 예외를 상위로 전파하지 않고 내부에서 처리
+                    logger.error(f"Error in agent stream: {stream_error}", exc_info=True)
+                    
+                    # #region agent log
+                    _debug_log("dart.py:stream_error", "Exception in agent stream", {
+                        "error_type": type(stream_error).__name__,
+                        "error_message": str(stream_error)[:200]
+                    }, "E")
+                    # #endregion
+                    
+                    # 에러 이벤트 yield (예외를 전파하지 않음)
+                    try:
+                        err_payload = {
+                            "event": "error",
+                            "error": str(stream_error)
+                        }
+                        _otel_record_stream_event(span, err_payload)
+                        yield _format_sse(err_payload)
+                        done_payload = {
+                            "event": "complete",
+                            "success": False,
+                            "error": str(stream_error)
+                        }
+                        _otel_record_stream_event(span, done_payload)
+                        yield _format_sse(done_payload)
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield error events: {yield_error}")
+                finally:
+                    # async generator를 항상 정리 (예외 발생 여부와 관계없이)
+                    try:
+                        await agent_stream.aclose()
+                    except (StopAsyncIteration, GeneratorExit):
+                        # 정상 종료 또는 이미 종료됨
+                        pass
+                    except Exception as close_error:
+                        # aclose() 실패는 무시 (이미 정리된 경우 등)
+                        logger.debug(f"Agent stream already closed or close failed: {close_error}")
             
             # 트레이스 종료
             if agent_info:
@@ -475,10 +530,12 @@ async def chat_stream(request_data: DartChatRequest):
             }, "E")
             # #endregion
             
-            yield _format_sse({
+            err_payload = {
                 "event": "error",
                 "error": str(e)
-            })
+            }
+            _otel_record_stream_event(span, err_payload)
+            yield _format_sse(err_payload)
             
             if agent_info:
                 try:

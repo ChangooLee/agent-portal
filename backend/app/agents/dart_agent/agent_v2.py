@@ -267,33 +267,98 @@ class DartV2Agent:
         except Exception:
             pass
 
-        with start_dart_span("dart_v2.analyze_stream", {"question_length": len(question)}, carrier):
+        def _safe_preview(val: Any, limit: int = 200) -> str:
+            try:
+                s = str(val or "")
+            except Exception:
+                return ""
+            s = s.replace("\n", " ").replace("\r", " ").strip()
+            return s[:limit] + ("..." if len(s) > limit else "")
+
+        def _otel_record_event(span: Any, ev: Dict[str, Any], extra: Optional[Dict[str, Any]] = None):
+            event_type = str(ev.get("event") or "unknown")
+            attrs: Dict[str, Any] = {
+                "dart.stream.event": event_type,
+                "dart.session_id": session_id or "",
+                "dart.model": self.model,
+            }
+            if "domain" in ev and ev.get("domain"):
+                attrs["dart.domain"] = str(ev.get("domain"))
+            if event_type in {"tool_start", "tool_end"}:
+                if ev.get("tool_name"):
+                    attrs["dart.tool_name"] = str(ev.get("tool_name"))
+                if ev.get("tool"):
+                    attrs["dart.tool_name"] = str(ev.get("tool"))
+            if event_type in {"error"}:
+                attrs["dart.error"] = _safe_preview(ev.get("error"), 300)
+            if event_type in {"answer", "done"}:
+                content = ev.get("content") or ev.get("answer") or ""
+                try:
+                    attrs["dart.report_length"] = int(len(str(content)))
+                except Exception:
+                    pass
+            if extra:
+                # Keep attributes small and safe
+                for k, v in extra.items():
+                    if v is None:
+                        continue
+                    if isinstance(v, (int, float, bool)):
+                        attrs[k] = v
+                    else:
+                        attrs[k] = _safe_preview(v, 200)
+
+            # Metrics: count every streamed event
+            try:
+                record_counter("dart_v2_stream_events_total", {"event": event_type})
+            except Exception:
+                pass
+
+            # Span event
+            try:
+                if span is not None and hasattr(span, "add_event"):
+                    span.add_event(f"sse.{event_type}", attributes=attrs)
+            except Exception:
+                pass
+
+        with start_dart_span("dart_v2.analyze_stream", {"question_length": len(question)}, carrier) as span:
             # 0) LLM-start message (client may show it)
             try:
                 start_msg = await self._generate_start_message(question, carrier)
-                yield {"event": "start", "content": start_msg}
+                ev = {"event": "start", "content": start_msg}
+                _otel_record_event(span, ev)
+                yield ev
             except Exception as e:
                 logger.debug("Failed to generate start message: %s", e)
-                yield {"event": "start"}
+                ev = {"event": "start"}
+                _otel_record_event(span, ev, {"dart.start_msg_error": str(e)})
+                yield ev
 
             # 1) intent
-            yield {"event": "analyzing", "message": "질문 의도를 분류하고 있습니다..."}
+            ev = {"event": "analyzing", "message": "질문 의도를 분류하고 있습니다..."}
+            _otel_record_event(span, ev)
+            yield ev
             intent = await self.intent_classifier.classify(question, carrier)
-            yield {
+            ev = {
                 "event": "intent_classified",
                 "domain": intent.domain.value,
                 "company_name": intent.company_name,
                 "reasoning": intent.reasoning,
             }
+            _otel_record_event(span, ev, {"dart.company_name": intent.company_name or ""})
+            yield ev
 
             selected = self._select_domains(intent, question)
-            yield {"event": "analyzing", "message": f"선택된 분석 에이전트: {', '.join([d.value for d in selected])}"}
+            ev = {"event": "analyzing", "message": f"선택된 분석 에이전트: {', '.join([d.value for d in selected])}"}
+            _otel_record_event(span, ev, {"dart.selected_domains": ",".join([d.value for d in selected])})
+            yield ev
 
             # 2) run domain agents (sequential to keep tool logs ordered)
             sub_results: List[Dict[str, Any]] = []
             for domain in selected:
                 agent = DartDomainAgent(domain=domain, model=self.model, max_iterations=10)
-                yield {"event": "analyzing", "message": f"{domain.value} 에이전트가 데이터를 수집 중입니다..."}
+                ev = {"event": "analyzing", "message": f"{domain.value} 에이전트가 데이터를 수집 중입니다..."}
+                _otel_record_event(span, ev, {"dart.domain": domain.value})
+                yield ev
 
                 done_payload: Optional[Dict[str, Any]] = None
                 gen = agent.run_stream(question=question, session_id=session_id, parent_carrier=carrier)
@@ -301,14 +366,18 @@ class DartV2Agent:
                     async for ev in gen:
                         # Forward tool/iteration events for UI log
                         if ev.get("event") in {"iteration", "tool_start", "tool_end"}:
-                            yield {**ev, "domain": domain.value}
+                            out = {**ev, "domain": domain.value}
+                            _otel_record_event(span, out)
+                            yield out
                         elif ev.get("event") == "error":
                             # Don't leak internal connectivity details to the UI.
                             logger.warning("Sub-agent error (%s): %s", domain.value, ev.get("error"))
-                            yield {
+                            out = {
                                 "event": "analyzing",
                                 "message": "일부 분석 단계에서 일시적 오류가 발생했지만 가능한 범위에서 결과를 생성 중입니다...",
                             }
+                            _otel_record_event(span, out, {"dart.domain": domain.value, "dart.sub_agent_error": ev.get("error")})
+                            yield out
                         if ev.get("event") == "done":
                             done_payload = ev
                 finally:
@@ -327,7 +396,9 @@ class DartV2Agent:
                 )
 
             # 3) integrate (LLM)
-            yield {"event": "analyzing", "message": "수집된 결과를 통합하여 최종 레포트를 작성 중입니다..."}
+            ev = {"event": "analyzing", "message": "수집된 결과를 통합하여 최종 레포트를 작성 중입니다..."}
+            _otel_record_event(span, ev)
+            yield ev
             integration_prompt = {
                 "role": "system",
                 "content": """당신은 여러 전문 분석 에이전트의 결과를 통합하여 하나의 최종 레포트를 작성합니다.
@@ -394,6 +465,7 @@ class DartV2Agent:
                     ",".join([d.value for d in selected]),
                 )
                 final_md = self._build_fallback_report(question, intent, selected, sub_results)
+                _otel_record_event(span, {"event": "analyzing", "message": "통합 LLM 응답이 불안정하여 fallback 레포트를 생성했습니다."}, {"dart.fallback_reason": fallback_reason})
 
             # Merge token usage (best-effort)
             merged_tokens = {"prompt": 0, "completion": 0, "total": 0}
@@ -412,18 +484,24 @@ class DartV2Agent:
             record_counter("dart_v2_requests_total", {"domain": intent.domain.value})
             record_histogram("dart_v2_latency_ms", total_latency, {"domain": intent.domain.value})
 
-            yield {"event": "answer", "content": final_md}
-            yield {
+            ev = {"event": "answer", "content": final_md}
+            _otel_record_event(span, ev, {"dart.total_latency_ms": total_latency})
+            yield ev
+            ev = {
                 "event": "done",
                 "answer": final_md,
                 "tokens": merged_tokens,
                 "total_latency_ms": total_latency,
             }
-            yield {
+            _otel_record_event(span, ev, {"dart.total_latency_ms": total_latency, "dart.tokens_total": merged_tokens.get("total", 0)})
+            yield ev
+            ev = {
                 "event": "complete",
                 "total_latency_ms": total_latency,
                 "intent": {"domain": intent.domain.value, "company_name": intent.company_name},
             }
+            _otel_record_event(span, ev, {"dart.total_latency_ms": total_latency})
+            yield ev
 
 
 _dart_v2_agent: Optional[DartV2Agent] = None
