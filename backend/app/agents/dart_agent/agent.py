@@ -5,6 +5,13 @@ LiteLLM + OpenDart MCP 기반 멀티에이전트 시스템.
 원본 dart_agent.py, intent_classifier_agent.py 참조하여 간소화.
 """
 
+import warnings
+warnings.warn(
+    "app.agents.dart_agent.agent is deprecated. Use app.agents.dart_agent.agent_v2 instead (v2 only).",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import json
 import logging
 import time

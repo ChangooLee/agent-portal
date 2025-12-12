@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { toast } from 'svelte-sonner';
+	import Markdown from '$lib/components/chat/Messages/Markdown.svelte';
 	
 	// 메시지 타입 정의
 	interface Message {
@@ -236,7 +237,7 @@
 								messages = [...messages, {
 									id: generateId(),
 									role: 'assistant',
-									content: '🔍 분석을 시작합니다...',
+									content: data.content || '🔍 분석을 시작합니다...',
 									timestamp: new Date()
 								}];
 								break;
@@ -631,10 +632,10 @@
 									</span>
 									{section.title}
 								</h3>
-								<div class="prose prose-sm prose-invert max-w-none pl-8">
-									<p class="text-gray-300 whitespace-pre-wrap leading-relaxed">
-										{section.content.trim()}
-									</p>
+								<div class="pl-8">
+									<article class="prose prose-sm max-w-none prose-invert prose-headings:text-white prose-p:text-slate-300 prose-strong:text-white prose-code:text-slate-300 prose-pre:text-slate-200 prose-blockquote:text-slate-300 prose-li:text-slate-300 prose-a:text-emerald-400 prose-table:text-slate-300">
+										<Markdown id={`dart-report-${i}`} content={section.content.trim()} />
+									</article>
 								</div>
 							</div>
 						{/each}
