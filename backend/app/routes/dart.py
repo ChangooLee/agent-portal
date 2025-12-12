@@ -271,7 +271,7 @@ async def chat_stream(request_data: DartChatRequest):
     
     async def event_generator():
         # OTEL span for full HTTP stream lifetime (Langfuse-like timeline reconstruction)
-        from app.agents.dart_agent.metrics import start_dart_span, record_counter
+        from app.agents.dart_agent.metrics import start_dart_span, record_counter, inject_context_to_carrier
 
         def _safe_preview(val, limit: int = 200) -> str:
             try:
@@ -335,6 +335,14 @@ async def chat_stream(request_data: DartChatRequest):
                 "dart.http.chat_stream",
                 {"question_length": len(request_data.question), "trace_id": trace_id},
             ) as span:
+                # Create an explicit carrier while the HTTP root span is current,
+                # then pass it down to v2 engine to keep a single TraceId.
+                root_carrier: dict = {}
+                try:
+                    inject_context_to_carrier(root_carrier)
+                except Exception:
+                    root_carrier = {}
+
                 # #region agent log
                 _debug_log("dart.py:229", "Starting event generator", {
                     "trace_id": trace_id,
@@ -428,7 +436,8 @@ async def chat_stream(request_data: DartChatRequest):
                 # agent.analyze_stream()을 async generator로 가져오기
                 agent_stream = agent.analyze_stream(
                     question=request_data.question,
-                    session_id=session_id
+                    session_id=session_id,
+                    parent_carrier=root_carrier or None,
                 )
             
                 # 참고 프로젝트 패턴: async for 루프를 try-except로 감싸서 예외를 내부에서 처리

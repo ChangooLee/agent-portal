@@ -259,13 +259,24 @@ class DartV2Agent:
         lines.append("")
         return "\n".join(lines).strip() + "\n"
 
-    async def analyze_stream(self, question: str, session_id: Optional[str] = None):
+    async def analyze_stream(
+        self,
+        question: str,
+        session_id: Optional[str] = None,
+        parent_carrier: Optional[Dict[str, str]] = None,
+    ):
         start_time = time.time()
-        carrier: Dict[str, str] = {}
-        try:
-            inject_context_to_carrier(carrier)
-        except Exception:
-            pass
+        # IMPORTANT:
+        # - Prefer explicit parent_carrier from HTTP layer to guarantee a single TraceId
+        #   across async generator boundaries.
+        # - After we create the v2 span, we re-inject to get a carrier for THAT span so
+        #   all downstream spans (intent/LLM/tool/sub-agents) become children of v2.
+        root_carrier: Dict[str, str] = dict(parent_carrier or {})
+        if not root_carrier:
+            try:
+                inject_context_to_carrier(root_carrier)
+            except Exception:
+                pass
 
         def _safe_preview(val: Any, limit: int = 200) -> str:
             try:
@@ -320,10 +331,24 @@ class DartV2Agent:
             except Exception:
                 pass
 
-        with start_dart_span("dart_v2.analyze_stream", {"question_length": len(question)}, carrier) as span:
+        with start_dart_span("dart_v2.analyze_stream", {"question_length": len(question)}, root_carrier) as span:
+            # Correlation helper: store app-level ids on the v2 span too.
+            try:
+                if session_id:
+                    span.set_attribute("trace_id", session_id)
+                    span.set_attribute("session_id", session_id)
+            except Exception:
+                pass
+
+            span_carrier: Dict[str, str] = {}
+            try:
+                inject_context_to_carrier(span_carrier)
+            except Exception:
+                span_carrier = dict(root_carrier)
+
             # 0) LLM-start message (client may show it)
             try:
-                start_msg = await self._generate_start_message(question, carrier)
+                start_msg = await self._generate_start_message(question, span_carrier)
                 ev = {"event": "start", "content": start_msg}
                 _otel_record_event(span, ev)
                 yield ev
@@ -337,7 +362,7 @@ class DartV2Agent:
             ev = {"event": "analyzing", "message": "질문 의도를 분류하고 있습니다..."}
             _otel_record_event(span, ev)
             yield ev
-            intent = await self.intent_classifier.classify(question, carrier)
+            intent = await self.intent_classifier.classify(question, span_carrier)
             ev = {
                 "event": "intent_classified",
                 "domain": intent.domain.value,
@@ -361,7 +386,7 @@ class DartV2Agent:
                 yield ev
 
                 done_payload: Optional[Dict[str, Any]] = None
-                gen = agent.run_stream(question=question, session_id=session_id, parent_carrier=carrier)
+                gen = agent.run_stream(question=question, session_id=session_id, parent_carrier=span_carrier)
                 try:
                     async for ev in gen:
                         # Forward tool/iteration events for UI log
@@ -431,7 +456,7 @@ class DartV2Agent:
             final_md: str = ""
             integrate_error: Optional[str] = None
             try:
-                with start_llm_call_span("dart_v2_integrate", self.model, messages, carrier) as (_span, record):
+                with start_llm_call_span("dart_v2_integrate", self.model, messages, span_carrier) as (_span, record):
                     resp = await self._intro_llm.chat(
                         messages=messages,
                         tools=None,
