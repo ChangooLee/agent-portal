@@ -94,6 +94,12 @@ async def health_check():
     # MCP 연결 테스트 (등록된 서버 사용)
     try:
         client = await get_opendart_mcp_client()
+        # Ensure session initialization before probing tool calls
+        try:
+            await client.connect()
+        except Exception:
+            pass
+
         connected = client.is_connected
         tool_count = client.tool_count if connected else 0
 
