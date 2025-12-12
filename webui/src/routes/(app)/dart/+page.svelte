@@ -42,22 +42,37 @@
 	let reportStreaming = false;
 	
 	// 헬스체크
-	let mcpStatus: 'checking' | 'connected' | 'error' = 'checking';
+	let mcpStatus: 'checking' | 'connected' | 'degraded' | 'error' = 'checking';
 	let mcpToolCount = 0;
+	let mcpToolsCallable = false;
+	let mcpHealthError = '';
 	
 	async function checkHealth() {
 		try {
 			const response = await fetch('/api/dart/health');
 			const data = await response.json();
 			
-			if (data.mcp_connected) {
+			mcpToolCount = data.mcp_tools || 0;
+			mcpToolsCallable = Boolean(data.mcp_tools_callable);
+			mcpHealthError = data.mcp_error || '';
+
+			if (data.status === 'ok' && data.mcp_connected && mcpToolsCallable) {
 				mcpStatus = 'connected';
-				mcpToolCount = data.mcp_tools || 0;
-			} else {
-				mcpStatus = 'error';
+				return;
 			}
+
+			if (data.mcp_connected) {
+				// Connected but not callable -> degraded
+				mcpStatus = 'degraded';
+				return;
+			}
+
+			mcpStatus = 'error';
 		} catch (error) {
 			mcpStatus = 'error';
+			mcpToolCount = 0;
+			mcpToolsCallable = false;
+			mcpHealthError = '';
 		}
 	}
 	
@@ -412,6 +427,14 @@
 						<div class="flex items-center gap-2 text-xs text-emerald-400 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
 							<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
 							<span>MCP 연결됨 ({mcpToolCount} tools)</span>
+						</div>
+					{:else if mcpStatus === 'degraded'}
+						<div
+							class="flex items-center gap-2 text-xs text-amber-300 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30"
+							title={mcpHealthError || 'MCP는 연결되었지만 tools/call 실행이 실패했습니다.'}
+						>
+							<div class="w-2 h-2 rounded-full bg-amber-400"></div>
+							<span>MCP 부분 장애 ({mcpToolCount} tools)</span>
 						</div>
 					{:else}
 						<div class="flex items-center gap-2 text-xs text-amber-400 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30">

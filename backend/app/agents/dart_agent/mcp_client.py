@@ -596,6 +596,15 @@ class MCPHTTPClient:
                     "arguments": arguments
                 }
             )
+
+            # MCP servers may return tool-level errors as a successful JSON-RPC result,
+            # e.g. {"result": {"content": [...], "isError": true}}
+            if isinstance(result, dict) and result.get("isError") is True:
+                content = result.get("content", [])
+                if content and isinstance(content, list) and isinstance(content[0], dict):
+                    if content[0].get("type") == "text":
+                        return MCPToolCall(name=tool_name, result=None, error=content[0].get("text", "Tool error"))
+                return MCPToolCall(name=tool_name, result=None, error=str(result))
             
             # content 필드에서 실제 결과 추출
             content = result.get("content", [])

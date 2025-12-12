@@ -236,6 +236,21 @@ class DartBaseAgent(ABC):
         """
         with start_tool_call_span(tool_name, arguments, parent_carrier) as (span, record):
             try:
+                # Some MCP servers expose a "ctx" argument in their tool schema.
+                # When we call tools directly (tool._arun / MCPHTTPClient.call_tool),
+                # Pydantic default injection may not run, so ensure ctx is present.
+                # NOTE: We always set it to None (never a string) unless explicitly provided.
+                try:
+                    if self.mcp_client and "ctx" not in arguments:
+                        mcp_tool = self.mcp_client.get_tool_by_name(tool_name)
+                        if mcp_tool and isinstance(mcp_tool.input_schema, dict):
+                            props = mcp_tool.input_schema.get("properties", {}) or {}
+                            if isinstance(props, dict) and "ctx" in props:
+                                arguments = {**arguments, "ctx": None}
+                except Exception:
+                    # Do not fail tool execution due to ctx-injection logic
+                    pass
+
                 # LangChain 도구에서 찾기
                 tool = next((t for t in self.filtered_tools if t.name == tool_name), None)
                 

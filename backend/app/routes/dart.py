@@ -82,18 +82,52 @@ def _format_sse(event_data: Dict[str, Any]) -> str:
 async def health_check():
     """DART 에이전트 헬스 체크"""
     from app.agents.dart_agent.mcp_client import get_opendart_mcp_client
+
+    # Cache probe result briefly to avoid hammering the MCP server on frequent UI refreshes
+    # (e.g., every navigation to /dart).
+    global _DART_MCP_PROBE_CACHE  # type: ignore
+    try:
+        _DART_MCP_PROBE_CACHE
+    except NameError:
+        _DART_MCP_PROBE_CACHE = {"ts": 0.0, "ok": None, "error": None, "tools": 0}  # type: ignore
     
     # MCP 연결 테스트 (등록된 서버 사용)
     try:
         client = await get_opendart_mcp_client()
         connected = client.is_connected
         tool_count = client.tool_count if connected else 0
+
+        import time
+        now = time.time()
+        cached = _DART_MCP_PROBE_CACHE  # type: ignore
+        # 60s TTL
+        if cached.get("ok") is None or (now - float(cached.get("ts", 0.0))) > 60.0:
+            probe_ok = False
+            probe_error = None
+            try:
+                # Functional probe: tools/call must succeed, not just tools/list.
+                probe = await client.call_tool("get_corporation_code_by_name", {"corp_name": "삼성전자"})
+                if probe.error:
+                    probe_error = probe.error
+                    probe_ok = False
+                else:
+                    probe_ok = True
+            except Exception as e:
+                probe_ok = False
+                probe_error = str(e)
+
+            cached.update({"ts": now, "ok": probe_ok, "error": probe_error, "tools": tool_count})
+
+        probe_ok = bool(cached.get("ok"))
+        probe_error = cached.get("error")
         
         return {
-            "status": "ok" if connected else "degraded",
+            "status": "ok" if (connected and probe_ok) else "degraded",
             "service": "dart-agent",
             "mcp_connected": connected,
-            "mcp_tools": tool_count
+            "mcp_tools": tool_count,
+            "mcp_tools_callable": probe_ok,
+            "mcp_error": probe_error
         }
     except Exception as e:
         logger.error(f"DART health check failed: {e}")
