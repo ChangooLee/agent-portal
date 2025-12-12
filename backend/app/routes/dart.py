@@ -334,35 +334,81 @@ async def chat_stream(request_data: DartChatRequest):
             final_answer = ""
             event_count = 0
             
-            async for event in agent.analyze_stream(
+            # agent.analyze_stream()을 async generator로 가져오기
+            agent_stream = agent.analyze_stream(
                 question=request_data.question,
                 session_id=session_id
-            ):
-                event_count += 1
+            )
+            
+            # 참고 프로젝트 패턴: async for 루프를 try-except로 감싸서 예외를 내부에서 처리
+            try:
+                async for event in agent_stream:
+                    event_count += 1
+                    # #region agent log
+                    _debug_log("dart.py:275", "Event received from agent", {
+                        "event_type": event.get('event'),
+                        "event_count": event_count
+                    }, "D")
+                    # #endregion
+                    
+                    # 이벤트 전달
+                    sse_formatted = _format_sse(event)
+                    
+                    # #region agent log
+                    _debug_log("dart.py:280", "Yielding SSE event", {
+                        "sse_length": len(sse_formatted),
+                        "event_type": event.get('event')
+                    }, "D")
+                    # #endregion
+                    
+                    yield sse_formatted
+                    
+                    # 최종 답변 저장
+                    if event.get("event") == "answer":
+                        final_answer = event.get("content", "")
+                    elif event.get("event") == "done":
+                        final_answer = event.get("answer", final_answer)
+            except StopAsyncIteration:
+                # 정상 종료
+                pass
+            except GeneratorExit:
+                # Generator가 종료됨
+                pass
+            except Exception as stream_error:
+                # 예외를 내부에서 처리하고 에러 이벤트 yield (예외를 상위로 전파하지 않음)
+                # 참고 프로젝트 패턴: 예외를 상위로 전파하지 않고 내부에서 처리
+                logger.error(f"Error in agent stream: {stream_error}", exc_info=True)
+                
                 # #region agent log
-                _debug_log("dart.py:275", "Event received from agent", {
-                    "event_type": event.get('event'),
-                    "event_count": event_count
-                }, "D")
+                _debug_log("dart.py:stream_error", "Exception in agent stream", {
+                    "error_type": type(stream_error).__name__,
+                    "error_message": str(stream_error)[:200]
+                }, "E")
                 # #endregion
                 
-                # 이벤트 전달
-                sse_formatted = _format_sse(event)
-                
-                # #region agent log
-                _debug_log("dart.py:280", "Yielding SSE event", {
-                    "sse_length": len(sse_formatted),
-                    "event_type": event.get('event')
-                }, "D")
-                # #endregion
-                
-                yield sse_formatted
-                
-                # 최종 답변 저장
-                if event.get("event") == "answer":
-                    final_answer = event.get("content", "")
-                elif event.get("event") == "done":
-                    final_answer = event.get("answer", final_answer)
+                # 에러 이벤트 yield (예외를 전파하지 않음)
+                try:
+                    yield _format_sse({
+                        "event": "error",
+                        "error": str(stream_error)
+                    })
+                    yield _format_sse({
+                        "event": "complete",
+                        "success": False,
+                        "error": str(stream_error)
+                    })
+                except Exception as yield_error:
+                    logger.error(f"Failed to yield error events: {yield_error}")
+            finally:
+                # async generator를 항상 정리 (예외 발생 여부와 관계없이)
+                try:
+                    await agent_stream.aclose()
+                except (StopAsyncIteration, GeneratorExit):
+                    # 정상 종료 또는 이미 종료됨
+                    pass
+                except Exception as close_error:
+                    # aclose() 실패는 무시 (이미 정리된 경우 등)
+                    logger.debug(f"Agent stream already closed or close failed: {close_error}")
             
             # 트레이스 종료
             if agent_info:

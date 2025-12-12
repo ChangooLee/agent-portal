@@ -361,43 +361,162 @@ class DartAgent(DartBaseAgent):
         Yields:
             스트림 이벤트
         """
-        with start_dart_span("dart.analyze_stream", {"question_length": len(question)}) as span:
-            current_carrier = {}
-            inject_context_to_carrier(current_carrier)
-            
-            start_time = time.time()
-            
-            yield {"event": "analyzing", "message": "질문을 분석하고 있습니다..."}
-            
-            # 1. 의도 분류
-            intent = await self.intent_classifier.classify(question, current_carrier)
-            
-            yield {
-                "event": "intent_classified",
-                "domain": intent.domain.value,
-                "company_name": intent.company_name,
-                "reasoning": intent.reasoning
-            }
-            
-            self._current_domain = intent.domain
-            self._current_company = intent.company_name
-            self._current_question = question
-            self._initialized = False
-            
-            # 2. 스트리밍 에이전트 실행
-            async for event in self.run_stream(question, session_id, current_carrier):
-                yield event
-            
-            total_latency = (time.time() - start_time) * 1000
-            
-            yield {
-                "event": "complete",
-                "total_latency_ms": total_latency,
-                "intent": {
-                    "domain": intent.domain.value,
-                    "company_name": intent.company_name
+        # start_dart_span() 호출을 안전하게 처리 (pickle 오류 등 예외 발생 가능)
+        try:
+            span_context = start_dart_span("dart.analyze_stream", {"question_length": len(question)})
+        except Exception as span_error:
+            logger.warning(f"Failed to create span dart.analyze_stream: {span_error}")
+            # span 생성 실패해도 계속 진행 (no-op context manager 사용)
+            from contextlib import nullcontext
+            span_context = nullcontext()
+        
+        # span context 사용 (예외 발생해도 계속 진행)
+        try:
+            with span_context:
+                current_carrier = {}
+                try:
+                    inject_context_to_carrier(current_carrier)
+                except Exception:
+                    pass  # context injection 실패해도 계속 진행
+                
+                start_time = time.time()
+                
+                try:
+                    yield {"event": "analyzing", "message": "질문을 분석하고 있습니다..."}
+                except Exception as yield_error:
+                    logger.error(f"Failed to yield analyzing event: {yield_error}")
+                
+                # 1. 의도 분류
+                try:
+                    intent = await self.intent_classifier.classify(question, current_carrier)
+                    
+                    try:
+                        yield {
+                            "event": "intent_classified",
+                            "domain": intent.domain.value,
+                            "company_name": intent.company_name,
+                            "reasoning": intent.reasoning
+                        }
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield intent_classified event: {yield_error}")
+                    
+                    self._current_domain = intent.domain
+                    self._current_company = intent.company_name
+                    self._current_question = question
+                    self._initialized = False
+                except Exception as e:
+                    logger.error(f"Intent classification failed in analyze_stream: {e}")
+                    try:
+                        yield {"event": "error", "error": f"의도 분류 실패: {str(e)}"}
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield error event: {yield_error}")
+                    try:
+                        yield {
+                            "event": "complete",
+                            "total_latency_ms": (time.time() - start_time) * 1000,
+                            "intent": {"domain": "general", "company_name": None},
+                            "error": str(e)
+                        }
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield complete event: {yield_error}")
+                    return
+                
+                # 2. 스트리밍 에이전트 실행
+                # 참고 프로젝트 패턴: async for 루프를 try-except로 감싸서 예외를 내부에서 처리
+                # initialize()를 먼저 호출하여 실패 시 generator를 시작하지 않도록 함
+                try:
+                    await self.initialize()
+                except Exception as init_error:
+                    logger.error(f"Agent initialization failed in analyze_stream: {init_error}", exc_info=True)
+                    try:
+                        yield {"event": "error", "error": f"에이전트 초기화 실패: {str(init_error)}"}
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield initialization error event: {yield_error}")
+                    try:
+                        yield {
+                            "event": "complete",
+                            "total_latency_ms": (time.time() - start_time) * 1000,
+                            "intent": {
+                                "domain": intent.domain.value,
+                                "company_name": intent.company_name
+                            },
+                            "error": str(init_error)
+                        }
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield complete event after initialization error: {yield_error}")
+                    return  # generator 종료
+                
+                # 초기화 성공 후 run_stream() 호출
+                run_stream_gen = None
+                try:
+                    run_stream_gen = self.run_stream(question, session_id, current_carrier)
+                    # async for 루프를 try-except로 감싸서 예외를 내부에서 처리
+                    try:
+                        async for event in run_stream_gen:
+                            try:
+                                yield event
+                            except Exception as yield_error:
+                                logger.error(f"Failed to yield event from run_stream: {yield_error}")
+                                # yield 실패 시 루프 종료
+                                break
+                    except StopAsyncIteration:
+                        # 정상 종료
+                        pass
+                    except GeneratorExit:
+                        # Generator가 종료됨
+                        pass
+                    except Exception as loop_error:
+                        # async for 루프 내부에서 예외 발생 시 처리
+                        logger.error(f"Error in run_stream loop: {loop_error}", exc_info=True)
+                        # 에러 이벤트 yield 시도
+                        try:
+                            yield {"event": "error", "error": f"에이전트 실행 중 오류: {str(loop_error)}"}
+                        except Exception as yield_error:
+                            logger.error(f"Failed to yield error event: {yield_error}")
+                    finally:
+                        # generator 정리 시도 (예외 발생 여부와 관계없이)
+                        if run_stream_gen:
+                            try:
+                                await run_stream_gen.aclose()
+                            except (StopAsyncIteration, GeneratorExit):
+                                # 정상 종료 또는 이미 종료됨
+                                pass
+                            except Exception as close_error:
+                                logger.debug(f"run_stream_gen.aclose() failed: {close_error}")
+                except Exception as e:
+                    # run_stream() 호출 자체에서 예외 발생 시 처리
+                    logger.error(f"Agent run_stream failed in analyze_stream: {e}", exc_info=True)
+                    try:
+                        yield {"event": "error", "error": f"에이전트 실행 실패: {str(e)}"}
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield error event: {yield_error}")
+                
+                total_latency = (time.time() - start_time) * 1000
+                
+                yield {
+                    "event": "complete",
+                    "total_latency_ms": total_latency,
+                    "intent": {
+                        "domain": intent.domain.value,
+                        "company_name": intent.company_name
+                    }
                 }
-            }
+        except Exception as e:
+            # 최상위 예외 처리: generator가 정상적으로 종료되도록 보장
+            logger.error(f"Unexpected error in analyze_stream: {e}", exc_info=True)
+            try:
+                yield {"event": "error", "error": f"예기치 않은 오류: {str(e)}"}
+            except Exception as yield_error:
+                logger.error(f"Failed to yield error event in exception handler: {yield_error}")
+            try:
+                yield {
+                    "event": "complete",
+                    "total_latency_ms": 0,
+                    "intent": {"domain": "general", "company_name": None},
+                    "error": str(e)
+                }
+            except Exception as yield_error:
+                logger.error(f"Failed to yield complete event in exception handler: {yield_error}")
 
 
 # =============================================================================

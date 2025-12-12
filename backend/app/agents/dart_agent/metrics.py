@@ -164,39 +164,50 @@ def start_dart_span(
     Yields:
         현재 span 객체
     """
+    """
+    NOTE (CRITICAL):
+    - Generator-based context managers MUST yield exactly once.
+    - If this function yields again while handling an exception thrown into the generator
+      (contextmanager __exit__ uses generator.throw), Python raises:
+        RuntimeError: generator didn't stop after throw()
+    """
+    from contextlib import nullcontext
+
     tracer = _get_tracer()
-    
+
     # 기본 속성
-    attrs = {
-        "service.name": "agent-dart",
-        "component": "dart-agent"
-    }
+    attrs = {"service.name": "agent-dart", "component": "dart-agent"}
     if attributes:
         attrs.update(attributes)
-    
+
+    token = None
     try:
-        from opentelemetry import trace
-        from opentelemetry.context import attach, detach
-        
-        # Parent context attach
-        token = None
-        if parent_carrier:
-            parent_context = extract_context_from_carrier(parent_carrier)
-            if parent_context:
-                token = attach(parent_context)
-        
+        # Parent context attach (optional)
         try:
-            with tracer.start_as_current_span(name, attributes=attrs) as span:
-                yield span
-        finally:
-            if token is not None:
+            from opentelemetry.context import attach
+            if parent_carrier:
+                parent_context = extract_context_from_carrier(parent_carrier)
+                if parent_context:
+                    token = attach(parent_context)
+        except Exception:
+            token = None
+
+        # Span context manager (fallback to no-op)
+        try:
+            span_cm = tracer.start_as_current_span(name, attributes=attrs)
+        except Exception as e:
+            logger.debug(f"Failed to create span {name}: {e}")
+            span_cm = nullcontext(_NoOpSpan())
+
+        with span_cm as span:
+            yield span
+    finally:
+        if token is not None:
+            try:
+                from opentelemetry.context import detach
                 detach(token)
-                
-    except ImportError:
-        yield _NoOpSpan()
-    except Exception as e:
-        logger.warning(f"Failed to create span {name}: {e}")
-        yield _NoOpSpan()
+            except Exception:
+                pass
 
 
 @contextmanager
@@ -218,19 +229,21 @@ def start_llm_call_span(
     Yields:
         tuple: (span, result_recorder)
     """
+    from contextlib import nullcontext
+
     tracer = _get_tracer()
     span_name = f"dart.llm_call.{node_name}"
-    
+
     attrs = {
         "service.name": "agent-dart",
         "component": "dart-agent",
         "llm.model": model,
-        "llm.node": node_name
+        "llm.node": node_name,
     }
-    
+
     start_time = time.time()
-    span_holder = [None]
-    
+    span_holder: List[Any] = [_NoOpSpan()]
+
     def record_result(response: Dict[str, Any]):
         """LLM 응답 결과를 span에 기록"""
         try:
@@ -238,54 +251,63 @@ def start_llm_call_span(
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
             total_tokens = usage.get("total_tokens", prompt_tokens + completion_tokens)
-            
+
             latency_ms = (time.time() - start_time) * 1000
-            
             current_span = span_holder[0]
-            if current_span and hasattr(current_span, 'set_attribute'):
+            if current_span and hasattr(current_span, "set_attribute"):
                 current_span.set_attribute("llm.usage.prompt_tokens", prompt_tokens)
                 current_span.set_attribute("llm.usage.completion_tokens", completion_tokens)
                 current_span.set_attribute("llm.usage.total_tokens", total_tokens)
                 current_span.set_attribute("llm.latency_ms", latency_ms)
-                
+
                 response_model = response.get("model", model)
                 current_span.set_attribute("llm.response.model", response_model)
-                
-                response_content = response.get("choices", [{}])[0].get("message", {}).get("content")
+
+                response_content = (
+                    response.get("choices", [{}])[0].get("message", {}).get("content")
+                )
                 if response_content:
                     current_span.set_attribute("llm.response.content", response_content[:1000])
-                
         except Exception as e:
             logger.debug(f"Failed to record LLM result: {e}")
-    
+
+    token = None
     try:
-        from opentelemetry import trace
-        from opentelemetry.context import attach, detach
-        
-        token = None
-        if parent_carrier:
-            parent_context = extract_context_from_carrier(parent_carrier)
-            if parent_context:
-                token = attach(parent_context)
-        
+        # Parent context attach (optional)
         try:
-            with tracer.start_as_current_span(span_name, attributes=attrs) as span:
-                if messages:
-                    span.set_attribute("llm.request.messages", json.dumps(messages, ensure_ascii=False)[:2000])
-                
-                span_holder[0] = span
-                yield span, record_result
-        finally:
-            if token is not None:
+            from opentelemetry.context import attach
+            if parent_carrier:
+                parent_context = extract_context_from_carrier(parent_carrier)
+                if parent_context:
+                    token = attach(parent_context)
+        except Exception:
+            token = None
+
+        # Span context manager (fallback to no-op)
+        try:
+            span_cm = tracer.start_as_current_span(span_name, attributes=attrs)
+        except Exception as e:
+            logger.debug(f"Failed to create LLM call span {span_name}: {e}")
+            span_cm = nullcontext(_NoOpSpan())
+
+        with span_cm as span:
+            span_holder[0] = span
+            try:
+                if messages and hasattr(span, "set_attribute"):
+                    span.set_attribute(
+                        "llm.request.messages",
+                        json.dumps(messages, ensure_ascii=False)[:2000],
+                    )
+            except Exception:
+                pass
+            yield span, record_result
+    finally:
+        if token is not None:
+            try:
+                from opentelemetry.context import detach
                 detach(token)
-                
-    except ImportError:
-        span_holder[0] = _NoOpSpan()
-        yield span_holder[0], record_result
-    except Exception as e:
-        logger.warning(f"Failed to create LLM call span: {e}")
-        span_holder[0] = _NoOpSpan()
-        yield span_holder[0], record_result
+            except Exception:
+                pass
 
 
 @contextmanager
@@ -305,65 +327,73 @@ def start_tool_call_span(
     Yields:
         tuple: (span, result_recorder)
     """
+    from contextlib import nullcontext
+
     tracer = _get_tracer()
     span_name = f"dart.tool_call.{tool_name}"
-    
-    attrs = {
-        "service.name": "agent-dart",
-        "component": "dart-agent",
-        "tool.name": tool_name
-    }
-    
+
+    attrs = {"service.name": "agent-dart", "component": "dart-agent", "tool.name": tool_name}
+
     start_time = time.time()
-    span_holder = [None]
-    
+    span_holder: List[Any] = [_NoOpSpan()]
+
     def record_result(result: Any, error: Optional[str] = None):
         """Tool 호출 결과를 span에 기록"""
         try:
             latency_ms = (time.time() - start_time) * 1000
-            
             current_span = span_holder[0]
-            if current_span and hasattr(current_span, 'set_attribute'):
+            if current_span and hasattr(current_span, "set_attribute"):
                 current_span.set_attribute("tool.latency_ms", latency_ms)
                 current_span.set_attribute("tool.success", error is None)
-                
                 if error:
                     current_span.set_attribute("tool.error", error)
                 elif result:
-                    result_str = json.dumps(result, ensure_ascii=False) if isinstance(result, (dict, list)) else str(result)
+                    result_str = (
+                        json.dumps(result, ensure_ascii=False)
+                        if isinstance(result, (dict, list))
+                        else str(result)
+                    )
                     current_span.set_attribute("tool.result", result_str[:1000])
-                
         except Exception as e:
             logger.debug(f"Failed to record tool result: {e}")
-    
+
+    token = None
     try:
-        from opentelemetry import trace
-        from opentelemetry.context import attach, detach
-        
-        token = None
-        if parent_carrier:
-            parent_context = extract_context_from_carrier(parent_carrier)
-            if parent_context:
-                token = attach(parent_context)
-        
+        # Parent context attach (optional)
         try:
-            with tracer.start_as_current_span(span_name, attributes=attrs) as span:
-                if arguments:
-                    span.set_attribute("tool.arguments", json.dumps(arguments, ensure_ascii=False)[:1000])
-                
-                span_holder[0] = span
-                yield span, record_result
-        finally:
-            if token is not None:
+            from opentelemetry.context import attach
+            if parent_carrier:
+                parent_context = extract_context_from_carrier(parent_carrier)
+                if parent_context:
+                    token = attach(parent_context)
+        except Exception:
+            token = None
+
+        # Span context manager (fallback to no-op)
+        try:
+            span_cm = tracer.start_as_current_span(span_name, attributes=attrs)
+        except Exception as e:
+            logger.debug(f"Failed to create tool call span {span_name}: {e}")
+            span_cm = nullcontext(_NoOpSpan())
+
+        with span_cm as span:
+            span_holder[0] = span
+            try:
+                if arguments and hasattr(span, "set_attribute"):
+                    span.set_attribute(
+                        "tool.arguments",
+                        json.dumps(arguments, ensure_ascii=False)[:1000],
+                    )
+            except Exception:
+                pass
+            yield span, record_result
+    finally:
+        if token is not None:
+            try:
+                from opentelemetry.context import detach
                 detach(token)
-                
-    except ImportError:
-        span_holder[0] = _NoOpSpan()
-        yield span_holder[0], record_result
-    except Exception as e:
-        logger.warning(f"Failed to create tool call span: {e}")
-        span_holder[0] = _NoOpSpan()
-        yield span_holder[0], record_result
+            except Exception:
+                pass
 
 
 # =============================================================================

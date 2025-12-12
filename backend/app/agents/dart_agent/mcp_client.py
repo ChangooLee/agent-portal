@@ -676,26 +676,35 @@ def create_langchain_tool(
         **fields
     )
     
-    # LangChain Tool 클래스 정의
+    # IMPORTANT:
+    # Do NOT store mcp_client on the Tool as a pydantic/model field (or class attr).
+    # Pydantic/LangChain may deepcopy/serialize tool objects, which can traverse into
+    # httpx internals (RLock) and crash with: "cannot pickle '_thread.RLock' object".
+    # Reference agent-platform pattern: closure-based wrapper (no client field on the tool).
+
+    async def _tool_wrapper(**kwargs) -> str:
+        result = await mcp_client.call_tool(tool.name, kwargs)
+        if result.error:
+            return f"Error: {result.error}"
+        return (
+            json.dumps(result.result, ensure_ascii=False)
+            if isinstance(result.result, (dict, list))
+            else str(result.result)
+        )
+
     class MCPLangChainTool(BaseTool):
         name: str = tool.name
         description: str = tool.description or f"MCP tool: {tool.name}"
         args_schema: type = ArgsSchema
-        
-        _mcp_client: MCPHTTPClient = mcp_client
-        
+
         def _run(self, **kwargs) -> str:
-            """동기 실행 (비권장)"""
+            """Sync run (discouraged)."""
             import asyncio
             return asyncio.run(self._arun(**kwargs))
-        
+
         async def _arun(self, **kwargs) -> str:
-            """비동기 실행"""
-            result = await self._mcp_client.call_tool(self.name, kwargs)
-            if result.error:
-                return f"Error: {result.error}"
-            return json.dumps(result.result, ensure_ascii=False) if isinstance(result.result, (dict, list)) else str(result.result)
-    
+            return await _tool_wrapper(**kwargs)
+
     return MCPLangChainTool()
 
 

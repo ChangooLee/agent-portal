@@ -163,11 +163,17 @@ class DartBaseAgent(ABC):
             all_tools = self.mcp_client.get_tools()
             filtered = await self._filter_tools(all_tools)
             
-            # LangChain 도구로 변환
-            self.filtered_tools = create_langchain_tools(
-                self.mcp_client,
-                name_filter=lambda n: any(t.name == n for t in filtered)
-            )
+            # LangChain 도구로 변환 (pickle 오류 등 예외 발생 가능)
+            try:
+                self.filtered_tools = create_langchain_tools(
+                    self.mcp_client,
+                    name_filter=lambda n: any(t.name == n for t in filtered)
+                )
+            except Exception as tools_error:
+                logger.error(f"{self.agent_name} LangChain 도구 변환 실패: {tools_error}", exc_info=True)
+                # 도구 변환 실패 시 빈 리스트로 설정하고 계속 진행
+                self.filtered_tools = []
+                logger.warning(f"{self.agent_name} 도구 없이 계속 진행합니다")
             
             self._initialized = True
             logger.info(f"{self.agent_name} 초기화 완료: {len(self.filtered_tools)}개 도구")
@@ -414,113 +420,249 @@ class DartBaseAgent(ABC):
         Yields:
             Dict[str, Any]: 스트림 이벤트
         """
-        await self.initialize()
+        # 초기화를 generator 시작 전에 처리 (예외 발생 시 generator가 시작되지 않도록)
+        try:
+            await self.initialize()
+        except Exception as init_error:
+            logger.error(f"Agent initialization failed in run_stream: {init_error}", exc_info=True)
+            # 초기화 실패 시 에러 이벤트를 yield하고 generator 종료
+            try:
+                yield {"event": "error", "error": f"에이전트 초기화 실패: {str(init_error)}"}
+            except Exception as yield_error:
+                logger.error(f"Failed to yield initialization error event: {yield_error}")
+            try:
+                yield {
+                    "event": "done",
+                    "answer": "",
+                    "tool_calls": [],
+                    "tokens": {"prompt": 0, "completion": 0, "total": 0},
+                    "iterations": 0,
+                    "latency_ms": 0,
+                    "error": str(init_error)
+                }
+            except Exception as yield_error:
+                logger.error(f"Failed to yield done event after initialization error: {yield_error}")
+            # generator 종료 (예외를 전파하지 않음)
+            return
         
-        span_name = f"dart.{self.agent_name}"
-        
-        with start_dart_span(span_name, {"question_length": len(question)}, parent_carrier) as span:
-            current_carrier = {}
-            inject_context_to_carrier(current_carrier)
+        # 초기화 성공 후 generator 시작
+        try:
             
-            start_time = time.time()
+            span_name = f"dart.{self.agent_name}"
             
-            yield {"event": "start", "agent": self.agent_name}
+            # start_dart_span() 호출도 안전하게 처리 (pickle 오류 등 예외 발생 가능)
+            # 참고 프로젝트 패턴: 예외 발생 시에도 계속 진행
+            try:
+                span_context = start_dart_span(span_name, {"question_length": len(question)}, parent_carrier)
+            except Exception as span_error:
+                logger.warning(f"Failed to create span {span_name}: {span_error}")
+                # span 생성 실패해도 계속 진행 (no-op context manager 사용)
+                from contextlib import nullcontext
+                span_context = nullcontext()
             
-            messages = [
-                {"role": "system", "content": self._create_system_prompt()},
-                {"role": "user", "content": question}
-            ]
-            
-            tools_schema = self._get_tools_schema()
-            tool_calls_log = []
-            total_tokens = {"prompt": 0, "completion": 0, "total": 0}
-            
-            iteration = 0
-            final_answer = ""
-            
-            while iteration < self.max_iterations:
-                iteration += 1
+            # span context 사용 (예외 발생해도 계속 진행)
+            with span_context:
+                current_carrier = {}
+                try:
+                    inject_context_to_carrier(current_carrier)
+                except Exception:
+                    pass  # context injection 실패해도 계속 진행
                 
-                yield {"event": "iteration", "iteration": iteration}
+                start_time = time.time()
                 
-                # LLM 호출
-                with start_llm_call_span(self.agent_name, self.model, messages, current_carrier) as (llm_span, record_llm):
+                try:
+                    yield {"event": "start", "agent": self.agent_name}
+                except Exception as yield_error:
+                    logger.error(f"Failed to yield start event: {yield_error}")
+                    # yield 실패 시에도 계속 진행
+                
+                try:
+                    messages = [
+                        {"role": "system", "content": self._create_system_prompt()},
+                        {"role": "user", "content": question}
+                    ]
+                    
+                    tools_schema = self._get_tools_schema()
+                except Exception as setup_error:
+                    logger.error(f"Failed to setup messages/tools in run_stream: {setup_error}")
                     try:
-                        response = await self.llm.chat(
-                            messages=messages,
-                            tools=tools_schema if tools_schema else None,
-                            trace_headers=get_trace_headers(),
-                            metadata={
-                                "agent_id": self.agent_name,
-                                "session_id": session_id,
-                                "iteration": iteration
-                            }
-                        )
-                        record_llm(response)
-                        
-                        usage = response.get("usage", {})
-                        total_tokens["prompt"] += usage.get("prompt_tokens", 0)
-                        total_tokens["completion"] += usage.get("completion_tokens", 0)
-                        total_tokens["total"] += usage.get("total_tokens", 0)
-                        
+                        yield {"event": "error", "error": f"에이전트 설정 실패: {str(setup_error)}"}
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield setup error event: {yield_error}")
+                    try:
+                        yield {
+                            "event": "done",
+                            "answer": "",
+                            "tool_calls": [],
+                            "tokens": {"prompt": 0, "completion": 0, "total": 0},
+                            "iterations": 0,
+                            "latency_ms": 0,
+                            "error": str(setup_error)
+                        }
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield done event after setup error: {yield_error}")
+                    return
+                tool_calls_log = []
+                total_tokens = {"prompt": 0, "completion": 0, "total": 0}
+                
+                iteration = 0
+                final_answer = ""
+                
+                while iteration < self.max_iterations:
+                    iteration += 1
+                    
+                    try:
+                        yield {"event": "iteration", "iteration": iteration}
+                    except Exception as yield_error:
+                        logger.error(f"Failed to yield iteration event: {yield_error}")
+                        # yield 실패 시 루프 종료
+                        break
+                    
+                    # LLM 호출
+                    try:
+                        with start_llm_call_span(self.agent_name, self.model, messages, current_carrier) as (llm_span, record_llm):
+                            response = await self.llm.chat(
+                                messages=messages,
+                                tools=tools_schema if tools_schema else None,
+                                trace_headers=get_trace_headers(),
+                                metadata={
+                                    "agent_id": self.agent_name,
+                                    "session_id": session_id,
+                                    "iteration": iteration
+                                }
+                            )
+                            record_llm(response)
+                            
+                            usage = response.get("usage", {})
+                            total_tokens["prompt"] += usage.get("prompt_tokens", 0)
+                            total_tokens["completion"] += usage.get("completion_tokens", 0)
+                            total_tokens["total"] += usage.get("total_tokens", 0)
                     except Exception as e:
-                        yield {"event": "error", "error": str(e)}
-                        raise
-                
-                choice = response.get("choices", [{}])[0]
-                message = choice.get("message", {})
-                tool_calls = message.get("tool_calls", [])
-                
-                if tool_calls:
-                    messages.append({
-                        "role": "assistant",
-                        "content": message.get("content", ""),
-                        "tool_calls": tool_calls
-                    })
-                    
-                    for tc in tool_calls:
-                        func = tc.get("function", {})
-                        tool_name = func.get("name", "")
-                        tool_args_str = func.get("arguments", "{}")
-                        tool_id = tc.get("id", "")
-                        
+                        logger.error(f"LLM call failed in run_stream: {e}")
                         try:
-                            tool_args = json.loads(tool_args_str)
-                        except json.JSONDecodeError:
-                            tool_args = {}
-                        
-                        yield {"event": "tool_start", "tool": tool_name, "args": tool_args}
-                        
-                        result = await self._execute_tool(tool_name, tool_args, current_carrier)
-                        
-                        tool_calls_log.append({
-                            "tool": tool_name,
-                            "args": tool_args,
-                            "result": result[:500] if len(result) > 500 else result
-                        })
-                        
-                        yield {"event": "tool_end", "tool": tool_name, "result": result[:200]}
-                        
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_id,
-                            "content": result
-                        })
+                            yield {"event": "error", "error": f"LLM 호출 실패: {str(e)}"}
+                        except Exception as yield_error:
+                            logger.error(f"Failed to yield error event: {yield_error}")
+                        # 에러 이벤트를 yield한 후 종료
+                        try:
+                            yield {
+                                "event": "done",
+                                "answer": final_answer,
+                                "tool_calls": tool_calls_log,
+                                "tokens": total_tokens,
+                                "iterations": iteration,
+                                "latency_ms": (time.time() - start_time) * 1000,
+                                "error": str(e)
+                            }
+                        except Exception as yield_error:
+                            logger.error(f"Failed to yield done event: {yield_error}")
+                        return
                     
-                else:
-                    final_answer = message.get("content", "")
-                    yield {"event": "answer", "content": final_answer}
-                    break
-            
-            latency_ms = (time.time() - start_time) * 1000
-            
-            yield {
-                "event": "done",
-                "answer": final_answer,
-                "tool_calls": tool_calls_log,
-                "tokens": total_tokens,
-                "iterations": iteration,
-                "latency_ms": latency_ms
-            }
+                    choice = response.get("choices", [{}])[0]
+                    message = choice.get("message", {})
+                    tool_calls = message.get("tool_calls", [])
+                    
+                    if tool_calls:
+                        messages.append({
+                            "role": "assistant",
+                            "content": message.get("content", ""),
+                            "tool_calls": tool_calls
+                        })
+                        
+                        for tc in tool_calls:
+                            func = tc.get("function", {})
+                            tool_name = func.get("name", "")
+                            tool_args_str = func.get("arguments", "{}")
+                            tool_id = tc.get("id", "")
+                            
+                            try:
+                                tool_args = json.loads(tool_args_str)
+                            except json.JSONDecodeError:
+                                tool_args = {}
+                            
+                            try:
+                                yield {"event": "tool_start", "tool": tool_name, "args": tool_args}
+                            except Exception as yield_error:
+                                logger.error(f"Failed to yield tool_start event: {yield_error}")
+                                # yield 실패 시에도 계속 진행
+                            
+                            try:
+                                result = await self._execute_tool(tool_name, tool_args, current_carrier)
+                                
+                                tool_calls_log.append({
+                                    "tool": tool_name,
+                                    "args": tool_args,
+                                    "result": result[:500] if len(result) > 500 else result
+                                })
+                                
+                                try:
+                                    yield {"event": "tool_end", "tool": tool_name, "result": result[:200]}
+                                except Exception as yield_error:
+                                    logger.error(f"Failed to yield tool_end event: {yield_error}")
+                                
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tool_id,
+                                    "content": result
+                                })
+                            except Exception as e:
+                                logger.error(f"Tool execution failed in run_stream: {tool_name} - {e}")
+                                error_result = f"Error: {str(e)}"
+                                tool_calls_log.append({
+                                    "tool": tool_name,
+                                    "args": tool_args,
+                                    "result": error_result,
+                                    "error": True
+                                })
+                                try:
+                                    yield {"event": "tool_error", "tool": tool_name, "error": str(e)}
+                                except Exception as yield_error:
+                                    logger.error(f"Failed to yield tool_error event: {yield_error}")
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tool_id,
+                                    "content": error_result
+                                })
+                        
+                    else:
+                        final_answer = message.get("content", "")
+                        try:
+                            yield {"event": "answer", "content": final_answer}
+                        except Exception as yield_error:
+                            logger.error(f"Failed to yield answer event: {yield_error}")
+                        break
+                
+                latency_ms = (time.time() - start_time) * 1000
+                
+                try:
+                    yield {
+                        "event": "done",
+                        "answer": final_answer,
+                        "tool_calls": tool_calls_log,
+                        "tokens": total_tokens,
+                        "iterations": iteration,
+                        "latency_ms": latency_ms
+                    }
+                except Exception as yield_error:
+                    logger.error(f"Failed to yield done event: {yield_error}")
+        except Exception as e:
+            # 최상위 예외 처리: generator가 정상적으로 종료되도록 보장
+            logger.error(f"Unexpected error in run_stream: {e}", exc_info=True)
+            try:
+                yield {"event": "error", "error": f"예기치 않은 오류: {str(e)}"}
+            except Exception as yield_error:
+                logger.error(f"Failed to yield error event in exception handler: {yield_error}")
+            try:
+                yield {
+                    "event": "done",
+                    "answer": "",
+                    "tool_calls": [],
+                    "tokens": {"prompt": 0, "completion": 0, "total": 0},
+                    "iterations": 0,
+                    "latency_ms": 0,
+                    "error": str(e)
+                }
+            except Exception as yield_error:
+                logger.error(f"Failed to yield done event in exception handler: {yield_error}")
 
 
