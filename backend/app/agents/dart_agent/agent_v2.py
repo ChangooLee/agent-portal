@@ -207,6 +207,58 @@ class DartV2Agent:
         # Upper bound to keep latency reasonable
         return domains[:3]
 
+    def _build_fallback_report(self, question: str, intent: IntentResult, selected: List[AnalysisDomain], sub_results: List[Dict[str, Any]]) -> str:
+        """
+        Fallback report generator when integration LLM fails or returns empty.
+        Uses collected agent answers/tools to produce a deterministic Markdown report.
+        """
+        company = intent.company_name or "N/A"
+        lines: List[str] = []
+        lines.append("## 분석 요약")
+        lines.append("")
+        lines.append(f"- 질문: {question}")
+        lines.append(f"- 분류: {intent.domain.value}")
+        if intent.company_name:
+            lines.append(f"- 대상: {company}")
+        if intent.keywords:
+            lines.append(f"- 키워드: {', '.join(intent.keywords[:10])}")
+        lines.append("")
+
+        lines.append("## 수집된 결과")
+        lines.append("")
+        lines.append(f"- 실행된 에이전트: {', '.join([d.value for d in selected]) if selected else 'N/A'}")
+        lines.append("")
+
+        for r in sub_results:
+            domain = r.get("domain") or "unknown"
+            ans = (r.get("answer") or "").strip()
+            tool_calls = r.get("tool_calls") or []
+            lines.append(f"### {domain}")
+            lines.append("")
+            if ans:
+                lines.append(ans)
+            else:
+                lines.append("- (해당 도메인에서 최종 요약을 생성하지 못했습니다. 도구 실행 로그/수집 데이터만 제공합니다.)")
+            lines.append("")
+
+            if tool_calls:
+                lines.append("#### 사용 도구(요약)")
+                for tc in tool_calls[:12]:
+                    tool = tc.get("tool") or "unknown_tool"
+                    # Avoid huge payloads
+                    result_preview = (tc.get("result") or "").strip()
+                    if len(result_preview) > 200:
+                        result_preview = result_preview[:200] + "..."
+                    lines.append(f"- **{tool}**: {result_preview}")
+                lines.append("")
+
+        lines.append("## 한계 및 추가 확인")
+        lines.append("")
+        lines.append("- 통합 LLM 응답이 비어있거나 실패하여, 수집된 결과를 기반으로 fallback 레포트를 생성했습니다.")
+        lines.append("- 더 정확한 분석을 위해서는 공시 원문/주석 추출 결과가 충분히 제공되어야 합니다.")
+        lines.append("")
+        return "\n".join(lines).strip() + "\n"
+
     async def analyze_stream(self, question: str, session_id: Optional[str] = None):
         start_time = time.time()
         carrier: Dict[str, str] = {}
@@ -304,20 +356,44 @@ class DartV2Agent:
             }
             messages = [integration_prompt, integration_input]
 
-            with start_llm_call_span("dart_v2_integrate", self.model, messages, carrier) as (_span, record):
-                resp = await self._intro_llm.chat(
-                    messages=messages,
-                    tools=None,
-                    trace_headers=get_trace_headers(),
-                    temperature=0.2,
-                    max_tokens=1800,
-                    metadata={"agent_id": "dart-v2-integrator"},
-                )
-                record(resp)
+            resp: Optional[Dict[str, Any]] = None
+            final_md: str = ""
+            integrate_error: Optional[str] = None
+            try:
+                with start_llm_call_span("dart_v2_integrate", self.model, messages, carrier) as (_span, record):
+                    resp = await self._intro_llm.chat(
+                        messages=messages,
+                        tools=None,
+                        trace_headers=get_trace_headers(),
+                        temperature=0.2,
+                        max_tokens=1800,
+                        metadata={"agent_id": "dart-v2-integrator"},
+                    )
+                    record(resp)
+                final_md = (resp or {}).get("choices", [{}])[0].get("message", {}).get("content", "") or ""
+                final_md = final_md.strip()
+            except Exception as e:
+                integrate_error = str(e)
+                logger.error("Integration LLM failed: %s", e, exc_info=True)
 
-            final_md = resp.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-            if not final_md:
-                final_md = "## 분석 결과\n\n분석 결과를 생성하지 못했습니다.\n"
+            # Fallback conditions: integration failed OR empty/too short output
+            fallback_reason: Optional[str] = None
+            if integrate_error:
+                fallback_reason = "integrate_error"
+            elif not final_md:
+                fallback_reason = "integrate_empty"
+            elif len(final_md) < 80:
+                fallback_reason = "integrate_too_short"
+
+            if fallback_reason:
+                record_counter("dart_v2_report_fallback_total", {"reason": fallback_reason})
+                logger.warning(
+                    "Using fallback report (reason=%s, company=%s, domains=%s)",
+                    fallback_reason,
+                    intent.company_name,
+                    ",".join([d.value for d in selected]),
+                )
+                final_md = self._build_fallback_report(question, intent, selected, sub_results)
 
             # Merge token usage (best-effort)
             merged_tokens = {"prompt": 0, "completion": 0, "total": 0}
