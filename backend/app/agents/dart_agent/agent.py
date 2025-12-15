@@ -2,15 +2,8 @@
 DART Agent - Agent Portal용 기업공시분석 에이전트
 
 LiteLLM + OpenDart MCP 기반 멀티에이전트 시스템.
-원본 dart_agent.py, intent_classifier_agent.py 참조하여 간소화.
+OTEL 트레이싱 통합으로 모든 이벤트(request/response body) 추적.
 """
-
-import warnings
-warnings.warn(
-    "app.agents.dart_agent.agent is deprecated. Use app.agents.dart_agent.agent_v2 instead (v2 only).",
-    DeprecationWarning,
-    stacklevel=2,
-)
 
 import json
 import logging
@@ -356,7 +349,8 @@ class DartAgent(DartBaseAgent):
     async def analyze_stream(
         self,
         question: str,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        parent_carrier: Optional[Dict[str, str]] = None
     ):
         """
         DART 분석 실행 (스트리밍).
@@ -364,22 +358,52 @@ class DartAgent(DartBaseAgent):
         Args:
             question: 사용자 질문
             session_id: 세션 ID
+            parent_carrier: 부모 OTEL context carrier (trace_id 계승용)
             
         Yields:
             스트림 이벤트
         """
-        # start_dart_span() 호출을 안전하게 처리 (pickle 오류 등 예외 발생 가능)
+        # OTEL span 생성 (parent_carrier로 trace_id 계승)
         try:
-            span_context = start_dart_span("dart.analyze_stream", {"question_length": len(question)})
+            span_context = start_dart_span(
+                "dart.analyze_stream", 
+                {"question_length": len(question), "session_id": session_id or ""},
+                parent_carrier
+            )
         except Exception as span_error:
             logger.warning(f"Failed to create span dart.analyze_stream: {span_error}")
-            # span 생성 실패해도 계속 진행 (no-op context manager 사용)
             from contextlib import nullcontext
             span_context = nullcontext()
         
-        # span context 사용 (예외 발생해도 계속 진행)
+        def _record_otel_event(span, event_type: str, payload: Dict[str, Any]):
+            """OTEL span에 이벤트 기록 (request/response body 포함)"""
+            try:
+                if span is None or not hasattr(span, "add_event"):
+                    return
+                attrs = {
+                    "dart.event_type": event_type,
+                    "dart.session_id": session_id or "",
+                }
+                # Request/Response body를 속성으로 기록
+                for key, value in payload.items():
+                    if key in ("event", "type"):
+                        continue
+                    try:
+                        if isinstance(value, (dict, list)):
+                            import json
+                            attrs[f"dart.{key}"] = json.dumps(value, ensure_ascii=False, default=str)[:1000]
+                        else:
+                            attrs[f"dart.{key}"] = str(value)[:500]
+                    except Exception:
+                        pass
+                span.add_event(f"sse.{event_type}", attributes=attrs)
+                record_counter("dart_stream_events_total", {"event": event_type})
+            except Exception:
+                pass
+        
+        span = None
         try:
-            with span_context:
+            with span_context as span:
                 current_carrier = {}
                 try:
                     inject_context_to_carrier(current_carrier)
@@ -388,8 +412,17 @@ class DartAgent(DartBaseAgent):
                 
                 start_time = time.time()
                 
+                # 요청 정보 OTEL에 기록
+                _record_otel_event(span, "request", {
+                    "question": question,
+                    "session_id": session_id,
+                    "model": self.model
+                })
+                
                 try:
-                    yield {"event": "analyzing", "message": "질문을 분석하고 있습니다..."}
+                    analyzing_event = {"event": "analyzing", "message": "질문을 분석하고 있습니다..."}
+                    _record_otel_event(span, "analyzing", analyzing_event)
+                    yield analyzing_event
                 except Exception as yield_error:
                     logger.error(f"Failed to yield analyzing event: {yield_error}")
                 
@@ -398,12 +431,14 @@ class DartAgent(DartBaseAgent):
                     intent = await self.intent_classifier.classify(question, current_carrier)
                     
                     try:
-                        yield {
+                        intent_event = {
                             "event": "intent_classified",
                             "domain": intent.domain.value,
                             "company_name": intent.company_name,
                             "reasoning": intent.reasoning
                         }
+                        _record_otel_event(span, "intent_classified", intent_event)
+                        yield intent_event
                     except Exception as yield_error:
                         logger.error(f"Failed to yield intent_classified event: {yield_error}")
                     
@@ -414,16 +449,20 @@ class DartAgent(DartBaseAgent):
                 except Exception as e:
                     logger.error(f"Intent classification failed in analyze_stream: {e}")
                     try:
-                        yield {"event": "error", "error": f"의도 분류 실패: {str(e)}"}
+                        error_event = {"event": "error", "error": f"의도 분류 실패: {str(e)}"}
+                        _record_otel_event(span, "error", error_event)
+                        yield error_event
                     except Exception as yield_error:
                         logger.error(f"Failed to yield error event: {yield_error}")
                     try:
-                        yield {
+                        complete_event = {
                             "event": "complete",
                             "total_latency_ms": (time.time() - start_time) * 1000,
                             "intent": {"domain": "general", "company_name": None},
                             "error": str(e)
                         }
+                        _record_otel_event(span, "complete", complete_event)
+                        yield complete_event
                     except Exception as yield_error:
                         logger.error(f"Failed to yield complete event: {yield_error}")
                     return
@@ -436,11 +475,13 @@ class DartAgent(DartBaseAgent):
                 except Exception as init_error:
                     logger.error(f"Agent initialization failed in analyze_stream: {init_error}", exc_info=True)
                     try:
-                        yield {"event": "error", "error": f"에이전트 초기화 실패: {str(init_error)}"}
+                        error_event = {"event": "error", "error": f"에이전트 초기화 실패: {str(init_error)}"}
+                        _record_otel_event(span, "error", error_event)
+                        yield error_event
                     except Exception as yield_error:
                         logger.error(f"Failed to yield initialization error event: {yield_error}")
                     try:
-                        yield {
+                        complete_event = {
                             "event": "complete",
                             "total_latency_ms": (time.time() - start_time) * 1000,
                             "intent": {
@@ -449,6 +490,8 @@ class DartAgent(DartBaseAgent):
                             },
                             "error": str(init_error)
                         }
+                        _record_otel_event(span, "complete", complete_event)
+                        yield complete_event
                     except Exception as yield_error:
                         logger.error(f"Failed to yield complete event after initialization error: {yield_error}")
                     return  # generator 종료
@@ -461,6 +504,9 @@ class DartAgent(DartBaseAgent):
                     try:
                         async for event in run_stream_gen:
                             try:
+                                # 모든 이벤트를 OTEL에 기록 (request/response body 포함)
+                                event_type = event.get("event", "unknown")
+                                _record_otel_event(span, event_type, event)
                                 yield event
                             except Exception as yield_error:
                                 logger.error(f"Failed to yield event from run_stream: {yield_error}")
@@ -477,7 +523,9 @@ class DartAgent(DartBaseAgent):
                         logger.error(f"Error in run_stream loop: {loop_error}", exc_info=True)
                         # 에러 이벤트 yield 시도
                         try:
-                            yield {"event": "error", "error": f"에이전트 실행 중 오류: {str(loop_error)}"}
+                            error_event = {"event": "error", "error": f"에이전트 실행 중 오류: {str(loop_error)}"}
+                            _record_otel_event(span, "error", error_event)
+                            yield error_event
                         except Exception as yield_error:
                             logger.error(f"Failed to yield error event: {yield_error}")
                     finally:
@@ -494,13 +542,15 @@ class DartAgent(DartBaseAgent):
                     # run_stream() 호출 자체에서 예외 발생 시 처리
                     logger.error(f"Agent run_stream failed in analyze_stream: {e}", exc_info=True)
                     try:
-                        yield {"event": "error", "error": f"에이전트 실행 실패: {str(e)}"}
+                        error_event = {"event": "error", "error": f"에이전트 실행 실패: {str(e)}"}
+                        _record_otel_event(span, "error", error_event)
+                        yield error_event
                     except Exception as yield_error:
                         logger.error(f"Failed to yield error event: {yield_error}")
                 
                 total_latency = (time.time() - start_time) * 1000
                 
-                yield {
+                complete_event = {
                     "event": "complete",
                     "total_latency_ms": total_latency,
                     "intent": {
@@ -508,20 +558,26 @@ class DartAgent(DartBaseAgent):
                         "company_name": intent.company_name
                     }
                 }
+                _record_otel_event(span, "complete", complete_event)
+                yield complete_event
         except Exception as e:
             # 최상위 예외 처리: generator가 정상적으로 종료되도록 보장
             logger.error(f"Unexpected error in analyze_stream: {e}", exc_info=True)
             try:
-                yield {"event": "error", "error": f"예기치 않은 오류: {str(e)}"}
+                error_event = {"event": "error", "error": f"예기치 않은 오류: {str(e)}"}
+                _record_otel_event(span, "error", error_event)
+                yield error_event
             except Exception as yield_error:
                 logger.error(f"Failed to yield error event in exception handler: {yield_error}")
             try:
-                yield {
+                complete_event = {
                     "event": "complete",
                     "total_latency_ms": 0,
                     "intent": {"domain": "general", "company_name": None},
                     "error": str(e)
                 }
+                _record_otel_event(span, "complete", complete_event)
+                yield complete_event
             except Exception as yield_error:
                 logger.error(f"Failed to yield complete event in exception handler: {yield_error}")
 

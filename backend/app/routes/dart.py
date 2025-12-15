@@ -157,8 +157,7 @@ async def chat(request_data: DartChatRequest):
     
     사용자 질문을 분석하고 관련 공시 정보를 조회하여 응답합니다.
     """
-    # v2 only
-    from app.agents.dart_agent.agent_v2 import get_dart_agent
+    from app.agents.dart_agent.agent import get_dart_agent
     
     logger.info(f"DART chat request: {request_data.question[:50]}...")
     
@@ -254,8 +253,7 @@ async def chat_stream(request_data: DartChatRequest):
     
     분석 진행 상황을 실시간으로 스트리밍합니다.
     """
-    # v2 only
-    from app.agents.dart_agent.agent_v2 import get_dart_agent
+    from app.agents.dart_agent.agent import get_dart_agent
     
     logger.info(f"DART stream request: {request_data.question[:50]}...")
     
