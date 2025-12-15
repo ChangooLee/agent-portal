@@ -43,39 +43,38 @@ def observe():
 class CapitalChangeAgent(DartBaseAgent):
     """자본변동 분석 전문 에이전트 - 증자/감자, 자기주식, 자본금 변동 분석"""
 
-    def __init__(
-        self,
-        llm,
-        mcp_servers,
-        checkpoint_db_path: str = None,  # PostgreSQL 사용
-    ):
-        """CapitalChangeAgent 초기화"""
-        # mcp_servers를 리스트로 변환 (FinancialAgent 패턴과 동일)
-        if isinstance(mcp_servers, dict):
-            mcp_servers = [mcp_servers]
-        else:
-            mcp_servers = mcp_servers
-
-        # BaseAgent 초기화 (FinancialAgent 패턴과 동일)
+    def __init__(self, model: str = "qwen-235b"):
+        """CapitalChangeAgent 초기화 (Agent Portal 구조)"""
         super().__init__(
             agent_name="CapitalChangeAgent",
-            llm=llm,
-            mcp_servers=mcp_servers,
-            checkpoint_db_path=checkpoint_db_path,
+            model=model,
+            max_iterations=10
         )
 
-        self.mcp_servers = mcp_servers
         self.agent_domain = "capital_change"
-        self.prompt_builder = PromptBuilder()
-        
-        # 메시지 정제 시스템 초기화
         self.message_refiner = MessageRefiner()
         
-        log_step(
-            "CapitalChangeAgent 초기화",
-            "SUCCESS",
-            f"MCP 서버 {len(mcp_servers)}개 등록 완료",
-        )
+        log_step("CapitalChangeAgent 초기화", "SUCCESS", "자본변동 분석 에이전트 설정 완료")
+
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
+        """자본변동 분석에서 사용할 도구 필터링"""
+        target_tools = {
+            "get_stock_increase_decrease",
+            "get_stock_total",
+            "get_treasury_stock",
+            "get_treasury_stock_acquisition",
+            "get_treasury_stock_disposal",
+            "get_capital_increase",
+            "get_capital_decrease",
+        }
+        filtered = [t for t in tools if t.name in target_tools]
+        log_step("도구 필터링 완료", "SUCCESS", f"CapitalChange 도구: {len(filtered)}개")
+        return filtered
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return """당신은 DART 공시 시스템의 자본변동 분석 전문가입니다.
+기업의 증자/감자, 자기주식, 자본금 변동 등을 분석합니다."""
 
     async def _filter_tools_for_agent(self, tools):
         """CapitalChangeAgent에서 사용할 도구 필터링 - README.md 기준 11개 자본변동 도구만"""

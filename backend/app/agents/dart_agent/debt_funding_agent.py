@@ -48,39 +48,37 @@ def observe():
 class DebtFundingAgent(DartBaseAgent):
     """부채 및 자금조달 분석 전문 에이전트 - 부채구조, 자금조달, 채무증권 분석"""
 
-    def __init__(
-        self,
-        llm,
-        mcp_servers,
-        checkpoint_db_path: str = None,  # PostgreSQL 사용
-    ):
-        """부채 및 자금조달 분석 에이전트 초기화"""
-        # mcp_servers를 리스트로 변환 (GovernanceAgent 패턴과 동일)
-        if isinstance(mcp_servers, dict):
-            mcp_servers = [mcp_servers]
-        else:
-            mcp_servers = mcp_servers
-
-        # BaseAgent 초기화 (GovernanceAgent 패턴과 동일)
+    def __init__(self, model: str = "qwen-235b"):
+        """DebtFundingAgent 초기화 (Agent Portal 구조)"""
         super().__init__(
             agent_name="DebtFundingAgent",
-            llm=llm,
-            mcp_servers=mcp_servers,
-            checkpoint_db_path=checkpoint_db_path,
+            model=model,
+            max_iterations=10
         )
 
-        self.mcp_servers = mcp_servers
         self.agent_domain = "debt_funding"
-        self.prompt_builder = PromptBuilder()
-        
-        # 메시지 정제 시스템 초기화
         self.message_refiner = MessageRefiner()
         
-        log_step(
-            "DebtFundingAgent 초기화",
-            "SUCCESS",
-            f"MCP 서버 {len(mcp_servers)}개 등록 완료",
-        )
+        log_step("DebtFundingAgent 초기화", "SUCCESS", "부채 분석 에이전트 설정 완료")
+
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
+        """부채 및 자금조달 분석에서 사용할 도구 필터링"""
+        target_tools = {
+            "get_debt",
+            "get_debt_securities_issued",
+            "get_convertible_bond",
+            "get_bond_with_warrant",
+            "get_exchangeable_bond",
+            "get_loan_agreement",
+        }
+        filtered = [t for t in tools if t.name in target_tools]
+        log_step("도구 필터링 완료", "SUCCESS", f"DebtFunding 도구: {len(filtered)}개")
+        return filtered
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return """당신은 DART 공시 시스템의 부채 및 자금조달 분석 전문가입니다.
+기업의 채무증권 발행, 차입금, 부채 구조 등을 분석합니다."""
 
     async def _filter_tools_for_agent(self, tools: List[BaseTool]) -> List[BaseTool]:
         """부채 및 자금조달 분석에 특화된 도구 필터링 - README.md 기준 15개 도구"""

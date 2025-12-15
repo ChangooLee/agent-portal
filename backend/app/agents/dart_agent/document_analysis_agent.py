@@ -44,37 +44,35 @@ def observe():
 class DocumentAnalysisAgent(DartBaseAgent):
     """문서 기반 심층 분석 전문 에이전트"""
 
-    def __init__(
-        self,
-        llm,
-        mcp_servers,
-        checkpoint_db_path: str = "sqlite/checkpoints_dart_document.db",
-    ):
-        """DocumentAnalysisAgent 초기화"""
-        # mcp_servers를 리스트로 변환
-        if isinstance(mcp_servers, dict):
-            mcp_servers = [mcp_servers]
-        else:
-            mcp_servers = mcp_servers
-
-        # BaseAgent 초기화
+    def __init__(self, model: str = "qwen-235b"):
+        """DocumentAnalysisAgent 초기화 (Agent Portal 구조)"""
         super().__init__(
             agent_name="DocumentAnalysisAgent",
-            llm=llm,
-            mcp_servers=mcp_servers,
-            checkpoint_db_path=checkpoint_db_path,
+            model=model,
+            max_iterations=10
         )
 
-        self.mcp_servers = mcp_servers
         self.agent_domain = "document_analysis"
-        self.prompt_builder = PromptBuilder()
-        log_step(
-            "DocumentAnalysisAgent 초기화",
-            "SUCCESS",
-            f"MCP 서버 {len(mcp_servers)}개 등록 완료",
-        )
-        # 메시지 정제 시스템 초기화
         self.message_refiner = MessageRefiner()
+        
+        log_step("DocumentAnalysisAgent 초기화", "SUCCESS", "문서 분석 에이전트 설정 완료")
+
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
+        """문서 분석에서 사용할 도구 필터링"""
+        target_tools = {
+            "get_disclosure_document",
+            "search_disclosure_content",
+            "extract_document_section",
+            "analyze_document_summary",
+        }
+        filtered = [t for t in tools if t.name in target_tools]
+        log_step("도구 필터링 완료", "SUCCESS", f"DocumentAnalysis 도구: {len(filtered)}개")
+        return filtered
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return """당신은 DART 공시 시스템의 문서 분석 전문가입니다.
+공시 문서의 내용을 파싱하고 주요 정보를 추출하여 분석합니다."""
 
     async def _filter_tools_for_agent(self, tools):
         """문서 분석에서 사용할 도구 필터링"""

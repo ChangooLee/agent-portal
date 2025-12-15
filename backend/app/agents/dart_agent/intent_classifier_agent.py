@@ -916,16 +916,23 @@ class IntentClassifierAgent(DartBaseAgent):
             else:
                 print(f"🔥🔥🔥 IntentClassifierAgent 이미 초기화됨 (정상)")
 
-            # MCP 매니저를 통해 직접 도구 호출 (모든 변형에 대해)
-            if hasattr(self, "mcp_manager") and self.mcp_manager:
-                print(f"🔥🔥🔥 MCP 매니저 상태 확인 완료")
+            # MCP 클라이언트를 통해 직접 도구 호출 (모든 변형에 대해)
+            # Agent Portal에서는 mcp_client 사용
+            mcp_client = getattr(self, 'mcp_client', None)
+            if mcp_client is None:
+                # mcp_client가 없으면 가져오기
+                from .mcp_client import get_opendart_mcp_client
+                mcp_client = await get_opendart_mcp_client()
+            
+            if mcp_client and mcp_client.is_connected:
+                print(f"🔥🔥🔥 MCP 클라이언트 연결 확인 완료")
 
                 # 모든 기업명 변형에 대해 MCP 도구 호출 시도
                 for variation in company_variations:
                     print(f"🔥🔥🔥 MCP 도구로 기업코드 조회 시도: '{variation}'")
 
                     try:
-                        tool_result = await self.mcp_manager.call_tool(
+                        tool_result = await mcp_client.call_tool(
                             "get_corporation_code_by_name", {"corp_name": variation}
                         )
 
@@ -978,9 +985,9 @@ class IntentClassifierAgent(DartBaseAgent):
                     "error": f"'{company_name}' 기업을 찾을 수 없습니다 (시도한 변형: {len(company_variations)}개)"
                 }
             else:
-                print(f"🔥🔥🔥 MCP 매니저 없음!")
-                log_step("기업코드 조회", "ERROR", "MCP 매니저가 초기화되지 않음")
-                return {"error": "MCP 매니저가 초기화되지 않았습니다"}
+                print(f"🔥🔥🔥 MCP 클라이언트 연결 안됨!")
+                log_step("기업코드 조회", "ERROR", "MCP 클라이언트가 연결되지 않음")
+                return {"error": "MCP 클라이언트에 연결할 수 없습니다"}
 
         except Exception as e:
             log_step("기업코드 조회", "ERROR", f"기업코드 조회 실패: {e}")

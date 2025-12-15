@@ -44,39 +44,37 @@ def observe():
 class ExecutiveAuditAgent(DartBaseAgent):
     """임원보수 및 감사 분석 전문 에이전트 - 임원보수, 감사인 선임, 감사 품질 분석"""
 
-    def __init__(
-        self,
-        llm,
-        mcp_servers,
-        checkpoint_db_path: str = None,  # PostgreSQL 사용
-    ):
-        """ExecutiveAuditAgent 초기화"""
-        # mcp_servers를 리스트로 변환
-        if isinstance(mcp_servers, dict):
-            mcp_servers = [mcp_servers]
-        else:
-            mcp_servers = mcp_servers
-
-        # BaseAgent 초기화
+    def __init__(self, model: str = "qwen-235b"):
+        """ExecutiveAuditAgent 초기화 (Agent Portal 구조)"""
         super().__init__(
             agent_name="ExecutiveAuditAgent",
-            llm=llm,
-            mcp_servers=mcp_servers,
-            checkpoint_db_path=checkpoint_db_path,
+            model=model,
+            max_iterations=10
         )
 
-        self.mcp_servers = mcp_servers
         self.agent_domain = "executive_audit"
-        self.prompt_builder = PromptBuilder()
-        
-        # 메시지 정제 시스템 초기화
         self.message_refiner = MessageRefiner()
         
-        log_step(
-            "ExecutiveAuditAgent 초기화",
-            "SUCCESS",
-            f"MCP 서버 {len(mcp_servers)}개 등록 완료",
-        )
+        log_step("ExecutiveAuditAgent 초기화", "SUCCESS", "임원보수/감사 분석 에이전트 설정 완료")
+
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
+        """임원보수 및 감사 분석에서 사용할 도구 필터링"""
+        target_tools = {
+            "get_executive_compensation",
+            "get_individual_compensation",
+            "get_auditor_appointment",
+            "get_auditor_opinion",
+            "get_internal_control",
+            "get_audit_committee",
+        }
+        filtered = [t for t in tools if t.name in target_tools]
+        log_step("도구 필터링 완료", "SUCCESS", f"ExecutiveAudit 도구: {len(filtered)}개")
+        return filtered
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return """당신은 DART 공시 시스템의 임원보수 및 감사 분석 전문가입니다.
+기업의 임원 보수, 감사인 선임, 내부통제 등을 분석합니다."""
     
     async def _filter_tools_for_agent(self, tools: List[BaseTool]) -> List[BaseTool]:
         """임원보수 및 감사 분석에 특화된 도구 필터링 (9개 도구)"""
