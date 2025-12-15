@@ -5,61 +5,73 @@ DART 멀티에이전트 시스템의 마스터 조정자
 
 import asyncio
 import time
+import logging
 from typing import Dict, Any, List, Optional, AsyncGenerator
 from datetime import datetime
 from langchain_core.tools import BaseTool
-from langchain_core.messages import SystemMessage
-from langchain.agents import create_agent
+from langchain_core.messages import SystemMessage, HumanMessage
 
-from agent.base_agent import BaseAgent
-
-# ToolExecutionResult는 dart_types.py에서 import
-from agent.dart_agent.dart_types import (
+# Agent Portal imports
+from .base import DartBaseAgent, LiteLLMAdapter
+from .dart_types import (
     create_analysis_context,
     merge_agent_results,
     AgentResult,
     ToolExecutionResult,
     IntentClassificationResult,
+    AnalysisContext,
+    RiskLevel,
 )
-from agent.dart_agent.message_refiner import MessageRefiner
-from utils.logger import log_step, log_performance, log_agent_flow
+from .message_refiner import MessageRefiner
+from .mcp_client import MCPTool, get_opendart_mcp_client
+from .metrics import start_dart_span, record_counter, inject_context_to_carrier
 
-# Langfuse 로깅 설정
-try:
-    from langfuse.decorators import observe, langfuse_context
+logger = logging.getLogger(__name__)
 
-    LANGFUSE_AVAILABLE = True
-except ImportError:
-    LANGFUSE_AVAILABLE = False
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수 (agent-platform 호환)"""
+    logger.info(f"[{step_name}] {status}: {message}")
 
-    def observe():
-        def decorator(func):
-            return func
+def log_performance(operation: str, duration: float, details: str = ""):
+    """성능 로깅 (agent-platform 호환)"""
+    logger.info(f"[PERF] {operation}: {duration:.2f}ms {details}")
 
-        return decorator
+def log_agent_flow(agent_name: str, action: str, step: int, message: str):
+    """에이전트 플로우 로깅 (agent-platform 호환)"""
+    logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
+
+# Langfuse 데코레이터 (선택적)
+def observe():
+    def decorator(func):
+        return func
+    return decorator
 
 
 # =============================================================================
-# 🎯 DART 마스터 에이전트
+# 🎯 DART 마스터 에이전트 (Agent Portal 버전)
 # =============================================================================
 
 
-class DartMasterAgent(BaseAgent):
-    """DART 멀티에이전트 시스템의 마스터 조정자"""
+class DartMasterAgent(DartBaseAgent):
+    """DART 멀티에이전트 시스템의 마스터 조정자 (Agent Portal 마이그레이션)"""
     
-    def __init__(self, llm, mcp_servers: Dict[str, Any]):
-        """마스터 에이전트 초기화"""
-        print(f"🔥🔥🔥 DartMasterAgent 초기화 - llm: {llm}, type: {type(llm)}")
-        super().__init__(llm, mcp_servers, "DartMasterAgent", None)  # PostgreSQL 사용
-        print(f"🔥🔥🔥 DartMasterAgent 초기화 후 - self.llm: {self.llm}, type: {type(self.llm)}")
+    def __init__(self, model: str = "qwen-235b"):
+        """마스터 에이전트 초기화 (Agent Portal 구조)"""
+        super().__init__(
+            agent_name="DartMasterAgent",
+            model=model,
+            max_iterations=15  # 멀티에이전트 조정에 필요한 반복 횟수
+        )
+        
+        # LLM 어댑터 (LiteLLM 기반)
+        self.llm = LiteLLMAdapter(model)
         
         # 하위 에이전트들 저장소
-        self.sub_agents: Dict[str, BaseAgent] = {}
+        self.sub_agents: Dict[str, DartBaseAgent] = {}
         self.intent_classifier = None
         
-        # 메시지 생성기 초기화 (경량 LLM 사용)
-        from agent.dart_agent.utils.message_generator import MessageGenerator
-        self.message_generator = MessageGenerator()
+        # 메시지 생성기는 간소화 (향후 필요시 구현)
+        self.message_generator = None
         
         # 마스터 에이전트 설정
         self.master_config = {
@@ -71,7 +83,7 @@ class DartMasterAgent(BaseAgent):
 
         log_step("DartMasterAgent 초기화", "SUCCESS", "마스터 조정자 설정 완료")
     
-    def register_sub_agent(self, agent_name: str, agent: BaseAgent):
+    def register_sub_agent(self, agent_name: str, agent: DartBaseAgent):
         """하위 에이전트 등록"""
         self.sub_agents[agent_name] = agent
         log_step("하위 에이전트 등록", "INFO", f"{agent_name} 등록 완료")
@@ -81,29 +93,22 @@ class DartMasterAgent(BaseAgent):
         self.intent_classifier = classifier
         log_step("의도 분류기 등록", "SUCCESS", "IntentClassifierAgent 등록 완료")
     
-    async def _filter_tools_for_agent(self, tools: List[BaseTool]) -> List[BaseTool]:
-        """마스터 에이전트용 기본 도구 필터링 - README.md 기준 3개 기본 도구만"""
-        master_tools = []
-
-        # README.md에 명시된 마스터 에이전트의 3개 기본 도구만 사용
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
+        """마스터 에이전트용 기본 도구 필터링"""
+        # 기본 도구만 사용
         target_tools = {
-            "get_corporation_code_by_name",  # 기업명으로 고유번호 조회
-            "get_corporation_info",  # 기업 기본정보 조회
-            "get_disclosure_list",  # 공시 목록 조회
+            "get_corporation_code_by_name",
+            "get_corporation_info",
+            "get_disclosure_list",
         }
-
-        for tool in tools:
-            tool_name = getattr(tool, "name", "")
-            if tool_name in target_tools:
-                master_tools.append(tool)
-                log_step("도구 필터링", "SUCCESS", f"Master 도구 추가: {tool_name}")
-
-        log_step(
-            "마스터 에이전트 도구 필터링",
-            "SUCCESS",
-            f"기본 도구 {len(master_tools)}개 필터링됨",
-        )
-        return master_tools
+        filtered = [t for t in tools if t.name in target_tools]
+        log_step("마스터 에이전트 도구 필터링", "SUCCESS", f"기본 도구 {len(filtered)}개")
+        return filtered
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return """당신은 DART 멀티에이전트 시스템의 마스터 조정자입니다.
+사용자의 질문을 분석하고, 적절한 전문 에이전트를 선택하여 분석을 수행합니다."""
 
     @observe()
     async def _generate_start_response(self, user_question: str) -> str:

@@ -1,20 +1,20 @@
 """
 legal_compliance_agent.py
-법적 리스크 분석 전문 에이전트 (9️⃣ 경영위기 및 법적위험 분석 도구들)
+법적 리스크 분석 전문 에이전트 (Agent Portal 마이그레이션)
 """
 
 import time
 import re
-import ast
 import json
 import uuid
+import logging
 from typing import Dict, Any, List, Optional, AsyncGenerator
 from datetime import datetime
 from langchain_core.messages import ToolMessage, SystemMessage
-from langchain.agents import create_agent
 
-from agent.base_agent import BaseAgent
-from agent.dart_agent.dart_types import (
+# Agent Portal imports
+from .base import DartBaseAgent, LiteLLMAdapter
+from .dart_types import (
     AnalysisContext,
     AgentResult,
     RiskLevel,
@@ -22,23 +22,22 @@ from agent.dart_agent.dart_types import (
     AnalysisDomain,
     AnalysisDepth,
 )
-from agent.dart_agent.message_refiner import MessageRefiner
-from utils.logger import log_step, log_agent_flow
-from agent.dart_agent.utils.prompt_templates import PromptBuilder, get_legal_compliance_tools_description
+from .message_refiner import MessageRefiner
+from .mcp_client import MCPTool, get_opendart_mcp_client
+from .metrics import start_dart_span, record_counter, inject_context_to_carrier
 
-# Langfuse 로깅 설정
-try:
-    from langfuse.decorators import observe, langfuse_context
+logger = logging.getLogger(__name__)
 
-    LANGFUSE_AVAILABLE = True
-except ImportError:
-    LANGFUSE_AVAILABLE = False
+def log_step(step_name: str, status: str, message: str):
+    logger.info(f"[{step_name}] {status}: {message}")
 
-    def observe():
-        def decorator(func):
-            return func
+def log_agent_flow(agent_name: str, action: str, step: int, message: str):
+    logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
-        return decorator
+def observe():
+    def decorator(func):
+        return func
+    return decorator
 
 
 class LegalComplianceAgent(BaseAgent):

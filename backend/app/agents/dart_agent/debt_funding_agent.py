@@ -5,17 +5,17 @@
 import asyncio
 import time
 import re
-import ast
 import json
 import uuid
+import logging
 from typing import Dict, Any, Optional, List, AsyncGenerator
 from datetime import datetime
 from langchain_core.tools import BaseTool
 from langchain_core.messages import HumanMessage, ToolMessage, SystemMessage
-from langchain.agents import create_agent
 
-from agent.base_agent import BaseAgent
-from agent.dart_agent.dart_types import (
+# Agent Portal imports
+from .base import DartBaseAgent, LiteLLMAdapter
+from .dart_types import (
     AnalysisContext,
     AgentResult,
     RiskLevel,
@@ -24,24 +24,25 @@ from agent.dart_agent.dart_types import (
     AnalysisScope,
     AnalysisDepth,
 )
-from agent.dart_agent.message_refiner import MessageRefiner
-from utils.logger import log_step, log_performance, log_agent_flow
-from agent.dart_agent.utils.prompt_templates import PromptBuilder, get_debt_funding_tools_description
+from .message_refiner import MessageRefiner
+from .mcp_client import MCPTool, get_opendart_mcp_client
+from .metrics import start_dart_span, record_counter, inject_context_to_carrier
 
+logger = logging.getLogger(__name__)
 
-# Langfuse 로깅 설정
-try:
-    from langfuse.decorators import observe, langfuse_context
+def log_step(step_name: str, status: str, message: str):
+    logger.info(f"[{step_name}] {status}: {message}")
 
-    LANGFUSE_AVAILABLE = True
-except ImportError:
-    LANGFUSE_AVAILABLE = False
+def log_performance(operation: str, duration: float, details: str = ""):
+    logger.info(f"[PERF] {operation}: {duration:.2f}ms {details}")
 
-    def observe():
-        def decorator(func):
-            return func
+def log_agent_flow(agent_name: str, action: str, step: int, message: str):
+    logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
-        return decorator
+def observe():
+    def decorator(func):
+        return func
+    return decorator
 
 
 class DebtFundingAgent(BaseAgent):

@@ -1,20 +1,22 @@
 """
 financial_agent.py
 재무 데이터 수집 및 분석 전문 에이전트
+
+Agent Portal 마이그레이션: agent-platform 구조에서 agent-portal 구조로 변환
 """
 
 import time
 import re
-import ast
 import json
 import uuid
+import logging
 from typing import Dict, Any, List, Optional, AsyncGenerator
 from datetime import datetime
-from langchain_core.messages import ToolMessage, SystemMessage
-from langchain.agents import create_agent
+from langchain_core.messages import ToolMessage, SystemMessage, HumanMessage
 
-from agent.base_agent import BaseAgent
-from agent.dart_agent.dart_types import (
+# Agent Portal imports
+from .base import DartBaseAgent, LiteLLMAdapter
+from .dart_types import (
     AnalysisContext,
     AgentResult,
     RiskLevel,
@@ -22,91 +24,63 @@ from agent.dart_agent.dart_types import (
     AnalysisDomain,
     AnalysisDepth,
 )
-from agent.dart_agent.message_refiner import MessageRefiner
-from utils.logger import log_step, log_agent_flow
-from agent.dart_agent.utils.prompt_templates import PromptBuilder
-from agent.dart_agent.utils.prompt_templates.financial_tools import get_financial_tools_description
+from .message_refiner import MessageRefiner
+from .mcp_client import MCPTool, get_opendart_mcp_client
+from .metrics import start_dart_span, record_counter, inject_context_to_carrier
 
-# Langfuse 로깅 설정
-try:
-    from langfuse.decorators import observe, langfuse_context
+logger = logging.getLogger(__name__)
 
-    LANGFUSE_AVAILABLE = True
-except ImportError:
-    LANGFUSE_AVAILABLE = False
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수 (agent-platform 호환)"""
+    logger.info(f"[{step_name}] {status}: {message}")
 
-    def observe():
-        def decorator(func):
-            return func
+def log_agent_flow(agent_name: str, action: str, step: int, message: str):
+    """에이전트 플로우 로깅 (agent-platform 호환)"""
+    logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
-        return decorator
+# Langfuse 데코레이터 (선택적)
+def observe():
+    def decorator(func):
+        return func
+    return decorator
 
 
-class FinancialAgent(BaseAgent):
-    """재무 데이터 수집 및 분석 전문 에이전트"""
+class FinancialAgent(DartBaseAgent):
+    """재무 데이터 수집 및 분석 전문 에이전트 (Agent Portal 마이그레이션)"""
 
-    def __init__(
-        self,
-        llm,
-        mcp_servers,
-        checkpoint_db_path: str = None,  # PostgreSQL 사용
-    ):
-        """FinancialAgent 초기화"""
-        # mcp_servers를 리스트로 변환
-        if isinstance(mcp_servers, dict):
-            mcp_servers = [mcp_servers]
-        else:
-            mcp_servers = mcp_servers
-
-        # BaseAgent 초기화
+    def __init__(self, model: str = "qwen-235b"):
+        """FinancialAgent 초기화 (Agent Portal 구조)"""
         super().__init__(
             agent_name="FinancialAgent",
-            llm=llm,
-            mcp_servers=mcp_servers,
-            checkpoint_db_path=checkpoint_db_path,
+            model=model,
+            max_iterations=10
         )
 
-        self.mcp_servers = mcp_servers
         self.agent_domain = "financial"
-        self.prompt_builder = PromptBuilder()
-        
-        # 메시지 정제 시스템 초기화
         self.message_refiner = MessageRefiner()
         
-        log_step(
-            "FinancialAgent 초기화",
-            "SUCCESS",
-            f"MCP 서버 {len(mcp_servers)}개 등록 완료",
-        )
+        log_step("FinancialAgent 초기화", "SUCCESS", "재무 분석 에이전트 설정 완료")
 
-    async def _filter_tools_for_agent(self, tools):
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
         """재무 분석에서 사용할 도구 필터링"""
-        filtered_tools = []
-
-        # 재무 관련 도구만 필터링
         target_tools = {
-            "get_corporation_code_by_name",  # 기업명으로 기업코드 찾기
-            "get_corporation_info",  # 기업 기본정보
-            "get_disclosure_list",  # 공시목록
-            "get_single_acnt",  # 단일회사 재무제표
-            "get_multi_acnt",  # 다중회사 재무제표
-            "get_single_acc",  # 단일회사 계정과목
-            "get_single_index",  # 단일회사 재무지표
-            "get_multi_index",  # 다중회사 재무지표
+            "get_corporation_code_by_name",
+            "get_corporation_info",
+            "get_disclosure_list",
+            "get_single_acnt",
+            "get_multi_acnt",
+            "get_single_acc",
+            "get_single_index",
+            "get_multi_index",
         }
-        
-        for tool in tools:
-            tool_name = getattr(tool, "name", "")
-            if tool_name in target_tools:
-                filtered_tools.append(tool)
-                log_step("도구 필터링", "SUCCESS", f"Financial 도구 추가: {tool_name}")
-
-        log_step(
-            "도구 필터링 완료",
-            "SUCCESS",
-            f"FinancialAgent에서 사용할 도구: {len(filtered_tools)}개",
-        )
-        return filtered_tools
+        filtered = [t for t in tools if t.name in target_tools]
+        log_step("도구 필터링 완료", "SUCCESS", f"Financial 도구: {len(filtered)}개")
+        return filtered
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return """당신은 DART 공시 시스템의 재무 분석 전문가입니다.
+기업의 재무제표, 재무지표, 손익계산서 등을 분석하여 재무 건전성을 평가합니다."""
 
     def _create_analysis_prompt(self, context: AnalysisContext) -> str:
         """User Request Prompt 생성 - context 기반"""

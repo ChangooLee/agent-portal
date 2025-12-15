@@ -1,109 +1,63 @@
 """
 intent_classifier_agent.py
 사용자 질문의 의도를 분류하여 적절한 전문 에이전트를 선택하는 분류기
+
+Agent Portal 마이그레이션: agent-platform 구조에서 agent-portal 구조로 변환
 """
 
 import re
-from typing import Dict, Any, List, AsyncGenerator
+import logging
+from typing import Dict, Any, List, AsyncGenerator, Optional
 from datetime import datetime
-from langchain_core.messages import SystemMessage
-from langchain.agents import create_agent
+from langchain_core.messages import SystemMessage, HumanMessage
 
-from agent.base_agent import BaseAgent
-from agent.dart_agent.dart_types import (
+# Agent Portal imports
+from .base import DartBaseAgent, LiteLLMAdapter
+from .dart_types import (
     IntentClassificationResult,
     AnalysisScope,
     AnalysisDomain,
     AnalysisDepth,
 )
-from agent.dart_agent.message_refiner import MessageRefiner
-from utils.logger import log_step, log_agent_flow
+from .message_refiner import MessageRefiner
+from .mcp_client import MCPTool, get_opendart_mcp_client
+from .metrics import start_dart_span, record_counter, inject_context_to_carrier
 
-# Langfuse 로깅 설정
-try:
-    from langfuse.decorators import observe, langfuse_context
+logger = logging.getLogger(__name__)
 
-    LANGFUSE_AVAILABLE = True
-except ImportError:
-    LANGFUSE_AVAILABLE = False
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수 (agent-platform 호환)"""
+    logger.info(f"[{step_name}] {status}: {message}")
 
-    def observe():
-        def decorator(func):
-            return func
+def log_agent_flow(agent_name: str, action: str, step: int, message: str):
+    """에이전트 플로우 로깅 (agent-platform 호환)"""
+    logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
-        return decorator
+# Langfuse 데코레이터 (선택적)
+def observe():
+    def decorator(func):
+        return func
+    return decorator
 
 
 # =============================================================================
-# 🧠 의도 분류 에이전트
+# 🧠 의도 분류 에이전트 (Agent Portal 버전)
 # =============================================================================
 
 
-class IntentClassifierAgent(BaseAgent):
-    """사용자 질문 의도 분류 전문 에이전트"""
+class IntentClassifierAgent(DartBaseAgent):
+    """사용자 질문 의도 분류 전문 에이전트 (Agent Portal 마이그레이션)"""
     
-    def __init__(self, llm, checkpoint_db_path: str = ":memory:", mcp_servers=None):
-        """분류기 초기화"""
-        # 🔥🔥🔥 디버깅: 생성자에서 받은 mcp_servers 확인
-        print(
-            f"🔥🔥🔥 IntentClassifierAgent 생성자 - mcp_servers 타입: {type(mcp_servers)}"
-        )
-        print(f"🔥🔥🔥 IntentClassifierAgent 생성자 - mcp_servers 내용: {mcp_servers}")
-        
-        # MCP 서버 설정 변환 (딕셔너리 → 리스트)
-        if isinstance(mcp_servers, dict):
-            mcp_servers_list = []
-            for server_name, server_config in mcp_servers.items():
-                if isinstance(server_config, dict):
-                    # 이미 올바른 형식인 경우
-                    if "name" not in server_config:
-                        server_config["name"] = server_name
-                    mcp_servers_list.append(server_config)
-                else:
-                    # 단순 값인 경우 기본 형식으로 변환
-                    mcp_servers_list.append(
-                        {
-                            "name": server_name,
-                            "command": "python",
-                            "args": ["-m", f"mcp_{server_name}"],
-                            "env": {},
-                        }
-                    )
-            mcp_servers = mcp_servers_list
-
-        # mcp_servers가 없으면 빈 리스트 사용 (기업코드 찾기 도구는 DartAgent에서 가져옴)
-        if mcp_servers is None:
-            mcp_servers = []
-            print(
-                f"🔥🔥🔥 IntentClassifierAgent 생성자 - mcp_servers가 None이어서 빈 리스트로 설정"
-            )
-
-        # BaseAgent 초기화 - 파라미터 순서 수정
+    def __init__(self, model: str = "qwen-235b"):
+        """분류기 초기화 (Agent Portal 구조)"""
         super().__init__(
-            llm=llm,
-            mcp_servers=mcp_servers,
             agent_name="IntentClassifierAgent",
-            checkpoint_db_path=checkpoint_db_path,
+            model=model,
+            max_iterations=3  # 의도 분류는 간단한 작업
         )
-
-        # 🔥🔥🔥 디버깅: BaseAgent 초기화 후 mcp_manager 상태 확인
-        print(
-            f"🔥🔥🔥 IntentClassifierAgent 생성자 - BaseAgent 초기화 후 mcp_manager: {hasattr(self, 'mcp_manager')}"
-        )
-        if hasattr(self, "mcp_manager") and self.mcp_manager:
-            print(
-                f"🔥🔥🔥 IntentClassifierAgent 생성자 - mcp_manager 타입: {type(self.mcp_manager)}"
-            )
-            if hasattr(self.mcp_manager, "all_tools"):
-                print(
-                    f"🔥🔥🔥 IntentClassifierAgent 생성자 - all_tools 개수: {len(self.mcp_manager.all_tools) if self.mcp_manager.all_tools else 0}"
-                )
-            if hasattr(self.mcp_manager, "tools"):
-                print(
-                    f"🔥🔥🔥 IntentClassifierAgent 생성자 - tools 개수: {len(self.mcp_manager.tools) if self.mcp_manager.tools else 0}"
-                )
-        else:
-            print(f"🔥🔥🔥 IntentClassifierAgent 생성자 - mcp_manager 없음!")
+        
+        # LLM 어댑터 (LiteLLM 기반)
+        self.llm = LiteLLMAdapter(model)
         
         # 분류 패턴 정의
         self._init_classification_patterns()
@@ -111,91 +65,42 @@ class IntentClassifierAgent(BaseAgent):
         # 메시지 정제 시스템 초기화
         self.message_refiner = MessageRefiner()
         
-        # 메시지 생성기 초기화 (경량 LLM 사용)
-        from agent.dart_agent.utils.message_generator import MessageGenerator
+        # 메시지 생성기는 간소화 (LLM 기반 동적 메시지 대신 정적 메시지 사용)
+        self.message_generator = None  # 향후 필요시 구현
+        
+        log_step("IntentClassifierAgent 초기화", "SUCCESS", "의도 분류 패턴 로드 완료")
         self.message_generator = MessageGenerator()
         
         log_step("IntentClassifierAgent 초기화", "SUCCESS", "의도 분류 패턴 로드 완료")
     
     async def initialize(self):
-        """IntentClassifierAgent 초기화 - BaseAgent.initialize() 호출 후 디버깅"""
-        # 🔥🔥🔥 디버깅: initialize() 호출 전 상태 확인
-        print(
-            f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 전 - _initialized: {getattr(self, '_initialized', 'UNDEFINED')}"
-        )
-        if (
-            hasattr(self, "mcp_manager")
-            and self.mcp_manager
-            and hasattr(self.mcp_manager, "all_tools")
-        ):
-            print(
-                f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 전 - all_tools 개수: {len(self.mcp_manager.all_tools) if self.mcp_manager.all_tools else 0}"
-            )
-
-        # BaseAgent의 initialize() 호출
+        """IntentClassifierAgent 초기화 (Agent Portal 구조)"""
+        if self._initialized:
+            return
+            
+        logger.info("IntentClassifierAgent 초기화 시작")
+        
+        # DartBaseAgent의 initialize() 호출
         await super().initialize()
+        
+        logger.info(f"IntentClassifierAgent 초기화 완료: {len(self.filtered_tools)}개 도구")
 
-        # 🔥🔥🔥 디버깅: initialize() 호출 후 상태 확인
-        print(
-            f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 후 - _initialized: {getattr(self, '_initialized', 'UNDEFINED')}"
-        )
-        if hasattr(self, "mcp_manager") and self.mcp_manager:
-            if hasattr(self.mcp_manager, "all_tools"):
-                print(
-                    f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 후 - all_tools 개수: {len(self.mcp_manager.all_tools) if self.mcp_manager.all_tools else 0}"
-                )
-            if hasattr(self.mcp_manager, "tools"):
-                print(
-                    f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 후 - tools 개수: {len(self.mcp_manager.tools) if self.mcp_manager.tools else 0}"
-                )
-                if self.mcp_manager.tools:
-                    tool_names = list(self.mcp_manager.tools.keys())
-                    print(
-                        f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 후 - 도구 목록: {tool_names}"
-                    )
-
-        # 🔥🔥🔥 디버깅: 필터링된 도구 확인
-        if hasattr(self, "filtered_tools"):
-            print(
-                f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 후 - filtered_tools 개수: {len(self.filtered_tools) if self.filtered_tools else 0}"
-            )
-            if self.filtered_tools:
-                filtered_tool_names = [
-                    getattr(tool, "name", "unknown") for tool in self.filtered_tools
-                ]
-                print(
-                    f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 후 - 필터링된 도구 목록: {filtered_tool_names}"
-                )
-        else:
-            print(
-                f"🔥🔥🔥 IntentClassifierAgent.initialize() 호출 후 - filtered_tools 속성 없음"
-            )
-
-    async def _filter_tools_for_agent(self, tools):
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
         """IntentClassifierAgent에서 사용할 도구 필터링 - 기업 정보 수집 도구들"""
-        filtered_tools = []
-
-        # 기업 정보 수집을 위한 도구들 (README.md에 따라 기업 정보 수집 역할)
+        # 기업 정보 수집을 위한 도구들
         target_tools = {
             "get_corporation_code_by_name",  # 기업명으로 기업코드 찾기
             "get_corporation_info",  # 기업 기본정보 조회
             "get_disclosure_list",  # 공시 목록 조회
         }
 
-        for tool in tools:
-            tool_name = getattr(tool, "name", "")
-            if tool_name in target_tools:
-                filtered_tools.append(tool)
-                log_step(
-                    "도구 필터링", "SUCCESS", f"IntentClassifier 도구 추가: {tool_name}"
-                )
-
-        log_step(
-            "도구 필터링 완료",
-            "SUCCESS",
-            f"IntentClassifier에서 사용할 도구: {len(filtered_tools)}개",
-        )
-        return filtered_tools
+        filtered = [t for t in tools if t.name in target_tools]
+        log_step("도구 필터링 완료", "SUCCESS", f"IntentClassifier 도구: {len(filtered)}개")
+        return filtered
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return "당신은 DART 공시 시스템의 질문 의도 분류 전문가입니다."
 
     def _get_agent_tools_mapping(self) -> str:
         """각 에이전트별 전문 도구 매핑 정보를 동적으로 생성"""
