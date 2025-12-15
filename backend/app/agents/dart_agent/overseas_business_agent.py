@@ -1,5 +1,5 @@
 """
-해외사업 분석 전문 에이전트 (Agent Portal 마이그레이션)
+해외사업 분석 전문 에이전트 (8️⃣ 해외사업 분석 도구들)
 """
 
 import asyncio
@@ -41,7 +41,7 @@ def observe():
     return decorator
 
 
-class OverseasBusinessAgent(BaseAgent):
+class OverseasBusinessAgent(DartBaseAgent):
     """해외사업 분석 전문 에이전트 - 해외 상장, 해외사업 전개 분석"""
 
     def __init__(

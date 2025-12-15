@@ -41,7 +41,7 @@ def observe():
     return decorator
 
 
-class ExecutiveAuditAgent(BaseAgent):
+class ExecutiveAuditAgent(DartBaseAgent):
     """임원보수 및 감사 분석 전문 에이전트 - 임원보수, 감사인 선임, 감사 품질 분석"""
 
     def __init__(

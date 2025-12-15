@@ -1,196 +1,160 @@
 """
 dart_agent.py
-DART 멀티에이전트 시스템 - 기존 단일 에이전트를 멀티에이전트 시스템으로 확장
+DART 멀티에이전트 시스템 - DartMasterAgent.coordinate_analysis_stream() 기반 오케스트레이션
 """
 
 import asyncio
 import time
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from langchain_core.tools import BaseTool
-from langchain.agents import create_agent
 from langchain_core.prompts import PromptTemplate
-from utils.logger import log_step
 
-from agent.base_agent import BaseAgent
-
-from utils.logger import log_step, log_agent_flow
-from utils.analysis_logger import (
-    start_analysis_session,
-    get_current_logger,
-    log_step as analysis_log_step,
+# Agent Portal imports
+from .base import DartBaseAgent, LiteLLMAdapter
+from .dart_types import (
+    AnalysisContext,
+    AgentResult,
+    RiskLevel,
+    AnalysisScope,
+    AnalysisDomain,
+    AnalysisDepth,
+    IntentClassificationResult,
 )
+from .message_refiner import MessageRefiner
+from .mcp_client import MCPTool, get_opendart_mcp_client
+from .metrics import start_dart_span, record_counter, inject_context_to_carrier
 
-# Langfuse 로깅 설정
-try:
-    from langfuse.decorators import observe, langfuse_context
+logger = logging.getLogger(__name__)
 
-    LANGFUSE_AVAILABLE = True
-except ImportError:
-    LANGFUSE_AVAILABLE = False
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수"""
+    logger.info(f"[{step_name}] {status}: {message}")
 
-    def observe():
-        def decorator(func):
-            return func
+def log_agent_flow(agent_name: str, action: str, step: int, message: str):
+    """에이전트 플로우 로깅"""
+    logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
-        return decorator
-from agent.dart_agent.dart_master_agent import DartMasterAgent
-from agent.dart_agent.intent_classifier_agent import IntentClassifierAgent
-from agent.dart_agent.financial_agent import FinancialAgent
-from agent.dart_agent.governance_agent import GovernanceAgent
-from agent.dart_agent.capital_change_agent import CapitalChangeAgent
-from agent.dart_agent.debt_funding_agent import DebtFundingAgent
-from agent.dart_agent.business_structure_agent import BusinessStructureAgent
-from agent.dart_agent.overseas_business_agent import OverseasBusinessAgent
-from agent.dart_agent.legal_compliance_agent import LegalComplianceAgent
-from agent.dart_agent.executive_audit_agent import ExecutiveAuditAgent
-from agent.dart_agent.document_analysis_agent import DocumentAnalysisAgent
+def observe():
+    def decorator(func):
+        return func
+    return decorator
 
-
-
-# MessageRefiner는 별도 파일로 분리됨 (순환 import 방지)
-from agent.dart_agent.message_refiner import MessageRefiner
+# 멀티에이전트 시스템 컴포넌트 (lazy import to avoid circular imports)
+from .dart_master_agent import DartMasterAgent
+from .intent_classifier_agent import IntentClassifierAgent
+from .financial_agent import FinancialAgent
+from .governance_agent import GovernanceAgent
+from .capital_change_agent import CapitalChangeAgent
+from .debt_funding_agent import DebtFundingAgent
+from .business_structure_agent import BusinessStructureAgent
+from .overseas_business_agent import OverseasBusinessAgent
+from .legal_compliance_agent import LegalComplianceAgent
+from .executive_audit_agent import ExecutiveAuditAgent
+from .document_analysis_agent import DocumentAnalysisAgent
 
 
 # =============================================================================
-# 🔧 DART 에이전트 클래스
+# 🔧 DART 에이전트 클래스 (멀티에이전트 오케스트레이션)
 # =============================================================================
 
 
-class DartAgent(BaseAgent):
-    """DART 멀티에이전트 시스템 - 기존 호환성 유지하면서 멀티에이전트 기능 제공"""
+class DartAgent(DartBaseAgent):
+    """DART 멀티에이전트 시스템 - DartMasterAgent.coordinate_analysis_stream() 기반"""
 
-    def __init__(self, llm, mcp_servers: Dict[str, Any]):
-        """DART 에이전트 초기화"""
+    def __init__(self, model: str = "qwen-235b"):
+        """DART 에이전트 초기화 (Agent Portal 구조)"""
+        super().__init__(
+            agent_name="DartAgent",
+            model=model,
+            max_iterations=15  # 멀티에이전트 조정에 필요
+        )
         
+        # LLM 어댑터
+        self.llm = LiteLLMAdapter(model)
+        self.model = model
         
         # DART 특화 설정
-
-        """DART 멀티에이전트 시스템 초기화"""
-        # mcp_servers를 List[Dict[str, Any]] 형식으로 변환
-        if isinstance(mcp_servers, dict):
-            # Dict[str, Any]를 List[Dict[str, Any]]로 변환
-            mcp_servers_list = []
-            for server_name, server_config in mcp_servers.items():
-                if isinstance(server_config, dict):
-                    # 이미 올바른 형식인 경우
-                    server_config["name"] = server_name
-                    mcp_servers_list.append(server_config)
-                else:
-                    # 단순 값인 경우 기본 형식으로 변환
-                    mcp_servers_list.append(
-                        {
-                            "name": server_name,
-                            "command": "python",
-                            "args": ["-m", f"mcp_{server_name}"],
-                            "env": {},
-                        }
-                    )
-            mcp_servers = mcp_servers_list
-
-        super().__init__(llm, mcp_servers, "DartAgent")
-
-        # 기존 설정 유지 (호환성)
         self.dart_config = {
             "max_search_results": 10,
             "max_content_length": 8000,
-            "cache_ttl": 3600,  # 1시간
+            "cache_ttl": 3600,
             "default_year": datetime.now().year,
-            "enable_multi_agent": True,  # 멀티에이전트 모드 활성화 (기존 구조 활용)
+            "enable_multi_agent": True,
         }
 
         self.search_history = []
         self.report_cache = {}
+        
         # 멀티에이전트 시스템 구성요소
-        self.master_agent = None
-        self.intent_classifier = None
-        self.sub_agents = {}
+        self.master_agent: Optional[DartMasterAgent] = None
+        self.intent_classifier: Optional[IntentClassifierAgent] = None
+        self.sub_agents: Dict[str, DartBaseAgent] = {}
         self._multi_agent_initialized = False
         
-        # 메시지 정제 시스템 초기화
+        # 메시지 정제 시스템
         self.message_refiner = MessageRefiner()
-
-        # 멀티에이전트 시스템은 initialize() 메서드에서 초기화
 
         log_step("DartAgent 초기화", "SUCCESS", "기본 설정 완료")
 
+    async def _filter_tools(self, tools: List[MCPTool]) -> List[MCPTool]:
+        """DartAgent 도구 필터링 - 모든 도구 사용 (멀티에이전트가 개별 필터링)"""
+        # 마스터 에이전트가 개별 에이전트에 도구를 배분하므로 여기서는 모든 도구 반환
+        return tools
+    
+    def _create_system_prompt(self) -> str:
+        """시스템 프롬프트 생성"""
+        return """당신은 DART 공시 시스템의 멀티에이전트 분석 시스템입니다.
+사용자의 질문을 분석하고, 적절한 전문 에이전트를 선택하여 분석을 수행합니다.
+분석 결과를 종합하여 통찰력 있는 보고서를 제공합니다."""
+
     async def initialize(self):
-        """DartAgent 초기화 - BaseAgent 초기화 후 멀티에이전트 시스템 초기화"""
-        # BaseAgent 초기화 (MCP 매니저 등)
+        """DartAgent 초기화 - DartBaseAgent 초기화 후 멀티에이전트 시스템 초기화"""
+        if self._initialized:
+            return
+            
+        # DartBaseAgent 초기화 (MCP 클라이언트 등)
         await super().initialize()
         
-        # 멀티에이전트 시스템 초기화 (서버 시작 시에만)
+        # 멀티에이전트 시스템 초기화
         if self.dart_config.get("enable_multi_agent", True) and not self._multi_agent_initialized:
             try:
                 await self._initialize_multi_agent_system()
+                self._multi_agent_initialized = True
                 log_step("DartAgent 초기화", "SUCCESS", "멀티에이전트 시스템 초기화 완료")
             except Exception as e:
                 log_step("DartAgent 초기화", "WARNING", f"멀티에이전트 시스템 초기화 실패: {str(e)}")
                 # 멀티에이전트 실패해도 기본 에이전트로 동작
 
     async def _initialize_multi_agent_system(self):
-        """멀티에이전트 시스템 초기화 - agent_registry의 MCP 매니저 사용"""
+        """멀티에이전트 시스템 초기화 - Agent Portal 구조"""
         try:
             log_step("멀티에이전트 시스템 초기화", "START", "전문 에이전트들 생성 중...")
-
-            # agent_registry에서 DART MCP 매니저 가져오기
-            from agent.agent_registry import agent_registry
             
-            dart_mcp_manager = agent_registry.get_mcp_manager("dart")
-            if not dart_mcp_manager:
-                log_step("DART MCP 매니저 없음", "ERROR", "agent_registry에서 DART MCP 매니저를 찾을 수 없음")
-                raise Exception("DART MCP 매니저가 agent_registry에서 초기화되지 않았습니다")
-
-            # agent_registry에서 초기화된 MCP 서버 설정을 사용
-            mcp_servers = dart_mcp_manager.server_configs
-            log_step(
-                "DART MCP 매니저 확인 완료",
-                "SUCCESS",
-                f"agent_registry에서 초기화된 DART MCP 서버 사용: {len(mcp_servers)}개",
-            )
-
-            # 1. 마스터 에이전트 생성
-            self.master_agent = DartMasterAgent(self.llm, mcp_servers)
-            log_step("마스터 에이전트 생성", "SUCCESS", "DartMasterAgent 생성 완료")
-
+            # MCP 클라이언트 연결 확인
+            mcp_client = await get_opendart_mcp_client()
+            if not mcp_client.is_connected:
+                await mcp_client.connect()
+            
+            tools = mcp_client.get_tools()
+            log_step("MCP 클라이언트", "SUCCESS", f"연결됨: {len(tools)}개 도구")
+            
+            # 1. 마스터 에이전트 생성 (Agent Portal 구조)
+            self.master_agent = DartMasterAgent(model=self.model)
+            await self.master_agent.initialize()
+            log_step("마스터 에이전트 생성", "SUCCESS", "DartMasterAgent 생성 및 초기화 완료")
+            
             # 2. 의도 분류 에이전트 생성
-            intent_classifier_db_path = None  # PostgreSQL 사용
-            # 다른 에이전트들과 동일한 mcp_servers 사용 (OpenDART 서버 정보 포함)
-            # 올바른 파라미터 순서: llm, checkpoint_db_path, mcp_servers
-            self.intent_classifier = IntentClassifierAgent(
-                llm=self.llm,
-                checkpoint_db_path=intent_classifier_db_path,
-                mcp_servers=mcp_servers,  # agent_registry에서 가져온 MCP 서버 사용
-            )
-
-            # IntentClassifierAgent도 다른 에이전트들과 동일하게 초기화
-            try:
-                await self.intent_classifier.initialize()
-                log_step(
-                    "IntentClassifierAgent 초기화",
-                    "SUCCESS",
-                    "IntentClassifierAgent MCP 연결 완료",
-                )
-            except Exception as init_error:
-                log_step(
-                    "IntentClassifierAgent 초기화",
-                    "WARNING",
-                    f"IntentClassifierAgent MCP 연결 실패: {str(init_error)}",
-                )
-
-            log_step(
-                "의도 분류 에이전트 생성",
-                "SUCCESS",
-                "IntentClassifierAgent 생성 완료 (MCP 서버 포함)",
-            )
-
-            # 3. 전문 에이전트들 생성 (모든 구현된 에이전트 포함)
-            self.sub_agents = {}
-            successful_agents = 0
-            failed_agents = 0
-
-            # 각 에이전트를 개별적으로 생성하여 오류 추적
-            agent_creation_configs = [
+            self.intent_classifier = IntentClassifierAgent(model=self.model)
+            await self.intent_classifier.initialize()
+            log_step("의도 분류 에이전트", "SUCCESS", "IntentClassifierAgent 생성 및 초기화 완료")
+            
+            # 3. 마스터 에이전트에 의도 분류기 등록
+            self.master_agent.register_intent_classifier(self.intent_classifier)
+            
+            # 4. 전문 에이전트들 생성
+            agent_configs = [
                 ("financial", FinancialAgent),
                 ("governance", GovernanceAgent),
                 ("capital_change", CapitalChangeAgent),
@@ -201,124 +165,23 @@ class DartAgent(BaseAgent):
                 ("executive_audit", ExecutiveAuditAgent),
                 ("document_analysis", DocumentAnalysisAgent),
             ]
-
-            for agent_name, agent_class in agent_creation_configs:
+            
+            for agent_name, agent_class in agent_configs:
                 try:
-                    log_step(
-                        "전문 에이전트 생성",
-                        "START",
-                        f"{agent_name} 에이전트 생성 시작",
-                    )
-                    agent_instance = agent_class(self.llm, mcp_servers)
-
-                    # 각 에이전트의 BaseAgent.initialize() 호출하여 MCP 연결 설정
-                    try:
-                        await agent_instance.initialize()
-                        log_step(
-                            f"{agent_name} 에이전트 초기화",
-                            "SUCCESS",
-                            f"{agent_name} MCP 연결 완료",
-                        )
-                    except Exception as init_error:
-                        log_step(
-                            f"{agent_name} 에이전트 초기화",
-                            "WARNING",
-                            f"{agent_name} MCP 연결 실패: {str(init_error)}",
-                        )
-                        # 초기화 실패해도 에이전트는 생성됨
-
+                    agent_instance = agent_class(model=self.model)
+                    await agent_instance.initialize()
                     self.sub_agents[agent_name] = agent_instance
-                    log_step(
-                        "전문 에이전트 생성",
-                        "SUCCESS",
-                        f"{agent_name} 에이전트 생성 완료",
-                    )
-                    successful_agents += 1
+                    self.master_agent.register_sub_agent(agent_name, agent_instance)
+                    log_step(f"{agent_name} 에이전트", "SUCCESS", "생성 및 등록 완료")
                 except Exception as e:
-                    log_step(
-                        "전문 에이전트 생성",
-                        "ERROR",
-                        f"{agent_name} 에이전트 생성 실패: {str(e)}",
-                    )
-                    import traceback
-
-                    log_step(
-                        "전문 에이전트 생성",
-                        "ERROR",
-                        f"{agent_name} 상세 오류: {traceback.format_exc()}",
-                    )
-                    failed_agents += 1
-
-            log_step(
-                "전문 에이전트 생성",
-                "SUCCESS",
-                f"생성된 에이전트: {list(self.sub_agents.keys())} (성공: {successful_agents}개, 실패: {failed_agents}개)",
-            )
-
-            # 최소 2개 이상의 에이전트가 생성되어야 시스템 작동 가능
-            if successful_agents < 2:
-                log_step(
-                    "전문 에이전트 생성",
-                    "ERROR",
-                    f"성공한 에이전트가 부족합니다: {successful_agents}개 (최소 2개 필요)",
-                )
-                raise Exception(f"에이전트 생성 실패: {successful_agents}개만 성공 (최소 2개 필요)")
-
-            # 4. 마스터 에이전트에 하위 에이전트들 등록
-            registered_agents = 0
-            for name, agent in self.sub_agents.items():
-                try:
-                    self.master_agent.register_sub_agent(name, agent)
-                    log_step(f"{name} 에이전트 등록", "SUCCESS", f"{name} 등록 완료")
-                    registered_agents += 1
-                except Exception as e:
-                    log_step(f"{name} 에이전트 등록", "ERROR", f"{name} 등록 실패: {str(e)}")
-                    import traceback
-
-                    log_step(
-                        f"{name} 에이전트 등록",
-                        "ERROR",
-                        f"{name} 상세 오류: {traceback.format_exc()}",
-                    )
-
-            log_step(
-                "하위 에이전트 등록",
-                "SUCCESS",
-                f"등록된 에이전트: {registered_agents}개 / {len(self.sub_agents)}개",
-            )
-
-            # 5. 의도 분류기를 마스터 에이전트에 등록
-            try:
-                self.master_agent.register_intent_classifier(self.intent_classifier)
-                log_step("의도 분류기 등록", "SUCCESS", "IntentClassifierAgent 등록 완료")
-            except Exception as e:
-                log_step(
-                    "의도 분류기 등록",
-                    "ERROR",
-                    f"IntentClassifierAgent 등록 실패: {str(e)}",
-                )
-                import traceback
-
-                log_step("의도 분류기 등록", "ERROR", f"상세 오류: {traceback.format_exc()}")
-
-            # 6. 멀티에이전트 시스템 초기화 완료
-            log_step(
-                "멀티에이전트 시스템 초기화",
-                "SUCCESS",
-                f"총 {len(self.sub_agents)}개 전문 에이전트 등록 완료",
-            )
-            self._multi_agent_initialized = True
-
+                    log_step(f"{agent_name} 에이전트", "WARNING", f"생성 실패: {str(e)}")
+            
+            log_step("멀티에이전트 시스템 초기화", "SUCCESS", f"마스터 + {len(self.sub_agents)}개 전문 에이전트 준비 완료")
+            
         except Exception as e:
-            log_step("멀티에이전트 시스템 초기화", "ERROR", f"초기화 실패: {str(e)}")
             import traceback
-
-            log_step(
-                "멀티에이전트 시스템 초기화",
-                "ERROR",
-                f"상세 오류: {traceback.format_exc()}",
-            )
-            self._multi_agent_initialized = False
+            log_step("멀티에이전트 시스템 초기화", "ERROR", f"초기화 실패: {str(e)}")
+            log_step("멀티에이전트 시스템 초기화", "ERROR", f"상세 오류: {traceback.format_exc()}")
             raise
 
     def _setup_agent(self):
@@ -756,4 +619,164 @@ class DartAgent(BaseAgent):
             # 오류 발생 시 기본 스트리밍으로 폴백
             async for chunk in self.process_chat_request_stream(message, thread_id, user_email):
                 yield chunk
+
+    # =============================================================================
+    # 🌐 routes/dart.py 호환 인터페이스
+    # =============================================================================
+    
+    async def analyze_stream(
+        self,
+        question: str,
+        session_id: Optional[str] = None,
+        parent_carrier: Optional[Dict[str, str]] = None
+    ):
+        """
+        DART 분석 실행 (스트리밍) - routes/dart.py 호환 인터페이스
+        
+        DartMasterAgent.coordinate_analysis_stream()을 통해 멀티에이전트 오케스트레이션 수행
+        
+        Args:
+            question: 사용자 질문
+            session_id: 세션 ID
+            parent_carrier: 부모 OTEL context carrier (trace_id 계승용)
+            
+        Yields:
+            SSE 스트림 이벤트
+        """
+        start_time = time.time()
+        
+        # OTEL span 생성 (parent_carrier로 trace_id 계승)
+        with start_dart_span(
+            "dart.analyze_stream",
+            {"question_length": len(question), "session_id": session_id or ""},
+            parent_carrier
+        ) as span:
+            # 현재 span의 context를 carrier로 추출
+            current_carrier: Dict[str, str] = {}
+            try:
+                inject_context_to_carrier(current_carrier)
+            except Exception:
+                pass
+            
+            def _record_otel_event(event_type: str, payload: Dict[str, Any]):
+                """OTEL span에 이벤트 기록"""
+                try:
+                    if span is None or not hasattr(span, "add_event"):
+                        return
+                    attrs = {
+                        "dart.event_type": event_type,
+                        "dart.session_id": session_id or "",
+                    }
+                    for key, value in payload.items():
+                        if key in ("event", "type"):
+                            continue
+                        try:
+                            if isinstance(value, (dict, list)):
+                                import json
+                                attrs[f"dart.{key}"] = json.dumps(value, ensure_ascii=False, default=str)[:1000]
+                            else:
+                                attrs[f"dart.{key}"] = str(value)[:500]
+                        except Exception:
+                            pass
+                    span.add_event(f"sse.{event_type}", attributes=attrs)
+                    record_counter("dart_stream_events_total", {"event": event_type})
+                except Exception:
+                    pass
+            
+            try:
+                # 시작 이벤트
+                _record_otel_event("analyzing", {"message": "질문을 분석하고 있습니다..."})
+                yield {"event": "analyzing", "message": "질문을 분석하고 있습니다..."}
+                
+                # 초기화 (필요시)
+                if not self._initialized:
+                    await self.initialize()
+                
+                # 멀티에이전트 시스템 사용 가능 여부 확인
+                if self._multi_agent_initialized and self.master_agent:
+                    log_step("analyze_stream", "INFO", "멀티에이전트 모드로 실행")
+                    
+                    # DartMasterAgent.coordinate_analysis_stream() 호출
+                    async for chunk in self.master_agent.coordinate_analysis_stream(
+                        user_question=question,
+                        thread_id=session_id,
+                        user_email=None,
+                        parent_carrier=current_carrier
+                    ):
+                        # chunk type을 event로 매핑
+                        event_type = chunk.get("type", "message")
+                        event_data = {
+                            "event": event_type,
+                            "session_id": session_id,
+                        }
+                        
+                        # content를 적절한 필드로 매핑
+                        if "content" in chunk:
+                            if event_type == "error":
+                                event_data["error"] = chunk["content"]
+                            elif event_type == "answer":
+                                event_data["content"] = chunk["content"]
+                            elif event_type == "start":
+                                event_data["content"] = chunk["content"]
+                            else:
+                                event_data["message"] = chunk["content"]
+                        
+                        # 기타 필드 복사
+                        for key, value in chunk.items():
+                            if key not in ("type", "content"):
+                                event_data[key] = value
+                        
+                        _record_otel_event(event_type, event_data)
+                        yield event_data
+                        
+                        # 완료 이벤트 감지
+                        if event_type in ("end", "complete"):
+                            break
+                else:
+                    # 기본 모드로 폴백
+                    log_step("analyze_stream", "WARNING", "멀티에이전트 미초기화, 기본 모드로 실행")
+                    
+                    # 기본 DartBaseAgent의 run_stream 사용
+                    async for event in self.run_stream(question, session_id, current_carrier):
+                        event_type = event.get("event", "message")
+                        _record_otel_event(event_type, event)
+                        yield event
+                
+                # 완료 이벤트
+                total_latency = (time.time() - start_time) * 1000
+                complete_event = {
+                    "event": "complete",
+                    "total_latency_ms": total_latency,
+                }
+                _record_otel_event("complete", complete_event)
+                yield complete_event
+                
+            except Exception as e:
+                logger.error(f"analyze_stream error: {e}", exc_info=True)
+                error_event = {"event": "error", "error": str(e)}
+                _record_otel_event("error", error_event)
+                yield error_event
+                
+                complete_event = {
+                    "event": "complete",
+                    "total_latency_ms": (time.time() - start_time) * 1000,
+                    "error": str(e)
+                }
+                _record_otel_event("complete", complete_event)
+                yield complete_event
+
+
+# =============================================================================
+# 싱글톤 팩토리 함수
+# =============================================================================
+
+_dart_agent: Optional[DartAgent] = None
+
+
+def get_dart_agent(model: str = "qwen-235b") -> DartAgent:
+    """DART 에이전트 싱글톤 반환"""
+    global _dart_agent
+    if _dart_agent is None:
+        _dart_agent = DartAgent(model=model)
+    return _dart_agent
 

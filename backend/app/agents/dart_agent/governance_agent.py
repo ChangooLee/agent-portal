@@ -1,6 +1,6 @@
 """
 governance_agent.py
-지배구조 분석 전문 에이전트 (Agent Portal 마이그레이션)
+지배구조 분석 전문 에이전트 (4️⃣ 지배구조 분석 도구들)
 """
 
 import asyncio
@@ -51,7 +51,7 @@ def observe():
 # =============================================================================
 
 
-class GovernanceAgent(BaseAgent):
+class GovernanceAgent(DartBaseAgent):
     """지배구조 분석 전문 에이전트 - 주주, 임원, 사외이사 등 지배구조 분석"""
 
     def __init__(

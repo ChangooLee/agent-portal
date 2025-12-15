@@ -1,8 +1,6 @@
 """
 intent_classifier_agent.py
 사용자 질문의 의도를 분류하여 적절한 전문 에이전트를 선택하는 분류기
-
-Agent Portal 마이그레이션: agent-platform 구조에서 agent-portal 구조로 변환
 """
 
 import re
@@ -65,13 +63,28 @@ class IntentClassifierAgent(DartBaseAgent):
         # 메시지 정제 시스템 초기화
         self.message_refiner = MessageRefiner()
         
-        # 메시지 생성기는 간소화 (LLM 기반 동적 메시지 대신 정적 메시지 사용)
-        self.message_generator = None  # 향후 필요시 구현
+        # 메시지 생성기는 간소화 (정적 메시지 사용)
+        self.message_generator = self._create_simple_message_generator()
         
         log_step("IntentClassifierAgent 초기화", "SUCCESS", "의도 분류 패턴 로드 완료")
-        self.message_generator = MessageGenerator()
+    
+    def _create_simple_message_generator(self):
+        """간단한 메시지 생성기 생성"""
+        class SimpleMessageGenerator:
+            async def generate_error_message(self, error_type: str, context: dict = None):
+                error_messages = {
+                    "company_name_extraction_failed": "기업명을 추출하지 못했습니다. 기업명을 명확하게 입력해주세요.",
+                    "multi_company_lookup_failed": "일부 기업 정보를 찾지 못했습니다.",
+                    "corp_code_lookup_failed": "기업 코드를 찾지 못했습니다. 기업명을 확인해주세요.",
+                    "corp_code_extraction_failed": "기업 코드 추출에 실패했습니다.",
+                    "intent_classification_error": "의도 분류 중 오류가 발생했습니다. 다시 시도해주세요.",
+                }
+                return error_messages.get(error_type, f"오류가 발생했습니다: {error_type}")
+            
+            async def generate_progress_message(self, action: str, context: dict = None):
+                return f"{action} 진행 중..."
         
-        log_step("IntentClassifierAgent 초기화", "SUCCESS", "의도 분류 패턴 로드 완료")
+        return SimpleMessageGenerator()
     
     async def initialize(self):
         """IntentClassifierAgent 초기화 (Agent Portal 구조)"""

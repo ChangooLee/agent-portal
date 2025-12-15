@@ -1,6 +1,6 @@
 """
 legal_compliance_agent.py
-법적 리스크 분석 전문 에이전트 (Agent Portal 마이그레이션)
+법적 리스크 분석 전문 에이전트 (9️⃣ 경영위기 및 법적위험 분석 도구들)
 """
 
 import time
@@ -40,7 +40,7 @@ def observe():
     return decorator
 
 
-class LegalComplianceAgent(BaseAgent):
+class LegalComplianceAgent(DartBaseAgent):
     """법적 리스크 분석 전문 에이전트 - 부도, 소송, 회생절차 등 법적위험 분석"""
 
     def __init__(

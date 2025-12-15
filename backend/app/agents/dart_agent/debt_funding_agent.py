@@ -45,7 +45,7 @@ def observe():
     return decorator
 
 
-class DebtFundingAgent(BaseAgent):
+class DebtFundingAgent(DartBaseAgent):
     """부채 및 자금조달 분석 전문 에이전트 - 부채구조, 자금조달, 채무증권 분석"""
 
     def __init__(

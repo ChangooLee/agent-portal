@@ -42,7 +42,7 @@ def observe():
     return decorator
 
 
-class BusinessStructureAgent(BaseAgent):
+class BusinessStructureAgent(DartBaseAgent):
     """사업구조 변화 분석 전문 에이전트"""
 
     def __init__(

@@ -41,7 +41,7 @@ def observe():
     return decorator
 
 
-class DocumentAnalysisAgent(BaseAgent):
+class DocumentAnalysisAgent(DartBaseAgent):
     """문서 기반 심층 분석 전문 에이전트"""
 
     def __init__(

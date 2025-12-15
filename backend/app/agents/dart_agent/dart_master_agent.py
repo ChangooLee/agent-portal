@@ -70,10 +70,30 @@ class DartMasterAgent(DartBaseAgent):
         self.sub_agents: Dict[str, DartBaseAgent] = {}
         self.intent_classifier = None
         
-        # 메시지 생성기는 간소화 (향후 필요시 구현)
-        self.message_generator = None
+        # 메시지 생성기 (정적 메시지 사용)
+        self.message_generator = self._create_simple_message_generator()
         
         # 마스터 에이전트 설정
+    
+    def _create_simple_message_generator(self):
+        """간단한 메시지 생성기"""
+        class SimpleMessageGenerator:
+            async def generate_agent_introduction(self, question_type: str, context: dict = None):
+                return "안녕하세요! 저는 DART 공시 분석 전문 에이전트입니다. 기업의 재무제표, 지배구조, 자본변동 등 다양한 정보를 분석해드립니다."
+            
+            async def generate_progress_message(self, action: str, context: dict = None):
+                actions = {
+                    "single_agent_analysis": f"{context.get('corp_name', '기업')} 분석 진행 중...",
+                    "multi_agent_analysis": f"{context.get('corp_name', '기업')}에 대해 다중 분석 진행 중...",
+                    "additional_analysis": f"{context.get('corp_name', '기업')}에 대한 추가 분석 진행 중...",
+                    "result_integration": "결과 통합 중...",
+                }
+                return actions.get(action, f"{action} 진행 중...")
+            
+            async def generate_error_message(self, error_type: str, context: dict = None):
+                return f"오류가 발생했습니다: {error_type}"
+        
+        return SimpleMessageGenerator()
         self.master_config = {
             "max_coordination_time": 300,  # 5분
             "max_sub_agents": 4,
@@ -187,12 +207,34 @@ class DartMasterAgent(DartBaseAgent):
         return "analysis"
 
     @observe()
-    async def coordinate_analysis_stream(self, user_question: str, thread_id: Optional[str] = None, user_email: Optional[str] = None):
+    async def coordinate_analysis_stream(
+        self,
+        user_question: str,
+        thread_id: Optional[str] = None,
+        user_email: Optional[str] = None,
+        parent_carrier: Optional[Dict[str, str]] = None
+    ):
         """
         스트리밍 분석 조정 - 진행 과정을 실시간으로 프론트엔드에 전달
+        
+        Args:
+            user_question: 사용자 질문
+            thread_id: 세션 ID
+            user_email: 사용자 이메일
+            parent_carrier: 부모 OTEL context carrier (trace_id 계승용)
         """
         start_time = time.time()
-
+        
+        # OTEL 트레이싱 (span 생성)
+        try:
+            span = start_dart_span(
+                "dart_master.coordinate_analysis_stream",
+                {"question_length": len(user_question), "thread_id": thread_id or ""},
+                parent_carrier
+            ).__enter__()
+        except Exception:
+            span = None
+        
         try:
             # LLM을 사용한 시작 알림 생성
             start_response = await self._generate_start_response(user_question)
@@ -203,10 +245,13 @@ class DartMasterAgent(DartBaseAgent):
             
             # 인사 또는 에이전트 소개 질문
             if question_type in ["greeting", "agent_intro"]:
-                intro_message = await self.message_generator.generate_agent_introduction(
-                    question_type=question_type,
-                    context={"user_question": user_question}
-                )
+                if self.message_generator:
+                    intro_message = await self.message_generator.generate_agent_introduction(
+                        question_type=question_type,
+                        context={"user_question": user_question}
+                    )
+                else:
+                    intro_message = "안녕하세요! 저는 DART 공시 분석 전문 에이전트입니다. 기업의 재무제표, 지배구조, 자본변동 등 다양한 정보를 분석해드립니다. 궁금하신 기업이 있으신가요?"
                 yield {"type": "complete", "content": intro_message}
                 return
 
@@ -221,13 +266,7 @@ class DartMasterAgent(DartBaseAgent):
             # 1단계: 의도 분류 및 에이전트 선택
             # IntentClassifierAgent를 통한 의도 분류 및 에이전트 선택
             if not self.intent_classifier:
-                error_msg = await self.message_generator.generate_error_message(
-                    error_type="classifier_not_found",
-                    context={
-                        "user_question": user_question,
-                        "error_context": "의도 분류기가 초기화되지 않았습니다"
-                    }
-                )
+                error_msg = "의도 분류기가 초기화되지 않았습니다. 잠시 후 다시 시도해주세요."
                 yield {"type": "error", "content": error_msg}
                 return
 
@@ -283,14 +322,17 @@ class DartMasterAgent(DartBaseAgent):
                     "document_analysis": "공시 문서 기반 심층 분석",
                 }.get(agent_name, agent_name)
 
-                progress_msg = await self.message_generator.generate_progress_message(
-                    action="single_agent_analysis",
-                    context={
-                        "user_question": user_question,
-                        "corp_name": target_display,
-                        "agents": [agent_display]
-                    }
-                )
+                if self.message_generator:
+                    progress_msg = await self.message_generator.generate_progress_message(
+                        action="single_agent_analysis",
+                        context={
+                            "user_question": user_question,
+                            "corp_name": target_display,
+                            "agents": [agent_display]
+                        }
+                    )
+                else:
+                    progress_msg = f"{target_display}의 {agent_display}을 진행합니다..."
                 yield {"type": "progress", "content": progress_msg}
 
                 # 단일 기업 분석 실행 - corp_info 타입 처리
@@ -416,15 +458,18 @@ class DartMasterAgent(DartBaseAgent):
                 print(f"🔥🔥🔥 추가 분석 분기 체크: needs_deep_analysis={classification_result.needs_deep_analysis}, result={result is not None}")
                 if classification_result.needs_deep_analysis and result:
                     print(f"🔥🔥🔥 추가 분석 분기 진입: needs_deep_analysis={classification_result.needs_deep_analysis}")
-                    progress_msg = await self.message_generator.generate_progress_message(
-                        action="additional_analysis",
-                        context={
-                            "user_question": user_question,
-                            "corp_name": target_display,
-                            "agents": ["추가 분석"],
-                            "reasoning": classification_result.analysis_reasoning
-                        }
-                    )
+                    if self.message_generator:
+                        progress_msg = await self.message_generator.generate_progress_message(
+                            action="additional_analysis",
+                            context={
+                                "user_question": user_question,
+                                "corp_name": target_display,
+                                "agents": ["추가 분석"],
+                                "reasoning": classification_result.analysis_reasoning
+                            }
+                        )
+                    else:
+                        progress_msg = f"{target_display}에 대한 추가 심층 분석을 진행합니다..."
                     yield {"type": "progress", "content": progress_msg}
                     
                     # 2차 분석: LLM이 결과를 보고 추가 에이전트 결정

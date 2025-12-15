@@ -108,6 +108,67 @@ class LiteLLMAdapter:
             trace_headers=trace_headers,
             **kwargs
         )
+    
+    async def ainvoke(
+        self,
+        input: Any,
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> Any:
+        """
+        LangChain 호환 ainvoke 메서드.
+        
+        Args:
+            input: 입력 (문자열 또는 메시지 리스트)
+            config: 설정
+            
+        Returns:
+            LLM 응답 (content 속성을 가진 객체)
+        """
+        # 입력을 메시지 형식으로 변환
+        if isinstance(input, str):
+            messages = [{"role": "user", "content": input}]
+        elif isinstance(input, list):
+            messages = []
+            for item in input:
+                if hasattr(item, 'content'):
+                    role = getattr(item, 'type', 'user')
+                    if role == 'human':
+                        role = 'user'
+                    elif role == 'ai':
+                        role = 'assistant'
+                    messages.append({"role": role, "content": item.content})
+                elif isinstance(item, dict):
+                    messages.append(item)
+                else:
+                    messages.append({"role": "user", "content": str(item)})
+        else:
+            messages = [{"role": "user", "content": str(input)}]
+        
+        # 채팅 호출
+        response = await self.chat(messages, **kwargs)
+        
+        # LangChain AIMessage 스타일로 반환
+        class AIMessageLike:
+            def __init__(self, content: str):
+                self.content = content
+                self.type = "ai"
+        
+        # 응답에서 content 추출
+        content = ""
+        if isinstance(response, dict):
+            if "choices" in response:
+                content = response["choices"][0].get("message", {}).get("content", "")
+            elif "content" in response:
+                content = response["content"]
+            elif "message" in response:
+                content = response["message"].get("content", "")
+        elif hasattr(response, 'content'):
+            content = response.content
+        else:
+            content = str(response)
+        
+        return AIMessageLike(content)
 
 
 # =============================================================================

@@ -1,8 +1,6 @@
 """
 financial_agent.py
 재무 데이터 수집 및 분석 전문 에이전트
-
-Agent Portal 마이그레이션: agent-platform 구조에서 agent-portal 구조로 변환
 """
 
 import time

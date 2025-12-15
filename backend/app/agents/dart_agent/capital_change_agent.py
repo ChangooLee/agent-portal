@@ -40,7 +40,7 @@ def observe():
     return decorator
 
 
-class CapitalChangeAgent(BaseAgent):
+class CapitalChangeAgent(DartBaseAgent):
     """자본변동 분석 전문 에이전트 - 증자/감자, 자기주식, 자본금 변동 분석"""
 
     def __init__(
