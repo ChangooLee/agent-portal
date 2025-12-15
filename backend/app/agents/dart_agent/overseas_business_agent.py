@@ -141,7 +141,7 @@ class OverseasBusinessAgent(DartBaseAgent):
             # ★ 루프 바로 위에 추가: 호출 정보를 잠시 보관
             pending_calls = {}  # tool_call_id -> {"display_name": str, "args": dict, "t0": float}
 
-            async for chunk in self.agent_executor.astream(
+            async for chunk in self.agent_executor_stream(
                 {"messages": [("human", analysis_prompt)]},
                 config={
                     "configurable": {

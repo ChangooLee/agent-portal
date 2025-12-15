@@ -123,6 +123,9 @@ class MessageRefiner:
 
     def refine(self, technical_message: str, message_type: str = "progress") -> str:
         """기술적 메시지를 사용자 친화적으로 변환"""
+        if technical_message is None:
+            return ""
+        
         if message_type == "tool_call":
             return self._refine_tool_call_message(technical_message)
         elif message_type == "progress":
@@ -147,9 +150,12 @@ class MessageRefiner:
 
     def _refine_progress_message(self, message: str) -> str:
         """진행 상황 메시지 정제"""
+        if message is None:
+            return ""
+        
         import re
         # 이모지 제거
-        message = re.sub(r"[🔥🚀📊✅❌⚠️]", "", message)
+        message = re.sub(r"[🔥🚀📊✅❌⚠️]", "", str(message))
 
         # 기술적 용어 변환
         replacements = {

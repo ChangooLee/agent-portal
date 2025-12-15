@@ -126,7 +126,7 @@ class FinancialAgent(DartBaseAgent):
             # User request prompt 생성
             user_prompt = self._create_analysis_prompt(context)
             
-            async for chunk in self.agent_executor.astream(
+            async for chunk in self.agent_executor_stream(
                 {"messages": [("human", user_prompt)]},
                 config={
                     "configurable": {

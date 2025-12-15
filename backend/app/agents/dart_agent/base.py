@@ -16,6 +16,10 @@ from dataclasses import dataclass, field
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, BaseMessage, SystemMessage
 from langchain_core.tools import BaseTool
 
+# LangChain 1.0 create_agent
+from langchain.agents import create_agent
+from langgraph.checkpoint.memory import MemorySaver
+
 from .mcp_client import MCPHTTPClient, MCPTool, create_langchain_tools, get_opendart_mcp_client
 from .metrics import (
     start_dart_span, start_llm_call_span, start_tool_call_span,
@@ -208,6 +212,8 @@ class DartBaseAgent(ABC):
         self.mcp_client: Optional[MCPHTTPClient] = None
         self.filtered_tools: List[BaseTool] = []
         self._initialized = False
+        self.agent_executor = None  # LangChain 1.0 create_agent 결과
+        self.checkpointer = None  # 체크포인터
     
     async def initialize(self):
         """에이전트 초기화 (MCP 연결 + 도구 로드)"""
@@ -235,6 +241,26 @@ class DartBaseAgent(ABC):
                 # 도구 변환 실패 시 빈 리스트로 설정하고 계속 진행
                 self.filtered_tools = []
                 logger.warning(f"{self.agent_name} 도구 없이 계속 진행합니다")
+            
+            # LangChain 1.0 create_agent로 agent_executor 생성
+            try:
+                self.checkpointer = MemorySaver()
+                system_prompt = self._create_system_prompt()
+                
+                # create_agent는 모델명 또는 BaseChatModel을 받음
+                # LiteLLM 모델명 사용 (예: "qwen-235b")
+                self.agent_executor = create_agent(
+                    model=self.model,
+                    tools=self.filtered_tools if self.filtered_tools else None,
+                    system_prompt=system_prompt,
+                    checkpointer=self.checkpointer,
+                    name=self.agent_name
+                )
+                logger.info(f"{self.agent_name} create_agent 완료")
+            except Exception as agent_error:
+                logger.warning(f"{self.agent_name} create_agent 실패 (fallback 사용): {agent_error}")
+                # create_agent 실패 시에도 계속 진행 (기존 run() 메서드 사용 가능)
+                self.agent_executor = None
             
             self._initialized = True
             logger.info(f"{self.agent_name} 초기화 완료: {len(self.filtered_tools)}개 도구")
@@ -293,6 +319,40 @@ class DartBaseAgent(ABC):
                 tools_info.append(f"- {tool_name}: {tool_desc}")
             return "\n".join(tools_info)
         return "사용 가능한 도구가 없습니다."
+    
+    def _process_tool_args(self, tool_args: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        도구 인자 전처리.
+        
+        JSON 문자열 파싱, 빈 값 제거 등을 수행합니다.
+        
+        Args:
+            tool_args: 원본 도구 인자
+            
+        Returns:
+            전처리된 도구 인자
+        """
+        if not tool_args:
+            return {}
+        
+        processed = {}
+        for key, value in tool_args.items():
+            # 빈 값 제거
+            if value is None or value == "" or value == []:
+                continue
+            
+            # JSON 문자열 파싱 시도
+            if isinstance(value, str):
+                try:
+                    parsed = json.loads(value)
+                    if isinstance(parsed, (dict, list)):
+                        value = parsed
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            
+            processed[key] = value
+        
+        return processed
     
     def _get_tools_schema(self) -> List[Dict[str, Any]]:
         """LLM에 전달할 도구 스키마 생성"""
@@ -773,5 +833,180 @@ class DartBaseAgent(ABC):
                 }
             except Exception as yield_error:
                 logger.error(f"Failed to yield done event in exception handler: {yield_error}")
+    
+    async def agent_executor_stream(
+        self,
+        input_data: Dict[str, Any],
+        config: Optional[Dict[str, Any]] = None
+    ):
+        """
+        agent_executor.astream() 래퍼 메서드.
+        
+        agent_executor가 없으면 기존 run_stream()으로 fallback하고
+        LangGraph 스타일 청크로 변환.
+        
+        Args:
+            input_data: {"messages": [...]} 형태의 입력
+            config: LangGraph config
+            
+        Yields:
+            LangGraph 스타일 청크
+        """
+        await self.initialize()
+        
+        if self.agent_executor is not None:
+            # agent_executor가 있으면 직접 사용
+            async for chunk in self.agent_executor.astream(input_data, config or {}):
+                yield chunk
+        else:
+            # agent_executor가 없으면 기존 run_stream()으로 fallback
+            messages = input_data.get("messages", [])
+            question = ""
+            
+            for msg in messages:
+                if isinstance(msg, tuple) and len(msg) == 2:
+                    role, content = msg
+                    if role == "human":
+                        question = content
+                        break
+                elif hasattr(msg, 'content'):
+                    question = msg.content
+                    break
+                elif isinstance(msg, str):
+                    question = msg
+                    break
+            
+            if not question:
+                yield {"agent": {"messages": [AIMessage(content="질문을 찾을 수 없습니다.")]}}
+                return
+            
+            thread_id = None
+            if config and "configurable" in config:
+                thread_id = config["configurable"].get("thread_id")
+            
+            # run_stream()으로 실행하고 LangGraph 스타일로 변환
+            async for event in self.run_stream(question, thread_id):
+                event_type = event.get("event", "")
+                
+                if event_type == "answer":
+                    # 최종 응답
+                    yield {"agent": {"messages": [AIMessage(content=event.get("content", ""))]}}
+                    
+                elif event_type == "tool_start":
+                    # 도구 호출 시작 (tool_calls로 변환)
+                    tool_name = event.get("tool", "")
+                    tool_args = event.get("args", {})
+                    import uuid as uuid_mod
+                    tool_call = {
+                        "id": f"call_{uuid_mod.uuid4().hex[:8]}",
+                        "name": tool_name,
+                        "args": tool_args
+                    }
+                    yield {"agent": {"messages": [AIMessage(content="", tool_calls=[tool_call])]}}
+                    
+                elif event_type == "tool_end":
+                    # 도구 결과
+                    tool_name = event.get("tool", "")
+                    result = event.get("result", "")
+                    yield {"tools": {"messages": [ToolMessage(content=str(result), tool_call_id=f"call_{tool_name}")]}}
+                    
+                elif event_type == "done":
+                    # 완료
+                    answer = event.get("answer", "")
+                    if answer:
+                        yield {"agent": {"messages": [AIMessage(content=answer)]}}
+                        
+                elif event_type == "error":
+                    error_msg = event.get("error", "오류 발생")
+                    yield {"agent": {"messages": [AIMessage(content=f"오류: {error_msg}")]}}
+    
+    async def process_chat_request_stream(
+        self,
+        message: str,
+        thread_id: Optional[str] = None
+    ):
+        """
+        agent-platform 호환 스트리밍 채팅 요청 처리.
+        
+        LangChain 1.0 create_agent 기반 agent_executor.astream() 사용.
+        
+        Args:
+            message: 사용자 메시지
+            thread_id: 세션 ID (선택)
+            
+        Yields:
+            Dict[str, Any]: 스트림 이벤트
+        """
+        try:
+            await self.initialize()
+            
+            if self.agent_executor is None:
+                # agent_executor가 없으면 기존 run_stream() 사용
+                logger.warning(f"{self.agent_name}: agent_executor 없음, run_stream() fallback")
+                async for event in self.run_stream(message, thread_id):
+                    # 이벤트 형식 변환
+                    if event.get("event") == "answer":
+                        yield {"type": "agent_response", "content": event.get("content", "")}
+                    elif event.get("event") == "done":
+                        yield {"type": "agent_response", "content": event.get("answer", "")}
+                    elif event.get("event") == "error":
+                        yield {"type": "error", "content": event.get("error", "")}
+                return
+            
+            # LangChain 1.0 스트리밍 처리
+            import uuid
+            config = {
+                "recursion_limit": max(100, 2 * self.max_iterations + 1),
+                "configurable": {"thread_id": thread_id or f"default_{uuid.uuid4().hex[:8]}"}
+            }
+            
+            messages = [HumanMessage(content=message)]
+            final_response = ""
+            tools_used = []
+            
+            async for chunk in self.agent_executor.astream(
+                {"messages": messages}, config
+            ):
+                try:
+                    # Content Blocks 지원 (LangChain 1.0)
+                    if hasattr(chunk, "content_blocks") and chunk.content_blocks:
+                        for block in chunk.content_blocks:
+                            if block.type == "text":
+                                final_response += block.text
+                                yield {
+                                    "type": "agent_response",
+                                    "content": block.text,
+                                    "metadata": getattr(block, "metadata", {})
+                                }
+                    # 기존 content 속성 지원
+                    elif hasattr(chunk, "content") and chunk.content:
+                        final_response += chunk.content
+                        yield {
+                            "type": "agent_response",
+                            "content": chunk.content,
+                            "metadata": getattr(chunk, "metadata", {})
+                        }
+                    # 딕셔너리 형태의 청크
+                    elif isinstance(chunk, dict):
+                        if "messages" in chunk:
+                            for msg in chunk["messages"]:
+                                if hasattr(msg, "content") and msg.content:
+                                    final_response += msg.content
+                                    yield {
+                                        "type": "agent_response",
+                                        "content": msg.content
+                                    }
+                except Exception as chunk_error:
+                    logger.warning(f"청크 처리 중 오류: {chunk_error}")
+                    continue
+            
+            logger.info(f"{self.agent_name} 스트리밍 완료: {len(final_response)}자")
+            
+        except ImportError as ie:
+            logger.error(f"Langchain import error: {ie}")
+            yield {"type": "error", "content": f"LangChain 의존성 오류: {str(ie)}"}
+        except Exception as e:
+            logger.error(f"process_chat_request_stream error: {e}", exc_info=True)
+            yield {"type": "error", "content": str(e)}
 
 

@@ -151,7 +151,7 @@ class ExecutiveAuditAgent(DartBaseAgent):
             pending_calls = {}  # tool_call_id -> {"display_name": str, "args": dict, "t0": float}
             tool_call_count = 0  # 도구 호출 횟수 제한
 
-            async for chunk in self.agent_executor.astream(
+            async for chunk in self.agent_executor_stream(
                 {"messages": [("human", analysis_prompt)]},
                 config={"configurable": {"thread_id": f"executive_audit_{context.corp_code}_{int(time.time())}"}},
             ):
