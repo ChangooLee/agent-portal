@@ -1000,6 +1000,16 @@ class IntentClassifierAgent(DartBaseAgent):
 
             import json
             import re
+            
+            # MCPToolCall 객체인 경우 (Agent Portal MCP 클라이언트 반환 형식)
+            if hasattr(tool_result, "result") and hasattr(tool_result, "name"):
+                # MCPToolCall.result가 이미 dict 형태이므로 직접 반환
+                result_data = tool_result.result
+                print(f"🔥🔥🔥 MCPToolCall.result 추출: {type(result_data)}")
+                if isinstance(result_data, dict):
+                    return result_data
+                elif result_data is None:
+                    return {"error": "MCP 도구 결과가 없습니다"}
 
             # TextContent 객체인 경우 직접 접근
             if hasattr(tool_result, "text"):
@@ -1570,7 +1580,7 @@ analysis_reasoning에 연계 분석 결과를 포함시키세요.
                         )
 
                         # Enum 변환
-                        from agent.dart_agent.dart_types import (
+                        from app.agents.dart_agent.dart_types import (
                             AnalysisScope,
                             AnalysisDomain,
                             AnalysisDepth,
@@ -1605,7 +1615,7 @@ analysis_reasoning에 연계 분석 결과를 포함시키세요.
 
     def _get_fallback_agent_selection(self) -> Dict[str, Any]:
         """LLM 에이전트 선택 실패 시 기본값"""
-        from agent.dart_agent.dart_types import (
+        from app.agents.dart_agent.dart_types import (
             AnalysisScope,
             AnalysisDomain,
             AnalysisDepth,
@@ -1635,6 +1645,34 @@ analysis_reasoning에 연계 분석 결과를 포함시키세요.
                 log_step(
                     "🔍 result 필드 확인", "INFO", f"result 타입: {type(result_data)}"
                 )
+                
+                # 0. MCPToolCall 객체인 경우 (Agent Portal MCP 클라이언트 반환 형식)
+                if hasattr(result_data, "result") and hasattr(result_data, "name"):
+                    # MCPToolCall.result에서 실제 데이터 추출
+                    mcp_result = result_data.result
+                    log_step(
+                        "🔍 MCPToolCall 처리", "INFO", f"MCPToolCall.result 타입: {type(mcp_result)}"
+                    )
+                    if isinstance(mcp_result, dict) and "items" in mcp_result:
+                        items = mcp_result["items"]
+                        company_name = corp_lookup_result.get("company_name", "")
+                        if isinstance(items, list) and len(items) > 0:
+                            # 정확한 기업명 매칭 우선
+                            for item in items:
+                                if isinstance(item, dict):
+                                    item_name = item.get("corporation_name", "")
+                                    if item_name == company_name:
+                                        corp_code = item.get("corporation_code") or item.get("corp_code")
+                                        if corp_code:
+                                            log_step("🔍 기업코드 추출 성공", "SUCCESS", f"정확 매칭: {item_name} → {corp_code}")
+                                            return corp_code
+                            # 정확 매칭 실패 시 첫 번째 결과 사용
+                            first_item = items[0]
+                            if isinstance(first_item, dict):
+                                corp_code = first_item.get("corporation_code") or first_item.get("corp_code")
+                                if corp_code:
+                                    log_step("🔍 기업코드 추출 성공", "SUCCESS", f"첫 번째 결과: {corp_code}")
+                                    return corp_code
 
                 # 1. 직접 dict/list 형태인 경우 (기존 방식)
                 if isinstance(result_data, dict) and "corp_code" in result_data:

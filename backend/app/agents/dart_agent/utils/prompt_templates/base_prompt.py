@@ -5,7 +5,7 @@
 
 from datetime import datetime
 from typing import Dict, Any
-from agent.dart_agent.dart_types import AnalysisContext
+from app.agents.dart_agent.dart_types import AnalysisContext
 
 
 class BasePromptTemplate:

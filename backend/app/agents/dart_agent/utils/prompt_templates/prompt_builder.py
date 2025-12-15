@@ -4,7 +4,7 @@
 """
 
 from typing import Dict, Any
-from agent.dart_agent.utils.models import AnalysisContext
+from app.agents.dart_agent.dart_types import AnalysisContext
 from .base_prompt import BasePromptTemplate
 from .domain_specific import DomainSpecificTemplates
 

@@ -261,6 +261,39 @@ class DartBaseAgent(ABC):
         """시스템 프롬프트 생성 (하위 클래스에서 구현)."""
         pass
     
+    def _create_user_request(self, context: Any) -> str:
+        """실행 시 User Request 생성 - 동적 context 포함 (agent-platform 호환)."""
+        # PromptBuilder가 있으면 사용
+        if hasattr(self, 'prompt_builder') and hasattr(self, 'agent_domain'):
+            tools_info = self._get_tools_description()
+            return self.prompt_builder.build_user_request_prompt(
+                context=context,
+                domain=self.agent_domain,
+                tools_info=tools_info
+            )
+        
+        # PromptBuilder가 없으면 기본 포맷 사용
+        if hasattr(context, 'user_question') and hasattr(context, 'corp_name') and hasattr(context, 'corp_code'):
+            return f"""사용자 질문: {context.user_question}
+기업명: {context.corp_name}
+기업코드: {context.corp_code}
+분석 유형: {getattr(context.scope, 'value', str(context.scope)) if hasattr(context, 'scope') else '일반'}
+
+위 기업에 대해 분석하여 답변해주세요."""
+        else:
+            return str(context)
+    
+    def _get_tools_description(self) -> str:
+        """도구 설명 문자열 생성 (agent-platform 호환)."""
+        if hasattr(self, 'filtered_tools') and self.filtered_tools:
+            tools_info = []
+            for tool in self.filtered_tools:
+                tool_name = getattr(tool, 'name', 'Unknown')
+                tool_desc = getattr(tool, 'description', 'No description')
+                tools_info.append(f"- {tool_name}: {tool_desc}")
+            return "\n".join(tools_info)
+        return "사용 가능한 도구가 없습니다."
+    
     def _get_tools_schema(self) -> List[Dict[str, Any]]:
         """LLM에 전달할 도구 스키마 생성"""
         tools_schema = []
