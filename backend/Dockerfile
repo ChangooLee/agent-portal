@@ -9,7 +9,11 @@ RUN apt-get update && \
 
 # 의존성 설치
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    apt-get update && \
+    apt-get install -y git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # 빌드 도구 제거 (이미지 크기 최적화)
 RUN apt-get purge -y --auto-remove gcc python3-dev

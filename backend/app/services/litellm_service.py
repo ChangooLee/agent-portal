@@ -16,7 +16,7 @@ class LiteLLMService:
     async def list_models(self) -> Dict[str, Any]:
         """Get list of available models from LiteLLM"""
         headers = {"Authorization": f"Bearer {self.api_key}"}
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             try:
                 response = await client.get(f"{self.base_url}/v1/models", headers=headers)
                 response.raise_for_status()
@@ -51,7 +51,7 @@ class LiteLLMService:
         if metadata:
             payload["metadata"] = metadata
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=600.0) as client:
             try:
                 async with client.stream("POST", url, json=payload, headers=headers) as response:
                     response.raise_for_status()
@@ -113,7 +113,7 @@ class LiteLLMService:
             if clean_metadata:
                 payload["metadata"] = clean_metadata
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=600.0) as client:
             try:
                 response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()

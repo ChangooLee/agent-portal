@@ -24,7 +24,7 @@ from .dart_types import (
 )
 from .message_refiner import MessageRefiner
 from .mcp_client import MCPTool, get_opendart_mcp_client
-from .metrics import start_dart_span, record_counter, inject_context_to_carrier
+from .metrics import observe, record_counter, start_dart_span
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,7 @@ def log_agent_flow(agent_name: str, action: str, step: int, message: str):
     """에이전트 플로우 로깅"""
     logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
-def observe():
-    def decorator(func):
-        return func
-    return decorator
+# observe 데코레이터는 metrics.py에서 import
 
 # 멀티에이전트 시스템 컴포넌트 (lazy import to avoid circular imports)
 from .dart_master_agent import DartMasterAgent
@@ -65,6 +62,14 @@ class DartAgent(DartBaseAgent):
 
     def __init__(self, model: str = "qwen-235b"):
         """DART 에이전트 초기화 (Agent Portal 구조)"""
+        # OTEL 초기화 (DART 에이전트용)
+        try:
+            from app.telemetry.otel import init_telemetry
+            init_telemetry(service_name="agent-dart")
+            log_step("DartAgent OTEL 초기화", "SUCCESS", "OpenTelemetry 초기화 완료")
+        except Exception as e:
+            log_step("DartAgent OTEL 초기화", "WARNING", f"OpenTelemetry 초기화 실패: {e}")
+        
         super().__init__(
             agent_name="DartAgent",
             model=model,
@@ -111,14 +116,19 @@ class DartAgent(DartBaseAgent):
 
     async def initialize(self):
         """DartAgent 초기화 - DartBaseAgent 초기화 후 멀티에이전트 시스템 초기화"""
-        if self._initialized:
-            return
-            
-        # DartBaseAgent 초기화 (MCP 클라이언트 등)
-        await super().initialize()
+        print(f"[DEBUG] DartAgent.initialize() 호출됨: _initialized={self._initialized}, _multi_agent_initialized={self._multi_agent_initialized}")
+        logger.info(f"[DEBUG] DartAgent.initialize() 호출됨: _initialized={self._initialized}, _multi_agent_initialized={self._multi_agent_initialized}")
         
-        # 멀티에이전트 시스템 초기화
-        if self.dart_config.get("enable_multi_agent", True) and not self._multi_agent_initialized:
+        # DartBaseAgent 초기화 (MCP 클라이언트 등) - _initialized가 True여도 재초기화 가능
+        if not self._initialized:
+            await super().initialize()
+        
+        # 멀티에이전트 시스템 초기화 - _multi_agent_initialized가 False인 경우 항상 초기화 시도
+        enable_multi = self.dart_config.get("enable_multi_agent", True)
+        print(f"[DEBUG] 멀티에이전트 조건 체크: enable_multi={enable_multi}, _multi_agent_initialized={self._multi_agent_initialized}")
+        logger.info(f"[DEBUG] 멀티에이전트 조건 체크: enable_multi={enable_multi}, _multi_agent_initialized={self._multi_agent_initialized}")
+        
+        if enable_multi and not self._multi_agent_initialized:
             try:
                 await self._initialize_multi_agent_system()
                 self._multi_agent_initialized = True
@@ -130,6 +140,8 @@ class DartAgent(DartBaseAgent):
     async def _initialize_multi_agent_system(self):
         """멀티에이전트 시스템 초기화 - Agent Portal 구조"""
         try:
+            print(f"[DEBUG] _initialize_multi_agent_system() 호출됨")
+            logger.info("[DEBUG] _initialize_multi_agent_system() 시작")
             log_step("멀티에이전트 시스템 초기화", "START", "전문 에이전트들 생성 중...")
             
             # MCP 클라이언트 연결 확인
@@ -539,11 +551,15 @@ class DartAgent(DartBaseAgent):
     def _init_memory_manager(self):
         """메모리 매니저 초기화"""
         try:
-            from agent.dart_agent.utils.memory_manager import DartMemoryManager
-            from utils.postgresql_store import PostgreSQLStore
+            from app.agents.dart_agent.utils.memory_manager import DartMemoryManager
             
-            # PostgreSQL Store 초기화
-            store = PostgreSQLStore()
+            # PostgreSQL Store 대체 - 없으면 None 사용
+            try:
+                from utils.postgresql_store import PostgreSQLStore
+                store = PostgreSQLStore()
+            except ImportError:
+                log_step("메모리 매니저 초기화", "WARNING", "PostgreSQLStore 사용 불가, None으로 대체")
+                store = None
             
             # 메모리 매니저 초기화
             self.memory_manager = DartMemoryManager(
@@ -552,7 +568,7 @@ class DartAgent(DartBaseAgent):
             )
             
             # 스트리밍 메모리 핸들러 초기화
-            from agent.dart_agent.utils.streaming_memory import StreamingMemoryHandler
+            from app.agents.dart_agent.utils.streaming_memory import StreamingMemoryHandler
             self.streaming_memory_handler = StreamingMemoryHandler(self.memory_manager)
             
             log_step("메모리 매니저 초기화", "SUCCESS", "StateGraph 기반 메모리 시스템 활성화")
@@ -624,6 +640,88 @@ class DartAgent(DartBaseAgent):
     # 🌐 routes/dart.py 호환 인터페이스
     # =============================================================================
     
+    async def analyze(
+        self,
+        question: str,
+        session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        DART 분석 실행 (비스트리밍) - routes/dart.py 호환 인터페이스
+        
+        DartMasterAgent.coordinate_analysis_stream()을 통해 멀티에이전트 오케스트레이션 수행
+        스트림 결과를 수집하여 최종 결과 반환
+        
+        Args:
+            question: 사용자 질문
+            session_id: 세션 ID
+            
+        Returns:
+            분석 결과 딕셔너리
+        """
+        start_time = time.time()
+        
+        # 초기화 (필요시)
+        if not self._initialized:
+            await self.initialize()
+        
+        # 멀티에이전트 시스템 사용 가능 여부 확인
+        if not self._multi_agent_initialized or not self.master_agent:
+            raise RuntimeError("멀티에이전트 시스템이 초기화되지 않았습니다. master_agent가 없습니다.")
+        
+        log_step("analyze", "INFO", "멀티에이전트 모드로 실행 (비스트리밍)")
+        
+        # DartMasterAgent.coordinate_analysis_stream() 호출하여 결과 수집
+        final_answer = ""
+        intent_result = None
+        tool_calls = []
+        
+        try:
+            async for chunk in self.master_agent.coordinate_analysis_stream(
+                user_question=question,
+                thread_id=session_id,
+                user_email=None,
+                parent_carrier=None
+            ):
+                chunk_type = chunk.get("type", "")
+                
+                if chunk_type == "start":
+                    log_step("analyze", "INFO", "분석 시작")
+                elif chunk_type == "progress":
+                    log_step("analyze", "INFO", f"진행 중: {chunk.get('content', '')[:100]}")
+                elif chunk_type == "answer" or chunk_type == "content":
+                    # content 타입이 최종 답변일 수 있음
+                    content = chunk.get("content", chunk.get("answer", ""))
+                    if content and not final_answer:
+                        final_answer = content
+                elif chunk_type == "complete":
+                    # complete 타입에서 최종 답변 추출
+                    if "content" in chunk:
+                        final_answer = chunk.get("content", final_answer)
+                    elif "answer" in chunk:
+                        final_answer = chunk.get("answer", final_answer)
+                    # intent와 tool_calls는 별도로 수집 필요 (현재는 coordinate_analysis_stream에서 제공하지 않음)
+                elif chunk_type == "error":
+                    error_msg = chunk.get("content", chunk.get("error", "알 수 없는 오류"))
+                    log_step("analyze", "ERROR", f"오류 발생: {error_msg}")
+                    raise Exception(error_msg)
+        except Exception as e:
+            log_step("analyze", "ERROR", f"분석 중 오류: {str(e)}")
+            raise
+        
+        total_latency = (time.time() - start_time) * 1000
+        
+        result = {
+            "answer": final_answer,
+            "intent": intent_result or {},
+            "tool_calls": tool_calls,
+            "tokens": {},  # TODO: 토큰 정보 수집
+            "total_latency_ms": total_latency
+        }
+        
+        log_step("analyze", "SUCCESS", f"분석 완료: {len(final_answer)}자, {total_latency:.0f}ms")
+        
+        return result
+    
     async def analyze_stream(
         self,
         question: str,
@@ -688,13 +786,12 @@ class DartAgent(DartBaseAgent):
                 _record_otel_event("analyzing", {"message": "질문을 분석하고 있습니다..."})
                 yield {"event": "analyzing", "message": "질문을 분석하고 있습니다..."}
                 
-                # 초기화 (필요시)
-                if not self._initialized:
+                # 초기화 (필요시) - _initialized 또는 _multi_agent_initialized가 False인 경우
+                if not self._initialized or not self._multi_agent_initialized:
                     await self.initialize()
                 
                 # 멀티에이전트 시스템 사용 가능 여부 확인
                 if self._multi_agent_initialized and self.master_agent:
-                    log_step("analyze_stream", "INFO", "멀티에이전트 모드로 실행")
                     
                     # DartMasterAgent.coordinate_analysis_stream() 호출
                     async for chunk in self.master_agent.coordinate_analysis_stream(
@@ -714,12 +811,41 @@ class DartAgent(DartBaseAgent):
                         if "content" in chunk:
                             if event_type == "error":
                                 event_data["error"] = chunk["content"]
-                            elif event_type == "answer":
-                                event_data["content"] = chunk["content"]
-                            elif event_type == "start":
+                            elif event_type in ("answer", "content", "complete", "start", "progress", "end"):
                                 event_data["content"] = chunk["content"]
                             else:
                                 event_data["message"] = chunk["content"]
+                        
+                        # agent_results 타입 처리: 각 에이전트의 응답을 표시
+                        if event_type == "agent_results":
+                            results = chunk.get("results", [])
+                            for result in results:
+                                # AgentResult 객체 또는 딕셔너리 처리
+                                agent_response_content = None
+                                agent_name = "알 수 없는 에이전트"
+                                
+                                if isinstance(result, dict):
+                                    agent_name = result.get("agent_name", "알 수 없는 에이전트")
+                                    agent_response_content = result.get("response") or result.get("llm_response")
+                                    if not agent_response_content and result.get("key_findings"):
+                                        agent_response_content = "\n".join(result.get("key_findings", []))
+                                elif hasattr(result, "supporting_data") and result.supporting_data:
+                                    agent_name = getattr(result, "agent_name", "알 수 없는 에이전트")
+                                    agent_response_content = result.supporting_data.get("llm_response")
+                                if not agent_response_content and hasattr(result, "key_findings") and result.key_findings:
+                                    agent_name = getattr(result, "agent_name", "알 수 없는 에이전트")
+                                    agent_response_content = "\n".join(result.key_findings)
+                                
+                                if agent_response_content:
+                                    # 각 에이전트의 응답을 별도 이벤트로 yield
+                                    agent_response_event = {
+                                        "event": "agent_response",
+                                        "agent_name": agent_name,
+                                        "content": agent_response_content,
+                                        "session_id": session_id,
+                                    }
+                                    _record_otel_event("agent_response", agent_response_event)
+                                    yield agent_response_event
                         
                         # 기타 필드 복사
                         for key, value in chunk.items():

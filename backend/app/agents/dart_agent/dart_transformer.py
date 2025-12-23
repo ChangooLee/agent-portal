@@ -4,13 +4,27 @@ DART 에이전트 전용 결과 변환기
 """
 
 import json
+import logging
 from typing import Any, Dict, List
 from datetime import datetime, timedelta
+
+# 로거 설정
+logger = logging.getLogger(__name__)
+
+
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수"""
+    log_message = f"[{step_name}] {status}: {message}"
+    if status == "ERROR":
+        logger.error(log_message)
+    elif status == "WARNING":
+        logger.warning(log_message)
+    else:
+        logger.info(log_message)
 
 
 def transform_dart_result(tool_name: str, data: Any) -> str:
     """DART 관련 도구 결과 변환"""
-    from utils.logger import log_step
     
     try:
         # 로깅: 도구명과 입력 데이터 타입 확인
@@ -142,7 +156,7 @@ def _extract_and_calculate_statistics_directly(raw_data: str) -> str:
     메모리 사용량을 최소화합니다.
     """
     import re
-    from utils.logger import log_step
+    # log_step already defined at module level
 
     # 로깅: 원본 데이터 크기 확인
     log_step("회사채 데이터 파싱 시작", "INFO", f"원본 데이터 크기: {len(raw_data)}자")
@@ -324,7 +338,7 @@ def _extract_and_calculate_debt_statistics_directly(raw_data: str) -> str:
     `re.finditer`로 순회하며 메모리 사용을 최소화합니다.
     """
     import re
-    from utils.logger import log_step
+    # log_step already defined at module level
 
     # 로깅: 원본 데이터 크기 확인
     log_step("전자단기사채 데이터 파싱 시작", "INFO", f"원본 데이터 크기: {len(raw_data)}자")
@@ -470,7 +484,7 @@ def _extract_and_calculate_debt_statistics_directly(raw_data: str) -> str:
 
 def _format_debt_statistics_for_llm(data: Dict[str, Any]) -> str:
     """전자단기사채 데이터를 LLM이 분석하기 쉬운 통계 형식으로 변환"""
-    from utils.logger import log_step
+    # log_step already defined at module level
     
     try:
         # 로깅: 입력 데이터 타입과 크기 확인
@@ -525,7 +539,7 @@ def _format_debt_statistics_for_llm(data: Dict[str, Any]) -> str:
 
 def _format_debt_securities_statistics_for_llm(data: Dict[str, Any]) -> str:
     """회사채 데이터를 LLM이 분석하기 쉬운 통계 형식으로 변환"""
-    from utils.logger import log_step
+    # log_step already defined at module level
     
     try:
         # 로깅: 입력 데이터 타입과 크기 확인

@@ -83,7 +83,7 @@
         <div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
         
         <div class="relative px-6 py-8 text-center">
-            <h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+            <h1 class="text-3xl md:text-4xl font-medium mb-3 text-white">
                 🔍 AI 검색
             </h1>
             <p class="text-base text-blue-200/80">
@@ -101,7 +101,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
-                <h2 class="text-2xl font-bold text-white mb-3">
+                <h2 class="text-2xl font-medium text-white mb-3">
                     Perplexica 서비스 준비 중
                 </h2>
                 <p class="text-slate-300 mb-4">
@@ -119,7 +119,7 @@
 
         <!-- Features Grid -->
         <div class="mb-6">
-            <h2 class="text-2xl font-bold text-white mb-6 text-center">
+            <h2 class="text-2xl font-medium text-white mb-6 text-center">
                 제공 예정 기능
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

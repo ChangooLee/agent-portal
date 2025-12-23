@@ -16,11 +16,11 @@ from dataclasses import dataclass, field
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, BaseMessage, SystemMessage
 from langchain_core.tools import BaseTool
 
-# LangChain 1.0 create_agent
-from langchain.agents import create_agent
+# LangGraph 체크포인터
 from langgraph.checkpoint.memory import MemorySaver
 
 from .mcp_client import MCPHTTPClient, MCPTool, create_langchain_tools, get_opendart_mcp_client
+from .message_refiner import MessageRefiner
 from .metrics import (
     start_dart_span, start_llm_call_span, start_tool_call_span,
     record_counter, record_histogram, get_trace_headers, inject_context_to_carrier
@@ -44,7 +44,7 @@ class AgentState(TypedDict):
 # 설정
 # =============================================================================
 
-DEFAULT_STEP_TIMEOUT = 120
+DEFAULT_STEP_TIMEOUT = 600  # 10분 - 복잡한 멀티 에이전트 워크플로우 지원
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_MAX_ITERATIONS = 10
 
@@ -214,6 +214,7 @@ class DartBaseAgent(ABC):
         self._initialized = False
         self.agent_executor = None  # LangChain 1.0 create_agent 결과
         self.checkpointer = None  # 체크포인터
+        self.message_refiner = MessageRefiner()  # 메시지 정제 시스템
     
     async def initialize(self):
         """에이전트 초기화 (MCP 연결 + 도구 로드)"""
@@ -247,19 +248,21 @@ class DartBaseAgent(ABC):
                 self.checkpointer = MemorySaver()
                 system_prompt = self._create_system_prompt()
                 
-                # create_agent는 모델명 또는 BaseChatModel을 받음
-                # LiteLLM 모델명 사용 (예: "qwen-235b")
-                self.agent_executor = create_agent(
-                    model=self.model,
-                    tools=self.filtered_tools if self.filtered_tools else None,
-                    system_prompt=system_prompt,
-                    checkpointer=self.checkpointer,
-                    name=self.agent_name
-                )
-                logger.info(f"{self.agent_name} create_agent 완료")
+                # 프롬프트 빌더 사용 여부 로깅
+                if hasattr(self, 'prompt_builder') and hasattr(self, 'agent_domain'):
+                    logger.info(f"[{self.agent_name}] PromptBuilder 사용: domain={self.agent_domain}")
+                    logger.debug(f"[{self.agent_name}] 생성된 시스템 프롬프트 길이: {len(system_prompt)}자")
+                    if system_prompt:
+                        logger.debug(f"[{self.agent_name}] 시스템 프롬프트 시작 부분:\n{system_prompt[:500]}...")
+                else:
+                    logger.warning(f"[{self.agent_name}] PromptBuilder 미사용 (prompt_builder 또는 agent_domain 없음)")
+                
+                # 기존 방식: agent_executor 없이 직접 MCP 도구 호출
+                # 각 에이전트의 analyze_* 메서드에서 직접 도구 호출
+                self.agent_executor = None
+                logger.info(f"{self.agent_name} 초기화 완료 (MCP 직접 호출 방식)")
             except Exception as agent_error:
-                logger.warning(f"{self.agent_name} create_agent 실패 (fallback 사용): {agent_error}")
-                # create_agent 실패 시에도 계속 진행 (기존 run() 메서드 사용 가능)
+                logger.warning(f"{self.agent_name} 초기화 중 경고: {agent_error}")
                 self.agent_executor = None
             
             self._initialized = True
@@ -282,14 +285,32 @@ class DartBaseAgent(ABC):
         """
         pass
     
-    @abstractmethod
     def _create_system_prompt(self) -> str:
-        """시스템 프롬프트 생성 (하위 클래스에서 구현)."""
-        pass
+        """시스템 프롬프트 생성 - 도메인별 프롬프트만 반환 (agent-platform 호환)."""
+        return self._create_domain_prompt()
+    
+    def _create_domain_prompt(self) -> str:
+        """도메인별 System Prompt 생성 - 에이전트 초기화용 (agent-platform 호환)."""
+        if hasattr(self, 'prompt_builder') and hasattr(self, 'agent_domain'):
+            # PromptBuilder를 사용하는 에이전트
+            try:
+                logger.info(f"[{self.agent_name}] PromptBuilder.build_system_prompt() 호출 시작: domain={self.agent_domain}")
+                prompt = self.prompt_builder.build_system_prompt(self.agent_domain)
+                logger.info(f"[{self.agent_name}] PromptBuilder.build_system_prompt() 호출 성공: {len(prompt)}자")
+                if prompt:
+                    logger.debug(f"[{self.agent_name}] 생성된 프롬프트 시작 부분:\n{prompt[:300]}...")
+                return prompt
+            except Exception as e:
+                logger.error(f"[{self.agent_name}] PromptBuilder.build_system_prompt() 실패: {e}", exc_info=True)
+                return ""
+        
+        # PromptBuilder 없는 에이전트 (Intent Classifier, Master Agent 등)
+        # 하위 클래스에서 오버라이드 가능
+        logger.info(f"[{self.agent_name}] PromptBuilder 미사용 (prompt_builder 또는 agent_domain 없음)")
+        return ""
     
     def _create_user_request(self, context: Any) -> str:
         """실행 시 User Request 생성 - 동적 context 포함 (agent-platform 호환)."""
-        # PromptBuilder가 있으면 사용
         if hasattr(self, 'prompt_builder') and hasattr(self, 'agent_domain'):
             tools_info = self._get_tools_description()
             return self.prompt_builder.build_user_request_prompt(
@@ -416,7 +437,13 @@ class DartBaseAgent(ABC):
                             record(None, result.error)
                             return f"Error: {result.error}"
                         record(result.result)
-                        return json.dumps(result.result, ensure_ascii=False) if isinstance(result.result, (dict, list)) else str(result.result)
+                        # bytes 타입 처리
+                        if isinstance(result.result, bytes):
+                            result.result = result.result.decode('utf-8', errors='replace')
+                        # dict/list인 경우 JSON 직렬화, 그 외는 문자열 변환
+                        if isinstance(result.result, (dict, list)):
+                            return json.dumps(result.result, ensure_ascii=False, default=str)
+                        return str(result.result)
                     else:
                         record(None, f"Tool not found: {tool_name}")
                         return f"Error: Tool not found: {tool_name}"
@@ -533,10 +560,21 @@ class DartBaseAgent(ABC):
                         
                         result = await self._execute_tool(tool_name, tool_args, current_carrier)
                         
+                        # result가 bytes인 경우 문자열로 변환
+                        result_str = result
+                        if isinstance(result, bytes):
+                            result_str = result.decode('utf-8', errors='replace')
+                        elif not isinstance(result, str):
+                            # dict/list인 경우 JSON 직렬화
+                            try:
+                                result_str = json.dumps(result, ensure_ascii=False, default=str)
+                            except (TypeError, ValueError):
+                                result_str = str(result)
+                        
                         tool_calls_log.append({
                             "tool": tool_name,
                             "args": tool_args,
-                            "result": result[:500] if len(result) > 500 else result
+                            "result": result_str[:500] if len(result_str) > 500 else result_str
                         })
                         
                         # Tool message 추가
@@ -680,13 +718,6 @@ class DartBaseAgent(ABC):
                 while iteration < self.max_iterations:
                     iteration += 1
                     
-                    try:
-                        yield {"event": "iteration", "iteration": iteration}
-                    except Exception as yield_error:
-                        logger.error(f"Failed to yield iteration event: {yield_error}")
-                        # yield 실패 시 루프 종료
-                        break
-                    
                     # LLM 호출
                     try:
                         with start_llm_call_span(self.agent_name, self.model, messages, current_carrier) as (llm_span, record_llm):
@@ -750,7 +781,10 @@ class DartBaseAgent(ABC):
                                 tool_args = {}
                             
                             try:
-                                yield {"event": "tool_start", "tool": tool_name, "args": tool_args}
+                                # MessageRefiner를 사용하여 완곡한 표현으로 변환
+                                display_name = self.message_refiner.refine(tool_name, "tool_call")
+                                action_msg = self.message_refiner.get_action_message(tool_name)
+                                yield {"event": "tool_start", "tool": tool_name, "display_name": display_name, "action_message": action_msg, "args": tool_args}
                             except Exception as yield_error:
                                 logger.error(f"Failed to yield tool_start event: {yield_error}")
                                 # yield 실패 시에도 계속 진행
@@ -765,7 +799,9 @@ class DartBaseAgent(ABC):
                                 })
                                 
                                 try:
-                                    yield {"event": "tool_end", "tool": tool_name, "result": result[:200]}
+                                    # MessageRefiner를 사용하여 완곡한 표현으로 변환
+                                    display_name = self.message_refiner.refine(tool_name, "tool_call")
+                                    yield {"event": "tool_end", "tool": tool_name, "display_name": display_name, "result": result[:200]}
                                 except Exception as yield_error:
                                     logger.error(f"Failed to yield tool_end event: {yield_error}")
                                 

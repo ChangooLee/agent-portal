@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     NEWS_DATA_PATH_DEV: str = ""  # Development server path (set via env var)
     NEWS_DATA_PATH_LOCAL: str = "/Users/lchangoo/Workspace/mcp-naver-news/src/data"  # Local PC path
     
+    # MCP stdio Servers
+    MCP_STORAGE_PATH: str = "/data/mcp"  # Docker 볼륨 경로
+    MCP_PROCESS_TIMEOUT: int = 30  # 프로세스 시작 타임아웃
+    MCP_MAX_LOG_LINES: int = 1000  # 최대 로그 라인 수
+    
     def get_news_data_path(self) -> str:
         """환경에 따른 뉴스 데이터 경로 반환.
         

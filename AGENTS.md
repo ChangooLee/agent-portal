@@ -868,5 +868,389 @@ app.include_router(webui_proxy.router)  # /api/webui/* 프록시
 
 ---
 
-**Last Updated**: 2025-12-09
-**Version**: 5.2 (Single Port Architecture + Testing)
+## 14. Future Development Epics
+
+아래는 Agent Portal의 향후 개발 로드맵입니다. 각 에픽은 실제 구현 가능한 수준으로 기술 스택, 구현 위치, 핵심 사항을 정의합니다.
+
+### 14.1 Agent-to-UI 테스트 자동화 (ai2ui)
+
+**목표**: 에이전트가 실제 UI를 조작하고, 기대 결과를 검증하며, 전 과정을 텔레메트리로 기록하여 재현 가능한 테스트와 운영 관측을 연결합니다.
+
+**기술 스택**:
+- Playwright (브라우저 자동화)
+- OpenTelemetry Python SDK (트레이싱)
+- MinIO (아티팩트 저장)
+
+**구현 위치**:
+```
+backend/app/agents/ai2ui/
+├── driver.py              # Playwright 기반 UI Driver
+├── actions.py             # UI Action DSL (Click, Type, Wait, Assert, Snapshot)
+├── assertions.py          # 검증 로직
+├── otel_integration.py    # OTEL span 수집
+└── artifact_storage.py    # 스크린샷/비디오/DOM 스냅샷 저장
+
+backend/app/routes/ai2ui.py  # API 엔드포인트
+webui/src/routes/(app)/operate/ai2ui/  # 테스트 리포트 화면
+```
+
+**핵심 구현 사항**:
+- [ ] UI Driver DSL 정의 (Click, Type, Wait, Assert, Snapshot)
+- [ ] 스텝 단위 span 수집 (action_id, selector, screenshot_ref, latency, error_type)
+- [ ] 세션 단위 trace 수집 (OpenTelemetry)
+- [ ] 증거 아티팩트 저장 (스크린샷, DOM 스냅샷, 네트워크 로그, 비디오)
+- [ ] 실패 시 자동 재시도 및 대체 경로 탐색
+- [ ] UI 테스트 런 리포트 화면 (성공/실패, 재시도, 아티팩트 링크)
+
+**완료 기준**:
+- 대표 시나리오 3개(로그인/검색/CRUD)에서 재현 가능한 실패 리포트 생성
+- 운영 장애 케이스 1개를 테스트로 재현하고 원인 span으로 추적
+
+**참조 문서**: [docs/references/A2UI_PROTOCOL.md](./docs/references/A2UI_PROTOCOL.md), [docs/guides/AI2UI_TESTING_GUIDE.md](./docs/guides/AI2UI_TESTING_GUIDE.md)
+
+---
+
+### 14.2 모델 자동 라우팅 에이전트
+
+**목표**: 작업별로 현재 시점 최적의 모델을 자동 선택하고, 선택 근거(가격/컨텍스트/툴 지원/지연/성공률)를 기록합니다.
+
+**기술 스택**:
+- OpenRouter Models API (모델 메타데이터)
+- httpx (비동기 HTTP 클라이언트)
+- Redis (캐싱)
+
+**구현 위치**:
+```
+backend/app/services/model_routing_service.py  # 라우팅 로직
+backend/app/routes/model_routing.py            # API 엔드포인트
+config/model_routing_policy.yaml               # 라우팅 정책
+
+webui/src/routes/(app)/operate/model-routing/  # 라우팅 대시보드
+```
+
+**핵심 구현 사항**:
+- [ ] OpenRouter Models API로 모델 메타데이터 수집/캐시 (컨텍스트 길이, 가격, 지원 파라미터)
+- [ ] 리더보드/랭킹 신호 + 내부 운영 신호(에러율/지연/비용) 합성 스코어링
+- [ ] 라우팅 정책: task_type → required_capabilities → candidate_models → score → pick
+- [ ] 폴백 정책: 선택 모델 실패 시 provider/model fallback
+- [ ] 라우팅 로그: "왜 이 모델을 골랐는지" 설명 가능한 근거 필드
+- [ ] 라우팅 대시보드: 비용/지연/성공률 추세 시각화
+
+**완료 기준**:
+- 3개 작업 유형에서 수동 선택 대비 비용/성공률/지연 중 1개 이상 유의미 개선
+- 모델 선택 결과 재현 가능 (동일 정책/신호면 동일 선택)
+
+**참조 문서**: [docs/references/MODEL_LEADERBOARDS.md](./docs/references/MODEL_LEADERBOARDS.md), [docs/guides/MODEL_ROUTING_GUIDE.md](./docs/guides/MODEL_ROUTING_GUIDE.md)
+
+---
+
+### 14.3 고급 Tool-Use LangGraph 패턴
+
+**목표**: Plan → Tool Select → Execute → Validate → Retry/Repair → Human 승인까지 운영 가능한 루프를 LangGraph로 표준화합니다.
+
+**기술 스택**:
+- LangGraph (상태 기반 워크플로우)
+- LangChain (LLM 통합)
+- OpenTelemetry (트레이싱)
+
+**구현 위치**:
+```
+backend/app/agents/graph_templates/advanced_tool_use/
+├── __init__.py
+├── state.py           # 상태 정의
+├── nodes/
+│   ├── plan.py        # 계획 노드
+│   ├── tool_select.py # 도구 선택 노드
+│   ├── execute.py     # 실행 노드
+│   ├── validate.py    # 검증 노드
+│   └── repair.py      # 복구 노드
+├── graph.py           # StateGraph 설정
+├── error_taxonomy.py  # 에러 분류
+└── circuit_breaker.py # 회로 차단기
+```
+
+**핵심 구현 사항**:
+- [ ] 핵심 루프 그래프 노드 분해 (계획/도구선택/실행/검증/복구)
+- [ ] LangGraph interrupt 패턴 (승인/추가 입력 대기)
+- [ ] Tool error taxonomy: 입력 스키마 오류 / 권한 오류 / 외부 장애 / 결과 불충분
+- [ ] Retry policy 및 회로 차단기 (반복 실패 시 중단, 다른 경로로 전환)
+- [ ] 검증 노드 표준 (도구 결과의 완결성/일관성/근거 여부 확인)
+- [ ] Human-in-the-loop 승인 UI (티켓/코멘트 기반)
+
+**완료 기준**:
+- 대표 MCP 도구 2종 이상에서 "실패→자기복구→성공" 데모
+- 승인 필요 케이스에서 interrupt로 안전 중단 후 재개 성공
+
+**참조 문서**: [docs/references/SCALING_AGENT_SYSTEMS.md](./docs/references/SCALING_AGENT_SYSTEMS.md)
+
+---
+
+### 14.4 Data Cloud 시멘틱 레이어
+
+**목표**: RAG/툴/대시보드가 같은 정의의 엔터티·지표·용어를 공유하도록 시멘틱/메트릭 표준을 구축합니다.
+
+**기술 스택**:
+- dbt/cube 개념 참고 (시멘틱 레이어)
+- SQLAlchemy (메타데이터 관리)
+- YAML (정의 파일)
+
+**구현 위치**:
+```
+backend/app/datacloud/semantic/
+├── entities/              # 비즈니스 엔터티 정의 (customer.yaml, product.yaml 등)
+├── metrics/               # KPI/메트릭 정의 (revenue.yaml, churn_rate.yaml 등)
+├── glossary/              # 용어 사전
+└── lineage/               # 라인리지 정보
+
+backend/app/services/semantic_layer_service.py  # 시멘틱 레이어 서비스
+```
+
+**핵심 구현 사항**:
+- [ ] 비즈니스 엔터티(고객/상품/공시 등) + KPI/메트릭(정의/식/기간/집계) 카탈로그화
+- [ ] 모델/지표 정의를 코드(YAML)로 관리
+- [ ] RAG 메타데이터에 시멘틱 키 연결 (문서/테이블/툴 결과가 다루는 엔터티/지표)
+- [ ] 정책/거버넌스 결합 (권한·라인리지: 누가 어떤 지표를 볼 수 있는가)
+- [ ] "동일 질문→RAG/툴/대시보드 결과의 의미 일치" 검증 시나리오
+
+**완료 기준**:
+- 대표 지표 5개에 대해 정의/식/출처/라인리지/권한이 한 곳에서 조회 가능
+- 에이전트가 "지표 정의"를 근거로 응답에 포함
+
+---
+
+### 14.5 AI Native Stack 매핑 체계
+
+**목표**: AI Native Stack(10개 레이어/Capability 카탈로그)을 체크리스트로 삼아, agent-portal 코드/컴포넌트 매핑과 GAP을 자동으로 드러내는 체계를 만듭니다.
+
+**기술 스택**:
+- Python (매핑 스크립트)
+- YAML/JSON (매핑 테이블)
+- Markdown (문서 생성)
+
+**구현 위치**:
+```
+docs/AI_NATIVE_STACK_MAPPING.md       # 매핑 문서
+docs/references/AI_NATIVE_STACK.md    # 원본 스택 테이블
+
+scripts/generate-stack-mapping.py     # 자동 생성 스크립트
+config/stack_mapping.yaml             # 매핑 정의
+```
+
+**핵심 구현 사항**:
+- [ ] AI Native Stack Layer → (repo path / service / route / config / owner) 매핑 테이블 생성
+- [ ] 각 레이어별 "필수 Capability 최소셋" 정의 후 커버리지 산정(있음/부분/없음)
+- [ ] Gap이 곧 "다음 스프린트 백로그"로 내려오게 자동화
+- [ ] README.md에 Service Map / Port Map / Feature Map / API Reference 섹션 추가
+- [ ] PR 템플릿에 "AI Native Stack 영향 레이어 체크" 포함
+
+**완료 기준**:
+- AI Native Stack 기준으로 "없음(미구현) Capability"가 자동 목록화
+- PR 템플릿에 레이어 체크 포함
+
+**참조 문서**: [docs/references/AI_NATIVE_STACK.md](./docs/references/AI_NATIVE_STACK.md), [docs/guides/AI_NATIVE_STACK_MAPPING_GUIDE.md](./docs/guides/AI_NATIVE_STACK_MAPPING_GUIDE.md)
+
+---
+
+### 14.6 MCP 자동 유지보수 체계
+
+**목표**: MCP 서버들을 "분석→수정→테스트→릴리즈"까지 자동으로 운영하기 위해 AGENTS.md + skill 문서를 표준으로 정착시킵니다.
+
+**기술 스택**:
+- MCP SDK (스펙 검증)
+- pytest (자동 테스트)
+- GitHub Actions (CI 파이프라인)
+
+**구현 위치**:
+```
+scripts/mcp-self-check/
+├── schema_validator.py    # 스키마 검증
+├── doc_quality.py         # 문서 품질 체크
+├── sample_caller.py       # 샘플 호출 테스트
+└── regression_suite.py    # 회귀 테스트
+
+backend/app/services/mcp_validator.py  # MCP 검증 서비스
+.github/workflows/mcp-check.yml        # CI 워크플로우
+```
+
+**핵심 구현 사항**:
+- [ ] MCP 스펙/툴 스키마 표준 준수 체크 (도구명/설명/입출력/에러 계약)
+- [ ] repo 루트에 AGENTS.md(에이전트용 작업 규칙) 배치 + 스킬 문서(작업 단위 표준)
+- [ ] 자동 점검 파이프라인: 도구 등록 누락/설명 품질/샘플 호출/회귀 테스트를 CI로 고정
+- [ ] MCP 서버별 "self-check" 스위트 (간단 호출/스키마 검증)
+
+**완료 기준**:
+- MCP 3개 이상에서 "에이전트가 스스로 문서/스키마/테스트를 갱신"하는 PR 생성
+
+---
+
+### 14.7 고위험 도메인 에이전트 라인업
+
+**목표**: 법률/의료/건강/투자/부동산/공시 등 고위험 도메인별로 "규칙 기반 안전장치 + 증거 기반 응답 + 승인 흐름"을 기본 탑재합니다.
+
+**기술 스택**:
+- LangGraph (워크플로우)
+- OPA (정책 엔진)
+- OpenTelemetry (감사 로깅)
+
+**구현 위치**:
+```
+backend/app/agents/domain_specific/
+├── legal/                 # 법률 도메인
+├── medical/               # 의료 도메인
+├── finance/               # 투자/금융 도메인
+├── real_estate/           # 부동산 도메인
+└── disclosure/            # 공시 도메인 (기존 DART Agent 확장)
+
+backend/app/policies/
+├── legal_policy.rego      # OPA 정책 파일
+├── medical_policy.rego
+└── finance_policy.rego
+```
+
+**핵심 구현 사항**:
+- [ ] 도메인별 안전 정책: 금지/주의/승인 필요 범위 명확화
+- [ ] 근거 우선: 출처/근거/계산 과정/불확실성을 구조화해 기록
+- [ ] 리스크 프레임워크 정렬: NIST AI RMF/OWASP LLM Top 10 체크리스트화
+- [ ] 도메인별 에이전트 템플릿 (프롬프트/가드/출력 포맷/로그 스키마)
+- [ ] 감사 가능한 "근거 번들" (RAG 출처 + tool 결과 + 판단 로그)
+
+**완료 기준**:
+- 1개 도메인에서 "승인 필요 케이스"가 실제로 멈추고, 승인 후에만 실행
+
+---
+
+### 14.8 비용 인지형 에이전트 프레임워크
+
+**목표**: 에이전트가 "언제 도구를 쓸지 / 언제 요약·근사로 갈지"를 예산 정책으로 내재화합니다.
+
+**기술 스택**:
+- OpenRouter pricing API (비용 정보)
+- Redis (예산 상태 추적)
+- OpenTelemetry (비용 이벤트 로깅)
+
+**구현 위치**:
+```
+backend/app/services/budget_manager.py         # 예산 관리 서비스
+backend/app/middleware/budget_middleware.py    # 예산 미들웨어
+config/budget_policy.yaml                      # 예산 정책 정의
+
+webui/src/routes/(app)/operate/budget/         # 비용 대시보드
+```
+
+**핵심 구현 사항**:
+- [ ] 모델/툴 비용 추정: OpenRouter 모델 메타의 pricing/context를 근거로 사전 계산
+- [ ] Budget Policy: (Hard cap / Soft cap / Grace) + 초과 시 행동(요약/샘플링/질문 되돌림)
+- [ ] 예산-관측 연동: "예산 초과로 전략 변경" 이벤트를 OTEL로 기록
+- [ ] 비용 대시보드: 작업유형별 평균 비용, 절감 효과 시각화
+
+**완료 기준**:
+- 동일 태스크에서 "예산 모드 ON" 시 비용 안정화 + 품질 저하 허용 범위 내
+
+**참조 문서**: [docs/references/SCALING_AGENT_SYSTEMS.md](./docs/references/SCALING_AGENT_SYSTEMS.md), [docs/guides/BUDGET_AWARE_AGENTS.md](./docs/guides/BUDGET_AWARE_AGENTS.md)
+
+---
+
+### 14.9 Agent Builder 강화
+
+**목표**: n8n/crewai 같은 제품의 좋은 UX/패턴은 흡수하되, 상용 배포 가능한 형태로 자체 구현합니다.
+
+**기술 스택**:
+- SvelteKit (UI)
+- LangGraph (실행 엔진)
+- Svelte Flow (노드 기반 편집기)
+
+**구현 위치**:
+```
+webui/src/routes/(app)/build/agents/builder/
+├── +page.svelte           # 메인 빌더 페이지
+├── components/
+│   ├── NodeEditor.svelte  # 노드 편집기
+│   ├── NodePalette.svelte # 노드 팔레트
+│   ├── ExecutionLog.svelte # 실행 로그
+│   └── VariableBinding.svelte # 변수 바인딩
+└── stores/
+    └── graphStore.ts      # 그래프 상태 관리
+
+backend/app/routes/agent_builder.py    # API 엔드포인트
+backend/app/services/agent_builder_service.py  # 빌더 서비스
+```
+
+**핵심 구현 사항**:
+- [ ] Builder UX: 노드 기반 플로우 편집 (Drag&Drop)
+- [ ] 실행 로그 표시
+- [ ] 변수 바인딩 UI
+- [ ] 승인 노드 (Human-in-the-loop)
+- [ ] 템플릿 마켓 구조 (내부 배포용)
+- [ ] 라이선스 리스크 회피: 코드 재사용 대신 패턴/UX 참고→재구현 원칙
+
+**완료 기준**:
+- 간단 플로우 2개 + 멀티에이전트 플로우 1개를 Builder로 구성→실행까지 성공
+
+**참조 문서**: [docs/references/A2UI_PROTOCOL.md](./docs/references/A2UI_PROTOCOL.md)
+
+---
+
+### 14.10 메모리 관리 강화
+
+**목표**: 세션 메모리/장기 메모리를 분리하고, 저장·조회·만료·권한을 정책화하며, 평가/관측과 연결합니다.
+
+**기술 스택**:
+- LangGraph Memory (세션 메모리)
+- Redis/PostgreSQL (장기 메모리)
+- YAML (정책 정의)
+
+**구현 위치**:
+```
+backend/app/services/memory_manager.py    # 메모리 관리 서비스
+backend/app/agents/memory_policy.yaml     # 메모리 정책 정의
+
+config/memory_schema.yaml                 # 메모리 스키마 정의
+```
+
+**핵심 구현 사항**:
+- [ ] 세션 메모리: thread_id 단위 상태 지속 (LangGraph 체크포인터)
+- [ ] 장기 메모리: 액션 아이템/사용자 선호/도메인 사실 같은 제한된 스키마로만 저장
+- [ ] 만료/삭제/권한: TTL, scope(팀/프로젝트/개인), 민감도 등급
+- [ ] HIL 연계: 기억 저장/수정은 기본적으로 사용자 승인 옵션 제공
+- [ ] 메모리 이벤트 관측: 저장/조회/히트율/오답 유발 케이스
+
+**완료 기준**:
+- "기억 때문에 틀린 답"을 역추적할 수 있고, 삭제/교정이 즉시 반영
+
+---
+
+### 14.11 보안 강화
+
+**목표**: 정책을 "권고"가 아니라 강제로 집행(enforcement)하고, 도구/데이터 경계에서 접근제어·감사를 기본값으로 둡니다.
+
+**기술 스택**:
+- OPA (Open Policy Agent) - 정책 엔진
+- OpenTelemetry (감사 추적)
+- Vault (비밀 관리)
+
+**구현 위치**:
+```
+backend/app/middleware/policy_gateway.py  # 정책 게이트웨이
+backend/app/policies/
+├── tool_access.rego       # 도구 접근 정책
+├── data_access.rego       # 데이터 접근 정책
+└── action_control.rego    # 행위 통제 정책
+
+docs/SECURITY.md                          # 보안 정책 문서
+```
+
+**핵심 구현 사항**:
+- [ ] Policy-as-code: OPA로 ABAC/행위 통제 (툴 호출 허용/차단/승인 필요)
+- [ ] OWASP LLM Top 10 기반 위협모델 체크 (프롬프트 인젝션, 데이터 유출, 과권한 등)
+- [ ] 감사 추적: 모든 tool call에 (who/why/what/inputs/outputs) 서명 가능한 로그 + OTEL 연동
+- [ ] 공급망/비밀관리: 모델/도구/컨테이너/시크릿 경로 고정 및 점검
+- [ ] 도구 호출 게이트(Policy Gateway) 모듈
+
+**완료 기준**:
+- 금지 정책 위반 요청이 "항상" 차단되고, 차단 근거가 로그로 남음
+- 승인 흐름이 필요한 액션은 무조건 interrupt로 멈춤
+
+---
+
+**Last Updated**: 2025-12-23
+**Version**: 5.3 (Future Development Epics)

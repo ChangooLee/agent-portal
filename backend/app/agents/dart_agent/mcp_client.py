@@ -1,8 +1,8 @@
 """
-MCP HTTP Client for OpenDart MCP Server (Streamable HTTP)
+MCP Client for OpenDart MCP Server (stdio)
 
-Agent Portal용 MCP 클라이언트 - JSON-RPC 2.0 프로토콜 over HTTP.
-원본 fastmcp.Client (stdio)를 HTTP Streamable로 리팩토링.
+Agent Portal용 MCP 클라이언트 - stdio 방식으로 MCP 서버와 통신.
+기존 HTTP Streamable 방식을 stdio로 변경.
 
 참조: /Users/lchangoo/Workspace/agent-platform/connection/mcp_direct_client.py
 """
@@ -14,11 +14,20 @@ from typing import Dict, Any, List, Optional, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 import uuid
+from datetime import datetime
 
 import httpx
 from pydantic import BaseModel, Field, create_model
 
+# OTEL 기록 함수
+from app.agents.dart_agent.metrics import start_tool_call_span
+
 logger = logging.getLogger(__name__)
+
+# stdio MCP 클라이언트 import
+from app.mcp.stdio_client import MCPStdioClient
+from app.mcp.process_manager import process_manager
+from app.mcp.http_adapter import http_adapter
 
 
 # =============================================================================
@@ -63,6 +72,270 @@ def _parse_sse_response(response_text: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+# =============================================================================
+# MCP stdio 클라이언트 래퍼
+# =============================================================================
+
+class MCPStdioClientWrapper:
+    """
+    OpenDart MCP stdio 클라이언트 래퍼.
+    
+    MCPHTTPClient와 동일한 인터페이스를 제공하지만 stdio 방식으로 통신.
+    
+    Example:
+        client = MCPStdioClientWrapper(server_id="xxx")
+        await client.connect()
+        tools = client.get_tools()
+        result = await client.call_tool("search_disclosure", {"company": "삼성전자"})
+    """
+    
+    def __init__(
+        self,
+        server_id: str,
+        timeout: float = 600.0,  # 10분 - 복잡한 도구 호출 지원
+        max_retries: int = 3
+    ):
+        """
+        Args:
+            server_id: MCP 서버 ID
+            timeout: 요청 타임아웃 (초)
+            max_retries: 최대 재시도 횟수
+        """
+        self.server_id = server_id
+        self.timeout = timeout
+        self.max_retries = max_retries
+        
+        self._connected = False
+        self._tools: List[MCPTool] = []
+        self._stdio_client: Optional[MCPStdioClient] = None
+        self._server_info: Optional[Dict[str, Any]] = None
+        
+        # MCPHTTPClient 호환성을 위한 속성
+        self.endpoint = f"stdio://{server_id}"
+        self.kong_api_key = None
+    
+    @property
+    def is_connected(self) -> bool:
+        """연결 상태 확인"""
+        return self._connected
+    
+    async def connect(self) -> bool:
+        """MCP 서버에 연결하고 도구 목록을 조회"""
+        logger.info(f"Connecting to MCP server via stdio: {self.server_id}")
+        
+        try:
+            # MCP 서비스에서 서버 정보 가져오기
+            from app.services.mcp_service import mcp_service
+            self._server_info = await mcp_service._get_server_internal(self.server_id)
+            
+            if not self._server_info:
+                raise RuntimeError(f"MCP server {self.server_id} not found")
+            
+            # stdio 서버인지 확인
+            transport_type = self._server_info.get('transport_type')
+            if transport_type != 'stdio':
+                raise RuntimeError(f"MCP server {self.server_id} is not stdio type (got {transport_type})")
+            
+            # process_manager에서 프로세스 확인 (DB 상태보다 실제 프로세스 상태가 우선)
+            existing_process = process_manager.get_process(self.server_id)
+            if existing_process is None or existing_process.returncode is not None:
+                # process_manager에 프로세스가 없거나 종료됨 - 시작 필요
+                logger.info(f"Starting MCP server process: {self.server_id}")
+                await mcp_service.start_stdio_process(self.server_id)
+                # 프로세스가 process_manager에 등록될 때까지 대기 (최대 5초)
+                max_wait = 5.0
+                wait_interval = 0.2
+                waited = 0.0
+                while waited < max_wait:
+                    existing_process = process_manager.get_process(self.server_id)
+                    if existing_process is not None and existing_process.returncode is None:
+                        logger.info(f"Process {self.server_id} registered in process_manager (PID: {existing_process.pid})")
+                        break
+                    await asyncio.sleep(wait_interval)
+                    waited += wait_interval
+                else:
+                    # 프로세스가 등록되지 않음
+                    logger.warning(f"Process {self.server_id} not found in process_manager after {max_wait}s")
+                    raise RuntimeError(f"Failed to start MCP server process: {self.server_id}")
+            else:
+                logger.info(f"Process {self.server_id} already running in process_manager (PID: {existing_process.pid})")
+            
+            # stdio 클라이언트 생성
+            self._stdio_client = MCPStdioClient(self.server_id)
+            
+            # 서버 정보에서 command, cwd, env 가져오기
+            command = self._server_info.get('command')
+            local_path = self._server_info.get('local_path')
+            env_vars = self._server_info.get('env_vars')
+            
+            if not command:
+                raise RuntimeError(f"MCP server {self.server_id} has no command")
+            
+            # env_vars 파싱
+            env = {}
+            if env_vars:
+                if isinstance(env_vars, str):
+                    env = json.loads(env_vars)
+                else:
+                    env = env_vars
+            
+            # 기존 프로세스 가져오기 (다시 확인)
+            existing_process = process_manager.get_process(self.server_id)
+            if existing_process is None:
+                raise RuntimeError(f"Process {self.server_id} not found in process_manager after start attempt")
+            else:
+                logger.info(f"Found existing process for {self.server_id} (PID: {existing_process.pid}, returncode: {existing_process.returncode})")
+            
+            # 연결
+            tools = await self._stdio_client.connect(
+                command=command,
+                cwd=local_path,
+                env=env,
+                reuse_existing_process=True,
+                existing_process=existing_process
+            )
+            
+            # 도구 목록 변환
+            self._tools = []
+            for tool in tools:
+                self._tools.append(MCPTool(
+                    name=tool.name,
+                    description=tool.description or '',
+                    input_schema=tool.inputSchema if hasattr(tool, 'inputSchema') else {}
+                ))
+            
+            self._connected = True
+            logger.info(f"Connected to MCP server via stdio: {len(self._tools)} tools loaded")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to connect to MCP server via stdio: {e}", exc_info=True)
+            self._connected = False
+            raise
+    
+    def get_tools(self) -> List[MCPTool]:
+        """도구 목록 반환"""
+        if not self._connected:
+            raise RuntimeError("Not connected to MCP server")
+        return self._tools
+    
+    @property
+    def tool_count(self) -> int:
+        """도구 수"""
+        return len(self._tools) if self._connected else 0
+    
+    def filter_tools(self, name_filter: Optional[Callable[[str], bool]] = None) -> List[MCPTool]:
+        """도구 필터링 (MCPHTTPClient 호환성)"""
+        tools = self.get_tools()
+        if name_filter:
+            return [t for t in tools if name_filter(t.name)]
+        return tools
+    
+    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> MCPToolCall:
+        """도구 호출 (OTEL 자동 기록)"""
+        if not self._connected or not self._stdio_client:
+            raise RuntimeError("Not connected to MCP server")
+        
+        start_time = datetime.now()
+        
+        # OTEL span으로 도구 호출 기록
+        with start_tool_call_span(tool_name, arguments) as (span, record_result):
+            try:
+                # stdio 클라이언트를 통해 도구 호출
+                # MCPStdioClient는 call_tool 메서드를 사용
+                if not self._stdio_client.is_connected():
+                    # 재연결
+                    command = self._server_info.get('command')
+                    local_path = self._server_info.get('local_path')
+                    env_vars = self._server_info.get('env_vars')
+                    env = {}
+                    if env_vars:
+                        if isinstance(env_vars, str):
+                            env = json.loads(env_vars)
+                        else:
+                            env = env_vars
+                    
+                    existing_process = process_manager.get_process(self.server_id)
+                    await self._stdio_client.connect(
+                        command=command,
+                        cwd=local_path,
+                        env=env,
+                        reuse_existing_process=True,
+                        existing_process=existing_process
+                    )
+                
+                # call_tool 메서드 사용
+                result = await self._stdio_client.call_tool(tool_name, arguments)
+                
+                # 결과가 리스트인 경우 처리 (MCP SDK는 content 리스트 반환)
+                # agent-platform 패턴: content 리스트에서 text 추출
+                if isinstance(result, list):
+                    # TextContent 객체들을 문자열로 변환
+                    result_text = ""
+                    for item in result:
+                        if hasattr(item, 'text'):
+                            # MCP SDK TextContent 객체
+                            text_val = item.text
+                            if isinstance(text_val, bytes):
+                                text_val = text_val.decode('utf-8', errors='replace')
+                            result_text += text_val
+                        elif isinstance(item, str):
+                            result_text += item
+                        elif isinstance(item, dict):
+                            # {"type": "text", "text": "..."} 형식
+                            if 'text' in item:
+                                text_val = item['text']
+                                if isinstance(text_val, bytes):
+                                    text_val = text_val.decode('utf-8', errors='replace')
+                                result_text += text_val
+                            elif 'content' in item:
+                                result_text += str(item['content'])
+                            else:
+                                # 전체 dict를 JSON으로 변환
+                                result_text += json.dumps(item, ensure_ascii=False)
+                        elif isinstance(item, bytes):
+                            # bytes 직접 처리
+                            result_text += item.decode('utf-8', errors='replace')
+                        else:
+                            result_text += str(item)
+                    
+                    # 빈 문자열이면 JSON으로 변환
+                    result = result_text if result_text else json.dumps(result, ensure_ascii=False, default=str)
+                elif isinstance(result, bytes):
+                    # bytes 직접 반환된 경우
+                    result = result.decode('utf-8', errors='replace')
+                
+                # OTEL에 결과 기록
+                latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+                record_result({"result": str(result)[:500], "latency_ms": latency_ms})
+                
+                return MCPToolCall(
+                    name=tool_name,
+                    result=result,
+                    error=None
+                )
+            except Exception as e:
+                logger.error(f"Failed to call tool {tool_name}: {e}", exc_info=True)
+                latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+                record_result({"error": str(e), "latency_ms": latency_ms})
+                return MCPToolCall(
+                    name=tool_name,
+                    result=None,
+                    error=str(e)
+                )
+    
+    async def disconnect(self) -> None:
+        """연결 종료"""
+        # stdio 클라이언트는 프로세스를 종료하지 않음 (process_manager가 관리)
+        self._connected = False
+        self._stdio_client = None
+        logger.info(f"Disconnected from MCP server: {self.server_id}")
+
+
+# =============================================================================
+# MCP HTTP 클라이언트 (레거시)
+# =============================================================================
+
 class MCPHTTPClient:
     """
     OpenDart MCP Streamable HTTP 클라이언트.
@@ -79,7 +352,7 @@ class MCPHTTPClient:
     def __init__(
         self,
         endpoint: str,
-        timeout: float = 120.0,
+        timeout: float = 600.0,  # 10분 - 복잡한 도구 호출 지원
         max_retries: int = 3,
         kong_api_key: Optional[str] = None
     ):
@@ -576,7 +849,7 @@ class MCPHTTPClient:
         arguments: Dict[str, Any]
     ) -> MCPToolCall:
         """
-        도구 호출 (tools/call).
+        도구 호출 (tools/call) - OTEL 자동 기록.
         
         Args:
             tool_name: 도구 이름
@@ -588,44 +861,59 @@ class MCPHTTPClient:
         logger.info(f"Calling MCP tool: {tool_name}")
         logger.debug(f"Tool arguments: {json.dumps(arguments, ensure_ascii=False)[:200]}")
         
-        try:
-            result = await self._send_rpc(
-                "tools/call",
-                {
-                    "name": tool_name,
-                    "arguments": arguments
-                }
-            )
+        start_time = datetime.now()
+        
+        # OTEL span으로 도구 호출 기록
+        with start_tool_call_span(tool_name, arguments) as (span, record_result):
+            try:
+                result = await self._send_rpc(
+                    "tools/call",
+                    {
+                        "name": tool_name,
+                        "arguments": arguments
+                    }
+                )
 
-            # MCP servers may return tool-level errors as a successful JSON-RPC result,
-            # e.g. {"result": {"content": [...], "isError": true}}
-            if isinstance(result, dict) and result.get("isError") is True:
+                # MCP servers may return tool-level errors as a successful JSON-RPC result,
+                # e.g. {"result": {"content": [...], "isError": true}}
+                if isinstance(result, dict) and result.get("isError") is True:
+                    content = result.get("content", [])
+                    error_msg = "Tool error"
+                    if content and isinstance(content, list) and isinstance(content[0], dict):
+                        if content[0].get("type") == "text":
+                            error_msg = content[0].get("text", "Tool error")
+                    else:
+                        error_msg = str(result)
+                    latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+                    record_result({"error": error_msg, "latency_ms": latency_ms})
+                    return MCPToolCall(name=tool_name, result=None, error=error_msg)
+                
+                # content 필드에서 실제 결과 추출
                 content = result.get("content", [])
-                if content and isinstance(content, list) and isinstance(content[0], dict):
-                    if content[0].get("type") == "text":
-                        return MCPToolCall(name=tool_name, result=None, error=content[0].get("text", "Tool error"))
-                return MCPToolCall(name=tool_name, result=None, error=str(result))
-            
-            # content 필드에서 실제 결과 추출
-            content = result.get("content", [])
-            if content and isinstance(content, list) and len(content) > 0:
-                first_content = content[0]
-                if isinstance(first_content, dict):
-                    # text 형식
-                    if first_content.get("type") == "text":
-                        text_result = first_content.get("text", "")
-                        # JSON 파싱 시도
-                        try:
-                            parsed = json.loads(text_result)
-                            return MCPToolCall(name=tool_name, result=parsed)
-                        except json.JSONDecodeError:
-                            return MCPToolCall(name=tool_name, result=text_result)
-            
-            return MCPToolCall(name=tool_name, result=result)
-            
-        except Exception as e:
-            logger.error(f"Tool call failed: {tool_name} - {e}")
-            return MCPToolCall(name=tool_name, result=None, error=str(e))
+                if content and isinstance(content, list) and len(content) > 0:
+                    first_content = content[0]
+                    if isinstance(first_content, dict):
+                        # text 형식
+                        if first_content.get("type") == "text":
+                            text_result = first_content.get("text", "")
+                            latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+                            record_result({"result": text_result[:500], "latency_ms": latency_ms})
+                            # JSON 파싱 시도
+                            try:
+                                parsed = json.loads(text_result)
+                                return MCPToolCall(name=tool_name, result=parsed)
+                            except json.JSONDecodeError:
+                                return MCPToolCall(name=tool_name, result=text_result)
+                
+                latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+                record_result({"result": str(result)[:500], "latency_ms": latency_ms})
+                return MCPToolCall(name=tool_name, result=result)
+                
+            except Exception as e:
+                logger.error(f"Tool call failed: {tool_name} - {e}")
+                latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+                record_result({"error": str(e), "latency_ms": latency_ms})
+                return MCPToolCall(name=tool_name, result=None, error=str(e))
     
     @property
     def is_connected(self) -> bool:
@@ -718,7 +1006,7 @@ def create_langchain_tool(
 
 
 def create_langchain_tools(
-    mcp_client: MCPHTTPClient,
+    mcp_client: MCPStdioClientWrapper,
     name_filter: Optional[Callable[[str], bool]] = None
 ) -> List["BaseTool"]:
     """
@@ -739,18 +1027,18 @@ def create_langchain_tools(
 # 싱글톤 인스턴스 (OpenDart MCP 전용)
 # =============================================================================
 
-_opendart_client: Optional[MCPHTTPClient] = None
+_opendart_client: Optional[MCPStdioClientWrapper] = None
 
 # 싱글톤 클라이언트 초기화 플래그 (Kong 정보 변경 시 재연결)
 _opendart_client_endpoint: Optional[str] = None
 _opendart_client_kong_key: Optional[str] = None
 
 
-async def get_opendart_mcp_client() -> MCPHTTPClient:
+async def get_opendart_mcp_client() -> MCPStdioClientWrapper:
     """
-    OpenDart MCP 클라이언트 싱글톤 반환.
+    OpenDart MCP 클라이언트 싱글톤 반환 (stdio 방식).
     
-    /build/mcp에 등록된 OpenDART MCP 서버를 사용합니다.
+    /build/mcp에 등록된 OpenDART MCP 서버를 stdio 방식으로 사용합니다.
     """
     global _opendart_client, _opendart_client_endpoint, _opendart_client_kong_key
     
@@ -758,13 +1046,10 @@ async def get_opendart_mcp_client() -> MCPHTTPClient:
     print(f"[DEBUG] get_opendart_mcp_client() called")
     logger.info("get_opendart_mcp_client() called")
     
-    # 항상 최신 Kong 정보를 확인하기 위해 재연결 (싱글톤이지만 Kong 정보는 최신 상태 유지)
     # 연결이 끊어진 경우 또는 클라이언트가 없는 경우 재연결
-    # 또는 Kong 정보가 없는 경우 재연결 (Kong Gateway를 통한 접근 필요)
     should_reconnect = (
         _opendart_client is None or 
-        (hasattr(_opendart_client, '_connected') and not _opendart_client._connected) or
-        (hasattr(_opendart_client, 'kong_api_key') and not _opendart_client.kong_api_key and _opendart_client.endpoint.startswith('http://121.141.60.219'))
+        (hasattr(_opendart_client, '_connected') and not _opendart_client._connected)
     )
     
     # 로그 출력 (항상 실행)
@@ -857,64 +1142,30 @@ async def get_opendart_mcp_client() -> MCPHTTPClient:
             # #endregion
             
             if not opendart_server:
-                # 등록된 서버가 없으면 환경변수 또는 기본값 사용
-                import os
-                endpoint = os.getenv("OPENDART_MCP_ENDPOINT", "http://121.141.60.219:8089/mcp")
-                logger.warning(f"OpenDART MCP server not found in registered servers (checked {len(servers)} servers), using default: {endpoint}")
-                
-                # 기존 클라이언트가 있으면 종료
-                if _opendart_client:
-                    await _opendart_client.disconnect()
-                
-                _opendart_client = MCPHTTPClient(endpoint)
-                _opendart_client_endpoint = endpoint
-                _opendart_client_kong_key = None
-                await _opendart_client.connect()
-            else:
-                # Kong Gateway를 통한 접근 사용
-                server_id = opendart_server.get('id')
-                if not server_id:
-                    raise RuntimeError(f"OpenDART MCP server '{opendart_server.get('name')}' has no id")
-                
-                # Kong Gateway를 통한 접근 경로 사용
-                from app.config import get_settings
-                settings = get_settings()
-                
-                # Kong에 등록된 경우 Kong을 통해 접근, 아니면 직접 접근 (fallback)
-                kong_service_id = opendart_server.get('kong_service_id')
-                kong_api_key = opendart_server.get('kong_api_key')
-                
-                logger.info(f"OpenDART server Kong info: service_id={kong_service_id}, has_api_key={bool(kong_api_key)}")
-                
-                if kong_service_id and kong_api_key:
-                    # Kong Gateway를 통해 접근
-                    kong_proxy_url = settings.KONG_PROXY_URL
-                    endpoint = f"{kong_proxy_url}/mcp/{server_id}"
-                    logger.info(f"Using Kong Gateway for OpenDART MCP server: {opendart_server.get('name')} (via {endpoint})")
-                    
-                    # 기존 클라이언트가 있으면 종료
-                    if _opendart_client:
-                        await _opendart_client.disconnect()
-                    
-                    _opendart_client = MCPHTTPClient(endpoint, kong_api_key=kong_api_key)
-                    _opendart_client_endpoint = endpoint
-                    _opendart_client_kong_key = kong_api_key
-                else:
-                    # Kong에 등록되지 않은 경우 직접 접근 (fallback)
-                    endpoint = opendart_server.get('endpoint_url')
-                    if not endpoint:
-                        raise RuntimeError(f"OpenDART MCP server '{opendart_server.get('name')}' has no endpoint_url")
-                    logger.warning(f"OpenDART MCP server not registered in Kong Gateway, using direct endpoint: {endpoint}")
-                    
-                    # 기존 클라이언트가 있으면 종료
-                    if _opendart_client:
-                        await _opendart_client.disconnect()
-                    
-                    _opendart_client = MCPHTTPClient(endpoint)
-                    _opendart_client_endpoint = endpoint
-                    _opendart_client_kong_key = None
-                
-                await _opendart_client.connect()
+                raise RuntimeError(f"OpenDART MCP server not found in registered servers (checked {len(servers)} servers)")
+            
+            # stdio 방식으로 클라이언트 생성
+            server_id = opendart_server.get('id')
+            if not server_id:
+                raise RuntimeError(f"OpenDART MCP server '{opendart_server.get('name')}' has no id")
+            
+            # transport_type 확인
+            transport_type = opendart_server.get('transport_type')
+            if transport_type != 'stdio':
+                raise RuntimeError(f"OpenDART MCP server '{opendart_server.get('name')}' is not stdio type (got {transport_type})")
+            
+            logger.info(f"Using stdio client for OpenDART MCP server: {opendart_server.get('name')} (server_id: {server_id})")
+            
+            # 기존 클라이언트가 있으면 종료
+            if _opendart_client:
+                await _opendart_client.disconnect()
+            
+            # stdio 클라이언트 생성
+            _opendart_client = MCPStdioClientWrapper(server_id)
+            _opendart_client_endpoint = f"stdio://{server_id}"
+            _opendart_client_kong_key = None
+            
+            await _opendart_client.connect()
         except Exception as e:
             logger.error(f"Failed to get registered MCP servers: {e}")
             import os

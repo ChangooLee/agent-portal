@@ -109,10 +109,13 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/api\/text2sql/, '/text2sql')
 			},
 			// DART 기업공시분석 Agent API → FastAPI BFF (포트 3009)
+			// SSE 스트리밍을 위해 타임아웃을 10분으로 설정
 			'/api/dart': {
 				target: bffTarget,
 				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/api\/dart/, '/dart')
+				rewrite: (path) => path.replace(/^\/api\/dart/, '/dart'),
+				timeout: 600000,  // 10분 타임아웃
+				proxyTimeout: 600000  // 프록시 타임아웃 10분
 			},
 			// WebUI Backend API → FastAPI BFF (포트 3009) → WebUI Backend (8080)
 			// BFF의 /api/webui/* 라우터가 WebUI Backend로 프록시합니다.

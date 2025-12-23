@@ -439,7 +439,7 @@
 		<div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
 		<div class="relative px-6 py-8 text-center">
-			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+			<h1 class="text-3xl md:text-4xl font-medium mb-3 text-white">
 				📰 Today's News
 			</h1>
 			<p class="text-base text-blue-200/80">
@@ -524,7 +524,7 @@
 				<!-- Search Results Section -->
 				{#if filteredArticles.length > 0}
 					<div>
-						<h2 class="text-2xl font-bold text-white mb-6">🔍 검색 결과 ({filteredArticles.length}개)</h2>
+						<h2 class="text-2xl font-medium text-white mb-6">🔍 검색 결과 ({filteredArticles.length}개)</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 							{#each filteredArticles as article}
 								<button
@@ -669,7 +669,7 @@
 				<!-- Featured Articles Section -->
 				{#if newsData && newsData.featured_articles.length > 0 && selectedTags.length === 0 && selectedCategories.length === 0}
 					<div class="mb-12">
-						<h2 class="text-2xl font-bold text-white mb-6">🔥 주요 뉴스</h2>
+						<h2 class="text-2xl font-medium text-white mb-6">🔥 주요 뉴스</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 							{#each newsData.featured_articles as article}
 								<button
@@ -722,7 +722,7 @@
 				<!-- Filtered Articles Section -->
 				{#if (selectedTags.length > 0 || selectedCategories.length > 0) && filteredArticles.length > 0}
 					<div class="mb-12">
-						<h2 class="text-2xl font-bold text-white mb-6">
+						<h2 class="text-2xl font-medium text-white mb-6">
 							필터링된 기사 ({filteredArticles.length}개)
 						</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -781,7 +781,7 @@
 				<!-- All Articles Section -->
 				{#if allArticles.length > 0 && selectedTags.length === 0 && selectedCategories.length === 0}
 					<div>
-						<h2 class="text-2xl font-bold text-white mb-6">
+						<h2 class="text-2xl font-medium text-white mb-6">
 							📰 전체 뉴스 ({allArticles.length}개 / 전체 {newsData?.total_articles || 0}개)
 						</h2>
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -894,7 +894,7 @@
 							{/each}
 						{/if}
 					</div>
-					<h2 class="text-2xl font-bold text-white">
+					<h2 class="text-2xl font-medium text-white">
 						{selectedArticle.title}
 					</h2>
 				</div>

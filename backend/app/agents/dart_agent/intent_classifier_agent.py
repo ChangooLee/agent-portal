@@ -19,7 +19,7 @@ from .dart_types import (
 )
 from .message_refiner import MessageRefiner
 from .mcp_client import MCPTool, get_opendart_mcp_client
-from .metrics import start_dart_span, record_counter, inject_context_to_carrier
+from .metrics import observe, record_counter, start_tool_call_span
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +31,34 @@ def log_agent_flow(agent_name: str, action: str, step: int, message: str):
     """에이전트 플로우 로깅 (agent-platform 호환)"""
     logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
+
+# =============================================================================
+# 📋 MCP 응답 필드 접근 헬퍼 (하드코딩 지양)
+# =============================================================================
+# MCP 응답 형식이 다를 수 있으므로 여러 필드명을 지원
+# - OpenDART MCP: corporation_name, corporation_code, status_code
+# - 표준 형식: corp_name, corp_code, status
+
+def get_item_corp_name(item: Dict[str, Any]) -> str:
+    """아이템에서 기업명 추출 (여러 필드명 지원)"""
+    return item.get("corporation_name") or item.get("corp_name", "")
+
+def get_item_corp_code(item: Dict[str, Any]) -> str:
+    """아이템에서 기업코드 추출 (여러 필드명 지원)"""
+    return item.get("corporation_code") or item.get("corp_code", "")
+
+def get_item_stock_code(item: Dict[str, Any]) -> str:
+    """아이템에서 종목코드 추출"""
+    return (item.get("stock_code") or "").strip()
+
+def is_listed_company(item: Dict[str, Any]) -> bool:
+    """상장 기업 여부 확인"""
+    stock_code = get_item_stock_code(item)
+    return bool(stock_code)
+
+
 # Langfuse 데코레이터 (선택적)
-def observe():
-    def decorator(func):
-        return func
-    return decorator
+# observe 데코레이터는 metrics.py에서 import
 
 
 # =============================================================================
@@ -677,137 +700,10 @@ class IntentClassifierAgent(DartBaseAgent):
             log_step("LLM 기업명 추출 오류", "ERROR", f"오류: {str(e)}")
             return ""
 
-    async def _search_local_corpcode(self, company_name: str) -> Dict[str, Any]:
-        """로컬 CORPCODE.xml에서 기업코드 검색 - 다양한 매칭 방법 적용"""
-        try:
-            import xml.etree.ElementTree as ET
-            from difflib import SequenceMatcher
-
-            import os
-
-            corpcode_path = os.path.join(
-                os.getcwd(), "mcp/mcp-opendart/src/mcp_opendart/utils/data/CORPCODE.xml"
-            )
-
-            print(f"🔥🔥🔥 로컬 CORPCODE.xml 검색 시작: '{company_name}'")
-            log_step("로컬 CORPCODE 검색", "INFO", f"파일: {corpcode_path}")
-
-            # XML 파일 파싱
-            tree = ET.parse(corpcode_path)
-            root = tree.getroot()
-
-            exact_matches = []
-            contains_matches = []
-            similar_matches = []
-
-            # 검색어 정규화 (공백 제거, 소문자 변환)
-            normalized_search = company_name.replace(" ", "").lower()
-
-            # 모든 기업 정보 검색
-            for corp in root.findall(".//list"):
-                corp_cls = corp.find("corp_cls")
-                corp_name = corp.find("corp_name")
-                corp_code = corp.find("corp_code")
-
-                if (
-                    corp_cls is not None
-                    and corp_name is not None
-                    and corp_code is not None
-                ):
-                    # 상장법인만 대상 (Y: 유가증권시장, K: 코스닥, N: 코넥스, E: 기타)
-                    if corp_cls.text in ["Y", "K", "N", "E"]:
-                        current_corp_name = corp_name.text.strip()
-                        current_corp_code = corp_code.text.strip()
-                        normalized_corp = current_corp_name.replace(" ", "").lower()
-
-                        # 1. Exact match 검사
-                        if (
-                            company_name == current_corp_name
-                            or normalized_search == normalized_corp
-                        ):
-                            exact_matches.append(
-                                {
-                                    "corp_name": current_corp_name,
-                                    "corp_code": current_corp_code,
-                                    "corp_cls": corp_cls.text,
-                                    "match_type": "exact",
-                                }
-                            )
-
-                        # 2. Contains match 검사 (기업명이 포함되거나 포함하는 경우)
-                        elif (
-                            company_name in current_corp_name
-                            or current_corp_name in company_name
-                            or normalized_search in normalized_corp
-                            or normalized_corp in normalized_search
-                        ):
-                            contains_matches.append(
-                                {
-                                    "corp_name": current_corp_name,
-                                    "corp_code": current_corp_code,
-                                    "corp_cls": corp_cls.text,
-                                    "match_type": "contains",
-                                }
-                            )
-
-                        # 3. 유사도 매칭 (0.6 이상으로 임계값 낮춤)
-                        similarity = SequenceMatcher(
-                            None, normalized_search, normalized_corp
-                        ).ratio()
-                        if similarity >= 0.6:
-                            similar_matches.append(
-                                {
-                                    "corp_name": current_corp_name,
-                                    "corp_code": current_corp_code,
-                                    "corp_cls": corp_cls.text,
-                                    "similarity": similarity,
-                                    "match_type": "similar",
-                                }
-                            )
-
-            # 결과 처리 (우선순위: exact > contains > similar)
-            if exact_matches:
-                result = exact_matches[0]  # 첫 번째 exact match 사용
-                print(f"🔥🔥🔥 Exact match 발견: {result}")
-                log_step(
-                    "Exact match 성공",
-                    "SUCCESS",
-                    f"기업: {result['corp_name']}, 코드: {result['corp_code']}",
-                )
-                return result
-
-            if contains_matches:
-                result = contains_matches[0]  # 첫 번째 contains match 사용
-                print(f"🔥🔥🔥 Contains match 발견: {result}")
-                log_step(
-                    "Contains match 성공",
-                    "SUCCESS",
-                    f"기업: {result['corp_name']}, 코드: {result['corp_code']}",
-                )
-                return result
-
-            if similar_matches:
-                # 유사도 높은 순으로 정렬
-                similar_matches.sort(key=lambda x: x["similarity"], reverse=True)
-                result = similar_matches[0]
-                print(f"🔥🔥🔥 유사도 매칭 발견: {result}")
-                log_step(
-                    "유사도 매칭 성공",
-                    "SUCCESS",
-                    f"기업: {result['corp_name']}, 코드: {result['corp_code']}, 유사도: {result['similarity']:.2f}",
-                )
-                return result
-
-            print(f"🔥🔥🔥 로컬 CORPCODE.xml에서 '{company_name}' 미발견")
-            log_step(
-                "로컬 검색 실패", "WARNING", f"'{company_name}' 기업을 찾을 수 없음"
-            )
-            return {}
-
-        except Exception as e:
-            print(f"🔥🔥🔥 로컬 CORPCODE.xml 검색 오류: {str(e)}")
-            log_step("로컬 검색 오류", "ERROR", f"오류: {str(e)}")
-            return {}
+    # NOTE: _search_local_corpcode 함수 제거됨 (2024-12-17)
+    # 아키텍처 원칙: 에이전트는 MCP 도구만 이용해야 함
+    # 에이전트가 직접 리소스(CORPCODE.xml 등)에 접근하는 것은 금지
+    # 모든 데이터 접근은 MCP 도구를 통해서만 수행
 
     def _normalize_company_name(self, company_name: str) -> List[str]:
         """기업명 정규화 - 조사 제거 및 다양한 형태 생성"""
@@ -871,35 +767,20 @@ class IntentClassifierAgent(DartBaseAgent):
         return variations
 
     async def _find_corporation_code(self, company_name: str) -> Dict[str, Any]:
-        """기업명으로 기업코드 찾기 - 로컬 CORPCODE.xml 우선, MCP 도구 fallback"""
+        """기업명으로 기업코드 찾기 - MCP 도구만 사용 (아키텍처 원칙: 에이전트는 MCP만 이용)
+        
+        Note: 에이전트는 직접 리소스(CORPCODE.xml 등)에 접근하지 않습니다.
+        모든 데이터 접근은 MCP 도구를 통해서만 수행됩니다.
+        """
         if not company_name:
             return {"error": "기업명이 제공되지 않음"}
 
-        print(f"🔥🔥🔥 기업코드 조회 시작: '{company_name}'")
-        log_step("기업코드 조회 시작", "INFO", f"기업명: '{company_name}'")
+        log_step("기업코드 조회 시작", "INFO", f"기업명: '{company_name}' (MCP 도구 사용)")
 
         # 기업명 정규화 - 다양한 형태로 시도
         company_variations = self._normalize_company_name(company_name)
 
-        # 1단계: 로컬 CORPCODE.xml에서 검색 (모든 변형에 대해)
-        for variation in company_variations:
-            local_result = await self._search_local_corpcode(variation)
-            if local_result and "corp_code" in local_result:
-                print(
-                    f"🔥🔥🔥 로컬 CORPCODE.xml에서 기업코드 발견: {local_result} (변형: '{variation}')"
-                )
-                log_step(
-                    "로컬 기업코드 조회 성공",
-                    "SUCCESS",
-                    f"기업: {variation}, 코드: {local_result['corp_code']}",
-                )
-                return local_result
-
-        print(f"🔥🔥🔥 로컬 CORPCODE.xml에서 기업코드 미발견, MCP 도구 호출")
-        log_step("로컬 조회 실패", "INFO", "MCP 도구로 fallback")
-
-        # 2단계: MCP 도구 호출 (fallback) - 모든 변형에 대해 시도
-
+        # MCP 도구만 사용하여 기업코드 조회 (아키텍처 원칙 준수)
         try:
             # BaseAgent 초기화 확인 - 재초기화하지 않음
             print(
@@ -932,9 +813,14 @@ class IntentClassifierAgent(DartBaseAgent):
                     print(f"🔥🔥🔥 MCP 도구로 기업코드 조회 시도: '{variation}'")
 
                     try:
-                        tool_result = await mcp_client.call_tool(
-                            "get_corporation_code_by_name", {"corp_name": variation}
-                        )
+                        tool_args = {"corp_name": variation}
+                        with start_tool_call_span("get_corporation_code_by_name", tool_args) as (span, record_result):
+                            tool_result = await mcp_client.call_tool(
+                                "get_corporation_code_by_name", tool_args
+                            )
+                            # OTEL에 결과 기록
+                            if tool_result:
+                                record_result(tool_result.result if hasattr(tool_result, 'result') else str(tool_result))
 
                         print(
                             f"🔥🔥🔥 MCP 도구 호출 결과 ('{variation}'): {type(tool_result)}"
@@ -1003,11 +889,20 @@ class IntentClassifierAgent(DartBaseAgent):
             
             # MCPToolCall 객체인 경우 (Agent Portal MCP 클라이언트 반환 형식)
             if hasattr(tool_result, "result") and hasattr(tool_result, "name"):
-                # MCPToolCall.result가 이미 dict 형태이므로 직접 반환
                 result_data = tool_result.result
-                print(f"🔥🔥🔥 MCPToolCall.result 추출: {type(result_data)}")
+                log_step("MCP 결과 파싱", "INFO", f"MCPToolCall.result 타입: {type(result_data)}")
+                
                 if isinstance(result_data, dict):
                     return result_data
+                elif isinstance(result_data, str):
+                    # 문자열인 경우 JSON 파싱 시도
+                    try:
+                        parsed = json.loads(result_data)
+                        log_step("MCP 결과 파싱", "SUCCESS", f"JSON 파싱 성공: {type(parsed)}")
+                        return parsed
+                    except json.JSONDecodeError as e:
+                        log_step("MCP 결과 파싱", "WARNING", f"JSON 파싱 실패: {e}")
+                        return {"error": f"JSON 파싱 실패: {e}", "raw": result_data}
                 elif result_data is None:
                     return {"error": "MCP 도구 결과가 없습니다"}
 
@@ -1103,18 +998,27 @@ class IntentClassifierAgent(DartBaseAgent):
             
             log_step("최근 공시 조회 시작", "INFO", f"기업코드: {corp_code}, 기간: {start_date.strftime('%Y%m%d')} ~ {end_date.strftime('%Y%m%d')}")
             
-            # MCP 매니저를 통한 올바른 도구 호출
-            if hasattr(self, 'mcp_manager') and self.mcp_manager:
+            # MCP 클라이언트를 통한 올바른 도구 호출 (_find_corporation_code와 동일 패턴)
+            mcp_client = getattr(self, 'mcp_client', None)
+            if mcp_client is None:
+                from .mcp_client import get_opendart_mcp_client
+                mcp_client = await get_opendart_mcp_client()
+            
+            if mcp_client and mcp_client.is_connected:
                 try:
-                    # 올바른 MCP 호출 방식 (다른 에이전트와 동일)
-                    tool_result = await self.mcp_manager.call_tool(
-                        "get_disclosure_list",
-                        {
-                            "corp_code": corp_code,
-                            "bgn_de": start_date.strftime("%Y%m%d"),
-                            "end_de": end_date.strftime("%Y%m%d")
-                        }
-                    )
+                    # MCP 클라이언트를 통한 도구 호출 (OTEL 기록 포함)
+                    tool_args = {
+                        "corp_code": corp_code,
+                        "bgn_de": start_date.strftime("%Y%m%d"),
+                        "end_de": end_date.strftime("%Y%m%d")
+                    }
+                    with start_tool_call_span("get_disclosure_list", tool_args) as (span, record_result):
+                        tool_result = await mcp_client.call_tool(
+                            "get_disclosure_list", tool_args
+                        )
+                        # OTEL에 결과 기록
+                        if tool_result:
+                            record_result(tool_result.result if hasattr(tool_result, 'result') else str(tool_result))
                     
                     log_step("최근 공시 MCP 호출 결과", "INFO", f"결과 타입: {type(tool_result)}")
                     
@@ -1124,7 +1028,7 @@ class IntentClassifierAgent(DartBaseAgent):
                         log_step("최근 공시 파싱 결과", "INFO", f"파싱 타입: {type(parsed_result)}")
                         
                         if isinstance(parsed_result, dict):
-                            # DART API 응답 구조 확인
+                            # DART API 응답 구조 확인 (다양한 키 형식 지원)
                             if "list" in parsed_result and isinstance(parsed_result["list"], list):
                                 disclosures = parsed_result["list"]
                                 log_step("최근 공시 조회 성공", "SUCCESS", f"공시 {len(disclosures)}건 발견")
@@ -1132,6 +1036,11 @@ class IntentClassifierAgent(DartBaseAgent):
                             elif "items" in parsed_result and isinstance(parsed_result["items"], list):
                                 disclosures = parsed_result["items"]
                                 log_step("최근 공시 조회 성공", "SUCCESS", f"공시 {len(disclosures)}건 발견")
+                                return disclosures
+                            elif "data_list" in parsed_result and isinstance(parsed_result["data_list"], list):
+                                # MCP 응답에서 data_list 키 지원 (transform_keys 적용 후)
+                                disclosures = parsed_result["data_list"]
+                                log_step("최근 공시 조회 성공", "SUCCESS", f"공시 {len(disclosures)}건 발견 (data_list)")
                                 return disclosures
                             else:
                                 log_step("최근 공시 구조 확인", "WARNING", f"알 수 없는 응답 구조: {list(parsed_result.keys())}")
@@ -1145,7 +1054,7 @@ class IntentClassifierAgent(DartBaseAgent):
                     import traceback
                     log_step("최근 공시 MCP 호출 스택", "ERROR", f"스택: {traceback.format_exc()}")
             else:
-                log_step("최근 공시 조회 실패", "ERROR", "MCP 매니저가 초기화되지 않음")
+                log_step("최근 공시 조회 실패", "ERROR", "MCP 클라이언트가 연결되지 않음")
             
             log_step("최근 공시 조회 완료", "INFO", "결과 없음으로 빈 배열 반환")
             return []
@@ -1163,13 +1072,22 @@ class IntentClassifierAgent(DartBaseAgent):
             
             log_step("기업 기본정보 조회 시작", "INFO", f"기업코드: {corp_code}")
             
-            # MCP 매니저를 통한 도구 호출
-            if hasattr(self, 'mcp_manager') and self.mcp_manager:
+            # MCP 클라이언트를 통한 도구 호출 (_find_corporation_code와 동일 패턴)
+            mcp_client = getattr(self, 'mcp_client', None)
+            if mcp_client is None:
+                from .mcp_client import get_opendart_mcp_client
+                mcp_client = await get_opendart_mcp_client()
+            
+            if mcp_client and mcp_client.is_connected:
                 try:
-                    tool_result = await self.mcp_manager.call_tool(
-                        "get_corporation_info",
-                        {"corp_code": corp_code}
-                    )
+                    tool_args = {"corp_code": corp_code}
+                    with start_tool_call_span("get_corporation_info", tool_args) as (span, record_result):
+                        tool_result = await mcp_client.call_tool(
+                            "get_corporation_info", tool_args
+                        )
+                        # OTEL에 결과 기록
+                        if tool_result:
+                            record_result(tool_result.result if hasattr(tool_result, 'result') else str(tool_result))
                     
                     log_step("기업 기본정보 MCP 호출 결과", "INFO", f"결과 타입: {type(tool_result)}")
                     
@@ -1199,6 +1117,12 @@ class IntentClassifierAgent(DartBaseAgent):
                                 industry = parsed_result.get("industry_classification", "")
                                 log_step("기업 기본정보 조회 성공", "SUCCESS", f"업종: {industry}")
                                 return parsed_result
+                            elif "industry_code" in parsed_result or "corporation_code" in parsed_result:
+                                # OpenDART MCP 직접 응답 구조 (industry_code 필드)
+                                industry = parsed_result.get("industry_code", "")
+                                corp_name = parsed_result.get("corporation_name", "")
+                                log_step("기업 기본정보 조회 성공", "SUCCESS", f"기업: {corp_name}, 업종코드: {industry}")
+                                return parsed_result
                             else:
                                 log_step("기업 기본정보 구조 확인", "WARNING", f"알 수 없는 응답 구조: {list(parsed_result.keys())}")
                         else:
@@ -1211,7 +1135,7 @@ class IntentClassifierAgent(DartBaseAgent):
                     import traceback
                     log_step("기업 기본정보 MCP 호출 스택", "ERROR", f"스택: {traceback.format_exc()}")
             else:
-                log_step("기업 기본정보 조회 실패", "ERROR", "MCP 매니저가 초기화되지 않음")
+                log_step("기업 기본정보 조회 실패", "ERROR", "MCP 클라이언트가 연결되지 않음")
             
             log_step("기업 기본정보 조회 완료", "INFO", "결과 없음으로 빈 dict 반환")
             return {}
@@ -1249,25 +1173,27 @@ class IntentClassifierAgent(DartBaseAgent):
         # 공시 정보를 문자열로 포맷팅
         disclosure_summary = ""
         if corp_info.get("is_multi_company", False):
-            # 복수 기업일 때
+            # 복수 기업일 때 - 전체 공시 정보 표시
             disclosure_summary = "\n## 📰 최근 공시 정보 (최근 30일)\n"
             for corp_name, disclosures in recent_disclosures.items():
                 disclosure_summary += f"\n### {corp_name}\n"
                 if disclosures:
-                    for disclosure in disclosures[:10]:  # 기업당 최근 10개만 표시
+                    for disclosure in disclosures:  # 모든 공시 표시
                         title = disclosure.get("report_nm", "제목 없음")
                         date = disclosure.get("rcept_dt", "날짜 없음")
-                        disclosure_summary += f"- {date}: {title}\n"
+                        rcp_no = disclosure.get("rcept_no", "")
+                        disclosure_summary += f"- {date}: {title} (접수번호: {rcp_no})\n"
                 else:
                     disclosure_summary += "최근 30일간 공시 정보가 없습니다.\n"
         else:
-            # 단일 기업일 때는 기존 로직
+            # 단일 기업일 때 - 전체 공시 정보 표시
             if recent_disclosures:
                 disclosure_summary = "\n## 📰 최근 공시 정보 (최근 30일)\n"
-                for disclosure in recent_disclosures[:20]:  # 최근 20개만 표시
+                for disclosure in recent_disclosures:  # 모든 공시 표시
                     title = disclosure.get("report_nm", "제목 없음")
                     date = disclosure.get("rcept_dt", "날짜 없음")
-                    disclosure_summary += f"- {date}: {title}\n"
+                    rcp_no = disclosure.get("rcept_no", "")
+                    disclosure_summary += f"- {date}: {title} (접수번호: {rcp_no})\n"
             else:
                 disclosure_summary = "\n## 📰 최근 공시 정보\n최근 30일간 공시 정보가 없습니다.\n"
         
@@ -1632,227 +1558,95 @@ analysis_reasoning에 연계 분석 결과를 포함시키세요.
             "recent_disclosures": []
         }
 
-    def _extract_corp_code_from_result(self, corp_lookup_result: Dict[str, Any]) -> str:
-        """기업코드 조회 결과에서 기업코드 추출 - MCP 도구의 새로운 응답 형식 처리"""
-        try:
-            log_step(
-                "🔍 기업코드 추출 시작", "INFO", f"조회 결과 구조: {corp_lookup_result}"
-            )
-
-            # MCP 도구 응답 형식 처리
-            if "result" in corp_lookup_result and corp_lookup_result["result"]:
-                result_data = corp_lookup_result["result"]
-                log_step(
-                    "🔍 result 필드 확인", "INFO", f"result 타입: {type(result_data)}"
-                )
+    def _get_items_from_result(self, corp_lookup_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """MCP 결과에서 items 리스트 추출 (다양한 응답 형식 지원)"""
+        import json
+        
+        # 1. 직접 items 필드가 있는 경우
+        if "items" in corp_lookup_result:
+            items = corp_lookup_result["items"]
+            if isinstance(items, list):
+                return items
+        
+        # 2. result 필드가 있는 경우 (MCPToolCall 래핑)
+        if "result" in corp_lookup_result:
+            result_data = corp_lookup_result["result"]
+            
+            # MCPToolCall 객체인 경우
+            if hasattr(result_data, "result") and hasattr(result_data, "name"):
+                mcp_result = result_data.result
                 
-                # 0. MCPToolCall 객체인 경우 (Agent Portal MCP 클라이언트 반환 형식)
-                if hasattr(result_data, "result") and hasattr(result_data, "name"):
-                    # MCPToolCall.result에서 실제 데이터 추출
-                    mcp_result = result_data.result
-                    log_step(
-                        "🔍 MCPToolCall 처리", "INFO", f"MCPToolCall.result 타입: {type(mcp_result)}"
-                    )
-                    if isinstance(mcp_result, dict) and "items" in mcp_result:
-                        items = mcp_result["items"]
-                        company_name = corp_lookup_result.get("company_name", "")
-                        if isinstance(items, list) and len(items) > 0:
-                            # 정확한 기업명 매칭 우선
-                            for item in items:
-                                if isinstance(item, dict):
-                                    item_name = item.get("corporation_name", "")
-                                    if item_name == company_name:
-                                        corp_code = item.get("corporation_code") or item.get("corp_code")
-                                        if corp_code:
-                                            log_step("🔍 기업코드 추출 성공", "SUCCESS", f"정확 매칭: {item_name} → {corp_code}")
-                                            return corp_code
-                            # 정확 매칭 실패 시 첫 번째 결과 사용
-                            first_item = items[0]
-                            if isinstance(first_item, dict):
-                                corp_code = first_item.get("corporation_code") or first_item.get("corp_code")
-                                if corp_code:
-                                    log_step("🔍 기업코드 추출 성공", "SUCCESS", f"첫 번째 결과: {corp_code}")
-                                    return corp_code
-
-                # 1. 직접 dict/list 형태인 경우 (기존 방식)
-                if isinstance(result_data, dict) and "corp_code" in result_data:
-                    corp_code = result_data["corp_code"]
-                    print(f"🔥🔥🔥 직접 dict에서 기업코드 추출 성공: {corp_code}")
-                    log_step(
-                        "🔍 기업코드 추출 성공",
-                        "SUCCESS",
-                        f"추출된 기업코드: {corp_code}",
-                    )
-                    return corp_code
-
-                elif isinstance(result_data, list) and len(result_data) > 0:
-                    first_result = result_data[0]
-                    if isinstance(first_result, dict) and "corp_code" in first_result:
-                        corp_code = first_result["corp_code"]
-                        print(
-                            f"🔥🔥🔥 리스트 첫 번째 결과에서 기업코드 추출: {corp_code}"
-                        )
-                        log_step(
-                            "🔍 기업코드 추출 성공",
-                            "SUCCESS",
-                            f"추출된 기업코드: {corp_code}",
-                        )
+                # 문자열이면 JSON 파싱
+                if isinstance(mcp_result, str):
+                    try:
+                        mcp_result = json.loads(mcp_result)
+                    except json.JSONDecodeError:
+                        return []
+                
+                if isinstance(mcp_result, dict) and "items" in mcp_result:
+                    return mcp_result.get("items", [])
+            
+            # 직접 dict인 경우
+            elif isinstance(result_data, dict) and "items" in result_data:
+                return result_data.get("items", [])
+            
+            # 문자열이면 JSON 파싱
+            elif isinstance(result_data, str):
+                try:
+                    parsed = json.loads(result_data)
+                    if isinstance(parsed, dict) and "items" in parsed:
+                        return parsed.get("items", [])
+                except json.JSONDecodeError:
+                    pass
+        
+        return []
+    
+    def _extract_corp_code_from_result(self, corp_lookup_result: Dict[str, Any]) -> str:
+        """기업코드 조회 결과에서 기업코드 추출
+        
+        헬퍼 함수(get_item_corp_name, get_item_corp_code 등)를 사용하여
+        다양한 MCP 응답 형식을 하드코딩 없이 처리합니다.
+        """
+        try:
+            company_name = corp_lookup_result.get("company_name", "")
+            log_step("🔍 기업코드 추출 시작", "INFO", f"기업명: {company_name}")
+            
+            # items 추출 (직접 접근 또는 MCPToolCall에서 추출)
+            items = self._get_items_from_result(corp_lookup_result)
+            
+            if items and len(items) > 0:
+                # 1. 정확한 기업명 매칭 우선
+                for item in items:
+                    if isinstance(item, dict):
+                        item_name = get_item_corp_name(item)
+                        if item_name.lower() == company_name.lower():
+                            corp_code = get_item_corp_code(item)
+                            if corp_code:
+                                log_step("🔍 기업코드 추출 성공", "SUCCESS", f"정확 매칭: {item_name} → {corp_code}")
+                                return corp_code
+                
+                # 2. 상장기업 우선
+                for item in items:
+                    if isinstance(item, dict) and is_listed_company(item):
+                        corp_code = get_item_corp_code(item)
+                        if corp_code:
+                            item_name = get_item_corp_name(item)
+                            log_step("🔍 기업코드 추출 성공", "SUCCESS", f"상장기업 우선: {item_name} → {corp_code}")
+                            return corp_code
+                
+                # 3. 첫 번째 결과 사용
+                first_item = items[0]
+                if isinstance(first_item, dict):
+                    corp_code = get_item_corp_code(first_item)
+                    if corp_code:
+                        log_step("🔍 기업코드 추출 성공", "SUCCESS", f"첫 번째 결과: {corp_code}")
                         return corp_code
-
-                # 2. 새로운 MCP 응답 형식: "[TextContent(...)]" 문자열 처리
-                elif isinstance(result_data, str):
-                    print(f"🔥🔥🔥 MCP TextContent 문자열 형태 감지, 파싱 시도")
-                    import re
-                    import json
-
-                    # TextContent의 text 부분 추출 (정규식 개선)
-                    text_match = re.search(
-                        r"text=\'([^\']*(?:\\.[^\']*)*)\'", result_data
-                    )
-                    if not text_match:
-                        # 큰따옴표로도 시도
-                        text_match = re.search(
-                            r'text="([^"]*(?:\\.[^"]*)*)"', result_data
-                        )
-
-                    if text_match:
-                        json_str = text_match.group(1)
-                        print(f"🔥🔥🔥 추출된 JSON 문자열: {json_str[:200]}...")
-
-                        try:
-                            # JSON 파싱 시도
-                            parsed_data = json.loads(json_str)
-                            print(
-                                f"🔥🔥🔥 JSON 파싱 성공! 파싱된 데이터 타입: {type(parsed_data)}"
-                            )
-                            log_step(
-                                "🔍 JSON 파싱 성공",
-                                "SUCCESS",
-                                f"파싱된 데이터: {type(parsed_data)}",
-                            )
-
-                            # items 배열에서 정확한 기업명 매칭으로 corp_code 추출
-                            if isinstance(parsed_data, dict) and "items" in parsed_data:
-                                items = parsed_data["items"]
-                                if isinstance(items, list) and len(items) > 0:
-                                    # 1. 정확한 기업명 매칭 우선 (대소문자 구분 없이)
-                                    search_name = corp_lookup_result.get(
-                                        "company_name", ""
-                                    ).lower()
-                                    for item in items:
-                                        if (
-                                            isinstance(item, dict)
-                                            and "corp_name" in item
-                                            and "corp_code" in item
-                                        ):
-                                            item_name = item["corp_name"].lower()
-                                            if item_name == search_name:
-                                                corp_code = item["corp_code"]
-                                                print(
-                                                    f"🔥🔥🔥 정확한 기업명 매칭 성공: {item['corp_name']} → {corp_code}"
-                                                )
-                                                log_step(
-                                                    "🔍 정확한 기업명 매칭",
-                                                    "SUCCESS",
-                                                    f"기업: {item['corp_name']}, 코드: {corp_code}",
-                                                )
-                                                return corp_code
-
-                                    # 2. 정확한 매칭이 없으면 부분 매칭 (기업명이 포함된 경우)
-                                    for item in items:
-                                        if (
-                                            isinstance(item, dict)
-                                            and "corp_name" in item
-                                            and "corp_code" in item
-                                        ):
-                                            item_name = item["corp_name"].lower()
-                                            if (
-                                                search_name in item_name
-                                                or item_name in search_name
-                                            ):
-                                                corp_code = item["corp_code"]
-                                                print(
-                                                    f"🔥🔥🔥 부분 매칭 성공: {item['corp_name']} → {corp_code}"
-                                                )
-                                                log_step(
-                                                    "🔍 부분 매칭",
-                                                    "SUCCESS",
-                                                    f"기업: {item['corp_name']}, 코드: {corp_code}",
-                                                )
-                                                return corp_code
-
-                                    # 3. 모든 매칭 실패 시 첫 번째 항목 사용 (기존 로직)
-                                    first_item = items[0]
-                                    if (
-                                        isinstance(first_item, dict)
-                                        and "corp_code" in first_item
-                                    ):
-                                        corp_code = first_item["corp_code"]
-                                        print(
-                                            f"🔥🔥🔥 첫 번째 항목 사용: {first_item.get('corp_name', 'N/A')} → {corp_code}"
-                                        )
-                                        log_step(
-                                            "🔍 첫 번째 항목 사용",
-                                            "WARNING",
-                                            f"기업: {first_item.get('corp_name', 'N/A')}, 코드: {corp_code}",
-                                        )
-                                        return corp_code
-
-                            # 직접 corp_code가 있는 경우
-                            elif (
-                                isinstance(parsed_data, dict)
-                                and "corp_code" in parsed_data
-                            ):
-                                corp_code = parsed_data["corp_code"]
-                                print(
-                                    f"🔥🔥🔥 MCP 응답에서 직접 기업코드 추출 성공: {corp_code}"
-                                )
-                                log_step(
-                                    "🔍 기업코드 추출 성공",
-                                    "SUCCESS",
-                                    f"추출된 기업코드: {corp_code}",
-                                )
-                                return corp_code
-
-                        except json.JSONDecodeError as e:
-                            print(f"🔥🔥🔥 JSON 파싱 실패: {e}")
-                            log_step("🔍 JSON 파싱 실패", "ERROR", f"오류: {e}")
-
-                            # 정규식으로 직접 corp_code 추출 시도
-                            corp_code_match = re.search(
-                                r'"corp_code"\s*:\s*"([^"]+)"', json_str
-                            )
-                            if corp_code_match:
-                                corp_code = corp_code_match.group(1)
-                                print(
-                                    f"🔥🔥🔥 정규식으로 기업코드 추출 성공: {corp_code}"
-                                )
-                                log_step(
-                                    "🔍 기업코드 추출 성공",
-                                    "SUCCESS",
-                                    f"추출된 기업코드: {corp_code}",
-                                )
-                                return corp_code
-
-                log_step(
-                    "🔍 결과 처리 실패",
-                    "WARNING",
-                    f"result 데이터를 처리할 수 없음. 타입: {type(result_data)}",
-                )
-            else:
-                log_step(
-                    "🔍 result 필드 없음",
-                    "WARNING",
-                    f"result 필드가 없거나 비어있음. 사용 가능한 키: {list(corp_lookup_result.keys())}",
-                )
-
-            log_step(
-                "기업코드 추출 실패", "WARNING", "조회 결과에서 기업코드를 찾을 수 없음"
-            )
-            return ""  # 빈 문자열 반환 (더미값 제거)
+            
+            log_step("기업코드 추출 실패", "WARNING", "조회 결과에서 기업코드를 찾을 수 없음")
+            return ""
         except Exception as e:
             log_step("기업코드 추출 오류", "ERROR", f"오류: {str(e)}")
-            return ""  # 빈 문자열 반환 (더미값 제거)
+            return ""
 
     def _get_default_classification_with_error(
         self, error_message: str

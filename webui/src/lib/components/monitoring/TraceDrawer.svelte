@@ -147,9 +147,9 @@
 		transition:fade={{ duration: 200 }}
 	/>
 
-	<!-- Drawer -->
+	<!-- Drawer - Full Screen -->
 	<div
-		class="fixed right-0 top-0 h-full w-full md:w-3/4 lg:w-2/3 xl:w-1/2 bg-slate-900 shadow-2xl z-50 overflow-hidden flex flex-col"
+		class="fixed inset-0 bg-slate-900 shadow-2xl z-50 overflow-hidden flex flex-col"
 		transition:fly={{ x: 500, duration: 300, easing: quintOut }}
 	>
 		<!-- Header -->
@@ -185,17 +185,17 @@
 			</button>
 		</div>
 
-		<!-- Content -->
-		<div class="flex-1 overflow-y-auto">
+		<!-- Content - Split Layout -->
+		<div class="flex-1 overflow-hidden flex">
 			{#if loading}
-				<div class="flex items-center justify-center h-64">
+				<div class="flex items-center justify-center w-full h-64">
 					<div class="flex flex-col items-center gap-3">
 						<div class="loading loading-spinner loading-lg text-cyan-400"></div>
 						<p class="text-slate-400">Loading trace details...</p>
 					</div>
 				</div>
 			{:else if error}
-				<div class="p-6">
+				<div class="p-6 w-full">
 					<div
 						class="bg-red-500/20 border border-red-500/30 rounded-lg p-4"
 					>
@@ -204,97 +204,98 @@
 					</div>
 				</div>
 			{:else if traceDetail}
-				<div class="p-6 space-y-6">
+				<!-- Left Panel: Span Hierarchy -->
+				<div class="w-1/2 border-r border-slate-700/50 flex flex-col overflow-hidden">
 					<!-- Trace Metadata -->
-					<div
-						class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
-					>
-						<h3 class="text-lg font-semibold text-white mb-3">
-							Trace Metadata
-						</h3>
-						<div class="grid grid-cols-2 gap-4">
+					<div class="p-4 border-b border-slate-700/50 bg-slate-800/30">
+						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-sm text-slate-400">Project ID</p>
-								<p class="text-sm font-mono text-white mt-1">
-									{traceDetail.project_id}
-								</p>
+								<h3 class="text-sm font-semibold text-slate-400">Project ID</h3>
+								<p class="text-sm font-mono text-white">{traceDetail.project_id}</p>
 							</div>
-							<div>
-								<p class="text-sm text-slate-400">Total Spans</p>
-								<p class="text-sm font-semibold text-white mt-1">
-									{traceDetail.spans.length}
-								</p>
+							<div class="text-right">
+								<h3 class="text-sm font-semibold text-slate-400">Total Spans</h3>
+								<p class="text-sm font-semibold text-white">{traceDetail.spans.length}</p>
 							</div>
 						</div>
 					</div>
 
-					<!-- Timeline Visualization -->
+					<!-- Timeline (Optional - Collapsible) -->
 					{#if traceDetail.timeline}
-						<div
-							class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
-						>
-							<h3 class="text-lg font-semibold text-white mb-3">
-								Timeline
-							</h3>
+						<div class="p-4 border-b border-slate-700/50">
+							<h3 class="text-sm font-semibold text-slate-400 mb-2">Timeline</h3>
 							<SpanTimeline timeline={traceDetail.timeline} on:selectSpan={(e) => selectSpan(e.detail)} />
 						</div>
 					{/if}
 
 					<!-- Span Hierarchy -->
-					<div
-						class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
-					>
-						<h3 class="text-lg font-semibold text-white mb-3">Span Hierarchy</h3>
+					<div class="flex-1 overflow-y-auto p-4">
+						<h3 class="text-sm font-semibold text-slate-400 mb-3 sticky top-0 bg-slate-900/90 py-2 -mt-2">Span Hierarchy</h3>
 						<div class="space-y-1">
 							{#each orderedSpans as span (span.span_id)}
 								{@const depth = getSpanDepth(span)}
 								{@const isExpanded = expandedSpans.has(span.span_id)}
 								{@const hasChildren = getSpanChildren(span.span_id).length > 0}
 								{@const visible = visibilityMap.get(span.span_id) ?? false}
+								{@const isSelected = selectedSpan?.span_id === span.span_id}
 
-								{#if visible}
-									<div
-										class="rounded-lg border {getStatusBg(span.status_code)} p-3 cursor-pointer hover:bg-slate-800/80 hover:shadow-md transition-all"
-										style="margin-left: {depth * 20}px"
-										on:click={() => {
-											selectSpan(span);
-											if (hasChildren) toggleSpan(span.span_id);
-										}}
-									>
-										<div class="flex items-center justify-between">
-											<div class="flex items-center gap-2 flex-1 min-w-0">
-												{#if hasChildren}
+							{#if visible}
+								<div
+									class="rounded-lg border {isSelected ? 'ring-2 ring-cyan-500' : ''} {getStatusBg(span.status_code)} p-2.5 cursor-pointer hover:bg-slate-800/80 hover:shadow-md transition-all"
+									style="margin-left: {depth * 16}px"
+									on:click={() => selectSpan(span)}
+								>
+									<div class="flex items-center justify-between">
+										<div class="flex items-center gap-1.5 flex-1 min-w-0">
+											{#if hasChildren}
+												<button
+													class="p-0.5 rounded hover:bg-slate-700/50 transition-colors flex-shrink-0"
+													on:click|stopPropagation={() => toggleSpan(span.span_id)}
+													aria-label={isExpanded ? 'Collapse' : 'Expand'}
+												>
 													<svg
-														class="w-4 h-4 text-slate-400 transition-transform {isExpanded ? 'rotate-90' : ''}"
+														class="w-3.5 h-3.5 text-slate-400 transition-transform {isExpanded ? 'rotate-90' : ''}"
 														fill="none"
 														stroke="currentColor"
 														viewBox="0 0 24 24"
 													>
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 													</svg>
-												{:else}
-													<div class="w-4"></div>
-												{/if}
-												<span class="font-medium text-white truncate">{span.span_name}</span>
-												<span class="text-xs {getStatusColor(span.status_code)} font-semibold px-2 py-0.5 rounded-full border {getStatusBg(span.status_code)}">{span.status_code}</span>
-											</div>
-											<span class="text-sm text-slate-300 ml-2">{formatDuration(span.duration)}</span>
+												</button>
+											{:else}
+												<div class="w-4"></div>
+											{/if}
+											<span class="text-sm font-medium text-white truncate">{span.span_name}</span>
+											<span class="text-xs {getStatusColor(span.status_code)} font-semibold px-1.5 py-0.5 rounded-full border {getStatusBg(span.status_code)} flex-shrink-0">{span.status_code}</span>
 										</div>
+										<span class="text-xs text-slate-300 ml-2 flex-shrink-0">{formatDuration(span.duration)}</span>
 									</div>
-								{/if}
+								</div>
+							{/if}
 							{/each}
 						</div>
 					</div>
+				</div>
 
-					<!-- Selected Span Details -->
+				<!-- Right Panel: Span Details -->
+				<div class="w-1/2 overflow-y-auto bg-slate-800/20">
 					{#if selectedSpan}
-						<div
-							class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20"
-						>
-							<h3 class="text-lg font-semibold text-white mb-3">
+						<div class="p-6">
+							<h3 class="text-lg font-semibold text-white mb-4 sticky top-0 bg-slate-800/90 py-2 -mt-2 z-10">
 								Span Details
 							</h3>
 							<SpanDetails span={selectedSpan} />
+						</div>
+					{:else}
+						<div class="flex items-center justify-center h-full text-slate-400">
+							<div class="text-center">
+								<svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+								</svg>
+								<p class="text-lg font-medium">Select a span to view details</p>
+								<p class="text-sm text-slate-500 mt-1">Click on any span in the hierarchy</p>
+							</div>
 						</div>
 					{/if}
 				</div>

@@ -65,10 +65,14 @@ services:
       # OpenTelemetry - Text2SQL Agent 트레이스용
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://monitoring-otel-collector:4317
       - OTEL_SERVICE_NAME=agent-text2sql
+      # MCP 저장 경로 (stdio MCP 서버용)
+      - MCP_STORAGE_PATH=/data/mcp
     volumes:
       # News data from mcp-naver-news project (개발용)
       # .env에서 NEWS_DATA_PATH_HOST 설정 필요
       - ${NEWS_DATA_PATH_HOST:-./data/news}:/data/news:ro
+      # MCP 서버 코드 저장 (stdio MCP 서버용)
+      - mcp_storage:/data/mcp
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -403,4 +407,5 @@ volumes:
   grafana_data:
   litellm_pg_data:
   webui_node_modules:
+  mcp_storage:  # MCP 서버 코드 저장 (stdio MCP 서버용)
 

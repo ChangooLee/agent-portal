@@ -38,6 +38,146 @@
 	let messagesContainer: HTMLDivElement;
 	let reportContainer: HTMLDivElement;
 	
+	// 탭 상태
+	type ModelTab = 'qwen-235b' | 'opus-single' | 'opus-multi';
+	let activeTab: ModelTab = 'qwen-235b';
+	
+	// 탭별 엔드포인트 매핑
+	function getEndpointForTab(tab: ModelTab): string {
+		switch (tab) {
+			case 'qwen-235b': return '/api/dart/chat/stream';
+			case 'opus-single': return '/api/dart/chat/single';
+			case 'opus-multi': return '/api/dart/chat/multi-opus';
+		}
+	}
+	
+	// 히스토리 사이드바 상태
+	interface ChatHistory {
+		id: string;
+		title: string;
+		model_tab: string;
+		created_at: string;
+		updated_at: string;
+	}
+	
+	let showHistorySidebar = false;
+	let histories: ChatHistory[] = [];
+	let historySearchQuery = '';
+	let currentHistoryId: string | null = null;
+	let loadingHistory = false;
+	
+	// 히스토리 목록 로드
+	async function loadHistories() {
+		try {
+			const response = await fetch('/api/dart/history');
+			if (response.ok) {
+				const data = await response.json();
+				histories = data.histories || [];
+			}
+		} catch (e) {
+			console.error('Failed to load histories:', e);
+		}
+	}
+	
+	// 히스토리 검색
+	async function searchHistories() {
+		if (!historySearchQuery.trim()) {
+			await loadHistories();
+			return;
+		}
+		try {
+			const response = await fetch(`/api/dart/history/search?query=${encodeURIComponent(historySearchQuery)}`);
+			if (response.ok) {
+				const data = await response.json();
+				histories = data.histories || [];
+			}
+		} catch (e) {
+			console.error('Failed to search histories:', e);
+		}
+	}
+	
+	// 히스토리 저장
+	async function saveHistory() {
+		if (messages.length <= 1) return; // 시스템 메시지만 있으면 저장 안함
+		
+		const userMessages = messages.filter(m => m.role === 'user');
+		if (userMessages.length === 0) return;
+		
+		const title = userMessages[0].content.slice(0, 50) + (userMessages[0].content.length > 50 ? '...' : '');
+		
+		try {
+			if (currentHistoryId) {
+				// 기존 히스토리 업데이트
+				await fetch(`/api/dart/history/${currentHistoryId}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ messages })
+				});
+			} else {
+				// 새 히스토리 생성
+				const response = await fetch('/api/dart/history', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ title, messages, model_tab: activeTab })
+				});
+				if (response.ok) {
+					const data = await response.json();
+					currentHistoryId = data.history?.id;
+				}
+			}
+			await loadHistories();
+		} catch (e) {
+			console.error('Failed to save history:', e);
+		}
+	}
+	
+	// 히스토리 불러오기
+	async function loadHistory(historyId: string) {
+		loadingHistory = true;
+		try {
+			const response = await fetch(`/api/dart/history/${historyId}`);
+			if (response.ok) {
+				const data = await response.json();
+				messages = data.history?.messages || [];
+				currentHistoryId = historyId;
+				activeTab = data.history?.model_tab || 'qwen-235b';
+				showHistorySidebar = false;
+			}
+		} catch (e) {
+			console.error('Failed to load history:', e);
+		} finally {
+			loadingHistory = false;
+		}
+	}
+	
+	// 히스토리 삭제
+	async function deleteHistory(historyId: string) {
+		if (!confirm('이 대화 기록을 삭제하시겠습니까?')) return;
+		
+		try {
+			await fetch(`/api/dart/history/${historyId}`, { method: 'DELETE' });
+			histories = histories.filter(h => h.id !== historyId);
+			if (currentHistoryId === historyId) {
+				currentHistoryId = null;
+				startNewChat();
+			}
+		} catch (e) {
+			console.error('Failed to delete history:', e);
+		}
+	}
+	
+	// 새 채팅 시작
+	function startNewChat() {
+		currentHistoryId = null;
+		messages = [{
+			id: 'system-welcome',
+			role: 'system',
+			content: '안녕하세요! DART 기업공시 분석 에이전트입니다.\n기업의 공시 정보, 재무제표, 지배구조 등에 대해 질문해 주세요.',
+			timestamp: new Date()
+		}];
+		report = null;
+	}
+	
 	// 분석 레포트
 	let report: AnalysisReport | null = null;
 	let reportStreaming = false;
@@ -79,6 +219,7 @@
 	
 	onMount(() => {
 		checkHealth();
+		loadHistories();
 		
 		// 시스템 메시지 추가
 		messages = [{
@@ -174,8 +315,9 @@
 			fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:158',message:'Starting SSE fetch',data:{question_length:question.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
 			// #endregion
 			
-			// SSE 스트리밍
-			const response = await fetch('/api/dart/chat/stream', {
+			// SSE 스트리밍 (탭에 따른 엔드포인트)
+			const endpoint = getEndpointForTab(activeTab);
+			const response = await fetch(endpoint, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ question })
@@ -288,6 +430,14 @@
 								});
 								break;
 								
+							case 'content':
+								// 스트리밍 콘텐츠 - 레포트에 누적
+								if (report && data.content) {
+									report.summary = (report.summary || '') + data.content;
+									report.sections = parseMarkdownToSections(report.summary);
+								}
+								break;
+								
 							case 'answer':
 								// 최종 답변 - 레포트에 추가
 								if (report) {
@@ -314,6 +464,19 @@
 								break;
 								
 							case 'complete':
+								// 분석 완료 - 레포트 표시
+								if (report && report.summary) {
+									// 레포트가 이미 채워져 있으면 완료 메시지 추가
+									messages = [...messages, {
+										id: generateId(),
+										role: 'assistant',
+										content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
+										timestamp: new Date()
+									}];
+								}
+								if (data.total_latency_ms && report) {
+									report.latency_ms = data.total_latency_ms;
+								}
 								reportStreaming = false;
 								currentToolCall = null;
 								break;
@@ -358,6 +521,8 @@
 		} finally {
 			isLoading = false;
 			currentToolCall = null;
+			// 히스토리 저장
+			saveHistory();
 		}
 	}
 	
@@ -417,8 +582,33 @@
 					</div>
 				</div>
 				
-				<!-- MCP 상태 -->
+				<!-- 히스토리 & MCP 상태 -->
 				<div class="flex items-center gap-4">
+					<!-- 히스토리 토글 버튼 -->
+					<button 
+						class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full transition-all {showHistorySidebar ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 border border-gray-700/50'}"
+						on:click={() => showHistorySidebar = !showHistorySidebar}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+						</svg>
+						<span>기록</span>
+						{#if histories.length > 0}
+							<span class="bg-gray-700/50 px-1.5 py-0.5 rounded text-[10px]">{histories.length}</span>
+						{/if}
+					</button>
+					
+					<!-- 새 채팅 버튼 -->
+					<button 
+						class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 border border-gray-700/50 transition-all"
+						on:click={startNewChat}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+						</svg>
+						<span>새 채팅</span>
+					</button>
+					
 					{#if mcpStatus === 'checking'}
 						<div class="flex items-center gap-2 text-xs text-gray-400 px-3 py-1.5 rounded-full bg-gray-800/60 border border-gray-700/50">
 							<div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
@@ -448,10 +638,106 @@
 		</div>
 	</div>
 	
-	<!-- 메인 콘텐츠 (좌우 분할) -->
-	<div class="flex">
+	<!-- 탭 UI -->
+	<div class="px-6 py-2 border-b border-gray-800/50 bg-gray-900/40">
+		<div class="flex items-center gap-1">
+			<button 
+				class="px-4 py-2 text-sm rounded-lg transition-all {activeTab === 'qwen-235b' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'}"
+				on:click={() => activeTab = 'qwen-235b'}
+			>
+				Qwen 235B
+			</button>
+			<button 
+				class="px-4 py-2 text-sm rounded-lg transition-all {activeTab === 'opus-single' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'}"
+				on:click={() => activeTab = 'opus-single'}
+			>
+				Opus 4.5 Single
+			</button>
+			<button 
+				class="px-4 py-2 text-sm rounded-lg transition-all {activeTab === 'opus-multi' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'}"
+				on:click={() => activeTab = 'opus-multi'}
+			>
+				Opus 4.5 Multi
+			</button>
+		</div>
+	</div>
+	
+	<!-- 메인 콘텐츠 (좌우 분할 + 사이드바) -->
+	<div class="flex relative h-[calc(100vh-160px)]">
+		<!-- 히스토리 사이드바 -->
+		{#if showHistorySidebar}
+			<div class="w-72 border-r border-gray-800/50 bg-gray-900/80 backdrop-blur-sm flex flex-col h-[calc(100vh-160px)]">
+				<!-- 사이드바 헤더 -->
+				<div class="p-3 border-b border-gray-800/50">
+					<div class="flex items-center justify-between mb-2">
+						<span class="text-sm font-medium text-gray-200">대화 기록</span>
+						<button 
+							class="p-1 rounded hover:bg-gray-800/50 text-gray-400 hover:text-white transition-colors"
+							on:click={() => showHistorySidebar = false}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					<!-- 검색 -->
+					<div class="relative">
+						<input 
+							type="text" 
+							placeholder="검색..." 
+							bind:value={historySearchQuery}
+							on:input={searchHistories}
+							class="w-full px-3 py-1.5 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+						/>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+						</svg>
+					</div>
+				</div>
+				
+				<!-- 히스토리 목록 -->
+				<div class="flex-1 overflow-y-auto">
+					{#if histories.length === 0}
+						<div class="p-4 text-center text-gray-500 text-sm">
+							저장된 대화가 없습니다
+						</div>
+					{:else}
+						{#each histories as history (history.id)}
+							<div 
+								class="group px-3 py-2 border-b border-gray-800/30 hover:bg-gray-800/40 cursor-pointer transition-colors {currentHistoryId === history.id ? 'bg-emerald-500/10 border-l-2 border-l-emerald-500' : ''}"
+								on:click={() => loadHistory(history.id)}
+								on:keypress={(e) => e.key === 'Enter' && loadHistory(history.id)}
+								role="button"
+								tabindex="0"
+							>
+								<div class="flex items-start justify-between gap-2">
+									<div class="flex-1 min-w-0">
+										<div class="text-sm text-gray-200 truncate">{history.title}</div>
+										<div class="flex items-center gap-2 mt-1">
+											<span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-400">{history.model_tab}</span>
+											<span class="text-[10px] text-gray-500">
+												{new Date(history.updated_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+											</span>
+										</div>
+									</div>
+									<button 
+										class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all"
+										on:click|stopPropagation={() => deleteHistory(history.id)}
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+											<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+										</svg>
+									</button>
+								</div>
+							</div>
+						{/each}
+					{/if}
+				</div>
+			</div>
+		{/if}
+		
 		<!-- 좌측: 채팅 영역 -->
-		<div class="w-1/2 flex flex-col border-r border-gray-800/50 min-h-[calc(100vh-120px)] relative">
+		<div class="flex-1 flex flex-col border-r border-gray-800/50 h-full overflow-hidden relative" style="max-width: {showHistorySidebar ? 'calc(50% - 144px)' : '50%'}">
 			<!-- 채팅 헤더 -->
 			<div class="px-4 py-3 border-b border-gray-800/50 bg-gray-900/60 backdrop-blur-sm">
 				<div class="flex items-center gap-2 text-sm text-gray-300">
@@ -569,7 +855,7 @@
 		</div>
 		
 		<!-- 우측: 분석 레포트 -->
-		<div class="w-1/2 flex flex-col bg-gray-950 min-h-full">
+		<div class="w-1/2 flex flex-col bg-gray-950 h-full overflow-hidden">
 			<!-- 레포트 헤더 -->
 			<div class="px-6 py-3 border-b border-gray-800/50 bg-gray-900/60 backdrop-blur-sm">
 				<div class="flex items-center justify-between">

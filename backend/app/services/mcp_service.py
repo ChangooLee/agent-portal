@@ -14,6 +14,17 @@ import aiomysql
 from fastapi import HTTPException
 
 from app.services.kong_service import kong_service
+from app.mcp.git_manager import GitManager
+from app.mcp.process_manager import process_manager, ProcessStatus
+from app.mcp.http_adapter import http_adapter
+from app.config import get_settings
+import logging
+
+logger = logging.getLogger(__name__)
+from app.mcp.git_manager import GitManager
+from app.mcp.process_manager import process_manager, ProcessStatus
+from app.mcp.http_adapter import http_adapter
+from app.config import get_settings
 
 
 class MCPService:
@@ -33,6 +44,8 @@ class MCPService:
         self.db_user = os.getenv("MARIADB_USER", "root")
         self.db_password = os.getenv("MARIADB_ROOT_PASSWORD", "root")
         self.db_name = os.getenv("MARIADB_DATABASE", "agent_portal")
+        settings = get_settings()
+        self.git_manager = GitManager(storage_path=settings.MCP_STORAGE_PATH)
     
     async def _get_connection(self):
         """MariaDB 연결 생성."""
@@ -109,7 +122,8 @@ class MCPService:
             id, name, description, endpoint_url, transport_type,
             auth_type, auth_config, kong_service_id, kong_route_id,
             kong_consumer_id, kong_api_key, enabled, last_health_check,
-            health_status, created_by, created_at, updated_at
+            health_status, created_by, created_at, updated_at,
+            github_url, local_path, command, env_vars, process_pid, process_status
         FROM mcp_servers
         {where_clause}
         ORDER BY created_at DESC
@@ -122,6 +136,12 @@ class MCPService:
             if server.get('auth_config'):
                 try:
                     server['auth_config'] = json.loads(server['auth_config'])
+                except:
+                    pass
+            if server.get('env_vars'):
+                try:
+                    if isinstance(server['env_vars'], str):
+                        server['env_vars'] = json.loads(server['env_vars'])
                 except:
                     pass
         
@@ -180,7 +200,8 @@ class MCPService:
             id, name, description, endpoint_url, transport_type,
             auth_type, auth_config, kong_service_id, kong_route_id,
             kong_consumer_id, kong_api_key, enabled, last_health_check,
-            health_status, created_by, created_at, updated_at
+            health_status, created_by, created_at, updated_at,
+            github_url, local_path, command, env_vars, process_pid, process_status
         FROM mcp_servers
         WHERE id = %s
         """
@@ -195,6 +216,13 @@ class MCPService:
         if server.get('auth_config'):
             try:
                 server['auth_config'] = json.loads(server['auth_config'])
+            except:
+                pass
+        
+        if server.get('env_vars'):
+            try:
+                if isinstance(server['env_vars'], str):
+                    server['env_vars'] = json.loads(server['env_vars'])
             except:
                 pass
         
@@ -386,6 +414,14 @@ class MCPService:
         if not existing:
             return False
         
+        # stdio 서버인 경우 프로세스 정리
+        if existing.get('transport_type') == 'stdio':
+            try:
+                await process_manager.stop_process(server_id)
+                await http_adapter.cleanup(server_id)
+            except:
+                pass
+        
         # Kong Gateway 리소스 정리
         if existing.get('kong_service_id'):
             try:
@@ -404,12 +440,141 @@ class MCPService:
     async def get_server_tools(self, server_id: str) -> List[Dict[str, Any]]:
         """MCP 서버의 도구 목록 조회.
         
+        stdio MCP 서버의 경우 실제 서버에 연결하여 도구 목록을 가져옵니다.
+        다른 transport 타입은 DB에서 조회합니다.
+        
         Args:
             server_id: 서버 ID
             
         Returns:
             도구 목록
         """
+        server = await self._get_server_internal(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="MCP server not found")
+        
+        # stdio MCP 서버의 경우 실제 서버에 연결하여 도구 목록 가져오기
+        if server.get('transport_type') == 'stdio':
+            try:
+                # HTTP 어댑터를 통해 실행 중인 프로세스에 연결
+                # HTTP 어댑터는 이미 실행 중인 프로세스와 통신할 수 있음
+                from app.mcp.http_adapter import http_adapter
+                import httpx
+                
+                # HTTP 어댑터를 직접 사용 (내부 호출)
+                from app.mcp.http_adapter import http_adapter
+                from fastapi import Request
+                from starlette.requests import Request as StarletteRequest
+                from starlette.datastructures import Headers, URL
+                
+                # Get server config
+                command = server.get('command')
+                local_path = server.get('local_path')
+                env_vars = server.get('env_vars')
+                
+                if not command:
+                    raise HTTPException(status_code=400, detail="command not found")
+                
+                # Parse env_vars
+                env = {}
+                if env_vars:
+                    if isinstance(env_vars, str):
+                        env = json.loads(env_vars)
+                    else:
+                        env = env_vars
+                
+                # 실행 중인 프로세스의 stdin/stdout을 직접 사용
+                from app.mcp.process_manager import process_manager
+                existing_process = process_manager.get_process(server_id)
+                
+                # 프로세스가 process_manager에 없으면 PID로 직접 확인
+                if not existing_process:
+                    process_pid = server.get('process_pid')
+                    if process_pid:
+                        # PID로 프로세스 찾기 시도
+                        # process_manager의 processes 딕셔너리에서 찾기
+                        if hasattr(process_manager, 'processes') and server_id in process_manager.processes:
+                            existing_process = process_manager.processes[server_id]
+                
+                if existing_process and existing_process.returncode is None:
+                    logger.info(f"[DEBUG] Using existing process for {server_id}")
+                    logger.info(f"[DEBUG] Process PID: {existing_process.pid}, stdin: {existing_process.stdin is not None}, stdout: {existing_process.stdout is not None}")
+                    # 실행 중인 프로세스의 stdin/stdout 사용
+                    client = await http_adapter.get_client(server_id)
+                    
+                    if not client.is_connected():
+                        import asyncio
+                        try:
+                            tools = await asyncio.wait_for(
+                                client.connect(
+                                    command, 
+                                    local_path, 
+                                    env, 
+                                    reuse_existing_process=True,
+                                    existing_process=existing_process
+                                ),
+                                timeout=10.0
+                            )
+                        except asyncio.TimeoutError:
+                            raise HTTPException(status_code=504, detail="Connection timeout")
+                    else:
+                        import asyncio
+                        try:
+                            tools = await asyncio.wait_for(
+                                client.list_tools(),
+                                timeout=5.0
+                            )
+                        except asyncio.TimeoutError:
+                            raise HTTPException(status_code=504, detail="List tools timeout")
+                else:
+                    # 프로세스가 실행 중이 아니면 새로 시작
+                    logger.warning(f"Process {server_id} not running, starting new connection")
+                    client = await http_adapter.get_client(server_id)
+                    
+                    if not client.is_connected():
+                        import asyncio
+                        try:
+                            tools = await asyncio.wait_for(
+                                client.connect(command, local_path, env, reuse_existing_process=False),
+                                timeout=10.0
+                            )
+                        except asyncio.TimeoutError:
+                            raise HTTPException(status_code=504, detail="Connection timeout")
+                    else:
+                        import asyncio
+                        try:
+                            tools = await asyncio.wait_for(
+                                client.list_tools(),
+                                timeout=5.0
+                            )
+                        except asyncio.TimeoutError:
+                            raise HTTPException(status_code=504, detail="List tools timeout")
+                
+                # Convert MCP Tool objects to dicts
+                import uuid
+                from datetime import datetime
+                result = []
+                for tool in tools:
+                    tool_id = str(uuid.uuid4())
+                    now = datetime.utcnow()
+                    result.append({
+                        'id': tool_id,
+                        'server_id': server_id,
+                        'tool_name': tool.name,
+                        'tool_description': tool.description or '',
+                        'input_schema': tool.inputSchema if hasattr(tool, 'inputSchema') else {},
+                        'discovered_at': now,
+                        'updated_at': now
+                    })
+                
+                return result
+                
+            except Exception as e:
+                logger.error(f"Failed to get tools from stdio MCP server {server_id}: {e}", exc_info=True)
+                # Fallback to DB
+                pass
+        
+        # DB에서 조회 (기존 로직)
         query = """
         SELECT id, server_id, tool_name, tool_description, input_schema,
                discovered_at, updated_at
@@ -773,6 +938,328 @@ class MCPService:
             result.append(self._filter_kong_info(server))
         
         return result
+    
+    # ==================== stdio MCP 서버 관리 ====================
+    
+    async def create_stdio_server(
+        self,
+        name: str,
+        github_url: str,
+        config: Dict[str, Any],
+        description: Optional[str] = None,
+        created_by: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """GitHub에서 코드를 pull 받아 stdio MCP 서버 생성.
+        
+        Args:
+            name: 서버 이름
+            github_url: GitHub 저장소 URL
+            config: 설정 딕셔너리 (command, env 등)
+            description: 서버 설명
+            created_by: 생성자 ID
+            
+        Returns:
+            생성된 서버 정보
+            
+        Raises:
+            HTTPException: 생성 실패 시
+        """
+        server_id = str(uuid.uuid4())
+        
+        try:
+            # 1. GitHub에서 코드 pull
+            logger.info(f"Cloning repository: {github_url}")
+            repo_path = await self.git_manager.clone_or_pull(github_url, name)
+            
+            # 2. 의존성 설치
+            logger.info(f"Installing dependencies: {repo_path}")
+            await self.git_manager.install_dependencies(repo_path)
+            
+            # 3. 설정 파싱
+            command = config.get("command", "")
+            env_vars = config.get("env", {})
+            
+            if not command:
+                raise HTTPException(
+                    status_code=400,
+                    detail="command is required in config"
+                )
+            
+            # 4. 프로세스 시작
+            logger.info(f"Starting process: {command}")
+            process_pid = await process_manager.start_process(
+                server_id=server_id,
+                command=command,
+                cwd=str(repo_path),
+                env=env_vars
+            )
+            
+            # 5. HTTP 어댑터 엔드포인트 생성
+            # 어댑터는 /mcp/adapters/{server_id}로 접근 가능
+            adapter_url = f"http://backend:3009/mcp/adapters/{server_id}"
+            
+            # 6. Kong Gateway에 어댑터 등록
+            logger.info(f"Registering with Kong Gateway: {adapter_url}")
+            kong_info = await kong_service.setup_mcp_server(
+                server_id=server_id,
+                server_name=name,
+                endpoint_url=adapter_url
+            )
+            
+            # 7. DB 저장
+            query = """
+            INSERT INTO mcp_servers (
+                id, name, description, endpoint_url, transport_type,
+                auth_type, auth_config, kong_service_id, kong_route_id,
+                kong_consumer_id, kong_api_key, enabled, created_by,
+                github_url, local_path, command, env_vars, process_pid, process_status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s, %s, %s, %s)
+            """
+            
+            env_vars_json = json.dumps(env_vars) if env_vars else None
+            
+            await self._execute_query(
+                query,
+                (
+                    server_id, name, description, adapter_url, "stdio",
+                    "none", None,  # auth_type, auth_config
+                    kong_info.get('kong_service_id'),
+                    kong_info.get('kong_route_id'),
+                    kong_info.get('kong_consumer_id'),
+                    kong_info.get('kong_api_key'),
+                    created_by,
+                    github_url, str(repo_path), command, env_vars_json,
+                    process_pid, "running"
+                ),
+                fetch=False
+            )
+            
+            logger.info(f"stdio MCP server created successfully: {server_id}")
+            return await self.get_server(server_id)
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to create stdio MCP server: {e}", exc_info=True)
+            # Cleanup on failure
+            try:
+                await process_manager.stop_process(server_id)
+            except:
+                pass
+            try:
+                await http_adapter.cleanup(server_id)
+            except:
+                pass
+            try:
+                if 'kong_info' in locals():
+                    await kong_service.cleanup_mcp_server(server_id)
+            except:
+                pass
+            
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to create stdio MCP server: {str(e)}"
+            )
+    
+    async def start_stdio_process(self, server_id: str) -> bool:
+        """stdio MCP 서버 프로세스 시작.
+        
+        Args:
+            server_id: 서버 ID
+            
+        Returns:
+            성공 여부
+        """
+        server = await self._get_server_internal(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="MCP server not found")
+        
+        if server.get('transport_type') != 'stdio':
+            raise HTTPException(status_code=400, detail="Not a stdio MCP server")
+        
+        command = server.get('command')
+        local_path = server.get('local_path')
+        env_vars = server.get('env_vars')
+        
+        if not command:
+            raise HTTPException(status_code=400, detail="command not found")
+        
+        # Parse env_vars
+        env = {}
+        if env_vars:
+            if isinstance(env_vars, str):
+                env = json.loads(env_vars)
+            else:
+                env = env_vars
+        
+        try:
+            process_pid = await process_manager.start_process(
+                server_id=server_id,
+                command=command,
+                cwd=local_path,
+                env=env
+            )
+            
+            # Update DB
+            query = """
+            UPDATE mcp_servers
+            SET process_pid = %s, process_status = 'running', updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """
+            await self._execute_query(query, (process_pid, server_id), fetch=False)
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to start process: {e}")
+            # Update status
+            query = """
+            UPDATE mcp_servers
+            SET process_status = 'error', updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """
+            await self._execute_query(query, (server_id,), fetch=False)
+            raise HTTPException(status_code=500, detail=f"Failed to start process: {str(e)}")
+    
+    async def stop_stdio_process(self, server_id: str) -> bool:
+        """stdio MCP 서버 프로세스 중지.
+        
+        Args:
+            server_id: 서버 ID
+            
+        Returns:
+            성공 여부
+        """
+        server = await self._get_server_internal(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="MCP server not found")
+        
+        if server.get('transport_type') != 'stdio':
+            raise HTTPException(status_code=400, detail="Not a stdio MCP server")
+        
+        try:
+            success = await process_manager.stop_process(server_id)
+            
+            if success:
+                # Update DB
+                query = """
+                UPDATE mcp_servers
+                SET process_pid = NULL, process_status = 'stopped', updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                """
+                await self._execute_query(query, (server_id,), fetch=False)
+            
+            return success
+        except Exception as e:
+            logger.error(f"Failed to stop process: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to stop process: {str(e)}")
+    
+    async def restart_stdio_process(self, server_id: str) -> bool:
+        """stdio MCP 서버 프로세스 재시작.
+        
+        Args:
+            server_id: 서버 ID
+            
+        Returns:
+            성공 여부
+        """
+        server = await self._get_server_internal(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="MCP server not found")
+        
+        if server.get('transport_type') != 'stdio':
+            raise HTTPException(status_code=400, detail="Not a stdio MCP server")
+        
+        command = server.get('command')
+        local_path = server.get('local_path')
+        env_vars = server.get('env_vars')
+        
+        if not command:
+            raise HTTPException(status_code=400, detail="command not found")
+        
+        # Parse env_vars
+        env = {}
+        if env_vars:
+            if isinstance(env_vars, str):
+                env = json.loads(env_vars)
+            else:
+                env = env_vars
+        
+        try:
+            process_pid = await process_manager.restart_process(
+                server_id=server_id,
+                command=command,
+                cwd=local_path,
+                env=env
+            )
+            
+            # Update DB
+            query = """
+            UPDATE mcp_servers
+            SET process_pid = %s, process_status = 'running', updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """
+            await self._execute_query(query, (process_pid, server_id), fetch=False)
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to restart process: {e}")
+            # Update status
+            query = """
+            UPDATE mcp_servers
+            SET process_status = 'error', updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """
+            await self._execute_query(query, (server_id,), fetch=False)
+            raise HTTPException(status_code=500, detail=f"Failed to restart process: {str(e)}")
+    
+    async def get_stdio_process_status(self, server_id: str) -> Dict[str, Any]:
+        """stdio MCP 서버 프로세스 상태 조회.
+        
+        Args:
+            server_id: 서버 ID
+            
+        Returns:
+            프로세스 상태 정보
+        """
+        server = await self._get_server_internal(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="MCP server not found")
+        
+        if server.get('transport_type') != 'stdio':
+            raise HTTPException(status_code=400, detail="Not a stdio MCP server")
+        
+        status = process_manager.get_process_status(server_id)
+        pid = process_manager.get_process_pid(server_id)
+        
+        return {
+            "server_id": server_id,
+            "status": status.value,
+            "pid": pid,
+            "process_status": server.get('process_status', 'stopped')
+        }
+    
+    async def get_stdio_process_logs(
+        self,
+        server_id: str,
+        lines: Optional[int] = None
+    ) -> List[str]:
+        """stdio MCP 서버 프로세스 로그 조회.
+        
+        Args:
+            server_id: 서버 ID
+            lines: 조회할 로그 라인 수 (None이면 전체)
+            
+        Returns:
+            로그 라인 리스트
+        """
+        server = await self._get_server_internal(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="MCP server not found")
+        
+        if server.get('transport_type') != 'stdio':
+            raise HTTPException(status_code=400, detail="Not a stdio MCP server")
+        
+        return process_manager.get_logs(server_id, lines)
 
 
 # Singleton 인스턴스

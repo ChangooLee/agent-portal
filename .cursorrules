@@ -788,11 +788,34 @@ After significant work, record in `.cursor/learnings/`:
 ✅ Running ./scripts/health-check.sh first
 ```
 
-### 9.6 Hardcoding
+### 9.6 Hardcoding (CRITICAL)
 ```
 ❌ Regex patterns with hardcoded values
 ❌ Hardcoded prompts in LLM calls
+❌ Hardcoded field names (e.g., always use "corp_code" instead of helper functions)
+❌ Hardcoded file paths (use environment variables or config)
 ✅ Configuration-driven, parameterized approaches
+✅ Helper functions that support multiple formats
+✅ PromptBuilder for LLM prompts
+```
+
+**Field Access Example (MCP Response)**:
+```python
+# ❌ Wrong: Hardcoded field name
+corp_code = item.get("corp_code")
+
+# ✅ Correct: Helper function supporting multiple formats
+def get_item_corp_code(item: Dict) -> str:
+    return item.get("corporation_code") or item.get("corp_code", "")
+```
+
+**Path Example**:
+```python
+# ❌ Wrong: Hardcoded path
+corpcode_path = "/data/mcp/mcp-opendart/.../CORPCODE.xml"
+
+# ✅ Correct: Environment variable
+mcp_path = os.environ.get("MCP_STORAGE_PATH", "/data/mcp")
 ```
 
 ### 9.7 Infinite New Code Creation
@@ -908,8 +931,32 @@ After significant work, record in `.cursor/learnings/`:
 - Creating infinite new functions
 - Skipping tests
 - Over-engineering simple tasks
+- Changing common library versions without user approval (CRITICAL)
+
+### 11.4 Common Library Version Changes (CRITICAL)
+
+**ALWAYS ask user before changing versions of:**
+- langchain, langchain-core, langgraph
+- fastapi, pydantic
+- litellm, openai
+- Any major dependency that affects multiple components
+
+**When version issues occur:**
+```
+❌ Downgrade library version to fix import error
+✅ Report the issue and ask user which version to use
+✅ Find alternative solution without changing version
+```
+
+**Example:**
+```
+❌ "langchain import 오류로 0.2.16으로 다운그레이드했습니다."
+✅ "langchain import 오류 발생. 현재 버전: 1.2.5. 
+    해결 방안: 1) import 경로 수정, 2) 버전 다운그레이드.
+    어떻게 진행할까요?"
+```
 
 ---
 
-**Last Updated**: 2025-11-28  
-**Version**: 5.1 (Comprehensive, English)
+**Last Updated**: 2025-12-23  
+**Version**: 5.2 (Library Version Rule Added)

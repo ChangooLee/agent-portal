@@ -3,20 +3,22 @@ DART Agent API Routes
 
 기업공시분석 에이전트 API 엔드포인트.
 SSE 스트리밍 지원.
+히스토리 API 및 멀티 모델 엔드포인트 포함.
 """
 
 import json
 import logging
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.services.agent_registry_service import agent_registry, AgentType
 from app.services.agent_trace_adapter import agent_trace_adapter
+from app.services.dart_history_service import dart_history_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dart", tags=["DART Analysis"])
@@ -69,7 +71,16 @@ class StreamEvent(BaseModel):
 
 def _format_sse(event_data: Dict[str, Any]) -> str:
     """SSE 형식으로 데이터 포맷"""
-    json_data = json.dumps(event_data, ensure_ascii=False)
+    import inspect
+    # coroutine이나 함수 객체를 안전하게 직렬화
+    def default_serializer(obj):
+        if inspect.iscoroutine(obj):
+            return f"<coroutine {type(obj).__name__}>"
+        elif callable(obj) and not isinstance(obj, (str, int, float, bool, type(None))):
+            return f"<function {getattr(obj, '__name__', 'unknown')}>"
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+    
+    json_data = json.dumps(event_data, ensure_ascii=False, default=default_serializer)
     return f"data: {json_data}\n\n"
 
 
@@ -314,21 +325,47 @@ async def chat_stream(request_data: DartChatRequest):
                 project_id="default-project",
                 description="DART 기업공시분석 에이전트"
             )
+            # #region agent log
+            _debug_log("dart.py:320", "Agent registration result", {
+                "agent_id": agent_info.get("id") if agent_info else None,
+                "agent_name": agent_info.get("name") if agent_info else None,
+                "has_agent_info": bool(agent_info)
+            }, "A")
+            # #endregion
         except Exception as e:
             logger.warning(f"Agent registration failed: {e}")
+            # #region agent log
+            _debug_log("dart.py:327", "Agent registration exception", {
+                "error_type": type(e).__name__,
+                "error_message": str(e)[:200]
+            }, "A")
+            # #endregion
         
         # 트레이스 시작
+        trace_id_from_adapter = None
         if agent_info:
             try:
-                await agent_trace_adapter.start_trace(
+                trace_id_from_adapter = await agent_trace_adapter.start_trace(
                     agent_id=agent_info.get("id", "dart"),
                     agent_name="dart-agent",
                     agent_type="dart",
                     project_id="default-project",
                     inputs={"question": request_data.question}
                 )
+                # #region agent log
+                _debug_log("dart.py:332", "Trace start result", {
+                    "trace_id": trace_id_from_adapter,
+                    "agent_id": agent_info.get("id", "dart")
+                }, "A")
+                # #endregion
             except Exception as e:
                 logger.warning(f"Trace start failed: {e}")
+                # #region agent log
+                _debug_log("dart.py:340", "Trace start exception", {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e)[:200]
+                }, "A")
+                # #endregion
         
         span = None
         try:
@@ -469,6 +506,8 @@ async def chat_stream(request_data: DartChatRequest):
                         # 최종 답변 저장
                         if event.get("event") == "answer":
                             final_answer = event.get("content", "")
+                        elif event.get("event") == "content":
+                            final_answer = event.get("content", "")
                         elif event.get("event") == "done":
                             final_answer = event.get("answer", final_answer)
                 except StopAsyncIteration:
@@ -520,15 +559,37 @@ async def chat_stream(request_data: DartChatRequest):
             # 트레이스 종료
             if agent_info:
                 try:
-                    await agent_trace_adapter.end_trace(
-                        trace_id=trace_id,
+                    # trace_id_from_adapter가 있으면 사용, 없으면 trace_id 사용
+                    end_trace_id = trace_id_from_adapter or trace_id
+                    # #region agent log
+                    _debug_log("dart.py:530", "Attempting trace end", {
+                        "trace_id": end_trace_id,
+                        "final_answer_length": len(final_answer),
+                        "has_agent_info": bool(agent_info)
+                    }, "A")
+                    # #endregion
+                    result = await agent_trace_adapter.end_trace(
+                        trace_id=end_trace_id,
                         outputs={
                             "answer": final_answer[:500],
                             "success": True
                         }
                     )
+                    # #region agent log
+                    _debug_log("dart.py:540", "Trace end result", {
+                        "success": result,
+                        "trace_id": end_trace_id
+                    }, "A")
+                    # #endregion
                 except Exception as e:
                     logger.warning(f"Trace end failed: {e}")
+                    # #region agent log
+                    _debug_log("dart.py:545", "Trace end exception", {
+                        "error_type": type(e).__name__,
+                        "error_message": str(e)[:200],
+                        "trace_id": trace_id_from_adapter or trace_id
+                    }, "A")
+                    # #endregion
                     
         except Exception as e:
             logger.error(f"DART stream error: {e}")
@@ -549,12 +610,31 @@ async def chat_stream(request_data: DartChatRequest):
             
             if agent_info:
                 try:
-                    await agent_trace_adapter.end_trace(
-                        trace_id=trace_id,
+                    end_trace_id = trace_id_from_adapter or trace_id
+                    # #region agent log
+                    _debug_log("dart.py:560", "Attempting trace end (error case)", {
+                        "trace_id": end_trace_id,
+                        "error": str(e)[:200]
+                    }, "A")
+                    # #endregion
+                    result = await agent_trace_adapter.end_trace(
+                        trace_id=end_trace_id,
                         outputs={"success": False},
                         error=str(e)
                     )
-                except Exception:
+                    # #region agent log
+                    _debug_log("dart.py:567", "Trace end result (error case)", {
+                        "success": result,
+                        "trace_id": end_trace_id
+                    }, "A")
+                    # #endregion
+                except Exception as end_error:
+                    # #region agent log
+                    _debug_log("dart.py:572", "Trace end exception (error case)", {
+                        "error_type": type(end_error).__name__,
+                        "error_message": str(end_error)[:200]
+                    }, "A")
+                    # #endregion
                     pass
     
     return StreamingResponse(
@@ -598,3 +678,258 @@ async def list_tools():
     except Exception as e:
         logger.error(f"Failed to list tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# History API Endpoints
+# =============================================================================
+
+class HistoryCreateRequest(BaseModel):
+    """히스토리 생성 요청"""
+    title: str
+    messages: List[Dict[str, Any]]
+    model_tab: str = "qwen-235b"
+
+
+class HistoryUpdateRequest(BaseModel):
+    """히스토리 업데이트 요청"""
+    title: Optional[str] = None
+    messages: Optional[List[Dict[str, Any]]] = None
+
+
+@router.get("/history", summary="List Chat History")
+@api_router.get("/history", summary="List Chat History")
+async def list_history(
+    limit: int = 50,
+    offset: int = 0,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id")
+):
+    """사용자의 채팅 히스토리 목록 조회"""
+    user_id = x_user_id or "anonymous"
+    
+    try:
+        histories = await dart_history_service.list_history(user_id, limit, offset)
+        return {
+            "success": True,
+            "histories": histories,
+            "count": len(histories)
+        }
+    except Exception as e:
+        logger.error(f"Failed to list history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/search", summary="Search Chat History")
+@api_router.get("/history/search", summary="Search Chat History")
+async def search_history(
+    query: str,
+    limit: int = 20,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id")
+):
+    """채팅 히스토리 검색"""
+    user_id = x_user_id or "anonymous"
+    
+    try:
+        histories = await dart_history_service.search_history(user_id, query, limit)
+        return {
+            "success": True,
+            "histories": histories,
+            "count": len(histories)
+        }
+    except Exception as e:
+        logger.error(f"Failed to search history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/{history_id}", summary="Get Chat History")
+@api_router.get("/history/{history_id}", summary="Get Chat History")
+async def get_history(
+    history_id: str,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id")
+):
+    """특정 채팅 히스토리 조회"""
+    user_id = x_user_id or "anonymous"
+    
+    try:
+        history = await dart_history_service.get_history(history_id, user_id)
+        if not history:
+            raise HTTPException(status_code=404, detail="History not found")
+        return {
+            "success": True,
+            "history": history
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/history", summary="Create Chat History")
+@api_router.post("/history", summary="Create Chat History")
+async def create_history(
+    request: HistoryCreateRequest,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id")
+):
+    """새 채팅 히스토리 생성"""
+    user_id = x_user_id or "anonymous"
+    
+    try:
+        history = await dart_history_service.create_history(
+            user_id=user_id,
+            title=request.title,
+            messages=request.messages,
+            model_tab=request.model_tab
+        )
+        return {
+            "success": True,
+            "history": history
+        }
+    except Exception as e:
+        logger.error(f"Failed to create history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/history/{history_id}", summary="Update Chat History")
+@api_router.put("/history/{history_id}", summary="Update Chat History")
+async def update_history(
+    history_id: str,
+    request: HistoryUpdateRequest,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id")
+):
+    """채팅 히스토리 업데이트"""
+    user_id = x_user_id or "anonymous"
+    
+    try:
+        success = await dart_history_service.update_history(
+            history_id=history_id,
+            user_id=user_id,
+            title=request.title,
+            messages=request.messages
+        )
+        if not success:
+            raise HTTPException(status_code=404, detail="History not found")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/history/{history_id}", summary="Delete Chat History")
+@api_router.delete("/history/{history_id}", summary="Delete Chat History")
+async def delete_history(
+    history_id: str,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id")
+):
+    """채팅 히스토리 삭제"""
+    user_id = x_user_id or "anonymous"
+    
+    try:
+        success = await dart_history_service.delete_history(history_id, user_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="History not found")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Single Agent Endpoint (Claude Opus 4.5 + MCP 85 Tools)
+# =============================================================================
+
+@router.post("/chat/single", summary="DART Single Agent Chat (Opus 4.5)")
+@api_router.post("/chat/single", summary="DART Single Agent Chat (Opus 4.5)")
+async def chat_single_stream(request_data: DartChatRequest):
+    """
+    DART 단일 에이전트 스트리밍 채팅.
+    
+    Claude Opus 4.5 모델을 사용하여 MCP 85개 도구를 직접 활용.
+    멀티에이전트 시스템 없이 단순한 ReAct 패턴으로 동작.
+    """
+    from app.agents.dart_agent.single_agent import get_dart_single_agent
+    
+    logger.info(f"DART single agent request: {request_data.question[:50]}...")
+    
+    session_id = request_data.session_id or str(uuid.uuid4())
+    
+    async def event_generator():
+        try:
+            agent = get_dart_single_agent(model="claude-opus-4.5")
+            
+            async for event in agent.analyze_stream(
+                question=request_data.question,
+                session_id=session_id
+            ):
+                yield _format_sse(event)
+                
+        except Exception as e:
+            logger.error(f"Single agent stream error: {e}", exc_info=True)
+            yield _format_sse({"event": "error", "error": str(e)})
+            yield _format_sse({"event": "complete", "error": str(e)})
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+# =============================================================================
+# Multi-Agent Opus Endpoint (Claude Opus 4.5 + Multi-Agent System)
+# =============================================================================
+
+@router.post("/chat/multi-opus", summary="DART Multi-Agent Chat (Opus 4.5)")
+@api_router.post("/chat/multi-opus", summary="DART Multi-Agent Chat (Opus 4.5)")
+async def chat_multi_opus_stream(request_data: DartChatRequest):
+    """
+    DART 멀티에이전트 스트리밍 채팅 (Opus 4.5 버전).
+    
+    기존 멀티에이전트 시스템을 사용하지만 모델을 Claude Opus 4.5로 변경.
+    """
+    from app.agents.dart_agent.dart_agent import DartAgent
+    
+    logger.info(f"DART multi-opus request: {request_data.question[:50]}...")
+    
+    trace_id = str(uuid.uuid4())
+    session_id = request_data.session_id or trace_id
+    
+    async def event_generator():
+        try:
+            # Claude Opus 4.5 모델로 에이전트 생성
+            agent = DartAgent(model="claude-opus-4.5")
+            
+            async for event in agent.analyze_stream(
+                question=request_data.question,
+                session_id=session_id
+            ):
+                event_type = event.get("event", "message")
+                yield _format_sse(event)
+                
+                if event_type in ("end", "complete"):
+                    break
+                    
+        except GeneratorExit:
+            logger.info("Multi-opus SSE connection closed by client")
+        except Exception as e:
+            logger.error(f"Multi-opus stream error: {e}", exc_info=True)
+            yield _format_sse({"event": "error", "error": str(e)})
+            yield _format_sse({"event": "complete", "error": str(e)})
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )

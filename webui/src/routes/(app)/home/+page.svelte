@@ -94,7 +94,7 @@
     <div class="relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/10 to-transparent"></div>
         <div class="relative px-6 py-16 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">
+            <h1 class="text-4xl md:text-5xl font-medium mb-4">
                 안녕하세요, <span class="text-blue-400">{$user?.name || '사용자'}</span>님
             </h1>
             <p class="text-xl text-gray-400 max-w-2xl mx-auto">
@@ -107,7 +107,7 @@
         <!-- Agents Section -->
         <section>
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-white">🤖 AI 에이전트</h2>
+                <h2 class="text-2xl font-medium text-white">🤖 AI 에이전트</h2>
                 <a href="/use/agents" class="text-blue-400 hover:text-blue-300 text-sm">
                     모두 보기 →
                 </a>
@@ -143,7 +143,7 @@
         <!-- News Section -->
         <section>
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-white">📰 최신 뉴스</h2>
+                <h2 class="text-2xl font-medium text-white">📰 최신 뉴스</h2>
                 <a href="/today" class="text-blue-400 hover:text-blue-300 text-sm">
                     모두 보기 →
                 </a>
@@ -187,7 +187,7 @@
 
         <!-- Quick Links -->
         <section>
-            <h2 class="text-2xl font-bold text-white mb-6">⚡ 빠른 접근</h2>
+            <h2 class="text-2xl font-medium text-white mb-6">⚡ 빠른 접근</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <a href="/build/mcp" class="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all text-center">
                     <div class="text-2xl mb-2">🔌</div>

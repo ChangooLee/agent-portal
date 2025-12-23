@@ -17,6 +17,7 @@ class MessageRefiner:
             "get_executive_info": "임원 정보 조회",
             "get_financial_analysis": "재무 분석",
             "get_risk_assessment": "리스크 평가",
+            "get_corporation_code": "전체 기업 고유번호 목록 조회",
         }
         
         # 도구별 액션 메시지 매핑 (전체 70개 도구)
@@ -34,6 +35,7 @@ class MessageRefiner:
             # 문서 분석 (3개)
             "get_disclosure_document": "공시 문서를 다운로드하고 있습니다",
             "search_financial_notes": "재무제표 주석을 검색하고 있습니다",
+            "get_corporation_code": "전체 기업 고유번호 목록을 조회하고 있습니다",
             
             # 지배구조 (8개)
             "get_major_shareholder": "최대주주 정보를 조회하고 있습니다",
@@ -137,7 +139,15 @@ class MessageRefiner:
 
     def _refine_tool_call_message(self, message: str) -> str:
         """도구 호출 메시지 정제"""
-        # 도구명 추출 및 변환
+        # tool_action_messages에서 먼저 확인 (더 많은 도구 포함)
+        if message in self.tool_action_messages:
+            return self.tool_action_messages[message]
+        
+        # tool_name_mapping에서 확인
+        if message in self.tool_name_mapping:
+            return f"{self.tool_name_mapping[message]}를 실행하고 있습니다..."
+
+        # 도구명 추출 및 변환 (메시지에 도구명이 포함된 경우)
         for tool_name, korean_name in self.tool_name_mapping.items():
             if tool_name in message:
                 return f"{korean_name}를 실행하고 있습니다..."

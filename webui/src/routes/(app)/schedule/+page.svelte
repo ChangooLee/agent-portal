@@ -25,7 +25,7 @@
 						<Calendar className="size-8" />
 					</div>
 					<div>
-						<h1 class="text-3xl font-bold">일정관리</h1>
+						<h1 class="text-3xl font-medium">일정관리</h1>
 						<p class="text-gray-600">일정 관리 및 작업 추적</p>
 					</div>
 				</div>

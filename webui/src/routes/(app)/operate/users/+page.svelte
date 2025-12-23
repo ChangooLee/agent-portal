@@ -9,7 +9,7 @@
 		<div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
 		<div class="relative px-6 py-8 text-center">
-			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+			<h1 class="text-3xl md:text-4xl font-medium mb-3 text-white">
 				👥 사용자 관리
 			</h1>
 			<p class="text-base text-blue-200/80">

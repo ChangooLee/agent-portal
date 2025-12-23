@@ -6,10 +6,41 @@ DART 멀티에이전트 시스템을 위한 메모리 관리자 - LangGraph 표�
 import asyncio
 import json
 import time
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from langchain_core.messages import BaseMessage, HumanMessage
-from langchain_core.messages.utils import count_tokens_approximately
+
+# count_tokens_approximately 대체
+try:
+    from langchain_core.messages.utils import count_tokens_approximately
+except ImportError:
+    def count_tokens_approximately(messages):
+        """간단한 토큰 카운트 추정"""
+        total = 0
+        for msg in messages:
+            if hasattr(msg, 'content'):
+                total += len(str(msg.content)) // 4
+        return total
+
+logger = logging.getLogger(__name__)
+
+
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수"""
+    log_message = f"[{step_name}] {status}: {message}"
+    if status == "ERROR":
+        logger.error(log_message)
+    elif status == "WARNING":
+        logger.warning(log_message)
+    else:
+        logger.info(log_message)
+
+
+def log_performance(operation: str, duration: float, details: str = ""):
+    """성능 로깅 헬퍼 함수"""
+    logger.info(f"[PERF] {operation}: {duration:.2f}ms {details}")
+
 
 # LangGraph 표준 메모리 도구
 try:
@@ -19,8 +50,6 @@ except ImportError:
     LANGRAPH_AVAILABLE = False
     class PostgresSaver:
         pass
-
-from utils.logger import log_step, log_performance
 
 
 # =============================================================================

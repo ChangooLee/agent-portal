@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     endpoint_url VARCHAR(500) NOT NULL,
-    transport_type ENUM('streamable_http', 'sse') DEFAULT 'streamable_http',
+    transport_type ENUM('streamable_http', 'sse', 'stdio') DEFAULT 'streamable_http',
     auth_type ENUM('none', 'api_key', 'bearer') DEFAULT 'none',
     auth_config JSON COMMENT '인증 설정 (api_key, bearer token 등)',
     -- Kong Gateway 연동 정보
@@ -19,6 +19,13 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
     enabled BOOLEAN DEFAULT TRUE,
     last_health_check TIMESTAMP NULL COMMENT '마지막 연결 테스트 시간',
     health_status ENUM('unknown', 'healthy', 'unhealthy') DEFAULT 'unknown',
+    -- stdio MCP 서버 관련 필드
+    github_url VARCHAR(500) COMMENT 'GitHub 저장소 URL',
+    local_path VARCHAR(500) COMMENT '로컬 저장 경로',
+    command TEXT COMMENT '실행 명령어',
+    env_vars JSON COMMENT '환경 변수',
+    process_pid INT COMMENT '프로세스 PID',
+    process_status ENUM('stopped', 'starting', 'running', 'error') DEFAULT 'stopped',
     -- 메타데이터
     created_by VARCHAR(36),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -100,6 +107,18 @@ CREATE TABLE IF NOT EXISTS mcp_call_logs (
     INDEX idx_status (status),
     INDEX idx_created_at (created_at),
     -- 외래 키
+    FOREIGN KEY (server_id) REFERENCES mcp_servers(id) ON DELETE CASCADE
+);
+
+-- MCP 프로세스 로그 테이블 (stdio 프로세스 로그 저장)
+CREATE TABLE IF NOT EXISTS mcp_process_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    server_id VARCHAR(36) NOT NULL,
+    log_level ENUM('info', 'warning', 'error', 'debug') DEFAULT 'info',
+    message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_server_id (server_id),
+    INDEX idx_created_at (created_at),
     FOREIGN KEY (server_id) REFERENCES mcp_servers(id) ON DELETE CASCADE
 );
 

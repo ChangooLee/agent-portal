@@ -18,6 +18,11 @@ class PromptBuilder:
 
     def build_system_prompt(self, domain: str) -> str:
         """에이전트 초기화용 System Prompt 생성 - 도구 설명과 분석 방법 포함"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[PromptBuilder] build_system_prompt 호출: domain={domain}")
+        
         domain_name = self.domain_template.get_domain_name(domain)
         system_prompt = self.base_template.get_system_prompt(domain_name)
         
@@ -38,7 +43,7 @@ class PromptBuilder:
         if domain == "document_analysis":
             document_workflow = self.base_template.get_document_analysis_workflow()
         
-        return f"""{system_prompt}
+        final_prompt = f"""{system_prompt}
 
 ## 도메인 전문성
 {domain_role}
@@ -50,6 +55,11 @@ class PromptBuilder:
 {work_instructions}
 
 {document_workflow}"""
+        
+        logger.info(f"[PromptBuilder] 프롬프트 생성 완료: domain={domain}, 길이={len(final_prompt)}자")
+        logger.debug(f"[PromptBuilder] 생성된 프롬프트 시작 부분:\n{final_prompt[:300]}...")
+        
+        return final_prompt
 
     def build_user_request_prompt(self, context: AnalysisContext, domain: str, tools_info: str) -> str:
         """실행 시 User Prompt 생성 - 간소화된 동적 context만 포함"""

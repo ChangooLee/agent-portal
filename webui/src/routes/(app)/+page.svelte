@@ -119,7 +119,7 @@
         <div class="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
         
 		<div class="relative px-6 py-8 text-center">
-			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+			<h1 class="text-3xl md:text-4xl font-medium mb-3 text-white">
                 안녕하세요, {$user?.name || '사용자'}님
             </h1>
             <p class="text-base text-blue-200/80">
@@ -132,7 +132,7 @@
         <!-- Agents Section -->
         <section>
             <div class="flex items-center justify-between mb-8">
-                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                <h2 class="text-2xl font-medium text-white flex items-center gap-3">
                     <span class="text-3xl">🤖</span>
                     AI 에이전트
                 </h2>
@@ -176,7 +176,7 @@
         <!-- News Section -->
         <section>
             <div class="flex items-center justify-between mb-8">
-                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                <h2 class="text-2xl font-medium text-white flex items-center gap-3">
                     <span class="text-3xl">📰</span>
                     최신 뉴스
                 </h2>
@@ -228,7 +228,7 @@
 
         <!-- Quick Links -->
         <section>
-            <h2 class="text-2xl font-bold text-white mb-8 flex items-center gap-3">
+            <h2 class="text-2xl font-medium text-white mb-8 flex items-center gap-3">
                 <span class="text-3xl">⚡</span>
                 빠른 접근
             </h2>

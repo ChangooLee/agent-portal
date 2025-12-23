@@ -11,10 +11,16 @@ environment_variables:
 
 # Model List (YAML 기반 관리)
 model_list:
-  # Qwen 3 235B (OpenRouter)
+  # Qwen 3 235B (OpenRouter) - Primary
   - model_name: qwen-235b
     litellm_params:
       model: openrouter/qwen/qwen3-235b-a22b-2507
+      api_key: os.environ/OPENROUTER_API_KEY
+  
+  # Qwen 3 235B Fallback (Claude 3.5 Sonnet)
+  - model_name: qwen-235b
+    litellm_params:
+      model: openrouter/anthropic/claude-3.5-sonnet
       api_key: os.environ/OPENROUTER_API_KEY
   
   # GPT-4 (OpenRouter)
@@ -39,6 +45,12 @@ model_list:
   - model_name: claude-3.5-sonnet
     litellm_params:
       model: openrouter/anthropic/claude-3.5-sonnet
+      api_key: os.environ/OPENROUTER_API_KEY
+  
+  # Claude Opus 4.5 (OpenRouter) - DART 고급 분석용
+  - model_name: claude-opus-4.5
+    litellm_params:
+      model: openrouter/anthropic/claude-opus-4.5
       api_key: os.environ/OPENROUTER_API_KEY
 
 # General Settings

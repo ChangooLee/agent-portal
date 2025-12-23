@@ -256,12 +256,29 @@
 					</div>
 				{/if}
 
-				<!-- Response Content (beautified) -->
+				<!-- Agent Response Content (최종 분석 결과) -->
+				{#if span.span_attributes['agent.response.content']}
+					{@const rawAgentResponse = span.span_attributes['agent.response.content']}
+					{@const { formatted } = beautifyValue(rawAgentResponse)}
+					<div>
+						<p class="text-sm font-medium text-slate-300 mb-2">🤖 Agent Response (최종 분석 결과)</p>
+						<div class="bg-purple-500/20 border border-purple-500/30 rounded-lg p-3 max-h-96 overflow-y-auto">
+							<pre class="text-xs text-purple-200 whitespace-pre-wrap font-mono leading-relaxed">{formatted}</pre>
+						</div>
+						{#if span.span_attributes['agent.response.length']}
+							<p class="text-xs text-slate-400 mt-1">
+								전체 길이: {span.span_attributes['agent.response.length']}자
+							</p>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Response Content (LLM 응답) -->
 				{#if span.span_attributes.response || span.span_attributes['llm.response.content']}
 					{@const rawResponse = span.span_attributes.response || span.span_attributes['llm.response.content']}
 					{@const { formatted } = beautifyValue(rawResponse)}
 					<div>
-						<p class="text-sm font-medium text-slate-300 mb-2">📤 Response Content</p>
+						<p class="text-sm font-medium text-slate-300 mb-2">📤 LLM Response Content</p>
 						<div class="bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-3 max-h-64 overflow-y-auto">
 							<pre class="text-xs text-emerald-200 whitespace-pre-wrap font-mono leading-relaxed">{formatted}</pre>
 						</div>

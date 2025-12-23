@@ -134,7 +134,7 @@
 		
 		<div class="relative px-6 py-8">
 			<div class="text-center mb-4">
-				<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+				<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
 					🌐 API Gateway
 				</h1>
 				<p class="text-base text-indigo-200/80 mb-6">
@@ -223,7 +223,7 @@
 									<GlobeAlt className="size-5 text-indigo-400" />
 								</div>
 								<div>
-									<div class="text-2xl font-bold text-white">{overview.stats.services_count}</div>
+									<div class="text-2xl font-medium text-white">{overview.stats.services_count}</div>
 									<div class="text-xs text-slate-400">Kong Services</div>
 								</div>
 							</div>
@@ -234,7 +234,7 @@
 									<Cube className="size-5 text-purple-400" />
 								</div>
 								<div>
-									<div class="text-2xl font-bold text-white">{overview.stats.mcp_servers_count}</div>
+									<div class="text-2xl font-medium text-white">{overview.stats.mcp_servers_count}</div>
 									<div class="text-xs text-slate-400">MCP Servers</div>
 								</div>
 							</div>
@@ -247,7 +247,7 @@
 									</svg>
 								</div>
 								<div>
-									<div class="text-2xl font-bold text-white">{overview.stats.datacloud_count ?? 0}</div>
+									<div class="text-2xl font-medium text-white">{overview.stats.datacloud_count ?? 0}</div>
 									<div class="text-xs text-slate-400">Data Cloud</div>
 								</div>
 							</div>
@@ -258,7 +258,7 @@
 									<Check className="size-5 text-emerald-400" />
 								</div>
 								<div>
-									<div class="text-2xl font-bold text-white">{overview.stats.active_mcp_count}</div>
+									<div class="text-2xl font-medium text-white">{overview.stats.active_mcp_count}</div>
 									<div class="text-xs text-slate-400">Active MCP</div>
 								</div>
 							</div>
@@ -269,7 +269,7 @@
 									<LockClosed className="size-5 text-amber-400" />
 								</div>
 								<div>
-									<div class="text-2xl font-bold text-white">{overview.stats.consumers_count}</div>
+									<div class="text-2xl font-medium text-white">{overview.stats.consumers_count}</div>
 									<div class="text-xs text-slate-400">API Keys</div>
 								</div>
 							</div>
@@ -281,7 +281,7 @@
 						<!-- Kong Services -->
 						<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl shadow-lg shadow-black/20 overflow-hidden">
 							<div class="px-4 py-3 bg-slate-800/50 border-b border-slate-700/50 flex items-center justify-between">
-								<h3 class="font-bold text-white flex items-center gap-2">
+								<h3 class="font-medium text-white flex items-center gap-2">
 									<GlobeAlt className="size-4 text-indigo-400" />
 									Kong Services
 								</h3>
@@ -322,7 +322,7 @@
 						<!-- MCP Servers -->
 						<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl shadow-lg shadow-black/20 overflow-hidden">
 							<div class="px-4 py-3 bg-slate-800/50 border-b border-slate-700/50 flex items-center justify-between">
-								<h3 class="font-bold text-white flex items-center gap-2">
+								<h3 class="font-medium text-white flex items-center gap-2">
 									<Cube className="size-4 text-purple-400" />
 									MCP Servers
 								</h3>
@@ -379,7 +379,7 @@
 						<!-- API Keys (Consumers) -->
 						<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl shadow-lg shadow-black/20 overflow-hidden">
 							<div class="px-4 py-3 bg-slate-800/50 border-b border-slate-700/50 flex items-center justify-between">
-								<h3 class="font-bold text-white flex items-center gap-2">
+								<h3 class="font-medium text-white flex items-center gap-2">
 									<LockClosed className="size-4 text-amber-400" />
 									API Keys
 								</h3>
@@ -429,7 +429,7 @@
 						<!-- Data Cloud Connections -->
 						<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl shadow-lg shadow-black/20 overflow-hidden">
 							<div class="px-4 py-3 bg-slate-800/50 border-b border-slate-700/50 flex items-center justify-between">
-								<h3 class="font-bold text-white flex items-center gap-2">
+								<h3 class="font-medium text-white flex items-center gap-2">
 									<svg class="size-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
 									</svg>

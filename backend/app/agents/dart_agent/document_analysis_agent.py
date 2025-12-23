@@ -25,7 +25,8 @@ from .dart_types import (
 )
 from .message_refiner import MessageRefiner
 from .mcp_client import MCPTool, get_opendart_mcp_client
-from .metrics import start_dart_span, record_counter, inject_context_to_carrier
+from .metrics import observe, record_counter
+from .utils.prompt_templates import PromptBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +36,7 @@ def log_step(step_name: str, status: str, message: str):
 def log_agent_flow(agent_name: str, action: str, step: int, message: str):
     logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
-def observe():
-    def decorator(func):
-        return func
-    return decorator
+# observe 데코레이터는 metrics.py에서 import
 
 
 class DocumentAnalysisAgent(DartBaseAgent):
@@ -54,6 +52,7 @@ class DocumentAnalysisAgent(DartBaseAgent):
 
         self.agent_domain = "document_analysis"
         self.message_refiner = MessageRefiner()
+        self.prompt_builder = PromptBuilder()
         
         log_step("DocumentAnalysisAgent 초기화", "SUCCESS", "문서 분석 에이전트 설정 완료")
 
@@ -69,10 +68,7 @@ class DocumentAnalysisAgent(DartBaseAgent):
         log_step("도구 필터링 완료", "SUCCESS", f"DocumentAnalysis 도구: {len(filtered)}개")
         return filtered
     
-    def _create_system_prompt(self) -> str:
-        """시스템 프롬프트 생성"""
-        return """당신은 DART 공시 시스템의 문서 분석 전문가입니다.
-공시 문서의 내용을 파싱하고 주요 정보를 추출하여 분석합니다."""
+    # _create_system_prompt()는 base.py에서 자동으로 prompt_builder를 사용하도록 구현됨
 
     async def _filter_tools_for_agent(self, tools):
         """문서 분석에서 사용할 도구 필터링"""
@@ -108,7 +104,7 @@ class DocumentAnalysisAgent(DartBaseAgent):
     ) -> AsyncGenerator[Dict[str, Any], AgentResult]:
         """문서 기반 심층 분석 메인 함수 - 복잡한 워크플로우 + 스트리밍"""
         start_time = time.time()
-
+        
         try:
             # 1번 yield: 분석 시작
             yield {
@@ -201,11 +197,16 @@ class DocumentAnalysisAgent(DartBaseAgent):
                     # 도구 실행 결과 처리
                     tool_messages = chunk["tools"]["messages"]
                     for tool_message in tool_messages:
-                        tool_name = getattr(tool_message, "name", "알 수 없는 도구")
-                        tools_used.append(tool_name)
-
+                        tool_name = getattr(tool_message, "name", None)
                         # 응답에 달린 tool_call_id로 pending과 매칭
                         tc_id = getattr(tool_message, "tool_call_id", None)
+                        # None 값 필터링: tool_name이 None이면 pending_calls에서 역추적
+                        if not tool_name:
+                            if tc_id and tc_id in pending_calls:
+                                tool_name = pending_calls[tc_id].get("name", "도구")
+                            else:
+                                tool_name = "도구"
+                        tools_used.append(tool_name)
                         if tc_id and tc_id in pending_calls:
                             info = pending_calls.pop(tc_id)
                             display_name = info["display_name"]
@@ -228,11 +229,12 @@ class DocumentAnalysisAgent(DartBaseAgent):
                         # 이어서 '응답 로그' 출력
                         if hasattr(tool_message, "content"):
                             # DART Transformer 활용
-                            from agent.dart_agent.dart_transformer import transform_dart_result
+                            from app.agents.dart_agent.dart_transformer import transform_dart_result
                             extracted_text = transform_dart_result(tool_name, tool_message.content)
                             collected_data[tool_name] = extracted_text
                             yield {
                                 "type": "tool_result",
+                                    "agent_name": self.agent_name,
                                 "content": extracted_text,
                                 "tool_name": display_name,
                             }
@@ -253,7 +255,7 @@ class DocumentAnalysisAgent(DartBaseAgent):
                 tools_used=list(set(tools_used)),
             )
             
-            # 최종 결과 yield
+            # 최종 결과 yield (observe 데코레이터가 자동으로 span에 기록)
             yield agent_result
             return
             
@@ -280,7 +282,6 @@ class DocumentAnalysisAgent(DartBaseAgent):
             yield agent_result
             return
 
-    @observe()
     def _extract_text_from_content(self, content) -> str:
         """다양한 content 타입에서 텍스트 추출"""
         if isinstance(content, str):

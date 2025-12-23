@@ -3,9 +3,28 @@ message_generator.py
 LLM 기반 동적 메시지 생성기 - 경량 모델(google/gemma-3-27b-it) 활용
 """
 
+import logging
 from typing import Optional, Dict, Any
-from chat_openai.llm_manager import LLMManager
-from utils.logger import log_step
+
+logger = logging.getLogger(__name__)
+
+
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수"""
+    log_message = f"[{step_name}] {status}: {message}"
+    if status == "ERROR":
+        logger.error(log_message)
+    elif status == "WARNING":
+        logger.warning(log_message)
+    else:
+        logger.info(log_message)
+
+
+# LLMManager 대체 - 없으면 mock 사용
+try:
+    from chat_openai.llm_manager import LLMManager
+except ImportError:
+    LLMManager = None
 
 class MessageGenerator:
     """경량 LLM을 사용한 사용자 친화적 메시지 생성"""

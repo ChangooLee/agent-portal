@@ -8,7 +8,10 @@ text2sql/metrics.py 패턴 참조.
 import logging
 import json
 import time
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
+import functools
+import inspect
+from typing import Dict, Any, Optional, List, TYPE_CHECKING, AsyncGenerator, Callable, get_origin
+from collections.abc import AsyncGenerator as ABCAsyncGenerator
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
@@ -272,7 +275,7 @@ def start_llm_call_span(
                     response.get("choices", [{}])[0].get("message", {}).get("content")
                 )
                 if response_content:
-                    current_span.set_attribute("llm.response.content", response_content[:1000])
+                    current_span.set_attribute("llm.response.content", response_content)
         except Exception as e:
             logger.debug(f"Failed to record LLM result: {e}")
 
@@ -301,7 +304,7 @@ def start_llm_call_span(
                 if messages and hasattr(span, "set_attribute"):
                     span.set_attribute(
                         "llm.request.messages",
-                        json.dumps(messages, ensure_ascii=False)[:2000],
+                        json.dumps(messages, ensure_ascii=False),
                     )
             except Exception:
                 pass
@@ -336,6 +339,9 @@ def start_tool_call_span(
 
     tracer = _get_tracer()
     span_name = f"dart.tool_call.{tool_name}"
+    
+    # 디버그 로그
+    logger.info(f"[start_tool_call_span] Creating span: {span_name}, tracer type: {type(tracer).__name__}")
 
     attrs = {"service.name": "agent-dart", "component": "dart-agent", "tool.name": tool_name}
 
@@ -358,7 +364,7 @@ def start_tool_call_span(
                         if isinstance(result, (dict, list))
                         else str(result)
                     )
-                    current_span.set_attribute("tool.result", result_str[:1000])
+                    current_span.set_attribute("tool.result", result_str)
         except Exception as e:
             logger.debug(f"Failed to record tool result: {e}")
 
@@ -387,7 +393,7 @@ def start_tool_call_span(
                 if arguments and hasattr(span, "set_attribute"):
                     span.set_attribute(
                         "tool.arguments",
-                        json.dumps(arguments, ensure_ascii=False)[:1000],
+                        json.dumps(arguments, ensure_ascii=False),
                     )
             except Exception:
                 pass
@@ -441,5 +447,406 @@ def record_histogram(name: str, value: float, attributes: Optional[Dict[str, str
         
     except Exception as e:
         logger.debug(f"Failed to record histogram {name}: {e}")
+
+
+# =============================================================================
+# 공통 observe 데코레이터 (OTEL span 자동 생성)
+# =============================================================================
+
+def _serialize_value(value: Any) -> str:
+    """값을 JSON 문자열로 직렬화 (길이 제한 없음)."""
+    try:
+        import inspect
+        # coroutine 객체는 직렬화 불가
+        if inspect.iscoroutine(value):
+            return f"<coroutine {type(value).__name__}>"
+        # 함수 객체는 이름만 기록
+        elif callable(value) and not isinstance(value, (str, int, float, bool, type(None))):
+            return f"<function {getattr(value, '__name__', 'unknown')}>"
+        elif isinstance(value, (dict, list)):
+            return json.dumps(value, ensure_ascii=False, default=str)
+        elif isinstance(value, str):
+            return value
+        else:
+            return str(value)
+    except Exception as e:
+        return f"<serialization_error: {str(e)}>"
+
+
+def observe(span_name: Optional[str] = None, include_args: bool = True, include_result: bool = True):
+    """
+    OTEL span을 자동으로 생성하는 데코레이터.
+    
+    모든 에이전트 메서드에 적용하여 자동으로 OTEL trace를 기록합니다.
+    길이 제한 없이 전체 내용을 기록합니다.
+    
+    Args:
+        span_name: Span 이름 (기본값: 함수명)
+        include_args: 함수 인자를 span에 기록할지 여부
+        include_result: 함수 반환값을 span에 기록할지 여부
+    
+    Usage:
+        @observe()
+        async def analyze_financial_data(self, context: AnalysisContext):
+            ...
+    """
+    # start_dart_span과 inject_context_to_carrier를 외부 스코프에서 참조
+    # (decorator 함수 내부에서 사용할 수 있도록)
+    _start_dart_span_ref = start_dart_span
+    _inject_context_to_carrier_ref = inject_context_to_carrier
+    
+    def decorator(func: Callable):
+        # 함수가 AsyncGenerator인지 확인
+        sig = inspect.signature(func)
+        return_annotation = sig.return_annotation
+        is_async_generator = False
+        try:
+            origin = get_origin(return_annotation)
+            # AsyncGenerator 또는 collections.abc.AsyncGenerator 체크
+            if origin is AsyncGenerator or origin is ABCAsyncGenerator:
+                is_async_generator = True
+            # 문자열로도 확인 (타입 힌트가 문자열로 저장된 경우)
+            elif str(return_annotation).startswith('typing.AsyncGenerator') or 'AsyncGenerator' in str(return_annotation):
+                is_async_generator = True
+            # 타입 힌트가 없는 경우 함수가 generator인지 확인
+            elif return_annotation == inspect.Signature.empty:
+                # 함수 본문을 확인할 수 없으므로, 함수명이나 다른 힌트로 판단
+                # analyze_*_data 패턴은 AsyncGenerator일 가능성이 높음
+                if func.__name__.startswith('analyze_') and func.__name__.endswith('_data'):
+                    is_async_generator = True
+                # coordinate_*_stream 패턴도 AsyncGenerator일 가능성이 높음
+                elif func.__name__.endswith('_stream'):
+                    is_async_generator = True
+        except Exception as e:
+            logger.debug(f"Error checking return annotation: {e}")
+            # 타입 힌트가 없거나 확인 불가능한 경우
+            # analyze_*_data 패턴은 AsyncGenerator일 가능성이 높음
+            if func.__name__.startswith('analyze_') and func.__name__.endswith('_data'):
+                is_async_generator = True
+            # coordinate_*_stream 패턴도 AsyncGenerator일 가능성이 높음
+            elif func.__name__.endswith('_stream'):
+                is_async_generator = True
+        
+        # AsyncGenerator와 일반 async 함수를 구분하여 래퍼 생성
+        if is_async_generator:
+            @functools.wraps(func)
+            async def async_generator_wrapper(*args, **kwargs):
+                # Span 이름 결정
+                if span_name:
+                    name = span_name
+                else:
+                    # 클래스명.함수명 형식
+                    if args and hasattr(args[0], '__class__'):
+                        class_name = args[0].__class__.__name__
+                        func_name = func.__name__
+                        name = f"dart.{class_name}.{func_name}"
+                    else:
+                        name = f"dart.{func.__name__}"
+                
+                # 로그 (observe 데코레이터 동작 확인용)
+                logger.info(f"[observe] Creating span: {name}, is_async_generator={is_async_generator}, func={func.__name__}")
+                
+                # 기본 속성 (span 생성 시 사용)
+                base_attrs = {
+                    "service.name": "agent-dart",
+                    "component": "dart-agent",
+                    "function.name": func.__name__,
+                }
+                
+                # 인자 기록용 속성 (나중에 span에 추가)
+                arg_attrs = {}
+                
+                # 인자 기록 (길이 제한 없음)
+                if include_args:
+                    try:
+                        if args and hasattr(args[0], '__class__'):
+                            # self 인자 제외
+                            bound_args = sig.bind(*args, **kwargs)
+                            bound_args.apply_defaults()
+                            args_dict = {k: v for k, v in bound_args.arguments.items() if k != 'self'}
+                            
+                            for key, value in args_dict.items():
+                                try:
+                                    serialized = _serialize_value(value)
+                                    arg_attrs[f"function.arg.{key}"] = serialized
+                                except Exception:
+                                    pass
+                        else:
+                            # self가 없는 경우
+                            bound_args = sig.bind(*args, **kwargs)
+                            bound_args.apply_defaults()
+                            for key, value in bound_args.arguments.items():
+                                try:
+                                    serialized = _serialize_value(value)
+                                    arg_attrs[f"function.arg.{key}"] = serialized
+                                except Exception:
+                                    pass
+                    except Exception as e:
+                        logger.debug(f"Failed to serialize args: {e}")
+                
+                # Parent context 가져오기
+                current_carrier = {}
+                try:
+                    _inject_context_to_carrier_ref(current_carrier)
+                except Exception:
+                    pass
+                
+                # Span 생성 및 실행 (기본 속성으로 span 생성)
+                start_time = time.time()
+                with _start_dart_span_ref(name, base_attrs, current_carrier) as span:
+                    # 인자 속성도 span에 설정
+                    for key, value in arg_attrs.items():
+                        try:
+                            if isinstance(value, str) and len(value) > 0:
+                                span.set_attribute(key, value)
+                            elif not isinstance(value, str):
+                                span.set_attribute(key, str(value))
+                        except Exception as e:
+                            logger.debug(f"Failed to set arg attribute {key}: {e}")
+                
+                    try:
+                        # AsyncGenerator인 경우 스트리밍 처리
+                        final_result = None
+                        result_parts = []
+                        generator_exited = False
+                        
+                        try:
+                            async for chunk in func(*args, **kwargs):
+                                # 각 청크를 이벤트로 기록
+                                try:
+                                    # AgentResult 객체인지 확인 (dataclass 또는 dict)
+                                    is_agent_result = False
+                                    
+                                    # AgentResult 객체 체크 (dataclass)
+                                    if hasattr(chunk, 'key_findings') and hasattr(chunk, 'agent_name'):
+                                        # AgentResult 객체
+                                        is_agent_result = True
+                                        final_result = chunk
+                                        logger.info(f"[observe] AgentResult detected: {chunk.agent_name}, key_findings count: {len(chunk.key_findings) if chunk.key_findings else 0}")
+                                        
+                                        # 즉시 속성 기록 (Langfuse 방식: 감지 즉시 기록)
+                                        try:
+                                            # key_findings에서 None 값 필터링
+                                            if chunk.key_findings:
+                                                filtered_findings = [str(f) for f in chunk.key_findings if f is not None]
+                                                final_response = "\n".join(filtered_findings) if filtered_findings else ""
+                                            else:
+                                                final_response = ""
+                                            
+                                            if final_response and span and hasattr(span, 'set_attribute'):
+                                                span.set_attribute("agent.response.content", final_response)
+                                                span.set_attribute("agent.response.length", len(final_response))
+                                                logger.info(f"[observe] Recorded agent.response.content immediately: {len(final_response)} chars")
+                                            
+                                            # 추가 정보 즉시 기록
+                                            if span and hasattr(span, 'set_attribute'):
+                                                if hasattr(chunk, 'agent_name'):
+                                                    span.set_attribute("agent.name", chunk.agent_name)
+                                                if hasattr(chunk, 'analysis_type'):
+                                                    span.set_attribute("agent.analysis_type", chunk.analysis_type)
+                                                if hasattr(chunk, 'tools_used') and chunk.tools_used:
+                                                    # None 값 필터링
+                                                    filtered_tools = [str(t) for t in chunk.tools_used if t is not None]
+                                                    if filtered_tools:
+                                                        tools_str = ", ".join(filtered_tools)
+                                                        span.set_attribute("agent.tools_used", tools_str)
+                                                if hasattr(chunk, 'execution_time'):
+                                                    span.set_attribute("agent.execution_time", chunk.execution_time)
+                                                
+                                                # supporting_data의 llm_response도 기록
+                                                if hasattr(chunk, 'supporting_data') and chunk.supporting_data:
+                                                    llm_response = chunk.supporting_data.get('llm_response', '')
+                                                    if llm_response:
+                                                        span.set_attribute("agent.llm_response", str(llm_response))
+                                        except Exception as e:
+                                            logger.warning(f"[observe] Failed to record AgentResult immediately: {e}")
+                                    elif isinstance(chunk, dict):
+                                        # Dict 형태
+                                        chunk_type = chunk.get("type", "chunk")
+                                        chunk_content = chunk.get("content") or chunk.get("message") or str(chunk)
+                                        
+                                        # 이벤트로 기록
+                                        if hasattr(span, 'add_event'):
+                                            event_attrs = {
+                                                "chunk.type": chunk_type,
+                                            }
+                                            if chunk_content:
+                                                event_attrs["chunk.content"] = _serialize_value(chunk_content)
+                                            span.add_event(f"stream.{chunk_type}", attributes=event_attrs)
+                                        
+                                        # AgentResult인 경우 최종 결과로 저장
+                                        if 'key_findings' in chunk or chunk.get('type') == 'agent_result':
+                                            is_agent_result = True
+                                            final_result = chunk
+                                            logger.info(f"[observe] AgentResult (dict) detected: {chunk.get('agent_name', 'unknown')}")
+                                    
+                                    # AgentResult가 아닌 경우에도 청크 기록
+                                    if not is_agent_result:
+                                        result_parts.append(chunk)
+                                            
+                                except Exception as e:
+                                    logger.warning(f"[observe] Failed to record chunk: {e}")
+                                
+                                yield chunk
+                        except GeneratorExit:
+                            # SSE 연결이 끊어지면 GeneratorExit 발생 - 정상적으로 처리
+                            generator_exited = True
+                            logger.info(f"[observe] GeneratorExit caught in {name} - SSE connection closed by client")
+                            if span and hasattr(span, 'set_attribute'):
+                                span.set_attribute("stream.client_disconnected", True)
+                            # GeneratorExit는 정상적인 종료이므로 raise하지 않고 그냥 종료
+                            return
+                        
+                        # 최종 결과 기록 (길이 제한 없음)
+                        logger.info(f"[observe] Loop ended. final_result={final_result is not None}, include_result={include_result}, span={span is not None}, has_set_attribute={hasattr(span, 'set_attribute') if span else False}")
+                        if include_result and span and hasattr(span, 'set_attribute'):
+                            if final_result:
+                                try:
+                                    logger.info(f"[observe] Recording final result to span: {name}, final_result type: {type(final_result)}")
+                                    
+                                    if hasattr(final_result, 'key_findings'):
+                                        # AgentResult 객체 (dataclass)
+                                        final_response = "\n".join(final_result.key_findings) if final_result.key_findings else ""
+                                        logger.info(f"[observe] AgentResult (dataclass): final_response length={len(final_response) if final_response else 0}")
+                                        if final_response:
+                                            # 길이 제한 없이 전체 내용 기록
+                                            span.set_attribute("agent.response.content", final_response)
+                                            span.set_attribute("agent.response.length", len(final_response))
+                                            logger.info(f"[observe] Recorded agent.response.content: {len(final_response)} chars")
+                                        
+                                        # 추가 정보 기록
+                                        if hasattr(final_result, 'agent_name'):
+                                            span.set_attribute("agent.name", final_result.agent_name)
+                                        if hasattr(final_result, 'analysis_type'):
+                                            span.set_attribute("agent.analysis_type", final_result.analysis_type)
+                                        if hasattr(final_result, 'tools_used') and final_result.tools_used:
+                                            # None 값 필터링
+                                            filtered_tools = [str(t) for t in final_result.tools_used if t is not None]
+                                            if filtered_tools:
+                                                tools_str = ", ".join(filtered_tools)
+                                                span.set_attribute("agent.tools_used", tools_str)
+                                        if hasattr(final_result, 'execution_time'):
+                                            span.set_attribute("agent.execution_time", final_result.execution_time)
+                                        
+                                        # supporting_data의 llm_response도 기록
+                                        if hasattr(final_result, 'supporting_data') and final_result.supporting_data:
+                                            llm_response = final_result.supporting_data.get('llm_response', '')
+                                            if llm_response:
+                                                span.set_attribute("agent.llm_response", str(llm_response))
+                                        
+                                    elif isinstance(final_result, dict):
+                                        # Dict 형태
+                                        logger.info(f"[observe] AgentResult (dict): keys={list(final_result.keys())}")
+                                        if 'key_findings' in final_result:
+                                            key_findings = final_result['key_findings']
+                                            if key_findings:
+                                                final_response = "\n".join(key_findings) if isinstance(key_findings, list) else str(key_findings)
+                                                if final_response:
+                                                    # 길이 제한 없이 전체 내용 기록
+                                                    span.set_attribute("agent.response.content", final_response)
+                                                    span.set_attribute("agent.response.length", len(final_response))
+                                                    logger.info(f"[observe] Recorded agent.response.content (dict): {len(final_response)} chars")
+                                        
+                                        # 추가 정보 기록
+                                        if 'agent_name' in final_result:
+                                            span.set_attribute("agent.name", str(final_result['agent_name']))
+                                        if 'analysis_type' in final_result:
+                                            span.set_attribute("agent.analysis_type", str(final_result['analysis_type']))
+                                        if 'tools_used' in final_result and final_result['tools_used']:
+                                            tools_str = ", ".join(final_result['tools_used']) if isinstance(final_result['tools_used'], list) else str(final_result['tools_used'])
+                                            span.set_attribute("agent.tools_used", tools_str)
+                                        if 'execution_time' in final_result:
+                                            span.set_attribute("agent.execution_time", float(final_result['execution_time']))
+                                    
+                                    # 실행 시간 기록 (함수 실행 시간)
+                                    execution_time = time.time() - start_time
+                                    span.set_attribute("function.execution_time", execution_time)
+                                    
+                                    logger.info(f"[observe] Successfully recorded final result to span: {name}")
+                                    
+                                except Exception as e:
+                                    logger.error(f"[observe] Failed to record final result: {e}", exc_info=True)
+                            else:
+                                logger.debug(f"[observe] No final_result to record for span: {name}")
+                    except Exception as e:
+                        # 에러 기록
+                        if span and hasattr(span, 'set_attribute'):
+                            span.set_attribute("error", str(e))
+                            span.set_attribute("error.type", type(e).__name__)
+                            if hasattr(span, 'record_exception'):
+                                span.record_exception(e)
+                        raise
+        
+        else:
+            # 일반 async 함수용 래퍼
+            @functools.wraps(func)
+            async def async_function_wrapper(*args, **kwargs):
+                # Span 이름 결정
+                if span_name:
+                    name = span_name
+                else:
+                    # 클래스명.함수명 형식
+                    if args and hasattr(args[0], '__class__'):
+                        class_name = args[0].__class__.__name__
+                        func_name = func.__name__
+                        name = f"dart.{class_name}.{func_name}"
+                    else:
+                        name = f"dart.{func.__name__}"
+                
+                # 로그
+                logger.info(f"[observe] Creating span: {name}, func={func.__name__}")
+                
+                # 기본 속성
+                base_attrs = {
+                    "service.name": "agent-dart",
+                    "component": "dart-agent",
+                    "function.name": func.__name__,
+                }
+                
+                # Parent context 가져오기
+                current_carrier = {}
+                try:
+                    _inject_context_to_carrier_ref(current_carrier)
+                except Exception:
+                    pass
+                
+                # Span 생성 및 실행
+                start_time = time.time()
+                with _start_dart_span_ref(name, base_attrs, current_carrier) as span:
+                    try:
+                        result = await func(*args, **kwargs)
+                        
+                        # 반환값 기록 (길이 제한 없음)
+                        if include_result and span and hasattr(span, 'set_attribute'):
+                            try:
+                                serialized_result = _serialize_value(result)
+                                span.set_attribute("function.result", serialized_result)
+                                span.set_attribute("function.result.length", len(serialized_result))
+                            except Exception as e:
+                                logger.debug(f"Failed to record result: {e}")
+                        
+                        # 실행 시간 기록
+                        execution_time = time.time() - start_time
+                        if span and hasattr(span, 'set_attribute'):
+                            span.set_attribute("function.execution_time", execution_time)
+                        
+                        return result
+                        
+                    except Exception as e:
+                        # 에러 기록
+                        if span and hasattr(span, 'set_attribute'):
+                            span.set_attribute("error", str(e))
+                            span.set_attribute("error.type", type(e).__name__)
+                            if hasattr(span, 'record_exception'):
+                                span.record_exception(e)
+                        raise
+        
+        # AsyncGenerator인 경우와 일반 함수인 경우에 따라 다른 래퍼 반환
+        if is_async_generator:
+            return async_generator_wrapper
+        else:
+            return async_function_wrapper
+    
+    return decorator
 
 

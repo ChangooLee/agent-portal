@@ -5,10 +5,28 @@ streaming_memory.py
 
 import asyncio
 import time
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from utils.logger import log_step, log_performance
 from .memory_manager import DartMemoryManager
+
+logger = logging.getLogger(__name__)
+
+
+def log_step(step_name: str, status: str, message: str):
+    """로깅 헬퍼 함수"""
+    log_message = f"[{step_name}] {status}: {message}"
+    if status == "ERROR":
+        logger.error(log_message)
+    elif status == "WARNING":
+        logger.warning(log_message)
+    else:
+        logger.info(log_message)
+
+
+def log_performance(operation: str, duration: float, details: str = ""):
+    """성능 로깅 헬퍼 함수"""
+    logger.info(f"[PERF] {operation}: {duration:.2f}ms {details}")
 
 
 class StreamingMemoryHandler:

@@ -145,7 +145,7 @@
 		<div class="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
 		<div class="relative px-6 py-8 text-center">
-			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
+			<h1 class="text-3xl md:text-4xl font-medium mb-3 text-white">
 				📊 AI 보고서
 			</h1>
 			<p class="text-base text-indigo-200/80">
@@ -161,7 +161,7 @@
 						<div class="text-xs font-medium uppercase tracking-wide text-indigo-400 mb-1">
 							{stat.label}
 						</div>
-						<div class="text-2xl font-bold text-white mb-1">
+						<div class="text-2xl font-medium text-white mb-1">
 							{stat.value}
 						</div>
 						<div class="text-xs text-slate-400">{stat.hint}</div>

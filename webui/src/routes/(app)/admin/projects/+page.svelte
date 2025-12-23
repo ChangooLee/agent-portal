@@ -202,7 +202,7 @@
 			<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
 				<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 
 				            border border-white/30 dark:border-gray-700/30">
-					<div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+					<div class="text-2xl font-medium text-gray-900 dark:text-gray-100">
 						{projects.length}개
 					</div>
 					<div class="text-xs text-gray-500 dark:text-gray-400">Total Projects</div>
@@ -309,7 +309,7 @@
 		<div
 			class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700"
 		>
-			<h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
+			<h2 class="text-xl font-medium text-gray-900 dark:text-white mb-6">
 				{modalMode === 'create' ? 'Create New Project' : 'Edit Project'}
 			</h2>
 

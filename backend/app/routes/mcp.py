@@ -4,7 +4,8 @@ MCP Management API
 MCP 서버 등록, 조회, 수정, 삭제, 연결 테스트 API 엔드포인트.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from starlette.requests import Request
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -32,9 +33,17 @@ class MCPServerCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="서버 이름")
     endpoint_url: str = Field(..., description="MCP 서버 엔드포인트 URL")
     description: Optional[str] = Field(None, description="서버 설명")
-    transport_type: str = Field("streamable_http", description="전송 타입 (streamable_http, sse)")
+    transport_type: str = Field("streamable_http", description="전송 타입 (streamable_http, sse, stdio)")
     auth_type: str = Field("none", description="인증 타입 (none, api_key, bearer)")
     auth_config: Optional[Dict[str, Any]] = Field(None, description="인증 설정")
+
+
+class MCPServerGitHubCreate(BaseModel):
+    """GitHub에서 stdio MCP 서버 생성 요청."""
+    name: str = Field(..., min_length=1, max_length=255, description="서버 이름")
+    github_url: str = Field(..., description="GitHub 저장소 URL")
+    description: Optional[str] = Field(None, description="서버 설명")
+    config: Dict[str, Any] = Field(..., description="서버 설정 (command, env 등)")
 
 
 class MCPServerUpdate(BaseModel):
@@ -46,6 +55,14 @@ class MCPServerUpdate(BaseModel):
     auth_type: Optional[str] = Field(None, description="인증 타입")
     auth_config: Optional[Dict[str, Any]] = Field(None, description="인증 설정")
     enabled: Optional[bool] = Field(None, description="활성화 여부")
+
+
+class MCPServerGitHubCreate(BaseModel):
+    """GitHub에서 stdio MCP 서버 생성 요청."""
+    name: str = Field(..., min_length=1, max_length=255, description="서버 이름")
+    github_url: str = Field(..., description="GitHub 저장소 URL")
+    description: Optional[str] = Field(None, description="서버 설명")
+    config: Dict[str, Any] = Field(..., description="서버 설정 (command, env 등)")
 
 
 class MCPToolInfo(BaseModel):
@@ -169,6 +186,26 @@ async def create_mcp_server(request: MCPServerCreate):
         transport_type=request.transport_type,
         auth_type=request.auth_type,
         auth_config=request.auth_config
+    )
+    return server
+
+
+@router.post("/servers/github", response_model=MCPServerResponse)
+@api_router.post("/servers/github", response_model=MCPServerResponse)
+async def create_mcp_server_from_github(request: MCPServerGitHubCreate):
+    """GitHub에서 코드를 pull 받아 stdio MCP 서버 등록.
+    
+    Args:
+        request: GitHub 등록 요청
+        
+    Returns:
+        생성된 서버 정보
+    """
+    server = await mcp_service.create_stdio_server(
+        name=request.name,
+        github_url=request.github_url,
+        config=request.config,
+        description=request.description
     )
     return server
 
@@ -660,6 +697,139 @@ async def revoke_mcp_permission(server_id: str, permission_id: str):
     
     await mcp_service.revoke_permission(permission_id)
     return {"success": True, "message": "Permission revoked"}
+
+
+# ==================== stdio 프로세스 관리 API ====================
+
+@router.post("/servers/{server_id}/start")
+@api_router.post("/servers/{server_id}/start")
+async def start_stdio_process(server_id: str):
+    """stdio MCP 서버 프로세스 시작.
+    
+    Args:
+        server_id: 서버 ID
+        
+    Returns:
+        시작 결과
+    """
+    success = await mcp_service.start_stdio_process(server_id)
+    return {"success": success, "message": "Process started" if success else "Failed to start process"}
+
+
+@router.post("/servers/{server_id}/stop")
+@api_router.post("/servers/{server_id}/stop")
+async def stop_stdio_process(server_id: str):
+    """stdio MCP 서버 프로세스 중지.
+    
+    Args:
+        server_id: 서버 ID
+        
+    Returns:
+        중지 결과
+    """
+    success = await mcp_service.stop_stdio_process(server_id)
+    return {"success": success, "message": "Process stopped" if success else "Failed to stop process"}
+
+
+@router.post("/servers/{server_id}/restart")
+@api_router.post("/servers/{server_id}/restart")
+async def restart_stdio_process(server_id: str):
+    """stdio MCP 서버 프로세스 재시작.
+    
+    Args:
+        server_id: 서버 ID
+        
+    Returns:
+        재시작 결과
+    """
+    success = await mcp_service.restart_stdio_process(server_id)
+    return {"success": success, "message": "Process restarted" if success else "Failed to restart process"}
+
+
+@router.get("/servers/{server_id}/status")
+@api_router.get("/servers/{server_id}/status")
+async def get_stdio_process_status(server_id: str):
+    """stdio MCP 서버 프로세스 상태 조회.
+    
+    Args:
+        server_id: 서버 ID
+        
+    Returns:
+        프로세스 상태 정보
+    """
+    status = await mcp_service.get_stdio_process_status(server_id)
+    return status
+
+
+@router.get("/servers/{server_id}/logs")
+@api_router.get("/servers/{server_id}/logs")
+async def get_stdio_process_logs(
+    server_id: str,
+    lines: Optional[int] = Query(None, ge=1, le=10000, description="조회할 로그 라인 수")
+):
+    """stdio MCP 서버 프로세스 로그 조회.
+    
+    Args:
+        server_id: 서버 ID
+        lines: 조회할 로그 라인 수 (None이면 전체)
+        
+    Returns:
+        로그 라인 리스트
+    """
+    logs = await mcp_service.get_stdio_process_logs(server_id, lines)
+    return {"logs": logs, "count": len(logs)}
+
+
+# ==================== HTTP Adapter 엔드포인트 ====================
+
+@router.api_route("/adapters/{server_id}/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+async def mcp_adapter_proxy(server_id: str, path: str, request: Request):
+    """stdio MCP 어댑터 프록시.
+    
+    stdio MCP 서버를 HTTP로 래핑하여 Kong Gateway를 통해 접근할 수 있도록 합니다.
+    
+    Args:
+        server_id: 서버 ID
+        path: 요청 경로
+        request: FastAPI 요청
+        
+    Returns:
+        MCP 서버 응답
+    """
+    from app.mcp.http_adapter import http_adapter
+    
+    # 서버 정보 조회
+    server = await mcp_service._get_server_internal(server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="MCP server not found")
+    
+    if server.get('transport_type') != 'stdio':
+        raise HTTPException(status_code=400, detail="Not a stdio MCP server")
+    
+    # 어댑터로 요청 전달
+    command = server.get('command')
+    local_path = server.get('local_path')
+    env_vars = server.get('env_vars')
+    
+    if not command:
+        raise HTTPException(status_code=500, detail="command not found")
+    
+    # Parse env_vars
+    env = {}
+    if env_vars:
+        if isinstance(env_vars, str):
+            import json
+            env = json.loads(env_vars)
+        else:
+            env = env_vars
+    
+    return await http_adapter.handle_request(
+        server_id=server_id,
+        request=request,
+        command=command,
+        cwd=local_path,
+        env=env
+    )
 
 
 # Kong 관련 엔드포인트는 내부 관리용으로만 사용 (사용자에게 노출하지 않음)

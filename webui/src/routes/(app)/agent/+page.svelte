@@ -276,7 +276,7 @@
 							<div class="group relative overflow-hidden rounded-xl border border-white/20 bg-white/70 p-3 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md dark:border-gray-700/30 dark:bg-gray-800/70">
 								<div class="flex flex-col gap-1">
 									<span class="text-xs font-medium text-gray-600 dark:text-gray-400">{stat.label}</span>
-									<span class="text-xl font-bold text-gray-900 dark:text-gray-100">{stat.value}</span>
+									<span class="text-xl font-medium text-gray-900 dark:text-gray-100">{stat.value}</span>
 									<span class="text-xs text-gray-500 dark:text-gray-500">{stat.hint}</span>
 								</div>
 							</div>

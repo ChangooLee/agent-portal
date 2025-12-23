@@ -31,7 +31,7 @@
 			
 			<div class="relative px-6 py-8">
 				<div class="text-center mb-6">
-					<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+					<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
 						📓 Notebook
 					</h1>
 					<p class="text-base text-amber-200/80 mb-6">
@@ -45,7 +45,7 @@
 								<div class="text-xs font-medium uppercase tracking-wide text-amber-400/80 mb-1">
 									{stat.label}
 								</div>
-								<div class="text-2xl font-bold text-white mb-1">
+								<div class="text-2xl font-medium text-white mb-1">
 									{stat.value}
 								</div>
 								<div class="text-xs text-slate-400">{stat.hint}</div>

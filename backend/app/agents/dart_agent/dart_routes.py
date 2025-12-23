@@ -9,7 +9,7 @@ import json
 import time
 
 from models.models import StreamingChatRequest
-from agent.dart_agent.dart_agent import DartAgent
+from app.agents.dart_agent.dart_agent import DartAgent
 from utils.common_transformer import generate_streaming_response, create_error_response
 from connection.mcp_direct_client import MCPManager
 from utils.logger import log_step

@@ -106,6 +106,30 @@ class AgentTraceAdapter:
         }
         
         logger.info(f"Trace started: {trace_id} for agent {agent_name}")
+        
+        # #region agent log
+        try:
+            import json
+            log_entry = {
+                "location": "agent_trace_adapter.py:108",
+                "message": "Trace started",
+                "data": {
+                    "trace_id": trace_id,
+                    "agent_id": agent_id,
+                    "agent_name": agent_name,
+                    "active_traces_count": len(self._active_traces)
+                },
+                "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "A"
+            }
+            with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        except:
+            pass
+        # #endregion
+        
         return trace_id
     
     async def end_trace(
@@ -129,8 +153,51 @@ class AgentTraceAdapter:
         Returns:
             성공 여부
         """
+        # #region agent log
+        try:
+            import json
+            log_entry = {
+                "location": "agent_trace_adapter.py:132",
+                "message": "Trace end attempt",
+                "data": {
+                    "trace_id": trace_id,
+                    "trace_found": trace_id in self._active_traces,
+                    "active_traces_count": len(self._active_traces),
+                    "has_error": bool(error)
+                },
+                "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "A"
+            }
+            with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        except:
+            pass
+        # #endregion
+        
         if trace_id not in self._active_traces:
             logger.warning(f"Trace not found: {trace_id}")
+            # #region agent log
+            try:
+                import json
+                log_entry = {
+                    "location": "agent_trace_adapter.py:134",
+                    "message": "Trace not found in active traces",
+                    "data": {
+                        "trace_id": trace_id,
+                        "available_trace_ids": list(self._active_traces.keys())[:5]
+                    },
+                    "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }
+                with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+            except:
+                pass
+            # #endregion
             return False
         
         trace_data = self._active_traces.pop(trace_id)
@@ -166,8 +233,72 @@ class AgentTraceAdapter:
         # ClickHouse에 직접 저장
         success = await self._save_to_clickhouse(span_data)
         
+        # #region agent log
+        try:
+            import json
+            log_entry = {
+                "location": "agent_trace_adapter.py:167",
+                "message": "ClickHouse save result",
+                "data": {
+                    "trace_id": trace_id,
+                    "clickhouse_success": success,
+                    "status_code": status_code
+                },
+                "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "A"
+            }
+            with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        except:
+            pass
+        # #endregion
+        
         # MariaDB agent_sessions 테이블에도 저장 (기존 호환성)
-        await self._save_to_mariadb(span_data)
+        try:
+            await self._save_to_mariadb(span_data)
+            # #region agent log
+            try:
+                import json
+                log_entry = {
+                    "location": "agent_trace_adapter.py:170",
+                    "message": "MariaDB save completed",
+                    "data": {
+                        "trace_id": trace_id
+                    },
+                    "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }
+                with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+            except:
+                pass
+            # #endregion
+        except Exception as mariadb_error:
+            logger.error(f"MariaDB save failed: {mariadb_error}")
+            # #region agent log
+            try:
+                import json
+                log_entry = {
+                    "location": "agent_trace_adapter.py:170",
+                    "message": "MariaDB save failed",
+                    "data": {
+                        "trace_id": trace_id,
+                        "error": str(mariadb_error)[:200]
+                    },
+                    "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }
+                with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+            except:
+                pass
+            # #endregion
         
         logger.info(f"Trace ended: {trace_id}, status={status_code}, duration={duration_ns/1_000_000}ms")
         return success
@@ -257,13 +388,75 @@ class AgentTraceAdapter:
                 
                 if response.status_code == 200:
                     logger.debug(f"Span saved to ClickHouse: {span_data['trace_id']}")
+                    # #region agent log
+                    try:
+                        import json
+                        log_entry = {
+                            "location": "agent_trace_adapter.py:259",
+                            "message": "ClickHouse insert success",
+                            "data": {
+                                "trace_id": span_data['trace_id'],
+                                "status_code": response.status_code
+                            },
+                            "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                            "sessionId": "debug-session",
+                            "runId": "run1",
+                            "hypothesisId": "A"
+                        }
+                        with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+                    except:
+                        pass
+                    # #endregion
                     return True
                 else:
                     logger.error(f"ClickHouse insert failed: {response.text}")
+                    # #region agent log
+                    try:
+                        import json
+                        log_entry = {
+                            "location": "agent_trace_adapter.py:262",
+                            "message": "ClickHouse insert failed",
+                            "data": {
+                                "trace_id": span_data['trace_id'],
+                                "status_code": response.status_code,
+                                "response_text": response.text[:500]
+                            },
+                            "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                            "sessionId": "debug-session",
+                            "runId": "run1",
+                            "hypothesisId": "A"
+                        }
+                        with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+                    except:
+                        pass
+                    # #endregion
                     return False
                     
         except Exception as e:
             logger.error(f"Failed to save span to ClickHouse: {e}")
+            # #region agent log
+            try:
+                import json
+                log_entry = {
+                    "location": "agent_trace_adapter.py:265",
+                    "message": "ClickHouse save exception",
+                    "data": {
+                        "trace_id": span_data.get('trace_id', 'unknown'),
+                        "error_type": type(e).__name__,
+                        "error_message": str(e)[:200]
+                    },
+                    "timestamp": int(datetime.utcnow().timestamp() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "A"
+                }
+                with open("/Users/lchangoo/Workspace/agent-portal/.cursor/debug.log", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+            except:
+                pass
+            # #endregion
             return False
     
     async def _save_to_mariadb(self, span_data: Dict[str, Any]) -> None:

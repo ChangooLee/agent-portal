@@ -124,7 +124,7 @@
 						</svg>
 					</div>
 					<div>
-						<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Agent Detail</h1>
+						<h1 class="text-2xl font-medium text-gray-900 dark:text-white">Agent Detail</h1>
 						<p class="text-sm text-gray-500 dark:text-gray-400">{agentId}</p>
 					</div>
 				</div>
@@ -155,22 +155,22 @@
 		<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 			<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-white/20 dark:border-gray-700/20 p-4">
 				<p class="text-sm text-gray-500 dark:text-gray-400">Total Traces</p>
-				<p class="text-2xl font-bold text-gray-900 dark:text-white">{formatNumber(agentDetail.metrics.trace_count)}</p>
+				<p class="text-2xl font-medium text-gray-900 dark:text-white">{formatNumber(agentDetail.metrics.trace_count)}</p>
 			</div>
 			
 			<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-white/20 dark:border-gray-700/20 p-4">
 				<p class="text-sm text-gray-500 dark:text-gray-400">Total Tokens</p>
-				<p class="text-2xl font-bold text-gray-900 dark:text-white">{formatNumber(agentDetail.metrics.total_tokens)}</p>
+				<p class="text-2xl font-medium text-gray-900 dark:text-white">{formatNumber(agentDetail.metrics.total_tokens)}</p>
 			</div>
 			
 			<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-white/20 dark:border-gray-700/20 p-4">
 				<p class="text-sm text-gray-500 dark:text-gray-400">Total Cost</p>
-				<p class="text-2xl font-bold text-gray-900 dark:text-white">{formatCost(agentDetail.metrics.total_cost)}</p>
+				<p class="text-2xl font-medium text-gray-900 dark:text-white">{formatCost(agentDetail.metrics.total_cost)}</p>
 			</div>
 			
 			<div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-white/20 dark:border-gray-700/20 p-4">
 				<p class="text-sm text-gray-500 dark:text-gray-400">Success Rate</p>
-				<p class="text-2xl font-bold {agentDetail.metrics.success_rate >= 95 ? 'text-green-600' : agentDetail.metrics.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}">
+				<p class="text-2xl font-medium {agentDetail.metrics.success_rate >= 95 ? 'text-green-600' : agentDetail.metrics.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}">
 					{agentDetail.metrics.success_rate.toFixed(1)}%
 				</p>
 			</div>

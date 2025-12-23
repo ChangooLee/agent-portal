@@ -417,7 +417,7 @@
 		<div class="absolute inset-0 bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 		
 		<div class="relative px-6 py-8 text-center">
-			<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+			<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
 				🗄️ Data Cloud
 			</h1>
 			<p class="text-base text-cyan-200/80">

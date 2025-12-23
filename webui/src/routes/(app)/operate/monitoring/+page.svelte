@@ -48,6 +48,7 @@
 	let totalTraces = 0;
 	let currentPage = 1;
 	let pageSize = 20;
+	const pageSizeOptions = [20, 50, 100];
 	let selectedTraceId: string | null = null;
 	
 	// Traces sub-tab state
@@ -286,6 +287,12 @@
 		loadTraces();
 	}
 
+	function handlePageSizeChange(newSize: number) {
+		pageSize = newSize;
+		currentPage = 1; // 페이지 크기 변경 시 첫 페이지로
+		loadTraces();
+	}
+
 	function openTraceDrawer(traceId: string) {
 		selectedTraceId = traceId;
 	}
@@ -351,7 +358,7 @@
 			
 			<div class="relative px-6 py-8">
 				<div class="text-center mb-4">
-					<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+					<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
 						📊 Monitoring
 					</h1>
 					<p class="text-base text-cyan-200/80 mb-6">
@@ -469,7 +476,7 @@
 						<div class="space-y-4 monitoring-page">
 							<!-- Page Title with Sub-tabs -->
 							<div class="mt-2 flex items-center justify-between">
-								<span class="text-2xl font-bold text-white">Traces</span>
+								<span class="text-2xl font-medium text-white">Traces</span>
 								
 								<!-- Sub-tabs -->
 								<div class="flex gap-1 p-1 bg-slate-800/80 rounded-lg">
@@ -622,24 +629,38 @@
 							</div>
 
 							<!-- Pagination -->
-							<div class="flex justify-between items-center">
-								<button
-									on:click={() => handlePageChange(currentPage - 1)}
-									disabled={currentPage === 1}
-									class="px-4 py-2 rounded-lg border border-slate-700/50 bg-slate-800/80 text-slate-300 hover:bg-slate-700/80 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-								>
-									Previous
-								</button>
-								<span class="text-sm text-slate-300">
-									Page {currentPage} of {totalPages}
-								</span>
-								<button
-									on:click={() => handlePageChange(currentPage + 1)}
-									disabled={currentPage >= totalPages}
-									class="px-4 py-2 rounded-lg border border-slate-700/50 bg-slate-800/80 text-slate-300 hover:bg-slate-700/80 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-								>
-									Next
-								</button>
+							<div class="flex justify-between items-center gap-4">
+								<div class="flex items-center gap-2">
+									<span class="text-sm text-slate-400">페이지 크기:</span>
+									<select
+										value={pageSize}
+										on:change={(e) => handlePageSizeChange(Number(e.currentTarget.value))}
+										class="px-3 py-1.5 rounded-lg border border-slate-700/50 bg-slate-800/80 text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all"
+									>
+										{#each pageSizeOptions as size}
+											<option value={size}>{size}</option>
+										{/each}
+									</select>
+								</div>
+								<div class="flex items-center gap-4">
+									<button
+										on:click={() => handlePageChange(currentPage - 1)}
+										disabled={currentPage === 1}
+										class="px-4 py-2 rounded-lg border border-slate-700/50 bg-slate-800/80 text-slate-300 hover:bg-slate-700/80 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+									>
+										Previous
+									</button>
+									<span class="text-sm text-slate-300">
+										Page {currentPage} of {totalPages} ({totalTraces} total)
+									</span>
+									<button
+										on:click={() => handlePageChange(currentPage + 1)}
+										disabled={currentPage >= totalPages}
+										class="px-4 py-2 rounded-lg border border-slate-700/50 bg-slate-800/80 text-slate-300 hover:bg-slate-700/80 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+									>
+										Next
+									</button>
+								</div>
 							</div>
 						</div>
 					{:else if activeTab === 'overview'}
@@ -647,7 +668,7 @@
 						<div class="space-y-6">
 							<!-- Page Title -->
 							<div class="mt-2 flex items-center gap-2">
-								<span class="text-2xl font-bold text-white">Overview</span>
+								<span class="text-2xl font-medium text-white">Overview</span>
 							</div>
 
 							<!-- Metrics Cards (표준 스타일) -->
@@ -655,7 +676,7 @@
 								<!-- Total Cost -->
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300">
 									<div class="text-sm text-slate-400 mb-2">Total Cost</div>
-									<div class="text-2xl font-bold text-white">
+									<div class="text-2xl font-medium text-white">
 										{formatCost(metrics?.total_cost || 0)}
 									</div>
 								</div>
@@ -663,7 +684,7 @@
 								<!-- LLM Calls -->
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300">
 									<div class="text-sm text-slate-400 mb-2">🤖 LLM Calls</div>
-									<div class="text-2xl font-bold text-cyan-400">
+									<div class="text-2xl font-medium text-cyan-400">
 										{formatNumber(metrics?.llm_call_count || 0)}
 									</div>
 								</div>
@@ -671,7 +692,7 @@
 								<!-- Agent Calls -->
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300">
 									<div class="text-sm text-slate-400 mb-2">🔧 Agent Calls</div>
-									<div class="text-2xl font-bold text-emerald-400">
+									<div class="text-2xl font-medium text-emerald-400">
 										{formatNumber(metrics?.agent_call_count || 0)}
 									</div>
 								</div>
@@ -679,7 +700,7 @@
 								<!-- Avg Latency -->
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300">
 									<div class="text-sm text-slate-400 mb-2">Avg Latency</div>
-									<div class="text-2xl font-bold text-white">
+									<div class="text-2xl font-medium text-white">
 										{formatDuration(metrics?.avg_duration || 0)}
 									</div>
 								</div>
@@ -687,7 +708,7 @@
 								<!-- Fail Rate (Error Rate) -->
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300">
 									<div class="text-sm text-slate-400 mb-2">Fail Rate</div>
-									<div class="text-2xl font-bold text-white">
+									<div class="text-2xl font-medium text-white">
 										{metrics?.trace_count ? (((metrics.error_count || 0) / metrics.trace_count) * 100).toFixed(1) : '0.0'}%
 									</div>
 								</div>
@@ -701,7 +722,7 @@
 							<!-- Analytics Section -->
 							<div class="flex justify-between pt-8">
 								<div class="flex items-center gap-2">
-									<div class="text-2xl font-bold text-white">Analytics</div>
+									<div class="text-2xl font-medium text-white">Analytics</div>
 								</div>
 							</div>
 
@@ -718,7 +739,7 @@
 							<!-- Agents Section (항상 표시) -->
 							<div class="space-y-4">
 								<div class="flex items-center justify-between">
-									<h2 class="text-xl font-bold text-white">
+									<h2 class="text-xl font-medium text-white">
 										Agent Usage
 									</h2>
 									{#if !agentUsageStatsLoading && !agentUsageStatsError}
@@ -852,7 +873,7 @@
 						<div>
 							<!-- Page Title -->
 							<div class="mt-2 flex items-center gap-2 mb-6">
-								<span class="text-2xl font-bold text-white">Replay</span>
+								<span class="text-2xl font-medium text-white">Replay</span>
 							</div>
 
 							{#if replayTraceId}
@@ -894,7 +915,7 @@
 						<div class="space-y-6">
 							<!-- Page Title -->
 							<div class="mt-2 flex items-center gap-2">
-								<span class="text-2xl font-bold text-white">Analytics</span>
+								<span class="text-2xl font-medium text-white">Analytics</span>
 							</div>
 
 							<!-- Performance Metrics (표준 스타일) -->
@@ -905,7 +926,7 @@
 							<!-- Agent Flow Graph (표준 스타일) -->
 							{#if agentFlowGraph}
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20">
-									<h3 class="text-lg font-bold mb-4 text-white">
+									<h3 class="text-lg font-medium mb-4 text-white">
 										Agent Communication Flow
 									</h3>
 									<AgentFlowGraphComponent flowGraph={agentFlowGraph} />

@@ -93,6 +93,24 @@
 		auth_config: {} as any
 	};
 
+	// GitHub form state
+	let githubFormData = {
+		name: '',
+		github_url: '',
+		description: '',
+		config: '{\n  "command": "/path/to/.venv/bin/mcp-server",\n  "env": {\n    "API_KEY": "your-api-key"\n  }\n}'
+	};
+
+	// Modal tab state
+	let modalTab: 'standard' | 'github' = 'standard';
+
+	// Process management state
+	let showProcessModal = false;
+	let processServer: MCPServer | null = null;
+	let processStatus: any = null;
+	let processLogs: string[] = [];
+	let loadingProcessStatus = false;
+
 	// Stats - reactive to update when servers change
 	$: totalServers = servers.length;
 	$: enabledServers = servers.filter((s) => s.enabled).length;
@@ -130,6 +148,7 @@
 
 	function openCreateModal() {
 		editMode = false;
+		modalTab = 'standard';
 		formData = {
 			name: '',
 			endpoint_url: '',
@@ -137,6 +156,12 @@
 			transport_type: 'streamable_http',
 			auth_type: 'none',
 			auth_config: {}
+		};
+		githubFormData = {
+			name: '',
+			github_url: '',
+			description: '',
+			config: '{\n  "command": "/path/to/.venv/bin/mcp-server",\n  "env": {\n    "API_KEY": "your-api-key"\n  }\n}'
 		};
 		showModal = true;
 	}
@@ -162,6 +187,36 @@
 
 	async function handleSubmit() {
 		try {
+			if (modalTab === 'github') {
+				// GitHub 등록
+				let config;
+				try {
+					config = JSON.parse(githubFormData.config);
+				} catch (e) {
+					toast.error('설정 JSON이 올바르지 않습니다.');
+					return;
+				}
+
+				const response = await fetch('/api/mcp/servers/github', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						name: githubFormData.name,
+						github_url: githubFormData.github_url,
+						description: githubFormData.description || null,
+						config: config
+					})
+				});
+				if (!response.ok) {
+					const error = await response.json();
+					throw new Error(error.detail || 'Failed to create server from GitHub');
+				}
+				toast.success('GitHub에서 MCP 서버가 등록되었습니다.');
+				closeModal();
+				await loadServers();
+				return;
+			}
+
 			if (editMode && selectedServer) {
 				// Update
 				const response = await fetch(`/api/mcp/servers/${selectedServer.id}`, {
@@ -288,6 +343,99 @@
 	function copyToClipboard(text: string) {
 		navigator.clipboard.writeText(text);
 		toast.success('클립보드에 복사되었습니다.');
+	}
+
+	// Process Management Functions
+	async function openProcessModal(server: MCPServer) {
+		processServer = server;
+		showProcessModal = true;
+		await loadProcessStatus();
+		await loadProcessLogs();
+	}
+
+	function closeProcessModal() {
+		showProcessModal = false;
+		processServer = null;
+		processStatus = null;
+		processLogs = [];
+	}
+
+	async function loadProcessStatus() {
+		if (!processServer) return;
+		loadingProcessStatus = true;
+		try {
+			const response = await fetch(`/api/mcp/servers/${processServer.id}/status`);
+			if (!response.ok) throw new Error('Failed to load process status');
+			processStatus = await response.json();
+		} catch (error) {
+			console.error('Failed to load process status:', error);
+			toast.error('프로세스 상태를 불러오는데 실패했습니다.');
+		} finally {
+			loadingProcessStatus = false;
+		}
+	}
+
+	async function loadProcessLogs(lines: number = 100) {
+		if (!processServer) return;
+		try {
+			const response = await fetch(`/api/mcp/servers/${processServer.id}/logs?lines=${lines}`);
+			if (!response.ok) throw new Error('Failed to load logs');
+			const data = await response.json();
+			processLogs = data.logs || [];
+		} catch (error) {
+			console.error('Failed to load logs:', error);
+			toast.error('로그를 불러오는데 실패했습니다.');
+		}
+	}
+
+	async function startProcess() {
+		if (!processServer) return;
+		try {
+			const response = await fetch(`/api/mcp/servers/${processServer.id}/start`, {
+				method: 'POST'
+			});
+			if (!response.ok) throw new Error('Failed to start process');
+			toast.success('프로세스가 시작되었습니다.');
+			await loadProcessStatus();
+			await loadServers();
+		} catch (error) {
+			console.error('Failed to start process:', error);
+			toast.error('프로세스 시작에 실패했습니다.');
+		}
+	}
+
+	async function stopProcess() {
+		if (!processServer) return;
+		if (!confirm('프로세스를 중지하시겠습니까?')) return;
+		try {
+			const response = await fetch(`/api/mcp/servers/${processServer.id}/stop`, {
+				method: 'POST'
+			});
+			if (!response.ok) throw new Error('Failed to stop process');
+			toast.success('프로세스가 중지되었습니다.');
+			await loadProcessStatus();
+			await loadServers();
+		} catch (error) {
+			console.error('Failed to stop process:', error);
+			toast.error('프로세스 중지에 실패했습니다.');
+		}
+	}
+
+	async function restartProcess() {
+		if (!processServer) return;
+		if (!confirm('프로세스를 재시작하시겠습니까?')) return;
+		try {
+			const response = await fetch(`/api/mcp/servers/${processServer.id}/restart`, {
+				method: 'POST'
+			});
+			if (!response.ok) throw new Error('Failed to restart process');
+			toast.success('프로세스가 재시작되었습니다.');
+			await loadProcessStatus();
+			await loadServers();
+		} catch (error) {
+			console.error('Failed to restart process:', error);
+			toast.error('프로세스 재시작에 실패했습니다.');
+		}
 	}
 
 	// Permission Management Functions
@@ -621,9 +769,101 @@
 					<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
 						{editMode ? 'MCP 서버 수정' : 'MCP 서버 추가'}
 					</h2>
+					{#if !editMode}
+						<div class="flex items-center gap-2 mt-4">
+							<button
+								on:click={() => (modalTab = 'standard')}
+								class="px-4 py-2 rounded-lg text-sm font-medium transition-all {modalTab === 'standard'
+									? 'bg-purple-500 text-white'
+									: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}"
+							>
+								일반 등록
+							</button>
+							<button
+								on:click={() => (modalTab = 'github')}
+								class="px-4 py-2 rounded-lg text-sm font-medium transition-all {modalTab === 'github'
+									? 'bg-purple-500 text-white'
+									: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}"
+							>
+								GitHub 등록
+							</button>
+						</div>
+					{/if}
 				</div>
 
-				<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
+				{#if modalTab === 'github' && !editMode}
+					<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+								서버 이름 <span class="text-red-500">*</span>
+							</label>
+							<input
+								type="text"
+								bind:value={githubFormData.name}
+								required
+								class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+								placeholder="mcp-opendart"
+							/>
+						</div>
+
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+								GitHub URL <span class="text-red-500">*</span>
+							</label>
+							<input
+								type="url"
+								bind:value={githubFormData.github_url}
+								required
+								class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+								placeholder="https://github.com/user/repo"
+							/>
+						</div>
+
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+								설명
+							</label>
+							<textarea
+								bind:value={githubFormData.description}
+								rows="2"
+								class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+								placeholder="서버 설명 (선택사항)"
+							></textarea>
+						</div>
+
+						<div>
+							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+								설정 (JSON) <span class="text-red-500">*</span>
+							</label>
+							<textarea
+								bind:value={githubFormData.config}
+								rows="10"
+								class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+								placeholder='{"command": "/path/to/.venv/bin/mcp-server", "env": {"API_KEY": "key"}}'
+							></textarea>
+							<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+								command: 실행 명령어, env: 환경 변수 (JSON 형식)
+							</p>
+						</div>
+
+						<div class="flex justify-end gap-3 pt-4">
+							<button
+								type="button"
+								on:click={closeModal}
+								class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+							>
+								취소
+							</button>
+							<button
+								type="submit"
+								class="px-4 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-colors"
+							>
+								등록
+							</button>
+						</div>
+					</form>
+				{:else}
+					<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
 							서버 이름 <span class="text-red-500">*</span>
@@ -1064,3 +1304,128 @@
 		</div>
 	{/if}
 {/if}
+
+	<!-- Process Management Modal -->
+	{#if showProcessModal && processServer}
+		<div
+			class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+			on:click={closeProcessModal}
+		>
+			<div
+				class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+				on:click|stopPropagation
+			>
+				<div
+					class="sticky top-0 bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+				>
+					<div>
+						<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+							{processServer.name} - 프로세스 관리
+						</h2>
+						<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+							stdio MCP 서버 프로세스 상태 및 로그를 확인하고 관리합니다.
+						</p>
+					</div>
+					<button
+						on:click={closeProcessModal}
+						class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+					>
+						<XMark className="size-5" />
+					</button>
+				</div>
+
+				<div class="p-6 space-y-6">
+					<!-- Process Status -->
+					<div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+						<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+							프로세스 상태
+						</h3>
+						{#if loadingProcessStatus}
+							<div class="flex items-center justify-center py-4">
+								<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+							</div>
+						{:else if processStatus}
+							<div class="grid grid-cols-2 gap-4">
+								<div>
+									<div class="text-sm text-gray-500 dark:text-gray-400">상태</div>
+									<div class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">
+										<span
+											class="px-3 py-1 rounded-full text-sm {processStatus.status === 'running'
+												? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+												: processStatus.status === 'error'
+													? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+													: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'}"
+										>
+											{processStatus.status}
+										</span>
+									</div>
+								</div>
+								<div>
+									<div class="text-sm text-gray-500 dark:text-gray-400">PID</div>
+									<div class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">
+										{processStatus.pid || 'N/A'}
+									</div>
+								</div>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Process Controls -->
+					<div class="flex items-center gap-3">
+						<button
+							on:click={startProcess}
+							disabled={processStatus?.status === 'running'}
+							class="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							시작
+						</button>
+						<button
+							on:click={stopProcess}
+							disabled={processStatus?.status !== 'running'}
+							class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							중지
+						</button>
+						<button
+							on:click={restartProcess}
+							class="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+						>
+							재시작
+						</button>
+						<button
+							on:click={() => loadProcessStatus()}
+							class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+						>
+							새로고침
+						</button>
+					</div>
+
+					<!-- Process Logs -->
+					<div>
+						<div class="flex items-center justify-between mb-4">
+							<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+								프로세스 로그
+							</h3>
+							<button
+								on:click={() => loadProcessLogs(100)}
+								class="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+							>
+								새로고침
+							</button>
+						</div>
+						<div
+							class="bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm max-h-96 overflow-y-auto"
+						>
+							{#if processLogs.length === 0}
+								<div class="text-gray-500">로그가 없습니다.</div>
+							{:else}
+								{#each processLogs as log}
+									<div class="mb-1">{log}</div>
+								{/each}
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}

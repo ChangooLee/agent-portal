@@ -24,7 +24,7 @@ from .dart_types import (
 )
 from .message_refiner import MessageRefiner
 from .mcp_client import MCPTool, get_opendart_mcp_client
-from .metrics import start_dart_span, record_counter, inject_context_to_carrier
+from .metrics import observe, record_counter
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +41,7 @@ def log_agent_flow(agent_name: str, action: str, step: int, message: str):
     logger.info(f"[{agent_name}] Step {step} - {action}: {message}")
 
 # Langfuse 데코레이터 (선택적)
-def observe():
-    def decorator(func):
-        return func
-    return decorator
+# observe 데코레이터는 metrics.py에서 import
 
 
 # =============================================================================
@@ -95,9 +92,9 @@ class DartMasterAgent(DartBaseAgent):
         
         return SimpleMessageGenerator()
         self.master_config = {
-            "max_coordination_time": 300,  # 5분
+            "max_coordination_time": 1800,  # 30분 - 복잡한 멀티 에이전트 조정 지원
             "max_sub_agents": 4,
-            "result_merge_timeout": 60,
+            "result_merge_timeout": 600,  # 10분 - 결과 병합 시간
             "retry_failed_agents": True,
         }
 
@@ -213,7 +210,7 @@ class DartMasterAgent(DartBaseAgent):
         thread_id: Optional[str] = None,
         user_email: Optional[str] = None,
         parent_carrier: Optional[Dict[str, str]] = None
-    ):
+    ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         스트리밍 분석 조정 - 진행 과정을 실시간으로 프론트엔드에 전달
         
@@ -497,18 +494,26 @@ class DartMasterAgent(DartBaseAgent):
                             else:
                                 yield response
                         
-                        # 결과 통합 (1차 + 2차)
+                        # 결과 통합 (1차 + 2차) - 스트리밍 방식
                         all_results = [result] + additional_results
                         intent_dict = classification_result.to_dict()
                         intent_dict["additional_reasoning"] = additional_reasoning
-                        result = await self._integrate_agent_results(
-                            all_results, corp_info, intent_dict, user_question
-                        )
                         
                         yield {
                             "type": "progress",
                             "content": f"추가 분석 완료. 총 {len(all_results)}개 에이전트의 결과를 통합합니다."
                         }
+                        
+                        # 스트리밍 통합 결과 전달
+                        integrated_response = ""
+                        async for chunk in self._integrate_agent_results_stream(
+                            all_results, corp_info, intent_dict, user_question
+                        ):
+                            if chunk.get("type") == "stream_chunk":
+                                integrated_response += chunk.get("content", "")
+                                yield {"type": "content", "content": chunk.get("content", "")}
+                            elif chunk.get("type") == "final":
+                                result = chunk.get("result")
             else:
                 # 복수 기업 또는 복합 분석
                 agent_display = {
@@ -558,6 +563,7 @@ class DartMasterAgent(DartBaseAgent):
 
                     # 1차 분석: 복수 에이전트 협업 실행 (스트리밍 지원)
                     results = []
+                    additional_reasoning = ""  # 추가 에이전트 분석 추론 (없으면 빈 문자열)
                     async for response in self._execute_sub_agents_for_data_collection(
                         context, selected_agents, thread_id=thread_id
                     ):
@@ -612,13 +618,26 @@ class DartMasterAgent(DartBaseAgent):
                             )
                             yield {"type": "progress", "content": progress_msg}
 
-                    # 결과 통합
+                    # 결과 통합 - 스트리밍 방식
                     if results:
                         intent_dict = classification_result.to_dict()
                         intent_dict["additional_reasoning"] = additional_reasoning
-                        result = await self._integrate_agent_results(
+                        
+                        yield {
+                            "type": "progress",
+                            "content": "분석 결과를 통합하고 최종 보고서를 작성하고 있습니다...",
+                        }
+                        
+                        # 스트리밍 통합 결과 전달
+                        integrated_response = ""
+                        async for chunk in self._integrate_agent_results_stream(
                             results, corp_info, intent_dict, user_question
-                        )
+                        ):
+                            if chunk.get("type") == "stream_chunk":
+                                integrated_response += chunk.get("content", "")
+                                yield {"type": "content", "content": chunk.get("content", "")}
+                            elif chunk.get("type") == "final":
+                                result = chunk.get("result")
                     else:
                         yield {
                             "type": "error",
@@ -627,27 +646,35 @@ class DartMasterAgent(DartBaseAgent):
                         return
 
             # 3단계: 결과 통합 및 최종 응답
-            yield {
-                "type": "progress",
-                "content": "분석 결과를 통합하고 최종 보고서를 작성하고 있습니다...",
-            }
-
+            print(f"🔥🔥🔥 3단계 진입: result type={type(result)}, has key_findings={hasattr(result, 'key_findings')}")
             if result:
                 # 결과 타입에 따른 처리
-                if hasattr(result, "key_findings") and result.key_findings:
-                    # AgentResult 객체인 경우
-                    response_content = (
-                        result.key_findings[0] if result.key_findings else "분석 완료"
-                    )
-                elif isinstance(result, dict) and "response" in result:
-                    # _integrate_agent_results에서 반환된 딕셔너리인 경우
+                if isinstance(result, dict) and "response" in result:
+                    # _integrate_agent_results_stream에서 이미 스트리밍으로 전달됨
                     response_content = result["response"]
+                    # 스트리밍으로 이미 전달되었으므로 중복 출력하지 않음
+                elif hasattr(result, "key_findings"):
+                    # AgentResult 객체 - 스트리밍 통합 필요
+                    yield {
+                        "type": "progress",
+                        "content": "분석 결과를 통합하고 있습니다...",
+                    }
+                    
+                    # 단일 결과도 스트리밍 통합으로 처리
+                    intent_dict = classification_result.to_dict() if hasattr(classification_result, 'to_dict') else {}
+                    integrated_response = ""
+                    async for chunk in self._integrate_agent_results_stream(
+                        [result], corp_info, intent_dict, user_question
+                    ):
+                        if chunk.get("type") == "stream_chunk":
+                            integrated_response += chunk.get("content", "")
+                            yield {"type": "content", "content": chunk.get("content", "")}
+                        elif chunk.get("type") == "final":
+                            result = chunk.get("result")
                 else:
                     # 기타 경우
                     response_content = str(result)
-
-                # 최종 응답 전달
-                yield {"type": "content", "content": response_content}
+                    yield {"type": "content", "content": response_content}
 
                 # 완료 알림
                 execution_time = time.time() - start_time
@@ -895,7 +922,33 @@ class DartMasterAgent(DartBaseAgent):
         intent_result: Dict[str, Any],
         user_question: str,
     ) -> Dict[str, Any]:
-        """각 에이전트의 결과를 통합하여 최종 응답 생성"""
+        """각 에이전트의 결과를 통합하여 최종 응답 생성 (비스트리밍 버전)"""
+        # 스트리밍 버전을 호출하고 전체 응답을 수집
+        integrated_response = ""
+        final_result = None
+        
+        async for chunk in self._integrate_agent_results_stream(
+            agent_results, corporation_info, intent_result, user_question
+        ):
+            if chunk.get("type") == "stream_chunk":
+                integrated_response += chunk.get("content", "")
+            elif chunk.get("type") == "final":
+                final_result = chunk.get("result")
+        
+        if final_result:
+            final_result["response"] = integrated_response
+            return final_result
+        
+        return {"response": integrated_response, "analysis_type": "multi_agent_coordinated"}
+    
+    async def _integrate_agent_results_stream(
+        self,
+        agent_results: List[AgentResult],
+        corporation_info: Dict[str, Any],
+        intent_result: Dict[str, Any],
+        user_question: str,
+    ):
+        """각 에이전트의 결과를 통합하여 최종 응답 스트리밍"""
         try:
             log_step(
                 "결과 통합 시작",
@@ -1011,28 +1064,48 @@ class DartMasterAgent(DartBaseAgent):
 위 정보를 바탕으로 사용자 질문에 대한 종합적이고 유용한 답변을 최대한 길게 작성해주세요.
 """
 
-            # LLM 호출
+            # LLM 호출 (스트리밍 또는 비스트리밍)
+            integrated_response = ""
             if hasattr(self, "llm") and self.llm:
                 try:
                     from langchain_core.messages import HumanMessage
                     
-                    print(f"🔥🔥🔥 LLM 호출 전 - self.llm: {self.llm}, type: {type(self.llm)}")
-                    print(f"🔥🔥🔥 LLM 호출 전 - hasattr(self.llm, 'invoke'): {hasattr(self.llm, 'invoke')}")
-                    print(f"🔥🔥🔥 LLM 호출 전 - hasattr(self.llm, 'create'): {hasattr(self.llm, 'create')}")
+                    # astream이 있으면 스트리밍, 없으면 ainvoke 사용
+                    if hasattr(self.llm, "astream"):
+                        log_step("LLM 스트리밍 호출", "INFO", "결과 통합을 위한 LLM 스트리밍 시작")
+                        
+                        # 스트리밍 응답 전송
+                        async for chunk in self.llm.astream([HumanMessage(content=integration_prompt)]):
+                            chunk_content = chunk.content if hasattr(chunk, "content") else str(chunk)
+                            if chunk_content:
+                                integrated_response += chunk_content
+                                yield {"type": "stream_chunk", "content": chunk_content}
+                        
+                        log_step("LLM 스트리밍 완료", "SUCCESS", f"통합 응답 길이: {len(integrated_response)}자")
+                    else:
+                        # LiteLLMAdapter 등 astream이 없는 경우 ainvoke 사용
+                        log_step("LLM 호출 (비스트리밍)", "INFO", "결과 통합을 위한 LLM 호출 시작 (ainvoke)")
+                        
+                        response = await self.llm.ainvoke([HumanMessage(content=integration_prompt)])
+                        integrated_response = response.content if hasattr(response, "content") else str(response)
+                        
+                        # 청크 단위로 나눠서 스트리밍처럼 전달 (사용자 경험 개선)
+                        chunk_size = 100
+                        for i in range(0, len(integrated_response), chunk_size):
+                            yield {"type": "stream_chunk", "content": integrated_response[i:i+chunk_size]}
+                        
+                        log_step("LLM 호출 완료", "SUCCESS", f"통합 응답 길이: {len(integrated_response)}자")
                     
-                    response = await self.llm.ainvoke([HumanMessage(content=integration_prompt)])
-                    print(f"🔥🔥🔥 LLM 호출 후 - response: {response}, type: {type(response)}")
-                    
-                    integrated_response = response.content if hasattr(response, "content") else str(response)
                 except Exception as llm_error:
-                    print(f"🔥🔥🔥 LLM 호출 오류 - {str(llm_error)}")
+                    log_step("LLM 호출 오류", "ERROR", f"LLM 호출 중 오류: {str(llm_error)}")
                     import traceback
                     traceback.print_exc()
-                    log_step("LLM 호출 오류", "ERROR", f"LLM 호출 중 오류: {str(llm_error)}")
                     integrated_response = f"{corp_name}에 대한 분석이 완료되었습니다. (LLM 호출 중 오류가 발생했습니다: {str(llm_error)})"
+                    yield {"type": "stream_chunk", "content": integrated_response}
             else:
                 log_step("LLM 없음", "WARNING", "LLM이 초기화되지 않았습니다.")
                 integrated_response = f"{corp_name}에 대한 분석이 완료되었습니다. (LLM을 사용할 수 없어 기본 응답을 제공합니다.)"
+                yield {"type": "stream_chunk", "content": integrated_response}
 
             log_step(
                 "결과 통합 완료",
@@ -1040,31 +1113,42 @@ class DartMasterAgent(DartBaseAgent):
                 f"통합된 응답 길이: {len(integrated_response)}자",
             )
             
-            return {
-                "response": integrated_response,
-                "analysis_type": "multi_agent_coordinated",
-                "agents_involved": [
-                    getattr(result, "agent_name", "Unknown")
-                    for result in agent_results
-                    if hasattr(result, "agent_name")
-                ],
-                "successful_agents": successful_agents,
-                "total_agents": len(agent_results),
-                "corporation_info": corporation_info,
-                "intent_result": intent_result,
+            # 최종 결과 반환
+            yield {
+                "type": "final",
+                "result": {
+                    "response": integrated_response,
+                    "analysis_type": "multi_agent_coordinated",
+                    "agents_involved": [
+                        getattr(result, "agent_name", "Unknown")
+                        for result in agent_results
+                        if hasattr(result, "agent_name")
+                    ],
+                    "successful_agents": successful_agents,
+                    "total_agents": len(agent_results),
+                    "corporation_info": corporation_info,
+                    "intent_result": intent_result,
+                }
             }
             
         except Exception as e:
             log_step("결과 통합 오류", "ERROR", f"결과 통합 중 오류: {str(e)}")
-            # 오류 발생 시 기본 응답 반환
-            return {
-                "response": f"{corp_name} 분석이 완료되었습니다. (결과 통합 중 일부 오류가 발생했습니다)",
-                "error": True,
-                "analysis_type": "integration_error",
+            corp_name = corporation_info.get("corp_name", "해당 기업")
+            yield {
+                "type": "final",
+                "result": {
+                    "response": f"{corp_name} 분석이 완료되었습니다. (결과 통합 중 일부 오류가 발생했습니다)",
+                    "error": True,
+                    "analysis_type": "integration_error",
+                }
             }
 
     def _format_agent_insights(self, agent_insights: List[Dict[str, Any]]) -> str:
-        """에이전트 인사이트를 LLM이 이해할 수 있는 형태로 포맷팅"""
+        """에이전트 인사이트를 LLM이 이해할 수 있는 형태로 포맷팅
+        
+        핵심: key_findings + supporting_data(도구 호출 결과)를 모두 포함하여 
+        LLM이 실제 데이터를 기반으로 분석할 수 있도록 함
+        """
         formatted_insights = []
         
         for insight in agent_insights:
@@ -1075,6 +1159,7 @@ class DartMasterAgent(DartBaseAgent):
             else:
                 formatted_insights.append(f"### {agent_name}")
                 
+                # 1. key_findings (LLM의 분석 결과)
                 if insight.get("key_findings"):
                     findings = insight["key_findings"]
                     if isinstance(findings, list):
@@ -1083,6 +1168,22 @@ class DartMasterAgent(DartBaseAgent):
                         findings_text = str(findings)
                     formatted_insights.append(f"주요 발견사항:\n{findings_text}")
                 
+                # 2. supporting_data (도구 호출 결과) - 핵심 데이터 추출
+                supporting_data = insight.get("supporting_data", {})
+                if supporting_data:
+                    # llm_response가 있으면 우선 사용 (이미 분석된 결과)
+                    llm_response = supporting_data.get("llm_response", "")
+                    if llm_response and len(str(llm_response).strip()) > 50:
+                        formatted_insights.append(f"분석 상세:\n{llm_response}")
+                    
+                    # raw_financial_data (도구 호출 원시 결과) 요약
+                    raw_data = supporting_data.get("raw_financial_data", {})
+                    if raw_data and isinstance(raw_data, dict):
+                        data_summary = self._summarize_raw_data(raw_data)
+                        if data_summary:
+                            formatted_insights.append(f"수집된 데이터:\n{data_summary}")
+                
+                # 3. recommendations
                 if insight.get("recommendations"):
                     recommendations = insight["recommendations"]
                     if isinstance(recommendations, list):
@@ -1094,6 +1195,86 @@ class DartMasterAgent(DartBaseAgent):
                 formatted_insights.append("")  # 빈 줄 추가
         
         return "\n".join(formatted_insights)
+    
+    def _summarize_raw_data(self, raw_data: Dict[str, Any], max_items: int = 5) -> str:
+        """도구 호출 원시 데이터를 LLM이 이해할 수 있도록 포맷팅
+        
+        Args:
+            raw_data: 도구별 원시 결과 딕셔너리
+            max_items: 사용하지 않음 (하위 호환성 유지)
+            
+        Returns:
+            전체 데이터를 JSON 형식으로 포맷팅한 문자열
+        """
+        if not raw_data:
+            return ""
+        
+        import json
+        
+        formatted_data = []
+        for tool_name, result in raw_data.items():
+            if not result:
+                continue
+            
+            try:
+                # JSON 문자열인 경우 파싱
+                if isinstance(result, str):
+                    try:
+                        result = json.loads(result)
+                    except json.JSONDecodeError:
+                        formatted_data.append(f"### {tool_name}\n{result}")
+                        continue
+                
+                # 전체 데이터를 JSON으로 포맷팅
+                result_json = json.dumps(result, ensure_ascii=False, indent=2)
+                formatted_data.append(f"### {tool_name}\n```json\n{result_json}\n```")
+            except Exception as e:
+                log_step("데이터 포맷팅 오류", "WARNING", f"도구 {tool_name} 데이터 포맷팅 중 오류: {str(e)}")
+                continue
+        
+        return "\n\n".join(formatted_data) if formatted_data else ""
+    
+    def _format_sample_items(self, items: List[Any], max_fields: int = 8) -> str:
+        """샘플 항목들을 포맷팅
+        
+        Args:
+            items: 샘플 항목 리스트
+            max_fields: 각 항목당 최대 표시 필드 수
+            
+        Returns:
+            포맷된 문자열
+        """
+        if not items:
+            return ""
+        
+        formatted = []
+        for i, item in enumerate(items, 1):
+            if isinstance(item, dict):
+                # 중요 필드 우선 표시
+                priority_fields = ["corp_name", "acnt_nm", "thstrm_amount", "thstrm_dt", 
+                                   "stock_knd", "csm", "iscrtm_sctn_nm", "rcept_no"]
+                fields = []
+                
+                # 우선 필드 먼저 추가
+                for field in priority_fields:
+                    if field in item:
+                        value = item[field]
+                        if value:
+                            fields.append(f"{field}: {value}")
+                
+                # 나머지 필드 추가 (max_fields 제한)
+                remaining = max_fields - len(fields)
+                for k, v in item.items():
+                    if k not in priority_fields and remaining > 0 and v:
+                        fields.append(f"{k}: {v}")
+                        remaining -= 1
+                
+                if fields:
+                    formatted.append(f"  [{i}] {', '.join(fields)}")
+            else:
+                formatted.append(f"  [{i}] {str(item)[:100]}")
+        
+        return "\n".join(formatted)
 
     @observe()
     async def _execute_sub_agents_for_data_collection(
@@ -1123,6 +1304,20 @@ class DartMasterAgent(DartBaseAgent):
                     if isinstance(response, AgentResult):
                         results.append(response)
                         log_step(f"{agent_key} 데이터 수집 완료", "SUCCESS", f"수집 결과: {response.analysis_type}")
+                        # 각 에이전트의 응답을 즉시 yield
+                        agent_response_content = None
+                        if hasattr(response, "supporting_data") and response.supporting_data:
+                            # supporting_data에서 llm_response 추출
+                            agent_response_content = response.supporting_data.get("llm_response")
+                        if not agent_response_content and hasattr(response, "key_findings") and response.key_findings:
+                            # key_findings를 응답으로 사용
+                            agent_response_content = "\n".join(response.key_findings)
+                        if agent_response_content:
+                            yield {
+                                "type": "agent_response",
+                                "agent_name": getattr(response, "agent_name", agent_key),
+                                "content": agent_response_content
+                            }
                         break
                     else:
                         yield response
@@ -1176,6 +1371,20 @@ class DartMasterAgent(DartBaseAgent):
                         await queue.put(("result", response))
                         log_step(f"{agent_key} 데이터 수집 완료", "SUCCESS",
                                  f"수집 결과: {response.analysis_type}")
+                        # 각 에이전트의 응답을 즉시 yield
+                        agent_response_content = None
+                        if hasattr(response, "supporting_data") and response.supporting_data:
+                            # supporting_data에서 llm_response 추출
+                            agent_response_content = response.supporting_data.get("llm_response")
+                        if not agent_response_content and hasattr(response, "key_findings") and response.key_findings:
+                            # key_findings를 응답으로 사용
+                            agent_response_content = "\n".join(response.key_findings)
+                        if agent_response_content:
+                            await queue.put(("message", {
+                                "type": "agent_response",
+                                "agent_name": getattr(response, "agent_name", agent_key),
+                                "content": agent_response_content
+                            }))
                         break
                     else:
                         await queue.put(("message", response))
@@ -1260,30 +1469,42 @@ class DartMasterAgent(DartBaseAgent):
                     called_agents.append(agent_name)
                     findings = result.key_findings if result.key_findings else ["분석 결과 없음"]
                     results_summary.append(f"- {result.agent_name}: {findings[0] if findings else '분석 결과 없음'}")
+                elif hasattr(result, "agent_name"):
+                    # key_findings가 없는 경우 로깅
+                    agent_name = result.agent_name.lower().replace("agent", "")
+                    called_agents.append(agent_name)
+                    log_step(f"{result.agent_name} key_findings 누락", "WARNING", f"result type: {type(result)}, attrs: {dir(result)}")
+                    # supporting_data에서 llm_response 시도
+                    llm_response = ""
+                    if hasattr(result, "supporting_data") and result.supporting_data:
+                        llm_response = result.supporting_data.get("llm_response", "")
+                    results_summary.append(f"- {result.agent_name}: {llm_response if llm_response else '분석 결과 없음'}")
             
             print(f"🔥🔥🔥 called_agents: {called_agents}")
             print(f"🔥🔥🔥 results_summary: {results_summary}")
             
-            # 최근 공시 정보 요약
+            # 최근 공시 정보 - 전체 표시
             disclosure_summary = ""
             if classification_result.recent_disclosures:
                 disclosure_summary = "\n최근 공시 정보:\n"
                 
                 # recent_disclosures 타입에 따라 처리
                 if isinstance(classification_result.recent_disclosures, dict):
-                    # 복수 기업: 딕셔너리 형태
+                    # 복수 기업: 딕셔너리 형태 - 모든 공시 표시
                     for company_name, disclosures in classification_result.recent_disclosures.items():
                         if isinstance(disclosures, list) and disclosures:
-                            for disclosure in disclosures[:2]:  # 기업당 최대 2개
+                            for disclosure in disclosures:  # 모든 공시 표시
                                 title = disclosure.get("report_nm", "제목 없음")
                                 date = disclosure.get("rcept_dt", "날짜 없음")
-                                disclosure_summary += f"- {company_name}: {date} - {title}\n"
+                                rcp_no = disclosure.get("rcept_no", "")
+                                disclosure_summary += f"- {company_name}: {date} - {title} (접수번호: {rcp_no})\n"
                 elif isinstance(classification_result.recent_disclosures, list):
-                    # 단일 기업: 리스트 형태
-                    for disclosure in classification_result.recent_disclosures[:3]:
+                    # 단일 기업: 리스트 형태 - 모든 공시 표시
+                    for disclosure in classification_result.recent_disclosures:  # 모든 공시 표시
                         title = disclosure.get("report_nm", disclosure.get("title", "제목 없음"))
                         date = disclosure.get("rcept_dt", disclosure.get("date", "날짜 없음"))
-                        disclosure_summary += f"- {date}: {title}\n"
+                        rcp_no = disclosure.get("rcept_no", "")
+                        disclosure_summary += f"- {date}: {title} (접수번호: {rcp_no})\n"
             else:
                 disclosure_summary = "\n최근 공시 정보: 없음"
             
