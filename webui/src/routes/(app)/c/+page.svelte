@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>Chat | {$WEBUI_NAME || 'SFN AI Portal'}</title>
+	<title>Chat | {$WEBUI_NAME || 'AI Agent Portal'}</title>
 </svelte:head>
 
 <Help />

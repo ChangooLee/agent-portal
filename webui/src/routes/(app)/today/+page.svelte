@@ -93,7 +93,7 @@
 			'금융일반': 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
 			'인사조직': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
 			'리스크관리': 'bg-red-500/20 text-red-400 border border-red-500/30',
-			'삼성계열사': 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+			'대기업그룹': 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
 		};
 		return colorMap[category] || 'bg-slate-500/20 text-slate-400 border border-slate-500/30';
 	};

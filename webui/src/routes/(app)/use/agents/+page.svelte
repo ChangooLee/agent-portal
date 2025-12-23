@@ -61,7 +61,7 @@
 </script>
 
 <svelte:head>
-    <title>에이전트 | SFN AI Portal</title>
+    <title>에이전트 | AI Agent Portal</title>
 </svelte:head>
 
 <div class="min-h-full bg-gray-950 text-slate-50">

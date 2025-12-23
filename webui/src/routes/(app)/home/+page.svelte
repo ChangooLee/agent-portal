@@ -86,7 +86,7 @@
 </script>
 
 <svelte:head>
-    <title>Home | SFN AI Portal</title>
+    <title>Home | AI Agent Portal</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-950 text-white">

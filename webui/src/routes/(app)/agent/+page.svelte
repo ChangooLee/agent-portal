@@ -260,7 +260,7 @@
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-gray-800/80 dark:text-gray-200">
 							<span class="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary via-secondary to-accent" />
-							SFN AI Agent Builder
+							AI Agent Builder
 						</span>
 						<h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
 							원하는 방식으로 AI 에이전트를 만들어보세요

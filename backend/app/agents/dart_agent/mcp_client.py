@@ -20,7 +20,7 @@ import httpx
 from pydantic import BaseModel, Field, create_model
 
 # OTEL 기록 함수
-from app.agents.dart_agent.metrics import start_tool_call_span
+from app.agents.dart_agent.metrics import start_tool_call_span, inject_context_to_carrier
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class MCPStdioClientWrapper:
         client = MCPStdioClientWrapper(server_id="xxx")
         await client.connect()
         tools = client.get_tools()
-        result = await client.call_tool("search_disclosure", {"company": "삼성전자"})
+        result = await client.call_tool("search_disclosure", {"company": "현대자동차"})
     """
     
     def __init__(
@@ -238,8 +238,15 @@ class MCPStdioClientWrapper:
         
         start_time = datetime.now()
         
-        # OTEL span으로 도구 호출 기록
-        with start_tool_call_span(tool_name, arguments) as (span, record_result):
+        # 현재 context carrier 획득 (parent span 연결을 위해)
+        current_carrier = {}
+        try:
+            inject_context_to_carrier(current_carrier)
+        except Exception:
+            pass
+        
+        # OTEL span으로 도구 호출 기록 (parent context 전달)
+        with start_tool_call_span(tool_name, arguments, parent_carrier=current_carrier if current_carrier else None) as (span, record_result):
             try:
                 # stdio 클라이언트를 통해 도구 호출
                 # MCPStdioClient는 call_tool 메서드를 사용
@@ -346,7 +353,7 @@ class MCPHTTPClient:
         client = MCPHTTPClient("http://121.141.60.219:8089/mcp")
         await client.connect()
         tools = client.get_tools()
-        result = await client.call_tool("search_disclosure", {"company": "삼성전자"})
+        result = await client.call_tool("search_disclosure", {"company": "현대자동차"})
     """
     
     def __init__(
@@ -863,8 +870,15 @@ class MCPHTTPClient:
         
         start_time = datetime.now()
         
-        # OTEL span으로 도구 호출 기록
-        with start_tool_call_span(tool_name, arguments) as (span, record_result):
+        # 현재 context carrier 획득 (parent span 연결을 위해)
+        current_carrier = {}
+        try:
+            inject_context_to_carrier(current_carrier)
+        except Exception:
+            pass
+        
+        # OTEL span으로 도구 호출 기록 (parent context 전달)
+        with start_tool_call_span(tool_name, arguments, parent_carrier=current_carrier if current_carrier else None) as (span, record_result):
             try:
                 result = await self._send_rpc(
                     "tools/call",

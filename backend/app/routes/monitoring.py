@@ -19,11 +19,15 @@ async def get_traces(
     start_time: datetime = Query(..., description="Start time (ISO 8601)"),
     end_time: datetime = Query(..., description="End time (ISO 8601)"),
     search: Optional[str] = Query(None, description="Search query"),
+    trace_type: Optional[str] = Query(None, description="Trace type filter: 'agent', 'llm', or 'all'"),
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(20, ge=1, le=100, description="Page size")
 ):
     """
     트레이스 목록 조회.
+    
+    Args:
+        trace_type: 'agent' (tool calls), 'llm' (LLM calls), 'all' (no filter)
     
     Returns:
         {
@@ -39,6 +43,7 @@ async def get_traces(
             start_time=start_time,
             end_time=end_time,
             search=search,
+            trace_type=trace_type,
             page=page,
             size=size
         )

@@ -54,25 +54,37 @@
 	// Traces sub-tab state
 	let tracesSubTab: 'agent' | 'llm' | 'all' = 'agent';
 	
-	// Filtered traces based on sub-tab
+	// Filtered traces based on sub-tab (GenAI 표준 + 기존 호환)
 	$: filteredTraces = traces.filter(trace => {
 		if (tracesSubTab === 'all') return true;
+		
+		const spanName = trace.span_name?.toLowerCase() || '';
+		const serviceName = trace.service_name?.toLowerCase() || '';
+		
 		if (tracesSubTab === 'agent') {
-			// Agent traces: span_name contains 'agent' or service_name contains 'agent'
-			const spanName = trace.span_name?.toLowerCase() || '';
-			const serviceName = trace.service_name?.toLowerCase() || '';
-			return spanName.includes('agent') || spanName.includes('text2sql') || 
+			// Agent traces: GenAI 표준 + 레거시
+			// GenAI 표준: gen_ai.session, gen_ai.agent.*, gen_ai.tool.call
+			// 레거시: dart.tool_call.*, agent 관련 span
+			return spanName === 'gen_ai.session' ||
+			       spanName.startsWith('gen_ai.agent.') ||
+			       spanName === 'gen_ai.tool.call' ||
+			       spanName.startsWith('dart.tool_call.') || 
+			       spanName.includes('agent') || spanName.includes('text2sql') || 
 			       serviceName.includes('agent') || spanName.includes('entry') ||
 			       spanName.includes('analyze') || spanName.includes('generate') ||
 			       spanName.includes('validate') || spanName.includes('execute') ||
 			       spanName.includes('format') || spanName.includes('complete');
 		}
 		if (tracesSubTab === 'llm') {
-			// LLM Call traces: span_name contains 'litellm' or 'chat' or 'completion'
-			const spanName = trace.span_name?.toLowerCase() || '';
-			const serviceName = trace.service_name?.toLowerCase() || '';
-			return spanName.includes('litellm') || spanName.includes('chat_completion') ||
-			       spanName.includes('llm') || serviceName.includes('litellm') ||
+			// LLM Call traces: GenAI 표준 + 레거시
+			// GenAI 표준: gen_ai.content.completion
+			// 레거시: dart.llm_call.*, litellm_request
+			return spanName === 'gen_ai.content.completion' ||
+			       spanName.startsWith('dart.llm_call.') || 
+			       spanName === 'litellm_request' ||
+			       spanName.startsWith('dart.http.') ||
+			       spanName.includes('chat_completion') ||
+			       serviceName.includes('litellm') ||
 			       (trace.prompt_tokens && trace.prompt_tokens > 0);
 		}
 		return true;
@@ -491,7 +503,8 @@
 											{traces.filter(t => {
 												const s = t.span_name?.toLowerCase() || '';
 												const svc = t.service_name?.toLowerCase() || '';
-												return s.includes('agent') || s.includes('text2sql') || svc.includes('agent') || 
+												return s.startsWith('dart.tool_call.') ||
+												       s.includes('agent') || s.includes('text2sql') || svc.includes('agent') || 
 												       s.includes('entry') || s.includes('analyze') || s.includes('generate') ||
 												       s.includes('validate') || s.includes('execute') || s.includes('format') || s.includes('complete');
 											}).length}
@@ -508,7 +521,8 @@
 											{traces.filter(t => {
 												const s = t.span_name?.toLowerCase() || '';
 												const svc = t.service_name?.toLowerCase() || '';
-												return s.includes('litellm') || s.includes('chat_completion') || s.includes('llm') || 
+												return s.startsWith('dart.llm_call.') || s === 'litellm_request' ||
+												       s.startsWith('dart.http.') || s.includes('chat_completion') || 
 												       svc.includes('litellm') || (t.prompt_tokens && t.prompt_tokens > 0);
 											}).length}
 										</span>

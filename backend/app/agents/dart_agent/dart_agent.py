@@ -802,6 +802,9 @@ class DartAgent(DartBaseAgent):
                     ):
                         # chunk type을 event로 매핑
                         event_type = chunk.get("type", "message")
+                        print(f"📍📍📍 DartAgent received chunk: type={event_type}, keys={list(chunk.keys())}")
+                        if event_type == "tool_result":
+                            print(f"📍📍📍 tool_result chunk details: {chunk}")
                         event_data = {
                             "event": event_type,
                             "session_id": session_id,
@@ -811,7 +814,7 @@ class DartAgent(DartBaseAgent):
                         if "content" in chunk:
                             if event_type == "error":
                                 event_data["error"] = chunk["content"]
-                            elif event_type in ("answer", "content", "complete", "start", "progress", "end"):
+                            elif event_type in ("answer", "content", "complete", "start", "progress", "end", "tool_result", "stream_chunk"):
                                 event_data["content"] = chunk["content"]
                             else:
                                 event_data["message"] = chunk["content"]
@@ -851,6 +854,10 @@ class DartAgent(DartBaseAgent):
                         for key, value in chunk.items():
                             if key not in ("type", "content"):
                                 event_data[key] = value
+                        
+                        # 디버깅: tool_result 이벤트 로깅
+                        if event_type == "tool_result":
+                            print(f"🔧 tool_result event: tool_name={event_data.get('tool_name')}, chunk_keys={list(chunk.keys())}")
                         
                         _record_otel_event(event_type, event_data)
                         yield event_data

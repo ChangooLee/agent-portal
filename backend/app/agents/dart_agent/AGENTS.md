@@ -32,7 +32,7 @@ from mcp_opendart.utils.corp_code_search import search_corporations
 # ✅ MCP 도구를 통한 데이터 접근
 result = await mcp_client.call_tool(
     "get_corporation_code_by_name", 
-    {"corp_name": "삼성전자"}
+    {"corp_name": "현대자동차"}
 )
 
 # ✅ MCP 응답만 파싱
@@ -95,7 +95,7 @@ mcp_storage_path = os.environ.get("MCP_STORAGE_PATH", "/data/mcp")
 
 ```python
 # ❌ 매직 넘버, 하드코딩된 패턴
-if "005930" in stock_code:  # 삼성전자?
+if "005380" in stock_code:  # 현대자동차?
 
 # ✅ 명시적 조건 사용
 if stock_code and stock_code.strip():  # 상장기업 여부 확인
@@ -289,8 +289,8 @@ message_generator = MessageGenerator()
 progress_msg = await message_generator.generate_progress_message(
     action="single_agent_analysis",
     context={
-        "user_question": "삼성생명의 재무제표를 분석해줘",
-        "corp_name": "삼성생명",
+        "user_question": "한화생명의 재무제표를 분석해줘",
+        "corp_name": "한화생명",
         "agents": ["재무 분석"]
     }
 )
@@ -408,8 +408,8 @@ from app.agents.dart_agent.dart_types import (
 
 # 분석 컨텍스트 생성
 context = create_analysis_context(
-    corp_code="00126256",
-    corp_name="삼성생명",
+    corp_code="00126380",
+    corp_name="한화생명",
     user_question="재무제표를 분석해줘",
     classification=classification_result
 )

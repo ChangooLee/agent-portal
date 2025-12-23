@@ -179,12 +179,19 @@ class FinancialAgent(DartBaseAgent):
                             tool_name = getattr(tool_message, "name", None)
                             # 응답에 달린 tool_call_id로 pending과 매칭
                             tc_id = getattr(tool_message, "tool_call_id", None)
-                            # None 값 필터링: tool_name이 None이면 pending_calls에서 역추적
+                            
+                            # tc_id에서 도구 이름 추출 (예: "call_get_corporation_info" -> "get_corporation_info")
+                            if not tool_name and tc_id:
+                                if tc_id.startswith("call_"):
+                                    # "call_get_xxx" 형식에서 도구 이름 추출
+                                    potential_name = tc_id[5:]  # "call_" 제거
+                                    # 실제 도구 이름인지 확인 (언더스코어가 있으면 도구 이름)
+                                    if "_" in potential_name:
+                                        tool_name = potential_name
+                            
+                            # 여전히 없으면 기본값
                             if not tool_name:
-                                if tc_id and tc_id in pending_calls:
-                                    tool_name = pending_calls[tc_id].get("name", "도구")
-                                else:
-                                    tool_name = "도구"
+                                tool_name = "도구"
                             tools_used.append(tool_name)
                             if tc_id and tc_id in pending_calls:
                                 info = pending_calls.pop(tc_id)
@@ -209,6 +216,7 @@ class FinancialAgent(DartBaseAgent):
                                 extracted_text = self._extract_text_from_content(tool_message.content)
                                 collected_data[tool_name] = extracted_text
 
+                                print(f"🔧🔧🔧 FinancialAgent yielding tool_result: tool_name={display_name}")
                                 yield {
                                     "type": "tool_result",
                                     "agent_name": self.agent_name,

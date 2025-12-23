@@ -162,7 +162,7 @@
 	});
 
 	const applyTheme = (_theme: string) => {
-		// Force light theme for Samsung Life style
+		// Force light theme by default
 		let themeToApply = 'light';
 
 		if (_theme === 'system') {

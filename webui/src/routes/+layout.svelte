@@ -272,7 +272,7 @@
 				if (done) {
 					if ($isLastActiveTab) {
 						if ($settings?.notificationEnabled ?? false) {
-							new Notification(`${title} | SFN AI Portal`, {
+							new Notification(`${title} | AI Agent Portal`, {
 								body: content,
 								icon: `${WEBUI_BASE_URL}/static/favicon.png`
 							});
@@ -421,7 +421,7 @@
 			if (type === 'message') {
 				if ($isLastActiveTab) {
 					if ($settings?.notificationEnabled ?? false) {
-						new Notification(`${data?.user?.name} (#${event?.channel?.name}) | SFN AI Portal`, {
+						new Notification(`${data?.user?.name} (#${event?.channel?.name}) | AI Agent Portal`, {
 							body: data?.content,
 							icon: data?.user?.profile_image_url ?? `${WEBUI_BASE_URL}/static/favicon.png`
 						});
@@ -620,7 +620,7 @@
 </script>
 
 <svelte:head>
-	<title>{$WEBUI_NAME || 'SFN AI Portal'}</title>
+	<title>{$WEBUI_NAME || 'AI Agent Portal'}</title>
 	<link crossorigin="anonymous" rel="icon" href="{WEBUI_BASE_URL}/static/favicon.png" />
 	<link rel="apple-touch-icon" href="{WEBUI_BASE_URL}/static/favicon.png" />
 

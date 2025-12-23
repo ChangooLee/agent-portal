@@ -240,20 +240,25 @@ def start_llm_call_span(
     from contextlib import nullcontext
 
     tracer = _get_tracer()
-    span_name = f"dart.llm_call.{node_name}"
+    # GenAI Semantic Convention 표준 span 이름
+    span_name = "gen_ai.content.completion"
 
+    # GenAI 표준 속성
     attrs = {
         "service.name": "agent-dart",
         "component": "dart-agent",
-        "llm.model": model,
-        "llm.node": node_name,
+        # GenAI 표준 속성
+        "gen_ai.operation.name": "completion",
+        "gen_ai.system": "litellm",
+        "gen_ai.request.model": model,
+        "gen_ai.agent.name": node_name,
     }
 
     start_time = time.time()
     span_holder: List[Any] = [_NoOpSpan()]
 
     def record_result(response: Dict[str, Any]):
-        """LLM 응답 결과를 span에 기록"""
+        """LLM 응답 결과를 span에 기록 (GenAI 표준)"""
         try:
             usage = response.get("usage", {})
             prompt_tokens = usage.get("prompt_tokens", 0)
@@ -263,19 +268,25 @@ def start_llm_call_span(
             latency_ms = (time.time() - start_time) * 1000
             current_span = span_holder[0]
             if current_span and hasattr(current_span, "set_attribute"):
-                current_span.set_attribute("llm.usage.prompt_tokens", prompt_tokens)
-                current_span.set_attribute("llm.usage.completion_tokens", completion_tokens)
-                current_span.set_attribute("llm.usage.total_tokens", total_tokens)
-                current_span.set_attribute("llm.latency_ms", latency_ms)
+                # GenAI 표준 속성
+                current_span.set_attribute("gen_ai.usage.prompt_tokens", prompt_tokens)
+                current_span.set_attribute("gen_ai.usage.completion_tokens", completion_tokens)
+                current_span.set_attribute("gen_ai.usage.total_tokens", total_tokens)
+                current_span.set_attribute("gen_ai.latency_ms", latency_ms)
 
                 response_model = response.get("model", model)
-                current_span.set_attribute("llm.response.model", response_model)
+                current_span.set_attribute("gen_ai.response.model", response_model)
 
                 response_content = (
                     response.get("choices", [{}])[0].get("message", {}).get("content")
                 )
                 if response_content:
-                    current_span.set_attribute("llm.response.content", response_content)
+                    current_span.set_attribute("gen_ai.completion.0.content", response_content)
+                
+                # finish_reason
+                finish_reason = response.get("choices", [{}])[0].get("finish_reason", "")
+                if finish_reason:
+                    current_span.set_attribute("gen_ai.response.finish_reason", finish_reason)
         except Exception as e:
             logger.debug(f"Failed to record LLM result: {e}")
 
@@ -302,10 +313,16 @@ def start_llm_call_span(
             span_holder[0] = span
             try:
                 if messages and hasattr(span, "set_attribute"):
-                    span.set_attribute(
-                        "llm.request.messages",
-                        json.dumps(messages, ensure_ascii=False),
-                    )
+                    # GenAI 표준: 각 프롬프트를 개별 속성으로 기록 (최대 5개)
+                    for i, msg in enumerate(messages[:5]):
+                        role = msg.get("role", "")
+                        content = msg.get("content", "")
+                        if role:
+                            span.set_attribute(f"gen_ai.prompt.{i}.role", role)
+                        if content:
+                            # 너무 길면 truncate
+                            content_str = str(content)[:5000] if len(str(content)) > 5000 else str(content)
+                            span.set_attribute(f"gen_ai.prompt.{i}.content", content_str)
             except Exception:
                 pass
             yield span, record_result
@@ -338,33 +355,41 @@ def start_tool_call_span(
     from contextlib import nullcontext
 
     tracer = _get_tracer()
-    span_name = f"dart.tool_call.{tool_name}"
+    # GenAI Semantic Convention 표준 span 이름
+    span_name = "gen_ai.tool.call"
     
     # 디버그 로그
-    logger.info(f"[start_tool_call_span] Creating span: {span_name}, tracer type: {type(tracer).__name__}")
+    logger.info(f"[start_tool_call_span] Creating span: {span_name}, tool: {tool_name}, tracer type: {type(tracer).__name__}")
 
-    attrs = {"service.name": "agent-dart", "component": "dart-agent", "tool.name": tool_name}
+    # GenAI 표준 속성
+    attrs = {
+        "service.name": "agent-dart",
+        "component": "dart-agent",
+        "gen_ai.operation.name": "tool_call",
+        "gen_ai.tool.name": tool_name,
+    }
 
     start_time = time.time()
     span_holder: List[Any] = [_NoOpSpan()]
 
     def record_result(result: Any, error: Optional[str] = None):
-        """Tool 호출 결과를 span에 기록"""
+        """Tool 호출 결과를 span에 기록 (GenAI 표준)"""
         try:
             latency_ms = (time.time() - start_time) * 1000
             current_span = span_holder[0]
             if current_span and hasattr(current_span, "set_attribute"):
-                current_span.set_attribute("tool.latency_ms", latency_ms)
-                current_span.set_attribute("tool.success", error is None)
+                # GenAI 표준 속성
+                current_span.set_attribute("gen_ai.tool.latency_ms", latency_ms)
+                current_span.set_attribute("gen_ai.tool.success", error is None)
                 if error:
-                    current_span.set_attribute("tool.error", error)
+                    current_span.set_attribute("gen_ai.tool.error", error)
                 elif result:
                     result_str = (
                         json.dumps(result, ensure_ascii=False)
                         if isinstance(result, (dict, list))
                         else str(result)
                     )
-                    current_span.set_attribute("tool.result", result_str)
+                    current_span.set_attribute("gen_ai.tool.result", result_str)
         except Exception as e:
             logger.debug(f"Failed to record tool result: {e}")
 
@@ -391,8 +416,9 @@ def start_tool_call_span(
             span_holder[0] = span
             try:
                 if arguments and hasattr(span, "set_attribute"):
+                    # GenAI 표준 속성
                     span.set_attribute(
-                        "tool.arguments",
+                        "gen_ai.tool.arguments",
                         json.dumps(arguments, ensure_ascii=False),
                     )
             except Exception:
@@ -531,26 +557,29 @@ def observe(span_name: Optional[str] = None, include_args: bool = True, include_
         if is_async_generator:
             @functools.wraps(func)
             async def async_generator_wrapper(*args, **kwargs):
-                # Span 이름 결정
+                # Span 이름 결정 (GenAI 표준: gen_ai.agent.{name})
                 if span_name:
                     name = span_name
                 else:
-                    # 클래스명.함수명 형식
+                    # GenAI 표준: gen_ai.agent.{agent_name}
                     if args and hasattr(args[0], '__class__'):
                         class_name = args[0].__class__.__name__
-                        func_name = func.__name__
-                        name = f"dart.{class_name}.{func_name}"
+                        # Agent 접미사 제거하고 소문자로 변환
+                        agent_name = class_name.lower().replace('agent', '').strip('_')
+                        if not agent_name:
+                            agent_name = class_name.lower()
+                        name = f"gen_ai.agent.{agent_name}"
                     else:
-                        name = f"dart.{func.__name__}"
+                        name = f"gen_ai.agent.{func.__name__}"
                 
                 # 로그 (observe 데코레이터 동작 확인용)
                 logger.info(f"[observe] Creating span: {name}, is_async_generator={is_async_generator}, func={func.__name__}")
                 
-                # 기본 속성 (span 생성 시 사용)
+                # 기본 속성 (GenAI 표준)
                 base_attrs = {
                     "service.name": "agent-dart",
                     "component": "dart-agent",
-                    "function.name": func.__name__,
+                    "gen_ai.agent.function": func.__name__,
                 }
                 
                 # 인자 기록용 속성 (나중에 span에 추가)
@@ -634,30 +663,30 @@ def observe(span_name: Optional[str] = None, include_args: bool = True, include_
                                                 final_response = ""
                                             
                                             if final_response and span and hasattr(span, 'set_attribute'):
-                                                span.set_attribute("agent.response.content", final_response)
-                                                span.set_attribute("agent.response.length", len(final_response))
-                                                logger.info(f"[observe] Recorded agent.response.content immediately: {len(final_response)} chars")
+                                                span.set_attribute("gen_ai.agent.response", final_response)
+                                                span.set_attribute("gen_ai.agent.response.length", len(final_response))
+                                                logger.info(f"[observe] Recorded gen_ai.agent.response immediately: {len(final_response)} chars")
                                             
                                             # 추가 정보 즉시 기록
                                             if span and hasattr(span, 'set_attribute'):
                                                 if hasattr(chunk, 'agent_name'):
-                                                    span.set_attribute("agent.name", chunk.agent_name)
+                                                    span.set_attribute("gen_ai.agent.name", chunk.agent_name)
                                                 if hasattr(chunk, 'analysis_type'):
-                                                    span.set_attribute("agent.analysis_type", chunk.analysis_type)
+                                                    span.set_attribute("gen_ai.agent.analysis_type", chunk.analysis_type)
                                                 if hasattr(chunk, 'tools_used') and chunk.tools_used:
                                                     # None 값 필터링
                                                     filtered_tools = [str(t) for t in chunk.tools_used if t is not None]
                                                     if filtered_tools:
                                                         tools_str = ", ".join(filtered_tools)
-                                                        span.set_attribute("agent.tools_used", tools_str)
+                                                        span.set_attribute("gen_ai.agent.tools_used", tools_str)
                                                 if hasattr(chunk, 'execution_time'):
-                                                    span.set_attribute("agent.execution_time", chunk.execution_time)
+                                                    span.set_attribute("gen_ai.agent.execution_time", chunk.execution_time)
                                                 
                                                 # supporting_data의 llm_response도 기록
                                                 if hasattr(chunk, 'supporting_data') and chunk.supporting_data:
                                                     llm_response = chunk.supporting_data.get('llm_response', '')
                                                     if llm_response:
-                                                        span.set_attribute("agent.llm_response", str(llm_response))
+                                                        span.set_attribute("gen_ai.agent.llm_response", str(llm_response))
                                         except Exception as e:
                                             logger.warning(f"[observe] Failed to record AgentResult immediately: {e}")
                                     elif isinstance(chunk, dict):
@@ -710,29 +739,29 @@ def observe(span_name: Optional[str] = None, include_args: bool = True, include_
                                         logger.info(f"[observe] AgentResult (dataclass): final_response length={len(final_response) if final_response else 0}")
                                         if final_response:
                                             # 길이 제한 없이 전체 내용 기록
-                                            span.set_attribute("agent.response.content", final_response)
-                                            span.set_attribute("agent.response.length", len(final_response))
-                                            logger.info(f"[observe] Recorded agent.response.content: {len(final_response)} chars")
+                                            span.set_attribute("gen_ai.agent.response", final_response)
+                                            span.set_attribute("gen_ai.agent.response.length", len(final_response))
+                                            logger.info(f"[observe] Recorded gen_ai.agent.response: {len(final_response)} chars")
                                         
                                         # 추가 정보 기록
                                         if hasattr(final_result, 'agent_name'):
-                                            span.set_attribute("agent.name", final_result.agent_name)
+                                            span.set_attribute("gen_ai.agent.name", final_result.agent_name)
                                         if hasattr(final_result, 'analysis_type'):
-                                            span.set_attribute("agent.analysis_type", final_result.analysis_type)
+                                            span.set_attribute("gen_ai.agent.analysis_type", final_result.analysis_type)
                                         if hasattr(final_result, 'tools_used') and final_result.tools_used:
                                             # None 값 필터링
                                             filtered_tools = [str(t) for t in final_result.tools_used if t is not None]
                                             if filtered_tools:
                                                 tools_str = ", ".join(filtered_tools)
-                                                span.set_attribute("agent.tools_used", tools_str)
+                                                span.set_attribute("gen_ai.agent.tools_used", tools_str)
                                         if hasattr(final_result, 'execution_time'):
-                                            span.set_attribute("agent.execution_time", final_result.execution_time)
+                                            span.set_attribute("gen_ai.agent.execution_time", final_result.execution_time)
                                         
                                         # supporting_data의 llm_response도 기록
                                         if hasattr(final_result, 'supporting_data') and final_result.supporting_data:
                                             llm_response = final_result.supporting_data.get('llm_response', '')
                                             if llm_response:
-                                                span.set_attribute("agent.llm_response", str(llm_response))
+                                                span.set_attribute("gen_ai.agent.llm_response", str(llm_response))
                                         
                                     elif isinstance(final_result, dict):
                                         # Dict 형태
@@ -743,20 +772,20 @@ def observe(span_name: Optional[str] = None, include_args: bool = True, include_
                                                 final_response = "\n".join(key_findings) if isinstance(key_findings, list) else str(key_findings)
                                                 if final_response:
                                                     # 길이 제한 없이 전체 내용 기록
-                                                    span.set_attribute("agent.response.content", final_response)
-                                                    span.set_attribute("agent.response.length", len(final_response))
-                                                    logger.info(f"[observe] Recorded agent.response.content (dict): {len(final_response)} chars")
+                                                    span.set_attribute("gen_ai.agent.response", final_response)
+                                                    span.set_attribute("gen_ai.agent.response.length", len(final_response))
+                                                    logger.info(f"[observe] Recorded gen_ai.agent.response (dict): {len(final_response)} chars")
                                         
                                         # 추가 정보 기록
                                         if 'agent_name' in final_result:
-                                            span.set_attribute("agent.name", str(final_result['agent_name']))
+                                            span.set_attribute("gen_ai.agent.name", str(final_result['agent_name']))
                                         if 'analysis_type' in final_result:
-                                            span.set_attribute("agent.analysis_type", str(final_result['analysis_type']))
+                                            span.set_attribute("gen_ai.agent.analysis_type", str(final_result['analysis_type']))
                                         if 'tools_used' in final_result and final_result['tools_used']:
                                             tools_str = ", ".join(final_result['tools_used']) if isinstance(final_result['tools_used'], list) else str(final_result['tools_used'])
-                                            span.set_attribute("agent.tools_used", tools_str)
+                                            span.set_attribute("gen_ai.agent.tools_used", tools_str)
                                         if 'execution_time' in final_result:
-                                            span.set_attribute("agent.execution_time", float(final_result['execution_time']))
+                                            span.set_attribute("gen_ai.agent.execution_time", float(final_result['execution_time']))
                                     
                                     # 실행 시간 기록 (함수 실행 시간)
                                     execution_time = time.time() - start_time
@@ -781,26 +810,29 @@ def observe(span_name: Optional[str] = None, include_args: bool = True, include_
             # 일반 async 함수용 래퍼
             @functools.wraps(func)
             async def async_function_wrapper(*args, **kwargs):
-                # Span 이름 결정
+                # Span 이름 결정 (GenAI 표준: gen_ai.agent.{name})
                 if span_name:
                     name = span_name
                 else:
-                    # 클래스명.함수명 형식
+                    # GenAI 표준: gen_ai.agent.{agent_name}
                     if args and hasattr(args[0], '__class__'):
                         class_name = args[0].__class__.__name__
-                        func_name = func.__name__
-                        name = f"dart.{class_name}.{func_name}"
+                        # Agent 접미사 제거하고 소문자로 변환
+                        agent_name = class_name.lower().replace('agent', '').strip('_')
+                        if not agent_name:
+                            agent_name = class_name.lower()
+                        name = f"gen_ai.agent.{agent_name}"
                     else:
-                        name = f"dart.{func.__name__}"
+                        name = f"gen_ai.agent.{func.__name__}"
                 
                 # 로그
                 logger.info(f"[observe] Creating span: {name}, func={func.__name__}")
                 
-                # 기본 속성
+                # 기본 속성 (GenAI 표준)
                 base_attrs = {
                     "service.name": "agent-dart",
                     "component": "dart-agent",
-                    "function.name": func.__name__,
+                    "gen_ai.agent.function": func.__name__,
                 }
                 
                 # Parent context 가져오기

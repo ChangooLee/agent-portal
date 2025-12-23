@@ -29,10 +29,29 @@ except ImportError:
 class MessageGenerator:
     """경량 LLM을 사용한 사용자 친화적 메시지 생성"""
     
+    # action → 사용자 친화적 메시지 매핑
+    ACTION_MESSAGES = {
+        "intent_classification_start": "질문을 분석하고 있습니다...",
+        "intent_classification_complete": "질문 분석이 완료되었습니다.",
+        "agent_selection_start": "분석에 필요한 에이전트를 선택하고 있습니다...",
+        "agent_selection_complete": "분석 에이전트가 선택되었습니다.",
+        "data_collection": "데이터를 수집하고 있습니다...",
+        "financial_analysis": "재무 데이터를 분석하고 있습니다...",
+        "governance_analysis": "지배구조를 분석하고 있습니다...",
+        "document_analysis": "공시 문서를 분석하고 있습니다...",
+        "result_integration": "분석 결과를 통합하고 있습니다...",
+        "simple_greeting": "인사에 응답하고 있습니다...",
+        "single_agent_analysis": "전문 에이전트가 분석을 진행하고 있습니다...",
+        "multi_agent_analysis": "여러 에이전트가 협력하여 분석하고 있습니다...",
+    }
+    
     def __init__(self):
         # 경량 모델 사용 (google/gemma-3-27b-it, max_tokens=4096)
-        self.llm = LLMManager.get_llm(purpose="complex_analysis")
-        log_step("MessageGenerator", "SUCCESS", "경량 LLM 초기화 완료 (google/gemma-3-27b-it)")
+        self.llm = LLMManager.get_llm(purpose="complex_analysis") if LLMManager else None
+        if self.llm:
+            log_step("MessageGenerator", "SUCCESS", "경량 LLM 초기화 완료 (google/gemma-3-27b-it)")
+        else:
+            log_step("MessageGenerator", "WARNING", "LLM 없음, 정적 메시지 사용")
     
     async def generate_progress_message(
         self, 
@@ -67,20 +86,33 @@ class MessageGenerator:
 5. 사용자가 안심할 수 있도록
 
 예시:
-- "삼성전자의 재무 데이터를 수집하고 있습니다."
+- "현대자동차의 재무 데이터를 수집하고 있습니다."
 - "3개 기업의 분석 결과를 비교하고 있습니다."
 - "공시 문서를 분석하여 필요한 정보를 찾고 있습니다."
 
 메시지만 출력하세요 (설명 불필요):"""
         
+        # LLM 없으면 정적 메시지 반환
+        if not self.llm:
+            return self.ACTION_MESSAGES.get(action, "분석을 진행하고 있습니다...")
+        
         try:
             response = await self.llm.ainvoke([HumanMessage(content=prompt)])
-            message = response.content.strip() if response.content else "분석을 진행하고 있습니다."
-            log_step("MessageGenerator", "SUCCESS", f"진행 메시지 생성: {message}")
+            message = response.content.strip() if response.content else None
+            
+            # LLM 응답이 action 이름을 그대로 포함하면 정적 메시지로 대체
+            if message and (action in message or "_start" in message or "_complete" in message):
+                message = self.ACTION_MESSAGES.get(action, "분석을 진행하고 있습니다...")
+                log_step("MessageGenerator", "WARNING", f"LLM 응답에 기술적 용어 포함, 정적 메시지 사용: {message}")
+            elif not message:
+                message = self.ACTION_MESSAGES.get(action, "분석을 진행하고 있습니다...")
+            else:
+                log_step("MessageGenerator", "SUCCESS", f"진행 메시지 생성: {message}")
+            
             return message
         except Exception as e:
             log_step("MessageGenerator", "ERROR", f"메시지 생성 실패: {e}")
-            return "분석을 진행하고 있습니다."
+            return self.ACTION_MESSAGES.get(action, "분석을 진행하고 있습니다...")
     
     async def generate_error_message(
         self,

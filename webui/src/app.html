@@ -7,20 +7,20 @@
 		<link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
 		<link rel="shortcut icon" href="/static/favicon.ico" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
-		<meta name="apple-mobile-web-app-title" content="Samsung Life" />
+		<meta name="apple-mobile-web-app-title" content="AI Agent Portal" />
 
 		<link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
 		<meta
 			name="viewport"
 			content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
 		/>
-		<meta name="theme-color" content="#0066CC" />
+		<meta name="theme-color" content="#6366f1" />
 		<meta name="robots" content="noindex,nofollow" />
-		<meta name="description" content="Samsung Life Agent Portal" />
+		<meta name="description" content="AI Agent Portal - Enterprise Agentic AI Platform" />
 		<link
 			rel="search"
 			type="application/opensearchdescription+xml"
-			title="SFN AI Portal"
+			title="AI Agent Portal"
 			href="/opensearch.xml"
 		/>
 		<meta name="apple-mobile-web-app-capable" content="yes" />
@@ -40,10 +40,10 @@
 				const prefersDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 				if (!localStorage?.theme) {
-					localStorage.theme = 'light';  // Force light theme for Samsung Life style
+					localStorage.theme = 'light';
 				}
 
-				// Force light theme for Samsung Life style
+				// Default to light theme
 				if (localStorage.theme === 'system' || localStorage.theme === 'dark' || localStorage.theme === 'oled-dark' || localStorage.theme === 'her') {
 					localStorage.theme = 'light';
 				}
@@ -54,7 +54,7 @@
 				metaThemeColorTag.setAttribute('content', '#ffffff');
 
 				window.matchMedia('(prefers-color-scheme: dark)').addListener((e) => {
-					// Force light theme for Samsung Life style
+					// Default to light theme
 							document.documentElement.classList.add('light');
 							document.documentElement.classList.remove('dark');
 							metaThemeColorTag.setAttribute('content', '#ffffff');
@@ -70,11 +70,11 @@
 
 						darkImage.onload = () => {
 							logo.src = '/static/splash-dark.png';
-							logo.style.filter = ''; // Ensure no inversion is applied if splash-dark.png exists
+							logo.style.filter = '';
 						};
 
 						darkImage.onerror = () => {
-							logo.style.filter = 'invert(1)'; // Invert image if splash-dark.png is missing
+							logo.style.filter = 'invert(1)';
 						};
 					}
 				}
@@ -84,7 +84,7 @@
 			})();
 		</script>
 
-		<title>SFN AI Portal</title>
+		<title>AI Agent Portal</title>
 
 		%sveltekit.head%
 	</head>
@@ -102,18 +102,24 @@
 				}
 			</style>
 
-			<img
+			<!-- Text Logo for AI Agent Portal -->
+			<div
 				id="logo"
 				style="
 					position: absolute;
-					width: auto;
-					height: 6rem;
 					top: 44%;
 					left: 50%;
 					transform: translateX(-50%);
+					text-align: center;
 				"
-				src="/static/splash.png"
-			/>
+			>
+				<div style="font-size: 2.5rem; font-weight: 700; color: white; letter-spacing: -0.02em;">
+					AI Agent Portal
+				</div>
+				<div style="font-size: 1rem; font-weight: 400; color: rgba(255, 255, 255, 0.8); margin-top: 0.5rem;">
+					Enterprise Agentic AI Platform
+				</div>
+			</div>
 
 			<div
 				style="
@@ -129,12 +135,13 @@
 					align-items: center;
 				"
 			>
-				<img
+				<div
 					id="logo-her"
-					style="width: auto; height: 13rem"
-					src="/static/splash.png"
+					style="font-size: 2rem; font-weight: 700; color: white; text-align: center;"
 					class="animate-pulse-fast"
-				/>
+				>
+					AI Agent Portal
+				</div>
 
 				<div style="position: relative; width: 24rem; margin-top: 0.5rem">
 					<div
@@ -162,10 +169,6 @@
 					></div>
 				</div>
 			</div>
-
-			<!-- <span style="position: absolute; bottom: 32px; left: 50%; margin: -36px 0 0 -36px">
-				Footer content
-			</span> -->
 		</div>
 	</body>
 </html>
@@ -176,15 +179,15 @@
 	}
 
 	#splash-screen {
-		background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
+		background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
 	}
 
 	html.dark #splash-screen {
-		background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
+		background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
 	}
 
 	html.her #splash-screen {
-		background: #983724;
+		background: #6366f1;
 	}
 
 	#logo-her {
@@ -205,7 +208,6 @@
 
 	html.her #logo-her {
 		display: block;
-		filter: invert(1);
 	}
 
 	html.her #progress-background {

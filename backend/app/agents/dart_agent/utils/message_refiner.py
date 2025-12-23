@@ -9,18 +9,32 @@ class MessageRefiner:
 
     def __init__(self):
         self.tool_name_mapping = {
-            "get_corporation_code_by_name": "기업 정보 조회",
+            "get_corporation_code_by_name": "기업 코드 조회",
             "get_corporation_info": "기업 상세 정보 조회",
             "get_disclosure_list": "공시 목록 조회",
             "get_single_acnt": "재무제표 조회",
+            "get_single_index": "재무지표 조회",
             "get_major_shareholder": "주주 정보 조회",
             "get_executive_info": "임원 정보 조회",
             "get_financial_analysis": "재무 분석",
             "get_risk_assessment": "리스크 평가",
+            "search_financial_notes": "재무제표 주석 검색",
+            "get_disclosure_document": "공시 문서 조회",
+            "get_governance_info": "지배구조 정보 조회",
+            "get_capital_change": "자본변동 정보 조회",
+            "get_debt_funding": "부채자금조달 정보 조회",
+            "get_business_structure": "사업구조 정보 조회",
+            "get_overseas_business": "해외사업 정보 조회",
+            "get_legal_risk": "법적리스크 정보 조회",
+            "get_executive_audit": "경영진감사 정보 조회",
         }
 
     def refine(self, technical_message: str, message_type: str = "progress") -> str:
         """기술적 메시지를 사용자 친화적으로 변환"""
+        # 도구 이름인 경우 먼저 매핑 시도
+        if technical_message in self.tool_name_mapping:
+            return self.tool_name_mapping[technical_message]
+        
         if message_type == "tool_call":
             return self._refine_tool_call_message(technical_message)
         elif message_type == "progress":
@@ -29,6 +43,23 @@ class MessageRefiner:
             return self._refine_result_message(technical_message)
         else:
             return technical_message
+    
+    def get_tool_display_name(self, tool_name: str) -> str:
+        """도구 이름을 사용자 친화적 이름으로 변환"""
+        return self.tool_name_mapping.get(tool_name, tool_name)
+    
+    def extract_tool_name_from_tc_id(self, tc_id: str) -> str:
+        """tool_call_id에서 도구 이름 추출
+        
+        예: "call_get_corporation_info" -> "get_corporation_info"
+        """
+        if not tc_id:
+            return ""
+        if tc_id.startswith("call_"):
+            potential_name = tc_id[5:]  # "call_" 제거
+            if "_" in potential_name:
+                return potential_name
+        return ""
 
     def _refine_tool_call_message(self, message: str) -> str:
         """도구 호출 메시지 정제"""

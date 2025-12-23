@@ -107,7 +107,7 @@
 </script>
 
 <svelte:head>
-    <title>Home | {$WEBUI_NAME || 'SFN AI Portal'}</title>
+    <title>Home | {$WEBUI_NAME || 'AI Agent Portal'}</title>
 </svelte:head>
 
 <div class="min-h-full bg-gray-950 text-slate-50">

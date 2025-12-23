@@ -863,7 +863,7 @@
 						</div>
 					</form>
 				{:else}
-					<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
+				<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
 							서버 이름 <span class="text-red-500">*</span>
@@ -1428,4 +1428,4 @@
 				</div>
 			</div>
 		</div>
-	{/if}
+{/if}

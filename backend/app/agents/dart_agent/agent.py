@@ -121,9 +121,9 @@ INTENT_SYSTEM_PROMPT = """당신은 DART(전자공시시스템) 관련 사용자
 ```json
 {
   "domain": "financial",
-  "company_name": "삼성전자",
+  "company_name": "현대자동차",
   "keywords": ["재무제표", "매출", "영업이익"],
-  "reasoning": "사용자가 삼성전자의 재무 현황을 질문하여 financial 도메인으로 분류"
+  "reasoning": "사용자가 현대자동차의 재무 현황을 질문하여 financial 도메인으로 분류"
 }
 ```
 """

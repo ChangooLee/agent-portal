@@ -98,8 +98,8 @@
 					alt="logo"
 					draggable="false"
 				/>
-				<span class="text-base font-bold text-white" style="font-family: 'Samsung Gothic', sans-serif;">
-					SFN AI Portal
+				<span class="text-base font-bold text-white" style="font-family: 'Pretendard', -apple-system, sans-serif;">
+					AI Agent Portal
 				</span>
 			</a>
 		</div>

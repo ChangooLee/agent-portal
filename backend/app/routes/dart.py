@@ -123,7 +123,7 @@ async def health_check():
             probe_error = None
             try:
                 # Functional probe: tools/call must succeed, not just tools/list.
-                probe = await client.call_tool("get_corporation_code_by_name", {"corp_name": "삼성전자"})
+                probe = await client.call_tool("get_corporation_code_by_name", {"corp_name": "현대자동차"})
                 if probe.error:
                     probe_error = probe.error
                     probe_ok = False
@@ -689,12 +689,14 @@ class HistoryCreateRequest(BaseModel):
     title: str
     messages: List[Dict[str, Any]]
     model_tab: str = "qwen-235b"
+    report: Optional[Dict[str, Any]] = None
 
 
 class HistoryUpdateRequest(BaseModel):
     """히스토리 업데이트 요청"""
     title: Optional[str] = None
     messages: Optional[List[Dict[str, Any]]] = None
+    report: Optional[Dict[str, Any]] = None
 
 
 @router.get("/history", summary="List Chat History")
@@ -779,7 +781,8 @@ async def create_history(
             user_id=user_id,
             title=request.title,
             messages=request.messages,
-            model_tab=request.model_tab
+            model_tab=request.model_tab,
+            report=request.report
         )
         return {
             "success": True,
@@ -805,7 +808,8 @@ async def update_history(
             history_id=history_id,
             user_id=user_id,
             title=request.title,
-            messages=request.messages
+            messages=request.messages,
+            report=request.report
         )
         if not success:
             raise HTTPException(status_code=404, detail="History not found")
@@ -842,24 +846,25 @@ async def delete_history(
 # Single Agent Endpoint (Claude Opus 4.5 + MCP 85 Tools)
 # =============================================================================
 
-@router.post("/chat/single", summary="DART Single Agent Chat (Opus 4.5)")
-@api_router.post("/chat/single", summary="DART Single Agent Chat (Opus 4.5)")
+@router.post("/chat/single", summary="DART Single Agent Chat (Streaming)")
+@api_router.post("/chat/single", summary="DART Single Agent Chat (Streaming)")
 async def chat_single_stream(request_data: DartChatRequest):
     """
     DART 단일 에이전트 스트리밍 채팅.
     
-    Claude Opus 4.5 모델을 사용하여 MCP 85개 도구를 직접 활용.
+    선택한 모델을 사용하여 MCP 85개 도구를 직접 활용.
     멀티에이전트 시스템 없이 단순한 ReAct 패턴으로 동작.
     """
     from app.agents.dart_agent.single_agent import get_dart_single_agent
     
-    logger.info(f"DART single agent request: {request_data.question[:50]}...")
+    model = request_data.model or "claude-opus-4.5"
+    logger.info(f"DART single agent request (model={model}): {request_data.question[:50]}...")
     
     session_id = request_data.session_id or str(uuid.uuid4())
     
     async def event_generator():
         try:
-            agent = get_dart_single_agent(model="claude-opus-4.5")
+            agent = get_dart_single_agent(model=model)
             
             async for event in agent.analyze_stream(
                 question=request_data.question,
@@ -869,58 +874,6 @@ async def chat_single_stream(request_data: DartChatRequest):
                 
         except Exception as e:
             logger.error(f"Single agent stream error: {e}", exc_info=True)
-            yield _format_sse({"event": "error", "error": str(e)})
-            yield _format_sse({"event": "complete", "error": str(e)})
-    
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
-        }
-    )
-
-
-# =============================================================================
-# Multi-Agent Opus Endpoint (Claude Opus 4.5 + Multi-Agent System)
-# =============================================================================
-
-@router.post("/chat/multi-opus", summary="DART Multi-Agent Chat (Opus 4.5)")
-@api_router.post("/chat/multi-opus", summary="DART Multi-Agent Chat (Opus 4.5)")
-async def chat_multi_opus_stream(request_data: DartChatRequest):
-    """
-    DART 멀티에이전트 스트리밍 채팅 (Opus 4.5 버전).
-    
-    기존 멀티에이전트 시스템을 사용하지만 모델을 Claude Opus 4.5로 변경.
-    """
-    from app.agents.dart_agent.dart_agent import DartAgent
-    
-    logger.info(f"DART multi-opus request: {request_data.question[:50]}...")
-    
-    trace_id = str(uuid.uuid4())
-    session_id = request_data.session_id or trace_id
-    
-    async def event_generator():
-        try:
-            # Claude Opus 4.5 모델로 에이전트 생성
-            agent = DartAgent(model="claude-opus-4.5")
-            
-            async for event in agent.analyze_stream(
-                question=request_data.question,
-                session_id=session_id
-            ):
-                event_type = event.get("event", "message")
-                yield _format_sse(event)
-                
-                if event_type in ("end", "complete"):
-                    break
-                    
-        except GeneratorExit:
-            logger.info("Multi-opus SSE connection closed by client")
-        except Exception as e:
-            logger.error(f"Multi-opus stream error: {e}", exc_info=True)
             yield _format_sse({"event": "error", "error": str(e)})
             yield _format_sse({"event": "complete", "error": str(e)})
     

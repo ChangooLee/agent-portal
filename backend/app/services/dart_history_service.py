@@ -78,12 +78,12 @@ class DartHistoryService:
                 return result
     
     async def get_history(self, history_id: str, user_id: str) -> Optional[Dict[str, Any]]:
-        """특정 채팅 히스토리 조회"""
+        """특정 채팅 히스토리 조회 (레포트 포함)"""
         async with self.get_connection() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute(
                     """
-                    SELECT id, user_id, title, messages, model_tab, created_at, updated_at
+                    SELECT id, user_id, title, messages, report, model_tab, created_at, updated_at
                     FROM dart_chat_history
                     WHERE id = %s AND user_id = %s
                     """,
@@ -97,6 +97,8 @@ class DartHistoryService:
                 result = dict(row)
                 if result.get('messages'):
                     result['messages'] = json.loads(result['messages'])
+                if result.get('report'):
+                    result['report'] = json.loads(result['report'])
                 if result.get('created_at'):
                     result['created_at'] = result['created_at'].isoformat()
                 if result.get('updated_at'):
@@ -109,19 +111,27 @@ class DartHistoryService:
         user_id: str,
         title: str,
         messages: List[Dict[str, Any]],
-        model_tab: str
+        model_tab: str,
+        report: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """새 채팅 히스토리 생성"""
+        """새 채팅 히스토리 생성 (레포트 포함)"""
         history_id = str(uuid.uuid4())
         
         async with self.get_connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
                     """
-                    INSERT INTO dart_chat_history (id, user_id, title, messages, model_tab)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO dart_chat_history (id, user_id, title, messages, report, model_tab)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
-                    (history_id, user_id, title, json.dumps(messages, ensure_ascii=False), model_tab)
+                    (
+                        history_id, 
+                        user_id, 
+                        title, 
+                        json.dumps(messages, ensure_ascii=False), 
+                        json.dumps(report, ensure_ascii=False) if report else None,
+                        model_tab
+                    )
                 )
         
         return {
@@ -137,9 +147,10 @@ class DartHistoryService:
         history_id: str,
         user_id: str,
         title: Optional[str] = None,
-        messages: Optional[List[Dict[str, Any]]] = None
+        messages: Optional[List[Dict[str, Any]]] = None,
+        report: Optional[Dict[str, Any]] = None
     ) -> bool:
-        """채팅 히스토리 업데이트"""
+        """채팅 히스토리 업데이트 (레포트 포함)"""
         updates = []
         params = []
         
@@ -150,6 +161,10 @@ class DartHistoryService:
         if messages is not None:
             updates.append("messages = %s")
             params.append(json.dumps(messages, ensure_ascii=False))
+        
+        if report is not None:
+            updates.append("report = %s")
+            params.append(json.dumps(report, ensure_ascii=False))
         
         if not updates:
             return False

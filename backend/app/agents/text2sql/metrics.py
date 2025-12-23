@@ -295,12 +295,12 @@ def start_agent_span(
     if state.get("dialect"):
         attrs["dialect"] = state["dialect"]
     
-    # agent.id와 agent.name은 root span에서 상속받거나 기본값 사용
+    # GenAI 표준: agent.id와 agent.name
     # root span에서 이미 설정되었으므로 여기서는 기본값만 설정 (없는 경우)
-    if "agent.id" not in attrs:
-        attrs["agent.id"] = "text2sql-agent"
-    if "agent.name" not in attrs:
-        attrs["agent.name"] = "Text-to-SQL Agent"
+    if "gen_ai.agent.id" not in attrs:
+        attrs["gen_ai.agent.id"] = "text2sql-agent"
+    if "gen_ai.agent.name" not in attrs:
+        attrs["gen_ai.agent.name"] = "Text-to-SQL Agent"
     
     try:
         from opentelemetry import trace
@@ -386,13 +386,15 @@ def create_root_span_carrier(trace_id: Optional[str] = None) -> Dict[str, str]:
     try:
         from opentelemetry import trace
         
-        # Root span 생성
+        # Root span 생성 (GenAI 표준: gen_ai.session)
         with tracer.start_as_current_span(
-            "text2sql.agent",
+            "gen_ai.session",
             attributes={
                 "service.name": "agent-text2sql",
                 "component": "text2sql",
-                "span.kind": "server"
+                "span.kind": "server",
+                "gen_ai.agent.id": "text2sql-agent",
+                "gen_ai.agent.name": "Text-to-SQL Agent"
             }
         ) as root_span:
             # External trace_id가 있으면 속성으로 저장
@@ -444,7 +446,8 @@ def start_llm_call_span(
     import time
     import json
     tracer = _get_tracer()
-    span_name = f"text2sql.llm_call.{node_name}"
+    # GenAI 표준 span 이름
+    span_name = "gen_ai.content.completion"
     
     # LLM 호출 Counter 증가 (가이드 섹션 8)
     record_counter("text2sql_llm_calls_total", {
@@ -452,22 +455,27 @@ def start_llm_call_span(
         "model": model
     })
     
-    # 기본 속성
+    # GenAI 표준 속성
     attrs = {
         "service.name": "agent-text2sql",
         "component": "text2sql",
-        "llm.model": model,
-        "llm.node": node_name
+        "gen_ai.operation.name": "completion",
+        "gen_ai.system": "litellm",
+        "gen_ai.request.model": model,
+        "gen_ai.agent.name": f"text2sql.{node_name}"
     }
     
-    # Request messages 저장 (최대 10000자로 제한하여 저장)
+    # Request messages 저장 (GenAI 표준: 각 프롬프트를 개별 속성으로)
     if messages:
         try:
-            request_json = json.dumps(messages, ensure_ascii=False)
-            # 너무 길면 truncate
-            if len(request_json) > 10000:
-                request_json = request_json[:10000] + "... [truncated]"
-            attrs["llm.request.messages"] = request_json
+            for i, msg in enumerate(messages[:5]):
+                role = msg.get("role", "") if isinstance(msg, dict) else ""
+                content = msg.get("content", "") if isinstance(msg, dict) else str(msg)
+                if role:
+                    attrs[f"gen_ai.prompt.{i}.role"] = role
+                if content:
+                    content_str = str(content)[:5000] if len(str(content)) > 5000 else str(content)
+                    attrs[f"gen_ai.prompt.{i}.content"] = content_str
         except Exception:
             pass
     
@@ -476,9 +484,9 @@ def start_llm_call_span(
     # Mutable container to hold the span (avoids nonlocal issues)
     span_holder = [None]
     
-    # 결과 기록용 함수
+    # 결과 기록용 함수 (GenAI 표준)
     def record_result(response: Dict[str, Any]):
-        """LLM 응답 결과를 span에 기록 + Histogram 기록"""
+        """LLM 응답 결과를 span에 기록 + Histogram 기록 (GenAI 표준)"""
         try:
             usage = response.get("usage", {})
             prompt_tokens = usage.get("prompt_tokens", 0)
@@ -505,14 +513,15 @@ def start_llm_call_span(
             
             current_span = span_holder[0]
             if current_span and hasattr(current_span, 'set_attribute'):
-                current_span.set_attribute("llm.usage.prompt_tokens", prompt_tokens)
-                current_span.set_attribute("llm.usage.completion_tokens", completion_tokens)
-                current_span.set_attribute("llm.usage.total_tokens", total_tokens)
-                current_span.set_attribute("llm.latency_ms", latency_ms)
+                # GenAI 표준 속성
+                current_span.set_attribute("gen_ai.usage.prompt_tokens", prompt_tokens)
+                current_span.set_attribute("gen_ai.usage.completion_tokens", completion_tokens)
+                current_span.set_attribute("gen_ai.usage.total_tokens", total_tokens)
+                current_span.set_attribute("gen_ai.latency_ms", latency_ms)
                 
                 # 모델명 (응답에서 가져오기)
                 response_model = response.get("model", model)
-                current_span.set_attribute("llm.response.model", response_model)
+                current_span.set_attribute("gen_ai.response.model", response_model)
                 
                 # Response content 저장
                 choices = response.get("choices", [])
@@ -523,12 +532,12 @@ def start_llm_call_span(
                     # 너무 길면 truncate
                     if len(content) > 10000:
                         content = content[:10000] + "... [truncated]"
-                    current_span.set_attribute("llm.response.content", content)
+                    current_span.set_attribute("gen_ai.completion.0.content", content)
                     
                     # finish_reason
                     finish_reason = first_choice.get("finish_reason", "")
                     if finish_reason:
-                        current_span.set_attribute("llm.response.finish_reason", finish_reason)
+                        current_span.set_attribute("gen_ai.response.finish_reason", finish_reason)
                 
         except Exception as e:
             logger.debug(f"Failed to record LLM result: {e}")

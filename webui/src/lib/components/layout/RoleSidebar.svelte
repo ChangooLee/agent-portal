@@ -76,7 +76,7 @@
                     class="size-7 rounded-lg"
                     alt="logo"
                 />
-                <span class="text-base font-bold text-white">SFN AI Portal</span>
+                <span class="text-base font-bold text-white">AI Agent Portal</span>
             </a>
         </div>
 

@@ -407,7 +407,7 @@
 </script>
 
 <svelte:head>
-	<title>Data Cloud | SFN AI Portal</title>
+	<title>Data Cloud | AI Agent Portal</title>
 </svelte:head>
 
 <div class="min-h-full bg-gray-950 text-slate-50">

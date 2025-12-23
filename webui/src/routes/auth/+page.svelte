@@ -34,7 +34,7 @@
 	const heroSets = [
 		{
 			title: 'AI 에이전트의 모든 순간을 한곳에서',
-			text: ['대화로 시작해 실행으로 이어지는 새로운 업무 공간,', 'SFN AI Portal은 사람과 AI가 함께 일하는 방식을 새롭게 만듭니다.']
+			text: ['대화로 시작해 실행으로 이어지는 새로운 업무 공간,', 'AI Agent Portal은 사람과 AI가 함께 일하는 방식을 새롭게 만듭니다.']
 		},
 		{
 			title: '대화만으로 아이디어가 실행됩니다',
@@ -66,7 +66,7 @@
 		},
 		{
 			title: 'AI와 함께 일하는 새로운 방식의 시작',
-			text: ['SFN AI Portal에서 당신의 AI 파트너를 만나보세요.', '대화가 곧 결과가 됩니다.']
+			text: ['AI Agent Portal에서 당신의 AI 파트너를 만나보세요.', '대화가 곧 결과가 됩니다.']
 		}
 	];
 
@@ -247,7 +247,7 @@
 </style>
 
 <svelte:head>
-	<title>SFN AI Portal</title>
+	<title>AI Agent Portal</title>
 </svelte:head>
 
 <OnBoarding
@@ -261,26 +261,22 @@
 <div class="w-full h-screen max-h-[100dvh] relative overflow-y-auto">
 	<!-- Subtle reflective light layer -->
 	<div class="absolute inset-0 -z-20 bg-light-overlay"></div>
-	<!-- Animated Samsung Blue Multi-Layer Gradient Background -->
-	<div class="absolute inset-0 -z-10 bg-animated-samsung"></div>
+	<!-- Animated Indigo Multi-Layer Gradient Background -->
+	<div class="absolute inset-0 -z-10 bg-animated-indigo"></div>
 
 	<div class="w-full absolute top-0 left-0 right-0 h-8 drag-region z-50" />
 
 	{#if loaded}
 		<div
 			class="relative w-full flex flex-col items-center font-primary z-40 px-4 py-4 md:py-16 min-h-full md:min-h-screen"
-			style="font-family: 'Samsung Gothic', -apple-system, BlinkMacSystemFont, sans-serif;"
+			style="font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;"
 		>
 			<!-- Logo at top -->
 			<div class="mb-4 md:mb-8 mt-2 md:mt-0">
-					<img
-						id="logo"
-						crossorigin="anonymous"
-					src="/samsung-financial-networks-logo.webp"
-					class="h-10 md:h-16 w-auto"
-					alt="Samsung Financial Networks"
-					/>
+				<div class="text-white text-2xl md:text-3xl font-bold">
+					AI Agent Portal
 				</div>
+			</div>
 
 			<!-- Hero Section -->
 			<div class="w-full max-w-3xl mb-4 md:mb-12 text-center text-white hidden md:block">
@@ -368,7 +364,7 @@
 											<input
 												bind:value={name}
 												type="text"
-												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all duration-200"
 												autocomplete="name"
 												placeholder={$i18n.t('Enter Your Full Name')}
 												required
@@ -384,7 +380,7 @@
 											<input
 												bind:value={ldapUsername}
 												type="text"
-												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all duration-200"
 												autocomplete="username"
 												name="username"
 												placeholder={$i18n.t('Enter Your Username')}
@@ -399,7 +395,7 @@
 											<input
 												bind:value={email}
 												type="email"
-												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+												class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all duration-200"
 												autocomplete="email"
 												name="email"
 												placeholder={$i18n.t('Enter Your Email')}
@@ -415,7 +411,7 @@
 										<input
 											bind:value={password}
 											type="password"
-											class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+											class="w-full px-4 py-3.5 text-base rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all duration-200"
 											placeholder={$i18n.t('Enter Your Password')}
 											autocomplete="current-password"
 											name="current-password"
@@ -428,14 +424,14 @@
 								{#if $config?.features.enable_login_form || $config?.features.enable_ldap}
 									{#if mode === 'ldap'}
 										<button
-											class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-4 rounded-md transition-all duration-200"
+											class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-4 px-4 rounded-md transition-all duration-200"
 											type="submit"
 										>
 											{$i18n.t('Authenticate')}
 										</button>
 									{:else}
 										<button
-											class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-4 rounded-md transition-all duration-200"
+											class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-4 px-4 rounded-md transition-all duration-200"
 											type="submit"
 										>
 											{mode === 'signin'

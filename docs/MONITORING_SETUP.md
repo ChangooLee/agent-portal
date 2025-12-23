@@ -265,12 +265,37 @@ processors:
 
 ---
 
+## OTEL Gen AI 표준
+
+Agent Portal의 모니터링은 OpenTelemetry Gen AI 시맨틱 컨벤션을 기반으로 합니다.
+
+**표준 문서**: [OTEL_GENAI_METRICS.md](./OTEL_GENAI_METRICS.md)
+
+### 주요 표준 Span Names
+
+| Span Name | 설명 |
+|-----------|------|
+| `gen_ai.session` | 에이전트 세션 루트 |
+| `gen_ai.tool.call` | 도구 호출 |
+| `gen_ai.content.completion` | LLM 완성 |
+
+### 비용 추적
+
+비용은 `llm.openrouter.usage` 필드에서 추출됩니다:
+
+```sql
+extractAll(SpanAttributes['llm.openrouter.usage'], '\'cost\': ([0-9.]+)')
+```
+
+---
+
 ## References
 
+- [OpenTelemetry Gen AI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
 - [LiteLLM OpenTelemetry Docs](https://docs.litellm.ai/docs/proxy/logging)
 - [OTEL Collector Configuration](https://opentelemetry.io/docs/collector/configuration/)
 - [ClickHouse SQL Reference](https://clickhouse.com/docs/en/sql-reference)
 
 ---
 
-**Last Updated**: 2025-12-05
+**Last Updated**: 2025-12-23

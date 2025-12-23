@@ -11,9 +11,9 @@ export default {
 		'text-brand-500',
 		'hover:bg-brand-50',
 		'hover:text-brand-500',
-		'bg-samsung-blue',
-		'bg-samsung-blue-light',
-		'bg-samsung-blue-dark'
+		'bg-indigo-500',
+		'bg-indigo-50',
+		'bg-indigo-600'
 	],
 	theme: {
 		extend: {
@@ -27,24 +27,18 @@ export default {
 					border: '#1f2937',        // Border color
 					'border-subtle': '#374151', // Subtle border
 				},
-				// 삼성생명 브랜드 컬러 (파란색 계열)
+				// 브랜드 컬러 (Indigo 계열)
 				brand: {
-					50: '#e6f2ff',
-					100: '#cce5ff',
-					200: '#99cbff',
-					300: '#66b1ff',
-					400: '#3397ff',
-					500: '#0066CC', // 메인 브랜드 컬러
-					600: '#0052A3',
-					700: '#003d7a',
-					800: '#002952',
-					900: '#001429'
-				},
-				// 직접 사용을 위한 삼성생명 컬러
-				'samsung-blue': {
-					DEFAULT: '#0066CC',
-					light: '#e6f2ff',
-					dark: '#0052A3'
+					50: '#eef2ff',
+					100: '#e0e7ff',
+					200: '#c7d2fe',
+					300: '#a5b4fc',
+					400: '#818cf8',
+					500: '#6366f1', // 메인 브랜드 컬러
+					600: '#4f46e5',
+					700: '#4338ca',
+					800: '#3730a3',
+					900: '#312e81'
 				},
 				// 블루 액센트 (다크 테마용)
 				blue: {
@@ -85,9 +79,9 @@ export default {
 				},
 				// 새로운 그라데이션 색상
 				primary: {
-					DEFAULT: '#3478f6',
-					light: '#5b8def',
-					dark: '#1e5fd9',
+					DEFAULT: '#6366f1',
+					light: '#818cf8',
+					dark: '#4f46e5',
 				},
 				secondary: {
 					DEFAULT: '#9a7ac9',
@@ -99,7 +93,7 @@ export default {
 					light: '#5dd4bd',
 					dark: '#3a9680',
 				},
-				// 삼성생명 스타일 그레이 스케일 (더 깔끔하고 전문적인 톤)
+				// 그레이 스케일
 				gray: {
 					50: 'var(--color-gray-50, #f8f9fa)',
 					100: 'var(--color-gray-100, #e9ecef)',

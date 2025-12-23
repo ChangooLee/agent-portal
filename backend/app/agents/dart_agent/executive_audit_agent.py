@@ -200,12 +200,15 @@ class ExecutiveAuditAgent(DartBaseAgent):
                         tool_name = getattr(tool_message, "name", None)
                         # 응답에 달린 tool_call_id로 pending과 매칭
                         tc_id = getattr(tool_message, "tool_call_id", None)
-                        # None 값 필터링: tool_name이 None이면 pending_calls에서 역추적
+                        # None 값 필터링: tool_name이 None이면 tc_id에서 추출 시도
+                        if not tool_name and tc_id:
+                            if tc_id.startswith("call_"):
+                                potential_name = tc_id[5:]  # "call_" 제거
+                                if "_" in potential_name:
+                                    tool_name = potential_name
+                        # 여전히 없으면 기본값
                         if not tool_name:
-                            if tc_id and tc_id in pending_calls:
-                                tool_name = pending_calls[tc_id].get("name", "도구")
-                            else:
-                                tool_name = "도구"
+                            tool_name = "도구"
                         tools_used.append(tool_name)
                         if tc_id and tc_id in pending_calls:
                             info = pending_calls.pop(tc_id)

@@ -91,11 +91,15 @@ class MonitoringAdapter:
         end_time: datetime,
         search: Optional[str] = None,
         page: int = 1,
-        size: int = 20
+        size: int = 20,
+        trace_type: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         트레이스 목록 조회.
         LLM/Agent 호출만 필터링 (auth, postgres 등 내부 호출 제외).
+        
+        Args:
+            trace_type: 'agent', 'llm', 또는 None (모두)
         """
         offset = (page - 1) * size
         
@@ -104,15 +108,36 @@ class MonitoringAdapter:
         if search:
             search_clause = f"AND (TraceId LIKE '%{search}%' OR SpanName LIKE '%{search}%')"
         
-        # LLM/Agent 호출만 필터링하는 조건
-        # - 토큰이 있는 LLM 호출만 표시 (실제 LLM API 호출)
-        # - Agent 빌더 (langflow, flowise, autogen) 호출
-        # - 등록된 에이전트 (ServiceName = 'agent-*') 호출
-        # - 토큰이 없는 내부 호출 제외
+        # LLM/Agent 호출만 필터링하는 조건 (GenAI 표준 + 기존 호환)
+        # GenAI Semantic Convention 표준:
+        # - gen_ai.session: 세션/루트 span
+        # - gen_ai.agent.*: 에이전트 span
+        # - gen_ai.content.completion: LLM 호출
+        # - gen_ai.tool.call: 도구 호출
+        # 기존 호환:
+        # - dart.llm_call.*, dart.tool_call.* (레거시)
+        # - litellm_request (LiteLLM 프록시)
         llm_filter = """
           AND (
-            -- 토큰이 있는 LLM 호출 (실제 API 호출)
-            toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) > 0
+            -- GenAI 표준: LLM 호출 (completion)
+            SpanName = 'gen_ai.content.completion'
+            -- GenAI 표준: 도구 호출
+            OR SpanName = 'gen_ai.tool.call'
+            -- GenAI 표준: 세션 span
+            OR SpanName = 'gen_ai.session'
+            -- GenAI 표준: 에이전트 span
+            OR SpanName LIKE 'gen_ai.agent.%'
+            -- 토큰이 있는 LLM 호출 (실제 API 호출) - GenAI 표준 속성도 포함
+            OR toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens']) > 0
+            OR toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) > 0
+            -- 레거시 DART 에이전트 호출 (기존 호환)
+            OR SpanName LIKE 'dart.llm_call.%'
+            OR SpanName LIKE 'dart.tool_call.%'
+            OR SpanName LIKE 'dart.http.%'
+            -- LiteLLM 프록시 호출
+            OR SpanName = 'litellm_request'
+            -- OpenRouter 원시 요청 (비용 정보 포함)
+            OR SpanName = 'raw_gen_ai_request'
             -- Agent 빌더 호출
             OR SpanName LIKE '%langflow%'
             OR SpanName LIKE '%flowise%'
@@ -140,9 +165,9 @@ class MonitoringAdapter:
         total = count_result[0]['total'] if count_result else 0
         
         # 트레이스 목록 (집계)
-        # Note: LiteLLM stores cost in metadata.usage_object as Python dict format
-        # Pattern: 'cost': 1.605e-05 - use extractAll with simpler regex
-        # If cost is null (streaming mode), calculate from tokens
+        # Note: LiteLLM/OpenRouter stores cost in llm.openrouter.usage field
+        # Pattern: 'cost': 0.249325 - use extractAll to extract cost value
+        # Also check metadata.usage_object as fallback
         list_query = f"""
         SELECT 
             TraceId as trace_id,
@@ -154,15 +179,27 @@ class MonitoringAdapter:
             countIf(StatusCode = 'ERROR') as error_count,
             sum(
                 greatest(
-                    -- Extract cost from metadata.usage_object using extractAll
+                    -- Primary: Extract cost from llm.openrouter.usage (OpenRouter response)
+                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
+                    -- Fallback 1: Extract cost from metadata.usage_object
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
-                    -- Fallback: calculate from tokens (OpenRouter qwen pricing)
-                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
-                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
+                    -- Fallback 2: calculate from tokens (OpenRouter qwen pricing)
+                    (greatest(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens']), toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) * 0.000000072) +
+                    (greatest(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens']), toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) * 0.000000464)
                 )
             ) as total_cost,
-            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as prompt_tokens,
-            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as completion_tokens
+            sum(greatest(
+                toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens']),
+                toUInt64OrZero(SpanAttributes['llm.usage.prompt_tokens']),
+                -- Extract from llm.openrouter.usage
+                toUInt64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'prompt_tokens\\': ([0-9]+)')[1])
+            )) as prompt_tokens,
+            sum(greatest(
+                toUInt64OrZero(SpanAttributes['gen_ai.usage.completion_tokens']),
+                toUInt64OrZero(SpanAttributes['llm.usage.completion_tokens']),
+                -- Extract from llm.openrouter.usage
+                toUInt64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'completion_tokens\\': ([0-9]+)')[1])
+            )) as completion_tokens
         FROM {CLICKHOUSE_DATABASE}.otel_traces
         WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
@@ -260,15 +297,23 @@ class MonitoringAdapter:
             ) as agent_call_count,
             sum(
                 greatest(
-                    -- Extract cost from metadata.usage_object using extractAll
+                    -- Primary: Extract cost from llm.openrouter.usage (OpenRouter response)
+                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
+                    -- Fallback 1: Extract cost from metadata.usage_object
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
-                    -- Fallback: calculate from tokens (OpenRouter qwen pricing)
+                    -- Fallback 2: calculate from tokens (OpenRouter qwen pricing)
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
                 )
             ) as total_cost,
-            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as prompt_tokens,
-            sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as completion_tokens,
+            sum(greatest(
+                toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']),
+                toUInt64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'prompt_tokens\\': ([0-9]+)')[1])
+            )) as prompt_tokens,
+            sum(greatest(
+                toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']),
+                toUInt64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'completion_tokens\\': ([0-9]+)')[1])
+            )) as completion_tokens,
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.cache_read_input_tokens'])) as cache_read_input_tokens,
             sum(toUInt64OrZero(SpanAttributes['llm.usage.reasoning_tokens'])) as reasoning_tokens,
             avg(Duration) / 1000000 as avg_duration,
@@ -819,6 +864,7 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as total_completion_tokens,
             sum(
                 greatest(
+                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
@@ -1092,9 +1138,11 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens'])) as total_tokens,
             sum(
                 greatest(
-                    -- Primary: get from gen_ai.usage.total_cost (stored by agent_trace_adapter)
+                    -- Primary: Extract cost from llm.openrouter.usage (OpenRouter response)
+                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
+                    -- Fallback 1: get from gen_ai.usage.total_cost (stored by agent_trace_adapter)
                     toFloat64OrZero(SpanAttributes['gen_ai.usage.total_cost']),
-                    -- Fallback: Extract cost from metadata.usage_object
+                    -- Fallback 2: Extract cost from metadata.usage_object
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
                     -- Last fallback: calculate from tokens (OpenRouter qwen pricing)
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
@@ -1162,6 +1210,7 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as llm_tokens,
             sum(
                 greatest(
+                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
@@ -1275,6 +1324,7 @@ class MonitoringAdapter:
             sum(toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) as total_tokens,
             sum(
                 greatest(
+                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
                     toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
                     (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)

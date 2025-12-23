@@ -195,7 +195,7 @@
 </script>
 
 <svelte:head>
-	<title>#{channel?.name ?? 'Channel'} | {$WEBUI_NAME || 'SFN AI Portal'}</title>
+	<title>#{channel?.name ?? 'Channel'} | {$WEBUI_NAME || 'AI Agent Portal'}</title>
 </svelte:head>
 
 <div
