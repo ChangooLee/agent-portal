@@ -285,7 +285,8 @@ async def test_mcp_server(server_id: str):
     Returns:
         테스트 결과
     """
-    server = await mcp_service.get_server(server_id)
+    # stdio 서버의 경우 command, local_path 등이 필요하므로 내부 함수 사용
+    server = await mcp_service._get_server_internal(server_id)
     if not server:
         raise HTTPException(status_code=404, detail="MCP server not found")
     
@@ -296,7 +297,10 @@ async def test_mcp_server(server_id: str):
     transport_type = server.get('transport_type', 'streamable_http')
     
     try:
-        if transport_type == 'sse':
+        if transport_type == 'stdio':
+            # stdio 방식: 프로세스 상태 확인 및 도구 목록 조회
+            return await _test_mcp_server_stdio(server, server_id, start_time)
+        elif transport_type == 'sse':
             # SSE 방식: GET /sse → session_id 획득 → POST /messages/?session_id=...
             return await _test_mcp_server_sse(server, server_id, start_time)
         else:
@@ -320,6 +324,126 @@ async def test_mcp_server(server_id: str):
         return MCPTestResult(
             success=False,
             message=f"Connection failed: {str(e)}"
+        )
+
+
+async def _test_mcp_server_stdio(server: dict, server_id: str, start_time: float) -> MCPTestResult:
+    """stdio 방식 MCP 서버 테스트.
+    
+    stdio MCP 서버는 프로세스로 실행되며, 초기화 후 도구 목록을 조회합니다.
+    
+    Args:
+        server: 서버 정보
+        server_id: 서버 ID
+        start_time: 테스트 시작 시간
+        
+    Returns:
+        테스트 결과
+    """
+    import time
+    import asyncio
+    import json as json_module
+    
+    # 프로세스 상태 확인
+    process_status = await mcp_service.get_stdio_process_status(server_id)
+    
+    if not process_status or process_status.get('status') != 'running':
+        # 프로세스가 실행 중이 아니면 시작 시도
+        success = await mcp_service.start_stdio_process(server_id)
+        if not success:
+            await mcp_service.update_health_status(server_id, "unhealthy")
+            return MCPTestResult(
+                success=False,
+                message="Failed to start stdio process"
+            )
+        # 프로세스 시작 대기
+        await asyncio.sleep(2)
+        process_status = await mcp_service.get_stdio_process_status(server_id)
+    
+    if not process_status or process_status.get('status') != 'running':
+        await mcp_service.update_health_status(server_id, "unhealthy")
+        return MCPTestResult(
+            success=False,
+            message="stdio process not running"
+        )
+    
+    # http_adapter를 통해 초기화 및 도구 목록 조회
+    try:
+        from app.mcp.http_adapter import http_adapter
+        
+        command = server.get('command')
+        local_path = server.get('local_path')
+        env_vars = server.get('env_vars', {})
+        
+        if not command:
+            await mcp_service.update_health_status(server_id, "unhealthy")
+            return MCPTestResult(
+                success=False,
+                message="Command not configured for stdio server"
+            )
+        
+        # Parse env_vars if string
+        if isinstance(env_vars, str):
+            try:
+                env_vars = json_module.loads(env_vars)
+            except:
+                env_vars = {}
+        
+        # 클라이언트 가져오기
+        client = await http_adapter.get_client(server_id)
+        
+        # 연결되어 있지 않으면 연결 (초기화 포함)
+        if not client.is_connected():
+            try:
+                tools = await asyncio.wait_for(
+                    client.connect(command, local_path, env_vars, reuse_existing_process=True),
+                    timeout=15.0
+                )
+            except asyncio.TimeoutError:
+                await mcp_service.update_health_status(server_id, "unhealthy")
+                return MCPTestResult(
+                    success=False,
+                    message="Connection timeout during initialization"
+                )
+        else:
+            # 이미 연결되어 있으면 도구 목록만 조회
+            try:
+                tools = await asyncio.wait_for(
+                    client.list_tools(),
+                    timeout=10.0
+                )
+            except asyncio.TimeoutError:
+                await mcp_service.update_health_status(server_id, "unhealthy")
+                return MCPTestResult(
+                    success=False,
+                    message="Timeout while listing tools"
+                )
+        
+        latency_ms = int((time.time() - start_time) * 1000)
+        
+        # 도구 목록 변환
+        tool_list = []
+        if tools:
+            for tool in tools:
+                tool_list.append({
+                    "name": tool.name if hasattr(tool, 'name') else str(tool),
+                    "description": tool.description if hasattr(tool, 'description') else ""
+                })
+        
+        # 헬스 상태 업데이트
+        await mcp_service.update_health_status(server_id, "healthy")
+        
+        return MCPTestResult(
+            success=True,
+            message=f"stdio process running (PID: {process_status.get('pid', 'unknown')}). Found {len(tool_list)} tools.",
+            tools=tool_list,
+            latency_ms=latency_ms
+        )
+    except Exception as e:
+        await mcp_service.update_health_status(server_id, "unhealthy")
+        return MCPTestResult(
+            success=False,
+            message=f"Test failed: {str(e)}"
         )
 
 

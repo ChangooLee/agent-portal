@@ -17,10 +17,10 @@ model_list:
       model: openrouter/qwen/qwen3-235b-a22b-2507
       api_key: os.environ/OPENROUTER_API_KEY
   
-  # Qwen 3 235B Fallback (Claude 3.5 Sonnet)
-  - model_name: qwen-235b
+  # Qwen 3 Next 80B (OpenRouter) - Next Generation
+  - model_name: qwen3-next
     litellm_params:
-      model: openrouter/anthropic/claude-3.5-sonnet
+      model: openrouter/qwen/qwen3-next-80b-a3b-instruct
       api_key: os.environ/OPENROUTER_API_KEY
   
   # GPT-4 (OpenRouter)

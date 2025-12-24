@@ -35,21 +35,21 @@
             status: 'active'
         },
         {
-            id: 'text2sql',
-            name: 'Text-to-SQL',
-            description: '자연어로 데이터베이스를 질의하고 SQL을 생성합니다.',
-            icon: '🗃️',
-            href: '/use/datacloud',
-            color: 'emerald',
-            status: 'active'
-        },
-        {
             id: 'dart',
             name: '기업공시분석',
             description: 'DART 전자공시 데이터를 분석하고 리포트를 생성합니다.',
             icon: '📊',
             href: '/dart',
             color: 'purple',
+            status: 'active'
+        },
+        {
+            id: 'text2sql',
+            name: 'Text-to-SQL',
+            description: '자연어로 데이터베이스를 질의하고 SQL을 생성합니다.',
+            icon: '🗃️',
+            href: '/use/datacloud',
+            color: 'emerald',
             status: 'active'
         },
         {

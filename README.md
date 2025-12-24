@@ -18,6 +18,72 @@ English | [한국어](README_ko.md)
 
 ---
 
+## The Problem We Solve
+
+Enterprise AI adoption faces fundamental barriers that existing solutions fail to address:
+
+```mermaid
+graph LR
+    subgraph challenges [Enterprise AI Challenges]
+        A[Data Silos]
+        B[Integration Complexity]
+        C[Observability Gap]
+        D[Deployment Rigidity]
+        E[Agent Isolation]
+    end
+    
+    subgraph solutions [Agent Portal Solutions]
+        A1[Unified Data Access]
+        B1[MCP Standard Protocol]
+        C1[Full AI Observability]
+        D1[Composable Architecture]
+        E1[Multi-Agent Orchestration]
+    end
+    
+    A --> A1
+    B --> B1
+    C --> C1
+    D --> D1
+    E --> E1
+```
+
+| Challenge | Industry Reality | Agent Portal Solution |
+|-----------|------------------|----------------------|
+| **Data Silos** | 73% of enterprise data remains inaccessible to AI systems | **Unified Data Access** — Connect any data source without data movement |
+| **Integration Complexity** | Average enterprise uses 130+ SaaS apps, each requiring custom integration | **MCP Protocol** — Single standard for all agent-tool connections |
+| **Observability Gap** | Most organizations cannot track AI costs at the agent level | **Full Observability** — Real-time cost, latency, token tracking per agent |
+| **Deployment Rigidity** | Cloud-only or on-prem-only solutions limit enterprise flexibility | **Composable Architecture** — Deploy anywhere, scale anything |
+| **Agent Isolation** | No standard protocol for agents to collaborate as tools | **Multi-Agent Orchestration** — Agents become tools for other agents |
+
+---
+
+## Our Philosophy
+
+> *"MCP provides a universal, open standard for connecting AI systems with data sources, replacing fragmented integrations with a single protocol."*  
+> — [Anthropic, Model Context Protocol](https://modelcontextprotocol.io/)
+
+### 🔗 Unified Data Access, Not Data Movement
+
+Connect to any data source—databases, APIs, MCP servers, legacy systems—**without copying or migrating data**. Users access information by permission, not by knowing where it lives. Your data stays where it is; agents come to it.
+
+### 💰 Cost-Aware Intelligence
+
+Every agent call is observable. Route simple tasks to efficient models, complex reasoning to capable ones. **Make informed decisions with real-time cost and performance metrics.** No more surprise bills or black-box AI spending.
+
+### 🧩 Composable, Not Monolithic
+
+Every component—agents, data connectors, workflows, monitoring—**operates independently**. Deploy on-premises, in the cloud, or hybrid. Scale what you need, replace what you want. No vendor lock-in, no all-or-nothing decisions.
+
+### 🤖 Agents as Tools
+
+Agents don't just run—they **become tools for other agents**. Build sophisticated multi-agent orchestrations where specialized agents collaborate autonomously. A financial analyst agent can invoke a data retrieval agent, which in turn queries multiple databases.
+
+### 🌐 Open Standards First
+
+Built on **MCP** (Anthropic), **OpenTelemetry** (CNCF), **LiteLLM** (100+ models). No proprietary protocols, no vendor dependencies. Your investment in Agent Portal is an investment in open, portable AI infrastructure.
+
+---
+
 ## Example Usage
 
 Ask your AI assistant:

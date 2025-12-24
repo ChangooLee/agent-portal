@@ -1,31 +1,10 @@
 @reference "./tailwind.css";
 
-/* Pretendard Font - Korean Web Font */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
-
-@font-face {
-	font-family: 'Inter';
-	src: url('/assets/fonts/Inter-Variable.ttf');
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'Archivo';
-	src: url('/assets/fonts/Archivo-Variable.ttf');
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'Mona Sans';
-	src: url('/assets/fonts/Mona-Sans.woff2');
-	font-display: swap;
-}
-
-@font-face {
-	font-family: 'InstrumentSerif';
-	src: url('/assets/fonts/InstrumentSerif-Regular.ttf');
-	font-display: swap;
-}
+/* 
+ * AI Agent Portal - Apple System Font Only
+ * All custom fonts removed. Using system fonts for consistency and performance.
+ * Font stack: -apple-system, BlinkMacSystemFont, Apple SD Gothic Neo, SF Pro Display
+ */
 
 html {
 	word-break: break-word;
@@ -53,7 +32,7 @@ code {
 }
 
 .font-secondary {
-	font-family: 'InstrumentSerif', sans-serif;
+	font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'SF Pro Display', system-ui, sans-serif;
 }
 
 math {

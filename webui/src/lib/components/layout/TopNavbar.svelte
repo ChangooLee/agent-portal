@@ -88,18 +88,11 @@
 <nav class="sticky top-0 z-50 w-full bg-gray-950 border-b border-gray-800/50">
 	<!-- Top Row: Role Tabs (Use/Build/Operate) + User Actions -->
 	<div class="flex items-center justify-between px-4 py-1.5">
-		<!-- Left: Portal Name with Logo -->
+		<!-- Left: Portal Name (Text Only, No Favicon) -->
 		<div class="flex items-center gap-3">
-			<a href="/" class="flex items-center gap-2">
-				<img
-					crossorigin="anonymous"
-					src="/static/favicon.png"
-					class="size-7 rounded-lg"
-					alt="logo"
-					draggable="false"
-				/>
-				<span class="text-base font-bold text-white" style="font-family: 'Pretendard', -apple-system, sans-serif;">
-					AI Agent Portal
+			<a href="/" class="flex items-center">
+				<span class="text-sm tracking-[0.15em] uppercase text-white">
+					AI AGENT PORTAL
 				</span>
 			</a>
 		</div>

@@ -17,6 +17,10 @@ export default {
 	],
 	theme: {
 		extend: {
+			fontFamily: {
+				sans: ['-apple-system', 'BlinkMacSystemFont', 'Apple SD Gothic Neo', 'SF Pro Display', 'system-ui', 'sans-serif'],
+				primary: ['-apple-system', 'BlinkMacSystemFont', 'Apple SD Gothic Neo', 'SF Pro Display', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				// 다크 테마 기본 색상
 				'dark': {
