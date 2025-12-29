@@ -22,9 +22,9 @@ RUN apt-get purge -y --auto-remove gcc python3-dev
 COPY app/ ./app/
 
 # 포트 노출
-EXPOSE 3009
+EXPOSE 3010
 
 # 애플리케이션 실행 (프로덕션 모드)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3009"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3010"]
 
 

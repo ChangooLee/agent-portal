@@ -282,6 +282,23 @@ class DartMasterAgent(DartBaseAgent):
                 yield {"type": "error", "content": "의도 분류에 실패했습니다."}
                 return
 
+            # intent_classified 이벤트 yield (프론트엔드에서 reasoning/analysis_reasoning 표시용)
+            corp_info_for_event = classification_result.corp_info or {}
+            company_name_display = ""
+            if corp_info_for_event.get("is_multi_company", False):
+                corp_info_list = corp_info_for_event.get("corp_info_list", [])
+                company_name_display = ", ".join([c.get("corp_name", "") for c in corp_info_list])
+            else:
+                company_name_display = corp_info_for_event.get("corp_name", "")
+            
+            yield {
+                "event": "intent_classified",
+                "domain": classification_result.domain.value if hasattr(classification_result.domain, 'value') else str(classification_result.domain),
+                "company_name": company_name_display,
+                "reasoning": classification_result.reasoning or "",
+                "analysis_reasoning": classification_result.analysis_reasoning or ""
+            }
+
             # 분석 대상 정보 추출
             selected_agents = classification_result.required_agents or ["financial"]
             corp_info = classification_result.corp_info or {}

@@ -85,40 +85,40 @@ run_test() {
 
 # Test Suite 1: Basic Connectivity
 echo -e "${BLUE}Test Suite 1: Basic Connectivity${NC}"
-run_test "BFF Health Check" "Browser → BFF (3009)" \
-    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3009/health"
+run_test "BFF Health Check" "Browser → BFF (3010)" \
+    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3010/health"
 
-run_test "WebUI Frontend" "Browser → WebUI (3009)" \
-    "curl -s -w '\nHTTP_CODE:%{http_code}' -I http://localhost:3009/ | tail -1"
+run_test "WebUI Frontend" "Browser → WebUI (3010)" \
+    "curl -s -w '\nHTTP_CODE:%{http_code}' -I http://localhost:3010/ | tail -1"
 
 # Test Suite 2: WebUI Backend Proxy
 echo ""
 echo -e "${BLUE}Test Suite 2: WebUI Backend Proxy${NC}"
-run_test "WebUI Backend Health" "Browser → BFF (3009) → WebUI Backend (8080)" \
-    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3009/api/webui/health" "any"
+run_test "WebUI Backend Health" "Browser → BFF (3010) → WebUI Backend (8080)" \
+    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3010/api/webui/health" "any"
 
 # Test Suite 3: BFF Direct APIs
 echo ""
 echo -e "${BLUE}Test Suite 3: BFF Direct APIs${NC}"
-run_test "Monitoring Traces" "Browser → BFF (3009)" \
-    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null 'http://localhost:3009/monitoring/traces?limit=1'"
+run_test "Monitoring Traces" "Browser → BFF (3010)" \
+    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null 'http://localhost:3010/monitoring/traces?limit=1'"
 
-run_test "MCP Servers List" "Browser → BFF (3009)" \
-    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3009/mcp/servers"
+run_test "MCP Servers List" "Browser → BFF (3010)" \
+    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3010/mcp/servers"
 
-run_test "DataCloud Connections" "Browser → BFF (3009)" \
-    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3009/datacloud/connections"
+run_test "DataCloud Connections" "Browser → BFF (3010)" \
+    "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null http://localhost:3010/datacloud/connections"
 
 # Test Suite 4: Kong Gateway Integration (if MCP server exists)
 echo ""
 echo -e "${BLUE}Test Suite 4: Kong Gateway Integration${NC}"
 # Check if any MCP servers exist
-MCP_SERVERS=$(curl -s http://localhost:3009/mcp/servers 2>/dev/null || echo "[]")
+MCP_SERVERS=$(curl -s http://localhost:3010/mcp/servers 2>/dev/null || echo "[]")
 if echo "$MCP_SERVERS" | grep -q '"id"'; then
     SERVER_ID=$(echo "$MCP_SERVERS" | grep -oE '"id"\s*:\s*"[^"]+"' | head -1 | sed 's/.*"id"\s*:\s*"\([^"]*\)".*/\1/')
     if [ -n "$SERVER_ID" ]; then
-        run_test "MCP via Kong" "Browser → BFF (3009) → Kong (8000) → MCP" \
-            "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null 'http://localhost:3009/api/mcp/servers/${SERVER_ID}/tools'" "any"
+        run_test "MCP via Kong" "Browser → BFF (3010) → Kong (8000) → MCP" \
+            "curl -s -w '\nHTTP_CODE:%{http_code}' -o /dev/null 'http://localhost:3010/api/mcp/servers/${SERVER_ID}/tools'" "any"
     else
         echo "  ⚠ No MCP servers found, skipping Kong integration tests"
         SKIPPED_TESTS=$((SKIPPED_TESTS + 1))

@@ -18,9 +18,9 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 // };
 
 const devPort = Number(process.env.VITE_DEV_PORT ?? '3001');
-// Single Port Architecture: 모든 API 요청을 BFF (포트 3009)로 프록시
+// Single Port Architecture: 모든 API 요청을 BFF (포트 3010)로 프록시
 // BFF가 WebUI Backend, Kong Gateway 등을 프록시합니다.
-const bffTarget = process.env.DOCKER_ENV ? 'http://backend:3009' : 'http://localhost:3009';
+const bffTarget = process.env.DOCKER_ENV ? 'http://backend:3010' : 'http://localhost:3010';
 
 export default defineConfig({
 	plugins: [
@@ -49,66 +49,66 @@ export default defineConfig({
 		host: '0.0.0.0', // Docker 내부에서 접근 가능하도록
 		port: devPort, // 기본 3001, 필요 시 VITE_DEV_PORT로 오버라이드
 		proxy: {
-			// Single Port Architecture: 모든 API 요청을 BFF (포트 3009)로 프록시
+			// Single Port Architecture: 모든 API 요청을 BFF (포트 3010)로 프록시
 			// BFF가 WebUI Backend, Kong Gateway 등을 프록시합니다.
-			// Proxy API (Langflow, Flowise, AutoGen) → FastAPI BFF (포트 3009)
+			// Proxy API (Langflow, Flowise, AutoGen) → FastAPI BFF (포트 3010)
 			'/api/proxy': {
 				target: bffTarget,
 				changeOrigin: true
 			},
-			// News API → FastAPI BFF (포트 3009)
+			// News API → FastAPI BFF (포트 3010)
 			'/api/news': {
 				target: bffTarget,
 				changeOrigin: true
 			},
-			// DataCloud API → FastAPI BFF (포트 3009)
+			// DataCloud API → FastAPI BFF (포트 3010)
 			'/api/datacloud': {
 				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/datacloud/, '/datacloud')
 			},
-			// MCP API → FastAPI BFF (포트 3009)
+			// MCP API → FastAPI BFF (포트 3010)
 			'/api/mcp': {
 				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/mcp/, '/mcp')
 			},
-			// Gateway API → FastAPI BFF (포트 3009)
+			// Gateway API → FastAPI BFF (포트 3010)
 			'/api/gateway': {
 				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/gateway/, '/gateway')
 			},
-			// Monitoring API → FastAPI BFF (포트 3009)
+			// Monitoring API → FastAPI BFF (포트 3010)
 			'/api/monitoring': {
 				target: bffTarget,
 				changeOrigin: true,
 				ws: true
 			},
-			// Projects API → FastAPI BFF (포트 3009)
+			// Projects API → FastAPI BFF (포트 3010)
 			'/api/projects': {
 				target: bffTarget,
 				changeOrigin: true
 			},
-			// LLM Management API → FastAPI BFF (포트 3009)
+			// LLM Management API → FastAPI BFF (포트 3010)
 			'/api/llm': {
 				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/llm/, '/llm')
 			},
-			// Embed Proxy (Kong Admin) → FastAPI BFF (포트 3009)
+			// Embed Proxy (Kong Admin) → FastAPI BFF (포트 3010)
 			'/api/embed': {
 				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/embed/, '/embed')
 			},
-			// LangGraph Text-to-SQL Agent API → FastAPI BFF (포트 3009)
+			// LangGraph Text-to-SQL Agent API → FastAPI BFF (포트 3010)
 			'/api/text2sql': {
 				target: bffTarget,
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/text2sql/, '/text2sql')
 			},
-			// DART 기업공시분석 Agent API → FastAPI BFF (포트 3009)
+			// DART 기업공시분석 Agent API → FastAPI BFF (포트 3010)
 			// SSE 스트리밍을 위해 타임아웃을 10분으로 설정
 			'/api/dart': {
 				target: bffTarget,
@@ -117,7 +117,7 @@ export default defineConfig({
 				timeout: 600000,  // 10분 타임아웃
 				proxyTimeout: 600000  // 프록시 타임아웃 10분
 			},
-			// WebUI Backend API → FastAPI BFF (포트 3009) → WebUI Backend (8080)
+			// WebUI Backend API → FastAPI BFF (포트 3010) → WebUI Backend (8080)
 			// BFF의 /api/webui/* 라우터가 WebUI Backend로 프록시합니다.
 			// WebUI Backend의 /api/config, /api/v1/* 등을 /api/webui/*로 리라이트
 			'/api/config': {

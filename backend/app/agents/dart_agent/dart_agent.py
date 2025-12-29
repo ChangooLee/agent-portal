@@ -24,7 +24,7 @@ from .dart_types import (
 )
 from .message_refiner import MessageRefiner
 from .mcp_client import MCPTool, get_opendart_mcp_client
-from .metrics import observe, record_counter, start_dart_span
+from .metrics import observe, record_counter, start_dart_span, set_active_service
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +62,11 @@ class DartAgent(DartBaseAgent):
 
     def __init__(self, model: str = "qwen-235b"):
         """DART 에이전트 초기화 (Agent Portal 구조)"""
-        # OTEL 초기화 (DART 에이전트용)
+        # OTEL 초기화 (DART Multi-Agent용)
         try:
             from app.telemetry.otel import init_telemetry
-            init_telemetry(service_name="agent-dart")
-            log_step("DartAgent OTEL 초기화", "SUCCESS", "OpenTelemetry 초기화 완료")
+            init_telemetry(service_name="agent-dart-multi")
+            log_step("DartAgent OTEL 초기화", "SUCCESS", "OpenTelemetry 초기화 완료 (agent-dart-multi)")
         except Exception as e:
             log_step("DartAgent OTEL 초기화", "WARNING", f"OpenTelemetry 초기화 실패: {e}")
         
@@ -742,6 +742,9 @@ class DartAgent(DartBaseAgent):
             SSE 스트림 이벤트
         """
         start_time = time.time()
+        
+        # Multi Agent 전용 서비스 설정 (트레이스에서 구분용)
+        set_active_service("agent-dart-multi")
         
         # OTEL span 생성 (parent_carrier로 trace_id 계승)
         with start_dart_span(

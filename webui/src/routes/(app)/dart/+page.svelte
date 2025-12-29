@@ -503,7 +503,80 @@
 						fetch('http://127.0.0.1:7242/ingest/2a63104a-f45f-4098-b5e6-fe6cbc3b98a1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dart/+page.svelte:196',message:'SSE data parsed',data:{event:data.event},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
 						// #endregion
 						
-						switch (data.event) {
+						// ========================================
+						// 이벤트 타입별 표시 전략
+						// ========================================
+						// 1. message: 화면 메시지에 표시
+						// 2. spinner: 스피너에만 표시 (도구 호출 등)
+						// 3. report: 레포트에만 반영 (스트리밍 콘텐츠)
+						// 4. silent: 상태 업데이트만 (완료 이벤트 등)
+						// ========================================
+						
+						const eventType = data.event || data.type;
+						
+						// 이벤트 타입별 표시 전략 정의
+						const DISPLAY_MESSAGE = ['start', 'answer', 'agent_response', 'error', 'intent_classified'];
+						const DISPLAY_SPINNER = ['analyzing', 'progress', 'iteration', 'tool_start', 'tool_end', 'tool_result'];
+						const DISPLAY_REPORT = ['content', 'stream_chunk', 'analysis'];
+						const DISPLAY_SILENT = ['complete', 'done', 'end', 'final', 'agent_results'];
+						
+						// 기술적 이벤트 이름 → 사용자 친화적 메시지 매핑
+						const technicalToFriendly: Record<string, string> = {
+							'intent_classification_start': '🔍 질문 분석 중...',
+							'intent_classification_complete': '✅ 질문 분석 완료',
+							'mcp_call_start': '🔧 데이터 조회 중...',
+							'mcp_call_complete': '✅ 데이터 조회 완료',
+							'llm_call_start': '🤖 AI 분석 중...',
+							'llm_call_complete': '✅ AI 분석 완료',
+							'tool_call_start': '🔧 도구 실행 중...',
+							'tool_call_complete': '✅ 도구 실행 완료',
+							'mcp_start': '🔧 MCP 도구 호출 중...',
+							'mcp_complete': '✅ MCP 도구 호출 완료'
+						};
+						
+						// progress 이벤트 메시지 변환
+						const transformProgressMessage = (msg: string): string => {
+							// 기술적 이벤트 이름이 포함되어 있으면 친화적 메시지로 변환
+							for (const [tech, friendly] of Object.entries(technicalToFriendly)) {
+								if (msg.includes(tech)) {
+									return friendly;
+								}
+							}
+							// 기술적 이벤트 패턴 감지
+							if (msg.includes('_start') || msg.includes('_complete') || msg.includes('_end')) {
+								return '⏳ 처리 중...';
+							}
+							return msg;
+						};
+						
+						// 스피너 메시지 생성 헬퍼
+						const getSpinnerMessage = (event: string, eventData: any): string => {
+							switch (event) {
+								case 'analyzing':
+									return eventData.message || '분석 중...';
+								case 'progress': {
+									const rawMsg = eventData.content || eventData.message || '처리 중...';
+									return transformProgressMessage(rawMsg);
+								}
+								case 'intent_classified':
+									return `📋 ${eventData.company_name || '기업'} 분석 준비 중...`;
+								case 'iteration':
+									return `🔄 반복 ${eventData.iteration}...`;
+								case 'tool_start':
+									return `🔧 ${eventData.tool || eventData.display_name || '도구'} 실행 중...`;
+								case 'tool_end':
+									return `✅ ${eventData.tool || '도구'} 완료`;
+								case 'tool_result':
+									return `✅ ${eventData.display_name || eventData.tool_name || eventData.tool || '도구'} 완료`;
+								default:
+									return '처리 중...';
+							}
+						};
+						
+						switch (eventType) {
+							// ========================================
+							// 1. 화면 메시지로 표시하는 이벤트
+							// ========================================
 							case 'start':
 								messages = [...messages, {
 									id: generateId(),
@@ -513,152 +586,8 @@
 								}];
 								break;
 								
-							case 'analyzing':
-								currentToolCall = data.message || '분석 중...';
-								break;
-							
-							case 'progress':
-								// 진행 상황 메시지 표시 - currentToolCall만 업데이트 (중복 방지)
-								// 내부 이벤트 타입은 사용자에게 보여주지 않음
-								const progressMsg = data.content || data.message || '처리 중...';
-								// 기술적 이벤트 이름 필터링
-								if (!progressMsg.includes('_start') && !progressMsg.includes('_complete') && !progressMsg.includes('_end')) {
-									currentToolCall = progressMsg;
-									// 의미있는 진행 메시지만 messages에 추가
-									if (progressMsg.length > 10 && !progressMsg.includes('진행 중...')) {
-										messages = [...messages, {
-											id: generateId(),
-											role: 'assistant',
-											content: progressMsg,
-											timestamp: new Date()
-										}];
-									}
-								}
-								break;
-								
-							case 'intent_classified':
-								if (report) {
-									report.domain = data.domain;
-									report.company_name = data.company_name;
-								}
-								messages = [...messages, {
-									id: generateId(),
-									role: 'assistant',
-									content: `📋 의도 분류 완료: ${getDomainLabel(data.domain)}${data.company_name ? ` (${data.company_name})` : ''}`,
-									timestamp: new Date(),
-									intent: { domain: data.domain, company_name: data.company_name }
-								}];
-								break;
-								
-							case 'iteration':
-								currentToolCall = `반복 ${data.iteration}...`;
-								break;
-								
-							case 'tool_start':
-								currentToolCall = `🔧 ${data.tool} 실행 중...`;
-								messages = [...messages, {
-									id: generateId(),
-									role: 'tool',
-									content: `${data.tool} 도구 호출 중...`,
-									toolName: data.tool,
-									timestamp: new Date()
-								}];
-								break;
-								
-							case 'tool_end':
-								if (report && data.tool) {
-									report.toolsUsed = [...report.toolsUsed, data.tool];
-								}
-								// 마지막 tool 메시지 업데이트
-								messages = messages.map((m, i) => {
-									if (i === messages.length - 1 && m.role === 'tool') {
-										return { ...m, content: `✅ ${data.tool}: ${data.result?.substring(0, 100)}...` };
-									}
-									return m;
-								});
-								break;
-							
-							case 'tool_result':
-								// 도구 결과 수신 - 화면에 표시
-								const toolDisplayName = data.tool_name || data.tool || '도구';
-								currentToolCall = `✅ ${toolDisplayName} 완료`;
-								if (report && data.tool_name) {
-									report.toolsUsed = [...report.toolsUsed, data.tool_name];
-								}
-								messages = [...messages, {
-									id: generateId(),
-									role: 'tool',
-									content: `✅ ${toolDisplayName} 실행 완료`,
-									toolName: data.tool_name,
-									timestamp: new Date()
-								}];
-								break;
-								
-							case 'content':
-								// 스트리밍 콘텐츠 - 레포트에 누적
-								if (report && data.content) {
-									report.summary = (report.summary || '') + data.content;
-									report.sections = parseMarkdownToSections(report.summary);
-								}
-								break;
-								
-							case 'answer':
-								// 최종 답변 - 레포트에 추가
-								if (report) {
-									report.summary = data.content;
-									report.sections = parseMarkdownToSections(data.content);
-								}
-								messages = [...messages, {
-									id: generateId(),
-									role: 'assistant',
-									content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
-									timestamp: new Date()
-								}];
-								break;
-								
-							case 'done':
-								if (report) {
-									report.summary = data.answer || report.summary;
-									report.sections = parseMarkdownToSections(data.answer || report.summary);
-									report.tokens = data.tokens || report.tokens;
-									report.latency_ms = data.total_latency_ms || 0;
-								}
-								reportStreaming = false;
-								currentToolCall = null;
-								break;
-								
-							case 'complete':
-								// 분석 완료 - 레포트 표시
-								if (report && report.summary) {
-									// 레포트가 이미 채워져 있으면 완료 메시지 추가
-									messages = [...messages, {
-										id: generateId(),
-										role: 'assistant',
-										content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
-										timestamp: new Date()
-									}];
-								}
-								if (data.total_latency_ms && report) {
-									report.latency_ms = data.total_latency_ms;
-								}
-								reportStreaming = false;
-								currentToolCall = null;
-								break;
-								
-							case 'error':
-								toast.error(data.error || '오류가 발생했습니다');
-								messages = [...messages, {
-									id: generateId(),
-									role: 'assistant',
-									content: `❌ 오류: ${data.error}`,
-									timestamp: new Date()
-								}];
-								reportStreaming = false;
-								currentToolCall = null;
-								break;
-							
 							case 'agent_response':
-								// 개별 에이전트 응답 표시
+								// 서브 에이전트 응답 - 화면에 표시
 								const agentName = data.agent_name || '에이전트';
 								currentToolCall = `📊 ${agentName} 분석 완료`;
 								messages = [...messages, {
@@ -674,37 +603,146 @@
 								}
 								break;
 							
-							case 'agent_results':
-								// 에이전트 결과 수신 - 진행 표시
-								const resultsCount = data.results?.length || 0;
-								if (resultsCount > 0) {
-									currentToolCall = `📊 ${resultsCount}개 에이전트 분석 완료`;
+							case 'error':
+								toast.error(data.error || '오류가 발생했습니다');
+								messages = [...messages, {
+									id: generateId(),
+									role: 'assistant',
+									content: `❌ 오류: ${data.error || '알 수 없는 오류'}`,
+									timestamp: new Date()
+								}];
+								reportStreaming = false;
+								currentToolCall = null;
+								break;
+							
+							// ========================================
+							// 2. 스피너에만 표시하는 이벤트 (도구 호출 등)
+							// ========================================
+							case 'analyzing':
+							case 'progress':
+							case 'iteration':
+							case 'tool_start':
+							case 'tool_end':
+							case 'tool_result':
+								// 스피너만 업데이트 (화면 메시지 추가 안함)
+								currentToolCall = getSpinnerMessage(eventType, data);
+								// 도구 사용 기록
+								if (report) {
+									const toolName = data.tool_name || data.tool;
+									if (toolName && (eventType === 'tool_end' || eventType === 'tool_result')) {
+										if (!report.toolsUsed.includes(toolName)) {
+											report.toolsUsed = [...report.toolsUsed, toolName];
+										}
+									}
 								}
 								break;
 							
+							case 'intent_classified':
+								// 의도 분류 - 화면에 reasoning 표시 + 레포트 상태 업데이트
+								if (report) {
+									report.domain = data.domain;
+									report.company_name = data.company_name;
+								}
+								
+								// reasoning과 analysis_reasoning을 화면에 표시
+								const intentContent: string[] = [];
+								if (data.reasoning) {
+									intentContent.push(data.reasoning);
+								}
+								if (data.analysis_reasoning) {
+									intentContent.push(data.analysis_reasoning);
+								}
+								
+								if (intentContent.length > 0) {
+									messages = [...messages, {
+										id: generateId(),
+										role: 'assistant',
+										content: intentContent.join('\n\n'),
+										timestamp: new Date()
+									}];
+								}
+								
+								// 스피너도 업데이트
+								currentToolCall = getSpinnerMessage(eventType, data);
+								break;
+								
+							// ========================================
+							// 3. 레포트에만 반영하는 이벤트 (스트리밍 콘텐츠)
+							// ========================================
+							case 'content':
 							case 'stream_chunk':
-								// 스트리밍 청크 - 레포트에 누적
+							case 'analysis':
+								// 레포트에 콘텐츠 누적 (화면 메시지 추가 안함)
 								if (report && data.content) {
 									report.summary = (report.summary || '') + data.content;
 									report.sections = parseMarkdownToSections(report.summary);
 								}
 								break;
 							
-							case 'end':
-								// 분석 종료
+							// ========================================
+							// 4. 완료 이벤트 (상태 업데이트 + 완료 메시지)
+							// ========================================
+							case 'answer':
+								// 최종 답변 - 레포트 + 완료 메시지
+								if (report) {
+									report.summary = data.content;
+									report.sections = parseMarkdownToSections(data.content);
+								}
+								messages = [...messages, {
+									id: generateId(),
+									role: 'assistant',
+									content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
+									timestamp: new Date()
+								}];
 								reportStreaming = false;
 								currentToolCall = null;
-								if (report && data.final_answer) {
-									report.summary = data.final_answer;
-									report.sections = parseMarkdownToSections(data.final_answer);
+								break;
+								
+							case 'done':
+								if (report) {
+									report.summary = data.answer || report.summary;
+									report.sections = parseMarkdownToSections(data.answer || report.summary);
+									report.tokens = data.tokens || report.tokens;
+									report.latency_ms = data.total_latency_ms || 0;
+								}
+								reportStreaming = false;
+								currentToolCall = null;
+								break;
+								
+							case 'complete':
+								// 분석 완료 - 레포트가 있으면 완료 메시지 추가
+								if (report && report.summary) {
+									messages = [...messages, {
+										id: generateId(),
+										role: 'assistant',
+										content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
+										timestamp: new Date()
+									}];
+								}
+								if (data.total_latency_ms && report) {
+									report.latency_ms = data.total_latency_ms;
+								}
+								reportStreaming = false;
+								currentToolCall = null;
+								break;
+							
+							case 'agent_results':
+								// 에이전트 결과 수신 - 스피너만 업데이트
+								const resultsCount = data.results?.length || 0;
+								if (resultsCount > 0) {
+									currentToolCall = `📊 ${resultsCount}개 에이전트 분석 완료`;
 								}
 								break;
 							
+							case 'end':
 							case 'final':
-								// 최종 결과 - 레포트 업데이트
-								if (report && data.response) {
-									report.summary = data.response;
-									report.sections = parseMarkdownToSections(data.response);
+								// 분석 종료
+								if (report) {
+									const finalContent = data.final_answer || data.response;
+									if (finalContent) {
+										report.summary = finalContent;
+										report.sections = parseMarkdownToSections(finalContent);
+									}
 								}
 								reportStreaming = false;
 								currentToolCall = null;

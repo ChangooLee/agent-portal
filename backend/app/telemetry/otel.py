@@ -17,10 +17,14 @@ _tracer_provider = None
 _meter_provider = None
 _initialized = False
 
+# Service-specific tracer providers
+_service_tracer_providers = {}
+
 
 def init_telemetry(
     service_name: str = "agent-text2sql",
-    otlp_endpoint: Optional[str] = None
+    otlp_endpoint: Optional[str] = None,
+    force: bool = False
 ) -> bool:
     """
     OpenTelemetry 초기화.
@@ -28,13 +32,14 @@ def init_telemetry(
     Args:
         service_name: 서비스 이름
         otlp_endpoint: OTLP exporter 엔드포인트 (None이면 환경변수 사용)
+        force: True면 이미 초기화되어 있어도 재초기화
         
     Returns:
         초기화 성공 여부
     """
     global _tracer_provider, _meter_provider, _initialized
     
-    if _initialized:
+    if _initialized and not force:
         logger.debug("Telemetry already initialized")
         return True
     
@@ -52,10 +57,13 @@ def init_telemetry(
         endpoint = otlp_endpoint or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4317")
         
         # Resource (서비스 식별)
+        # project_id는 모니터링 화면에서 필터링에 사용됨
+        default_project_id = os.getenv("DEFAULT_PROJECT_ID", "8c59e361-3727-418c-bc68-086b69f7598b")
         resource = Resource.create({
             "service.name": service_name,
             "service.namespace": "agent-portal",
-            "deployment.environment": os.getenv("ENVIRONMENT", "development")
+            "deployment.environment": os.getenv("ENVIRONMENT", "development"),
+            "project_id": default_project_id  # 모니터링 필터링용
         })
         
         # Tracer Provider
@@ -105,6 +113,63 @@ def get_tracer(name: str = "text2sql"):
         return trace.get_tracer(name)
     except ImportError:
         logger.warning("OpenTelemetry not available")
+        return _NoOpTracer()
+
+
+def get_tracer_for_service(service_name: str, tracer_name: str = "default"):
+    """
+    특정 서비스용 Tracer 인스턴스 획득.
+    각 서비스별로 별도의 TracerProvider를 생성하여 ServiceName을 구분합니다.
+    
+    Args:
+        service_name: 서비스 이름 (예: "agent-dart-single", "agent-dart-multi")
+        tracer_name: Tracer 이름
+        
+    Returns:
+        해당 서비스용 Tracer 인스턴스
+    """
+    global _service_tracer_providers
+    
+    if service_name in _service_tracer_providers:
+        return _service_tracer_providers[service_name].get_tracer(tracer_name)
+    
+    try:
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        
+        # OTLP endpoint
+        endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4317")
+        
+        # Resource (서비스 식별)
+        default_project_id = os.getenv("DEFAULT_PROJECT_ID", "8c59e361-3727-418c-bc68-086b69f7598b")
+        resource = Resource.create({
+            "service.name": service_name,
+            "service.namespace": "agent-portal",
+            "deployment.environment": os.getenv("ENVIRONMENT", "development"),
+            "project_id": default_project_id
+        })
+        
+        # Tracer Provider
+        tracer_provider = TracerProvider(resource=resource)
+        
+        # Span Exporter
+        span_exporter = OTLPSpanExporter(endpoint=endpoint, insecure=True)
+        tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
+        
+        # 캐시에 저장
+        _service_tracer_providers[service_name] = tracer_provider
+        
+        logger.info(f"Created TracerProvider for service: {service_name}")
+        
+        return tracer_provider.get_tracer(tracer_name)
+        
+    except ImportError as e:
+        logger.warning(f"OpenTelemetry packages not installed: {e}")
+        return _NoOpTracer()
+    except Exception as e:
+        logger.error(f"Failed to create TracerProvider for {service_name}: {e}")
         return _NoOpTracer()
 
 

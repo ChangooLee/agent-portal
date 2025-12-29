@@ -22,18 +22,39 @@ _meter = None
 _counters = {}
 _histograms = {}
 
+# 서비스별 tracer 캐시
+_service_tracers = {}
+# 현재 활성 서비스 이름 (기본값: dart-agent)
+_active_service_name = "agent-text2sql"
+
+
+def set_active_service(service_name: str):
+    """활성 서비스 이름 설정. 이후 _get_tracer() 호출 시 해당 서비스용 tracer 반환."""
+    global _active_service_name
+    _active_service_name = service_name
+    logger.debug(f"Set active service to: {service_name}")
+
 
 def _get_tracer():
     """Tracer 인스턴스 획득 (지연 초기화)."""
-    global _tracer
-    if _tracer is None:
-        try:
-            from app.telemetry.otel import get_tracer
-            _tracer = get_tracer("dart-agent")
-        except ImportError:
-            logger.warning("OTEL tracer not available, using no-op")
-            _tracer = _NoOpTracer()
-    return _tracer
+    global _tracer, _service_tracers
+    
+    # 서비스별 tracer 사용
+    if _active_service_name in _service_tracers:
+        return _service_tracers[_active_service_name]
+    
+    try:
+        from app.telemetry.otel import get_tracer_for_service
+        tracer = get_tracer_for_service(_active_service_name, "dart-agent")
+        _service_tracers[_active_service_name] = tracer
+        logger.debug(f"Created tracer for service: {_active_service_name}")
+        return tracer
+    except ImportError:
+        logger.warning("OTEL tracer not available, using no-op")
+        return _NoOpTracer()
+    except Exception as e:
+        logger.warning(f"Failed to get tracer for {_active_service_name}: {e}")
+        return _NoOpTracer()
 
 
 def _get_meter():
@@ -183,8 +204,8 @@ def start_dart_span(
 
     tracer = _get_tracer()
 
-    # 기본 속성
-    attrs = {"service.name": "agent-dart", "component": "dart-agent"}
+    # 기본 속성 (service.name은 OTEL Resource에서 설정됨)
+    attrs = {"component": "dart-agent"}
     if attributes:
         attrs.update(attributes)
 
@@ -243,9 +264,8 @@ def start_llm_call_span(
     # GenAI Semantic Convention 표준 span 이름
     span_name = "gen_ai.content.completion"
 
-    # GenAI 표준 속성
+    # GenAI 표준 속성 (service.name은 OTEL Resource에서 설정됨)
     attrs = {
-        "service.name": "agent-dart",
         "component": "dart-agent",
         # GenAI 표준 속성
         "gen_ai.operation.name": "completion",
@@ -361,9 +381,8 @@ def start_tool_call_span(
     # 디버그 로그
     logger.info(f"[start_tool_call_span] Creating span: {span_name}, tool: {tool_name}, tracer type: {type(tracer).__name__}")
 
-    # GenAI 표준 속성
+    # GenAI 표준 속성 (service.name은 OTEL Resource에서 설정됨)
     attrs = {
-        "service.name": "agent-dart",
         "component": "dart-agent",
         "gen_ai.operation.name": "tool_call",
         "gen_ai.tool.name": tool_name,
@@ -575,9 +594,8 @@ def observe(span_name: Optional[str] = None, include_args: bool = True, include_
                 # 로그 (observe 데코레이터 동작 확인용)
                 logger.info(f"[observe] Creating span: {name}, is_async_generator={is_async_generator}, func={func.__name__}")
                 
-                # 기본 속성 (GenAI 표준)
+                # 기본 속성 (GenAI 표준, service.name은 OTEL Resource에서 설정됨)
                 base_attrs = {
-                    "service.name": "agent-dart",
                     "component": "dart-agent",
                     "gen_ai.agent.function": func.__name__,
                 }
@@ -828,9 +846,8 @@ def observe(span_name: Optional[str] = None, include_args: bool = True, include_
                 # 로그
                 logger.info(f"[observe] Creating span: {name}, func={func.__name__}")
                 
-                # 기본 속성 (GenAI 표준)
+                # 기본 속성 (GenAI 표준, service.name은 OTEL Resource에서 설정됨)
                 base_attrs = {
-                    "service.name": "agent-dart",
                     "component": "dart-agent",
                     "gen_ai.agent.function": func.__name__,
                 }

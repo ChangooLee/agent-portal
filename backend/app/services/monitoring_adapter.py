@@ -130,10 +130,8 @@ class MonitoringAdapter:
             -- 토큰이 있는 LLM 호출 (실제 API 호출) - GenAI 표준 속성도 포함
             OR toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens']) > 0
             OR toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) > 0
-            -- 레거시 DART 에이전트 호출 (기존 호환)
-            OR SpanName LIKE 'dart.llm_call.%'
-            OR SpanName LIKE 'dart.tool_call.%'
-            OR SpanName LIKE 'dart.http.%'
+            -- DART 에이전트 호출 (모든 dart.* 패턴 포함)
+            OR SpanName LIKE 'dart.%'
             -- LiteLLM 프록시 호출
             OR SpanName = 'litellm_request'
             -- OpenRouter 원시 요청 (비용 정보 포함)

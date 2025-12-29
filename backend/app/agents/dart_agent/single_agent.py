@@ -20,7 +20,7 @@ from langchain_openai import ChatOpenAI
 from app.agents.dart_agent.mcp_client import get_opendart_mcp_client, MCPTool
 from app.agents.dart_agent.utils.prompt_templates import PromptBuilder
 from app.agents.dart_agent.message_refiner import MessageRefiner
-from app.agents.dart_agent.metrics import inject_context_to_carrier, start_dart_span
+from app.agents.dart_agent.metrics import inject_context_to_carrier, start_dart_span, set_active_service
 
 # traceparent 헤더 생성 함수
 def _get_traceparent_headers() -> Dict[str, str]:
@@ -324,6 +324,9 @@ class DartSingleAgent:
             SSE 이벤트 딕셔너리
         """
         start_time = time.time()
+        
+        # Single Agent 전용 서비스 설정 (트레이스에서 구분용)
+        set_active_service("agent-dart-single")
         
         # Root span 생성 (gen_ai.session) - 모든 하위 호출이 같은 TraceId 공유
         with start_dart_span("gen_ai.session", {

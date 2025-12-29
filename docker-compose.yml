@@ -24,7 +24,7 @@ services:
     environment:
       - NODE_ENV=development
       - DOCKER_ENV=true
-      - VITE_HMR_PORT=3009  # External port for HMR WebSocket
+      - VITE_HMR_PORT=3010  # External port for HMR WebSocket
       - ENABLE_OPENAI_API=true
       - OPENAI_API_BASE_URLS=http://litellm:4000/v1
       - OPENAI_API_KEYS=${LITELLM_MASTER_KEY}
@@ -43,7 +43,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "3009:3009"    # Single port architecture - BFF is main entry point
+      - "3010:3010"    # Single port architecture - BFF is main entry point
     env_file: .env
     environment:
       - DEBUG=true

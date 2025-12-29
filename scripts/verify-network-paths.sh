@@ -61,30 +61,30 @@ test_path() {
 }
 
 # Network Path 1: Browser → WebUI Frontend
-echo -e "${BLUE}Path 1: Browser → WebUI Frontend (3009)${NC}"
-test_path "WebUI Frontend" "http://localhost:3009/"
+echo -e "${BLUE}Path 1: Browser → WebUI Frontend (3010)${NC}"
+test_path "WebUI Frontend" "http://localhost:3010/"
 
 # Network Path 2: Browser → BFF → WebUI Backend
 echo ""
-echo -e "${BLUE}Path 2: Browser → BFF (3009) → WebUI Backend (8080)${NC}"
-test_path "WebUI Backend Health" "http://localhost:3009/api/webui/health"
+echo -e "${BLUE}Path 2: Browser → BFF (3010) → WebUI Backend (8080)${NC}"
+test_path "WebUI Backend Health" "http://localhost:3010/api/webui/health"
 
 # Network Path 3: Browser → BFF
 echo ""
-echo -e "${BLUE}Path 3: Browser → BFF (3009)${NC}"
-test_path "BFF Health" "http://localhost:3009/health"
-test_path "BFF Monitoring" "http://localhost:3009/monitoring/traces?limit=1"
-test_path "BFF MCP Servers" "http://localhost:3009/mcp/servers"
-test_path "BFF DataCloud" "http://localhost:3009/datacloud/connections"
+echo -e "${BLUE}Path 3: Browser → BFF (3010)${NC}"
+test_path "BFF Health" "http://localhost:3010/health"
+test_path "BFF Monitoring" "http://localhost:3010/monitoring/traces?limit=1"
+test_path "BFF MCP Servers" "http://localhost:3010/mcp/servers"
+test_path "BFF DataCloud" "http://localhost:3010/datacloud/connections"
 
 # Network Path 4: Browser → BFF → Kong → MCP
 echo ""
-echo -e "${BLUE}Path 4: Browser → BFF (3009) → Kong (8000) → MCP Server${NC}"
-MCP_SERVERS=$(curl -s http://localhost:3009/mcp/servers 2>/dev/null || echo "[]")
+echo -e "${BLUE}Path 4: Browser → BFF (3010) → Kong (8000) → MCP Server${NC}"
+MCP_SERVERS=$(curl -s http://localhost:3010/mcp/servers 2>/dev/null || echo "[]")
 if echo "$MCP_SERVERS" | grep -q '"id"'; then
     SERVER_ID=$(echo "$MCP_SERVERS" | grep -oE '"id"\s*:\s*"[^"]+"' | head -1 | sed 's/.*"id"\s*:\s*"\([^"]*\)".*/\1/')
     if [ -n "$SERVER_ID" ]; then
-        test_path "MCP via Kong" "http://localhost:3009/api/mcp/servers/${SERVER_ID}/tools"
+        test_path "MCP via Kong" "http://localhost:3010/api/mcp/servers/${SERVER_ID}/tools"
     else
         echo "  ⚠ No MCP servers found"
     fi
@@ -115,8 +115,8 @@ echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo -e "${BLUE}Network Topology Verification:${NC}"
 echo ""
-echo "  External Access (Port 3009):"
-echo "    Browser → http://localhost:3009"
+echo "  External Access (Port 3010):"
+echo "    Browser → http://localhost:3010"
 echo ""
 echo "  Internal Network:"
 echo "    BFF → WebUI Backend: http://webui:8080"

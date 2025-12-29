@@ -42,7 +42,7 @@ Enterprise AI agent management platform built on Open-WebUI, providing:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         User Browser                             │
-│                      http://localhost:3009                       │
+│                      http://localhost:3010                       │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
@@ -117,7 +117,7 @@ Browser → BFF (3009) → Kong (8000, internal) → MCP Servers
 
 | Service | External Port | Internal Port | Container | Health Check | Purpose |
 |---------|--------------|---------------|-----------|--------------|---------|
-| backend | 3009 | 3009 | agent-portal-backend-1 | http://localhost:3009/health | FastAPI BFF (Main Entry Point) |
+| backend | 3009 | 3009 | agent-portal-backend-1 | http://localhost:3010/health | FastAPI BFF (Main Entry Point) |
 | webui | - | 3001 (Vite), 8080 (Backend) | agent-portal-webui-1 | Via BFF proxy | Portal UI (SvelteKit + Open-WebUI) |
 | litellm | 4000 | 4000 | agent-portal-litellm-1 | http://localhost:4000/health | LLM Proxy |
 | kong | 8004 | 8000 (Proxy), 8001 (Admin) | agent-portal-kong-1 | http://localhost:8004/status | API Gateway (Internal only) |
@@ -653,11 +653,11 @@ curl "http://localhost:8124/?query=SELECT+count()+FROM+otel_2.otel_traces"
 
 ```bash
 # Test backend API (Single Port Architecture)
-curl http://localhost:3009/health
-curl http://localhost:3009/docs
+curl http://localhost:3010/health
+curl http://localhost:3010/docs
 
 # Test frontend
-curl http://localhost:3009
+curl http://localhost:3010
 
 # Test LiteLLM
 curl http://localhost:4000/health
@@ -701,28 +701,28 @@ curl http://localhost:4000/health
 핵심 네트워크 경로별 테스트 케이스:
 
 1. **기본 연결 테스트**: Browser → WebUI Frontend (3009)
-   - `GET http://localhost:3009/` → 200 OK
+   - `GET http://localhost:3010/` → 200 OK
    - HTML 응답, 정적 파일 로드 확인
 
 2. **WebUI Backend 프록시**: Browser → BFF (3009) → WebUI Backend (8080)
-   - `GET http://localhost:3009/api/webui/health`
-   - `POST http://localhost:3009/api/webui/v1/chat`
+   - `GET http://localhost:3010/api/webui/health`
+   - `POST http://localhost:3010/api/webui/v1/chat`
    - 인증 토큰 전달 확인
 
 3. **BFF 직접 API**: Browser → BFF (3009)
-   - `GET http://localhost:3009/health`
-   - `GET http://localhost:3009/monitoring/traces`
-   - `GET http://localhost:3009/mcp/servers`
+   - `GET http://localhost:3010/health`
+   - `GET http://localhost:3010/monitoring/traces`
+   - `GET http://localhost:3010/mcp/servers`
 
 4. **Kong Gateway 통합**: Browser → BFF (3009) → Kong (8000) → MCP Server
    - MCP 서버 등록 → Kong에 서비스/라우트 생성 확인
-   - `GET http://localhost:3009/api/mcp/servers/{id}/tools` → Kong 경유 MCP 호출
+   - `GET http://localhost:3010/api/mcp/servers/{id}/tools` → Kong 경유 MCP 호출
    - API Key 인증 확인
    - Rate Limiting 동작 확인
 
 5. **DataCloud Kong 통합**: Browser → BFF (3009) → Kong (8000) → Database
    - DB 연결 생성 → Kong에 서비스/라우트 생성 확인
-   - `POST http://localhost:3009/api/datacloud/connections/{id}/query` → Kong 경유 DB 쿼리
+   - `POST http://localhost:3010/api/datacloud/connections/{id}/query` → Kong 경유 DB 쿼리
    - 연결 정보 암호화 확인
 
 6. **WebSocket 연결**: Browser → BFF (3009) → WebUI Backend (8080)
@@ -744,7 +744,7 @@ curl http://localhost:4000/health
 **검증 명령어**:
 ```bash
 # External access (Port 3009)
-curl http://localhost:3009/health
+curl http://localhost:3010/health
 
 # Internal network verification
 docker compose exec backend curl http://webui:8080/health
@@ -815,11 +815,11 @@ CLICKHOUSE_HOST: localhost:8124
 
 | 경로 | 상태 | 설명 |
 |------|------|------|
-| WebUI Frontend | ✅ | `http://localhost:3009/` → Vite Dev Server (3001, internal) |
-| WebUI Backend | ✅ | `http://localhost:3009/api/v1/*` → WebUI Backend (8080, internal) |
-| BFF 직접 API | ✅ | `http://localhost:3009/health`, `/monitoring/*`, `/chat/*` 등 |
-| MCP Gateway | ✅ | `http://localhost:3009/api/mcp/*` → BFF → Kong → MCP Servers |
-| DataCloud | ✅ | `http://localhost:3009/api/datacloud/*` → BFF → Kong → Databases |
+| WebUI Frontend | ✅ | `http://localhost:3010/` → Vite Dev Server (3001, internal) |
+| WebUI Backend | ✅ | `http://localhost:3010/api/v1/*` → WebUI Backend (8080, internal) |
+| BFF 직접 API | ✅ | `http://localhost:3010/health`, `/monitoring/*`, `/chat/*` 등 |
+| MCP Gateway | ✅ | `http://localhost:3010/api/mcp/*` → BFF → Kong → MCP Servers |
+| DataCloud | ✅ | `http://localhost:3010/api/datacloud/*` → BFF → Kong → Databases |
 | Kong Gateway | ✅ | 내부 네트워크(`kong:8000`)로만 접근, BFF를 통해서만 외부 노출 |
 
 ### 11.2 Router Configuration

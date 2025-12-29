@@ -16,7 +16,8 @@ from .base import DartBaseAgent
 from .mcp_client import MCPTool, get_opendart_mcp_client
 from .metrics import (
     start_dart_span, start_llm_call_span,
-    record_counter, record_histogram, get_trace_headers, inject_context_to_carrier
+    record_counter, record_histogram, get_trace_headers, inject_context_to_carrier,
+    set_active_service
 )
 
 logger = logging.getLogger(__name__)
@@ -363,6 +364,9 @@ class DartAgent(DartBaseAgent):
         Yields:
             스트림 이벤트
         """
+        # Multi Agent 전용 서비스 설정 (트레이스에서 구분용)
+        set_active_service("agent-dart-multi")
+        
         # OTEL span 생성 (parent_carrier로 trace_id 계승)
         try:
             span_context = start_dart_span(
@@ -435,7 +439,8 @@ class DartAgent(DartBaseAgent):
                             "event": "intent_classified",
                             "domain": intent.domain.value,
                             "company_name": intent.company_name,
-                            "reasoning": intent.reasoning
+                            "reasoning": intent.reasoning,
+                            "analysis_reasoning": getattr(intent, 'analysis_reasoning', '')
                         }
                         _record_otel_event(span, "intent_classified", intent_event)
                         yield intent_event

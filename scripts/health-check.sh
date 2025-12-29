@@ -74,9 +74,9 @@ printf "%-20s %-10s %-10s %-10s\n" "SERVICE" "PORT" "STATUS" "HEALTH"
 printf "%-20s %-10s %-10s %-10s\n" "-------" "----" "------" "------"
 
 # Service list (service:port:health_url)
-# Single Port Architecture: BFF is main entry point at port 3009
+# Single Port Architecture: BFF is main entry point at port 3010
 SERVICES="
-backend:3009:http://localhost:3009/health
+backend:3010:http://localhost:3010/health
 webui:3001:http://localhost:3001
 litellm:4000:http://localhost:4000/health
 clickhouse:8124:http://localhost:8124/ping

@@ -40,7 +40,7 @@ INTERVAL=5
 
 while [ $ELAPSED -lt $MAX_WAIT ]; do
     # Check BFF health
-    if curl -s --max-time 2 http://localhost:3009/health > /dev/null 2>&1; then
+    if curl -s --max-time 2 http://localhost:3010/health > /dev/null 2>&1; then
         echo -e "${GREEN}✓ BFF is ready${NC}"
         break
     fi
@@ -67,7 +67,7 @@ TOTAL_TESTS=0
 # Test 1: BFF Health Check
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 echo -n "  Test 1: BFF Health Check... "
-if curl -s --max-time 5 http://localhost:3009/health | grep -q "healthy"; then
+if curl -s --max-time 5 http://localhost:3010/health | grep -q "healthy"; then
     echo -e "${GREEN}✓ PASSED${NC}"
 else
     echo -e "${RED}✗ FAILED${NC}"
@@ -77,7 +77,7 @@ fi
 # Test 2: WebUI Frontend (via BFF)
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 echo -n "  Test 2: WebUI Frontend (via BFF)... "
-if curl -s --max-time 5 -I http://localhost:3009/ | grep -q "200 OK"; then
+if curl -s --max-time 5 -I http://localhost:3010/ | grep -q "200 OK"; then
     echo -e "${GREEN}✓ PASSED${NC}"
 else
     echo -e "${RED}✗ FAILED${NC}"
@@ -87,7 +87,7 @@ fi
 # Test 3: WebUI Backend Proxy
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 echo -n "  Test 3: WebUI Backend Proxy... "
-if curl -s --max-time 5 http://localhost:3009/api/webui/health > /dev/null 2>&1; then
+if curl -s --max-time 5 http://localhost:3010/api/webui/health > /dev/null 2>&1; then
     echo -e "${GREEN}✓ PASSED${NC}"
 else
     echo -e "${YELLOW}⚠ SKIPPED (WebUI Backend may not be ready)${NC}"
@@ -96,7 +96,7 @@ fi
 # Test 4: Monitoring API
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 echo -n "  Test 4: Monitoring API... "
-if curl -s --max-time 5 http://localhost:3009/monitoring/traces?limit=1 > /dev/null 2>&1; then
+if curl -s --max-time 5 http://localhost:3010/monitoring/traces?limit=1 > /dev/null 2>&1; then
     echo -e "${GREEN}✓ PASSED${NC}"
 else
     echo -e "${YELLOW}⚠ SKIPPED (Monitoring may not be ready)${NC}"
@@ -105,7 +105,7 @@ fi
 # Test 5: MCP API
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 echo -n "  Test 5: MCP API... "
-if curl -s --max-time 5 http://localhost:3009/mcp/servers > /dev/null 2>&1; then
+if curl -s --max-time 5 http://localhost:3010/mcp/servers > /dev/null 2>&1; then
     echo -e "${GREEN}✓ PASSED${NC}"
 else
     echo -e "${YELLOW}⚠ SKIPPED (MCP service may not be ready)${NC}"
@@ -118,8 +118,8 @@ if [ $FAILED_TESTS -eq 0 ]; then
     echo -e "${GREEN}✓ All tests passed! (${TOTAL_TESTS} tests)${NC}"
     echo ""
     echo -e "${BLUE}Services are running:${NC}"
-    echo "  - Portal UI: http://localhost:3009"
-    echo "  - BFF API: http://localhost:3009/docs"
+    echo "  - Portal UI: http://localhost:3010"
+    echo "  - BFF API: http://localhost:3010/docs"
     echo ""
     exit 0
 else
@@ -131,6 +131,10 @@ else
     echo ""
     exit 1
 fi
+
+
+
+
 
 
 

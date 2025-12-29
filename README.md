@@ -215,7 +215,7 @@ All services are accessed through a single port (3009). The BFF (Backend for Fro
 
 ```mermaid
 graph TB
-    Browser[User Browser<br/>http://localhost:3009]
+    Browser[User Browser<br/>http://localhost:3010]
     BFF[BFF FastAPI<br/>Port 3009]
     WebUI[WebUI Container<br/>Vite:3001, Backend:8080]
     Kong[Kong Gateway<br/>Port 8000 internal]
@@ -252,7 +252,7 @@ graph TB
 
 | Service | External Port | Purpose | Health Check |
 |---------|--------------|---------|--------------|
-| **backend** | 3009 | FastAPI BFF (Main Entry Point) | http://localhost:3009/health |
+| **backend** | 3009 | FastAPI BFF (Main Entry Point) | http://localhost:3010/health |
 | **webui** | - | Portal UI (SvelteKit + Open-WebUI) | Via BFF proxy |
 | **litellm** | 4000 | LLM Gateway (100+ models) | http://localhost:4000/health |
 | **mariadb** | 3306 | App Database | - |
@@ -300,8 +300,8 @@ docker compose up -d
 
 | URL | Description |
 |-----|-------------|
-| http://localhost:3009 | **Portal UI (Main Entry Point)** |
-| http://localhost:3009/docs | Backend API Documentation |
+| http://localhost:3010 | **Portal UI (Main Entry Point)** |
+| http://localhost:3010/docs | Backend API Documentation |
 | http://localhost:4000/ui | LiteLLM Admin UI |
 | http://localhost:1337 | Kong Admin (Konga) |
 
@@ -367,7 +367,7 @@ docker compose ps
 docker compose logs backend --tail=50 -f
 
 # Check port conflicts
-lsof -i :3009
+lsof -i :3010
 
 # Health check
 ./scripts/health-check.sh
