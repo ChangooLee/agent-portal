@@ -120,8 +120,8 @@ docker compose up -d
 | Portal UI | http://서버IP:3005 | 메인 UI |
 | API Docs | http://서버IP:3005/docs | Swagger UI |
 | Health | http://서버IP:3005/health | 헬스 체크 |
-| LiteLLM | http://서버IP:4000/health | LLM Gateway |
-| Prometheus | http://서버IP:9090 | 메트릭 |
+| LiteLLM | http://서버IP:4001/health | LLM Gateway |
+| Prometheus | http://서버IP:9092 | 메트릭 |
 
 ---
 
@@ -149,7 +149,7 @@ docker compose logs <서비스명> --tail=100
 docker compose exec mariadb mariadb -uroot -prootpass -e "SELECT 1;"
 
 # ClickHouse
-curl http://localhost:8124/ping
+curl http://localhost:8125/ping
 ```
 
 ---
@@ -180,10 +180,10 @@ curl http://localhost:8124/ping
 | 서비스 | 외부 | 내부 | 용도 |
 |--------|------|------|------|
 | backend | **3005** | 3010 | BFF (메인 진입점) |
-| litellm | 4000 | 4000 | LLM Gateway |
+| litellm | 4001 | 4000 | LLM Gateway |
 | mariadb | 3306 | 3306 | 앱 DB |
-| clickhouse | 8124 | 8123 | 트레이스 저장 |
-| prometheus | 9090 | 9090 | 메트릭 |
+| clickhouse | 8125 | 8123 | 트레이스 저장 |
+| prometheus | 9092 | 9090 | 메트릭 |
 | redis | 6379 | 6379 | 캐시 |
 
 > 전체 포트 목록: [AGENTS.md - Section 3.1](../AGENTS.md#31-core-services)
