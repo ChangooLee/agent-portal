@@ -9,17 +9,17 @@ Agent Portal의 핵심 네트워크 경로와 통합 기능을 검증하는 테�
 - Docker 및 Docker Compose 설치
 - `curl` 또는 `httpie` 설치
 - `jq` (JSON 파서, 선택사항)
-- 포트 3009 사용 가능
+- 포트 3010 사용 가능 (또는 서버 환경에서 3005)
 
 ## 핵심 네트워크 경로 테스트
 
 ### 1. 기본 연결 테스트
 
-**경로**: Browser → WebUI Frontend (3009)
+**경로**: Browser → WebUI Frontend (3010)
 
 ```bash
 # WebUI Frontend 접근 확인
-curl -I http://localhost:3009/
+curl -I http://localhost:3010/
 
 # 예상 결과: HTTP/1.1 200 OK
 ```
@@ -31,20 +31,20 @@ curl -I http://localhost:3009/
 
 ### 2. WebUI Backend 프록시 테스트
 
-**경로**: Browser → BFF (3009) → WebUI Backend (8080)
+**경로**: Browser → BFF (3010) → WebUI Backend (8080)
 
 ```bash
 # WebUI Backend health check
-curl http://localhost:3009/api/webui/health
+curl http://localhost:3010/api/webui/health
 
 # 채팅 API 호출 (인증 필요)
-curl -X POST http://localhost:3009/api/webui/v1/chat \
+curl -X POST http://localhost:3010/api/webui/v1/chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{"message": "Hello"}'
 
 # 모델 목록 조회
-curl http://localhost:3009/api/webui/v1/models
+curl http://localhost:3010/api/webui/v1/models
 ```
 
 **검증 포인트**:
@@ -54,20 +54,20 @@ curl http://localhost:3009/api/webui/v1/models
 
 ### 3. BFF 직접 API 테스트
 
-**경로**: Browser → BFF (3009)
+**경로**: Browser → BFF (3010)
 
 ```bash
 # BFF health check
-curl http://localhost:3009/health
+curl http://localhost:3010/health
 
 # 모니터링 API
-curl http://localhost:3009/monitoring/traces?limit=10
+curl http://localhost:3010/monitoring/traces?limit=10
 
 # MCP 서버 목록
-curl http://localhost:3009/mcp/servers
+curl http://localhost:3010/mcp/servers
 
 # DataCloud 연결 목록
-curl http://localhost:3009/datacloud/connections
+curl http://localhost:3010/datacloud/connections
 ```
 
 **검증 포인트**:
@@ -77,11 +77,11 @@ curl http://localhost:3009/datacloud/connections
 
 ### 4. Kong Gateway 통합 테스트
 
-**경로**: Browser → BFF (3009) → Kong (8000, 내부) → MCP Server
+**경로**: Browser → BFF (3010) → Kong (8000, 내부) → MCP Server
 
 ```bash
 # 1. MCP 서버 등록 (Kong에 자동 등록)
-curl -X POST http://localhost:3009/mcp/servers \
+curl -X POST http://localhost:3010/mcp/servers \
   -H "Content-Type: application/json" \
   -d '{
     "name": "test-mcp",
@@ -90,16 +90,16 @@ curl -X POST http://localhost:3009/mcp/servers \
   }'
 
 # 2. Kong을 통한 MCP 호출
-curl http://localhost:3009/api/mcp/servers/{server_id}/tools \
+curl http://localhost:3010/api/mcp/servers/{server_id}/tools \
   -H "X-API-Key: <kong_api_key>"
 
 # 3. API Key 인증 확인
-curl http://localhost:3009/api/mcp/servers/{server_id}/tools
+curl http://localhost:3010/api/mcp/servers/{server_id}/tools
 # 예상: 401 Unauthorized (API Key 없음)
 
 # 4. Rate Limiting 확인 (100회 이상 요청)
 for i in {1..101}; do
-  curl http://localhost:3009/api/mcp/servers/{server_id}/tools \
+  curl http://localhost:3010/api/mcp/servers/{server_id}/tools \
     -H "X-API-Key: <kong_api_key>"
 done
 # 예상: 429 Too Many Requests
@@ -113,11 +113,11 @@ done
 
 ### 5. DataCloud Kong 통합 테스트
 
-**경로**: Browser → BFF (3009) → Kong (8000, 내부) → Database
+**경로**: Browser → BFF (3010) → Kong (8000, 내부) → Database
 
 ```bash
 # 1. DB 연결 생성 (Kong에 자동 등록)
-curl -X POST http://localhost:3009/datacloud/connections \
+curl -X POST http://localhost:3010/datacloud/connections \
   -H "Content-Type: application/json" \
   -d '{
     "name": "test-db",
@@ -130,13 +130,13 @@ curl -X POST http://localhost:3009/datacloud/connections \
   }'
 
 # 2. Kong을 통한 DB 쿼리 (연결 정보는 Kong을 통해 관리)
-curl -X POST http://localhost:3009/datacloud/connections/{conn_id}/query \
+curl -X POST http://localhost:3010/datacloud/connections/{conn_id}/query \
   -H "Content-Type: application/json" \
   -H "X-API-Key: <kong_api_key>" \
   -d '{"query": "SELECT 1"}'
 
 # 3. 연결 정보 암호화 확인
-curl http://localhost:3009/datacloud/connections/{conn_id}
+curl http://localhost:3010/datacloud/connections/{conn_id}
 # 예상: password 필드가 암호화되어 있음
 ```
 
@@ -147,11 +147,11 @@ curl http://localhost:3009/datacloud/connections/{conn_id}
 
 ### 6. WebSocket 연결 테스트
 
-**경로**: Browser → BFF (3009) → WebUI Backend (8080)
+**경로**: Browser → BFF (3010) → WebUI Backend (8080)
 
 ```bash
 # WebSocket 연결 테스트 (wscat 사용)
-wscat -c ws://localhost:3009/api/webui/ws
+wscat -c ws://localhost:3010/api/webui/ws
 
 # 또는 curl로 WebSocket 업그레이드 확인
 curl -i -N \
@@ -159,7 +159,7 @@ curl -i -N \
   -H "Upgrade: websocket" \
   -H "Sec-WebSocket-Version: 13" \
   -H "Sec-WebSocket-Key: test" \
-  http://localhost:3009/api/webui/ws
+  http://localhost:3010/api/webui/ws
 ```
 
 **검증 포인트**:
@@ -230,7 +230,7 @@ curl -i -N \
 
 2. **포트 확인**
    ```bash
-   lsof -i :3009
+   lsof -i :3010
    docker compose ps
    ```
 
@@ -273,7 +273,7 @@ jobs:
 
 ```bash
 # 포트 사용 확인
-lsof -i :3009
+lsof -i :3010
 
 # 프로세스 종료
 kill -9 <PID>
