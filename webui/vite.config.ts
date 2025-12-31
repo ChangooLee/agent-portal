@@ -117,6 +117,30 @@ export default defineConfig({
 				timeout: 600000,  // 10분 타임아웃
 				proxyTimeout: 600000  // 프록시 타임아웃 10분
 			},
+			// RealEstate 부동산 Agent API → FastAPI BFF (포트 3010)
+			'/api/realestate': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/realestate/, '/realestate'),
+				timeout: 600000,
+				proxyTimeout: 600000
+			},
+			// Health 건강/의료 Agent API → FastAPI BFF (포트 3010)
+			'/api/health-agent': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/health-agent/, '/health-agent'),
+				timeout: 600000,
+				proxyTimeout: 600000
+			},
+			// Legislation 법률 Agent API → FastAPI BFF (포트 3010)
+			'/api/legislation': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/legislation/, '/legislation'),
+				timeout: 600000,
+				proxyTimeout: 600000
+			},
 			// WebUI Backend API → FastAPI BFF (포트 3010) → WebUI Backend (8080)
 			// BFF의 /api/webui/* 라우터가 WebUI Backend로 프록시합니다.
 			// WebUI Backend의 /api/config, /api/v1/* 등을 /api/webui/*로 리라이트
@@ -179,11 +203,9 @@ export default defineConfig({
 			'/openai': {
 				target: bffTarget,
 				changeOrigin: true
-			},
-			'/health': {
-				target: bffTarget,
-				changeOrigin: true
 			}
+			// Note: /health endpoint is NOT proxied here to avoid conflict with /health-agent route
+			// BFF's /health endpoint is accessed directly when needed
 		},
 		hmr: false,  // Single Port Architecture에서 BFF를 통한 WebSocket 프록시가 복잡하므로 HMR 비활성화
 		// 파일 변경 감지는 watch 옵션으로 처리되며, 개발자는 수동으로 새로고침하면 됩니다

@@ -53,6 +53,33 @@
             status: 'active'
         },
         {
+            id: 'realestate',
+            name: '부동산',
+            description: '한국 부동산 실거래가 및 시세 정보를 분석합니다.',
+            icon: '🏠',
+            href: '/realestate',
+            color: 'orange',
+            status: 'active'
+        },
+        {
+            id: 'health',
+            name: '건강/의료',
+            description: '건강보험 및 의료기관 정보를 검색하고 분석합니다.',
+            icon: '💊',
+            href: '/health-agent',
+            color: 'red',
+            status: 'active'
+        },
+        {
+            id: 'legislation',
+            name: '법률',
+            description: '법제처 법률 정보를 검색하고 분석합니다.',
+            icon: '⚖️',
+            href: '/legislation',
+            color: 'indigo',
+            status: 'active'
+        },
+        {
             id: 'report',
             name: '리포트 생성',
             description: '데이터 분석 결과를 시각화하고 보고서를 생성합니다.',
@@ -90,7 +117,10 @@
             blue: 'from-blue-500/20 to-blue-600/10',
             emerald: 'from-emerald-500/20 to-emerald-600/10',
             purple: 'from-purple-500/20 to-purple-600/10',
-            amber: 'from-amber-500/20 to-amber-600/10'
+            amber: 'from-amber-500/20 to-amber-600/10',
+            orange: 'from-orange-500/20 to-orange-600/10',
+            red: 'from-red-500/20 to-red-600/10',
+            indigo: 'from-indigo-500/20 to-indigo-600/10'
         };
         return gradients[color] || gradients.blue;
     }
@@ -100,7 +130,10 @@
             blue: 'hover:border-blue-500/50',
             emerald: 'hover:border-emerald-500/50',
             purple: 'hover:border-purple-500/50',
-            amber: 'hover:border-amber-500/50'
+            amber: 'hover:border-amber-500/50',
+            orange: 'hover:border-orange-500/50',
+            red: 'hover:border-red-500/50',
+            indigo: 'hover:border-indigo-500/50'
         };
         return borders[color] || borders.blue;
     }

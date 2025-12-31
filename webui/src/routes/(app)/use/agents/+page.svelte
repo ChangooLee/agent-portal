@@ -31,6 +31,33 @@
             href: '/use/datacloud',
             color: 'blue',
             status: 'active'
+        },
+        {
+            id: 'realestate',
+            name: '부동산',
+            description: '한국 부동산 실거래가 및 시세 정보를 분석합니다.',
+            icon: 'building',
+            href: '/realestate',
+            color: 'orange',
+            status: 'active'
+        },
+        {
+            id: 'health',
+            name: '건강/의료',
+            description: '건강보험 및 의료기관 정보를 검색하고 분석합니다.',
+            icon: 'heart',
+            href: '/health-agent',
+            color: 'red',
+            status: 'active'
+        },
+        {
+            id: 'legislation',
+            name: '법률',
+            description: '법제처 법률 정보를 검색하고 분석합니다.',
+            icon: 'scale',
+            href: '/legislation',
+            color: 'indigo',
+            status: 'active'
         }
     ];
 
@@ -54,6 +81,21 @@
                 bg: 'from-emerald-500/20 to-emerald-600/10',
                 border: 'hover:border-emerald-500/50',
                 icon: 'text-emerald-400'
+            },
+            orange: {
+                bg: 'from-orange-500/20 to-orange-600/10',
+                border: 'hover:border-orange-500/50',
+                icon: 'text-orange-400'
+            },
+            red: {
+                bg: 'from-red-500/20 to-red-600/10',
+                border: 'hover:border-red-500/50',
+                icon: 'text-red-400'
+            },
+            indigo: {
+                bg: 'from-indigo-500/20 to-indigo-600/10',
+                border: 'hover:border-indigo-500/50',
+                icon: 'text-indigo-400'
             }
         };
         return colors[color] || colors.blue;
