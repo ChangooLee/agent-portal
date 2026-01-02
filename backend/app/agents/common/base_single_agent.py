@@ -21,6 +21,26 @@ from langchain_openai import ChatOpenAI
 
 from app.agents.common.mcp_client_base import MCPClientBase, MCPTool, create_mcp_client
 
+logger = logging.getLogger(__name__)
+
+# DART metrics 함수들 import (LLM/도구 호출 로깅용)
+try:
+    from app.agents.dart_agent.metrics import (
+        start_llm_call_span,
+        start_tool_call_span,
+        get_trace_headers,
+        inject_context_to_carrier,
+        set_active_service
+    )
+    logger.info("DART metrics imported successfully for base_single_agent")
+except ImportError as e:
+    logger.warning(f"DART metrics not available, using no-op: {e}")
+    start_llm_call_span = None
+    start_tool_call_span = None
+    get_trace_headers = lambda: {}
+    inject_context_to_carrier = lambda x: None
+    set_active_service = lambda x: None
+
 
 # OTEL 트레이싱 헬퍼
 _service_tracers = {}
@@ -64,6 +84,27 @@ def _start_agent_span(service_name: str, span_name: str, attributes: Dict[str, A
     except Exception as e:
         logging.getLogger(__name__).warning(f"Failed to create span: {e}")
         yield None
+
+
+def _get_traceparent_headers() -> Dict[str, str]:
+    """현재 context에서 traceparent 헤더 생성"""
+    try:
+        from opentelemetry.propagate import inject
+        carrier = {}
+        inject(carrier)
+        return carrier
+    except Exception:
+        return {}
+
+
+def _get_current_span_carrier() -> Dict[str, str]:
+    """현재 span carrier 반환"""
+    carrier = {}
+    try:
+        inject_context_to_carrier(carrier)
+    except Exception:
+        pass
+    return carrier
 
 
 logger = logging.getLogger(__name__)
@@ -142,13 +183,17 @@ class BaseSingleAgent(ABC):
         logger.info(f"[{self.SERVICE_NAME}] MCP 초기화 완료: {len(self.tools)}개 도구 로드")
     
     def _create_llm(self) -> ChatOpenAI:
-        """LLM 인스턴스 생성"""
+        """LLM 인스턴스 생성 (traceparent 헤더 포함)"""
         litellm_api_key = os.environ.get("LITELLM_MASTER_KEY", "sk-1234")
+        trace_headers = _get_traceparent_headers()
+        
+        logger.debug(f"[{self.SERVICE_NAME}] LLM 생성 (traceparent: {trace_headers.get('traceparent', 'none')})")
         
         return ChatOpenAI(
             model=self.model_name,
             base_url="http://litellm:4000/v1",
             api_key=litellm_api_key,
+            default_headers=trace_headers,  # traceparent 전달
             temperature=0.1,
             max_tokens=16384,
             timeout=600,
@@ -228,6 +273,11 @@ class BaseSingleAgent(ABC):
         
         logger.info(f"[{self.SERVICE_NAME}] Starting analysis: {question[:50]}...")
         
+        # DART metrics에 서비스 이름 설정 (LLM/도구 호출 span이 올바른 service name 사용)
+        if set_active_service is not None:
+            set_active_service(self.SERVICE_NAME)
+            logger.debug(f"[{self.SERVICE_NAME}] Set active service for DART metrics: {self.SERVICE_NAME}")
+        
         # OTEL Root Span 생성
         with _start_agent_span(
             self.SERVICE_NAME,
@@ -251,8 +301,11 @@ class BaseSingleAgent(ABC):
                     "agent": self.SERVICE_NAME
                 }
                 
-                # LLM 생성 (매 호출시 새로 생성 - 트레이스 연결)
+                # LLM 생성 (root span 내에서 생성하여 traceparent 포함)
                 self.llm = self._create_llm()
+                
+                # 현재 span의 context를 carrier에 저장 (하위 호출에 전달용)
+                parent_carrier = _get_current_span_carrier()
                 
                 # 시스템 프롬프트
                 system_prompt = self._build_system_prompt()
@@ -284,7 +337,7 @@ class BaseSingleAgent(ABC):
                     iteration += 1
                     logger.debug(f"[{self.SERVICE_NAME}] Iteration {iteration}")
                     
-                    # Tool call span
+                    # Iteration span
                     with _start_agent_span(
                         self.SERVICE_NAME,
                         f"gen_ai.iteration.{iteration}",
@@ -296,8 +349,66 @@ class BaseSingleAgent(ABC):
                             "max_iterations": self.max_iterations
                         }
                         
-                        # LLM 호출
-                        response = await llm_with_tools.ainvoke(messages)
+                        # LLM 호출 (span으로 기록)
+                        # 메시지를 dict로 변환 (DART metrics 형식)
+                        messages_dict = []
+                        for msg in messages:
+                            if isinstance(msg, SystemMessage):
+                                messages_dict.append({"role": "system", "content": msg.content})
+                            elif isinstance(msg, HumanMessage):
+                                messages_dict.append({"role": "user", "content": msg.content})
+                            elif isinstance(msg, AIMessage):
+                                messages_dict.append({"role": "assistant", "content": msg.content})
+                            elif isinstance(msg, ToolMessage):
+                                messages_dict.append({"role": "tool", "content": msg.content})
+                            else:
+                                messages_dict.append({"role": "user", "content": str(msg)})
+                        
+                        if start_llm_call_span is not None:
+                            logger.debug(f"[{self.SERVICE_NAME}] Using start_llm_call_span for LLM call")
+                            with start_llm_call_span(
+                                self.SERVICE_NAME,
+                                self.model_name,
+                                messages_dict,
+                                parent_carrier
+                            ) as (llm_span, record_llm):
+                                try:
+                                    response = await llm_with_tools.ainvoke(messages)
+                                    # LLM 응답 기록 (LangChain AIMessage를 dict로 변환)
+                                    response_metadata = getattr(response, "response_metadata", {})
+                                    token_usage = response_metadata.get("token_usage", {}) or {}
+                                    
+                                    response_dict = {
+                                        "model": self.model_name,
+                                        "choices": [{
+                                            "message": {
+                                                "content": response.content if hasattr(response, "content") else "",
+                                                "tool_calls": [
+                                                    {
+                                                        "id": tc.get("id", ""),
+                                                        "name": tc.get("name", ""),
+                                                        "args": tc.get("args", {})
+                                                    }
+                                                    for tc in (response.tool_calls if hasattr(response, "tool_calls") else [])
+                                                ]
+                                            },
+                                            "finish_reason": response_metadata.get("finish_reason", "")
+                                        }],
+                                        "usage": {
+                                            "prompt_tokens": token_usage.get("prompt_tokens", 0),
+                                            "completion_tokens": token_usage.get("completion_tokens", 0),
+                                            "total_tokens": token_usage.get("total_tokens", 0)
+                                        }
+                                    }
+                                    record_llm(response_dict)
+                                except Exception as e:
+                                    logger.error(f"LLM 호출 실패: {e}")
+                                    if llm_span and hasattr(llm_span, "set_attribute"):
+                                        llm_span.set_attribute("error", str(e))
+                                    raise
+                        else:
+                            # start_llm_call_span이 없는 경우 기본 호출
+                            response = await llm_with_tools.ainvoke(messages)
                         
                         # 도구 호출이 있는 경우
                         if response.tool_calls:
@@ -317,13 +428,33 @@ class BaseSingleAgent(ABC):
                                     "args": tool_args
                                 }
                                 
-                                # Tool execution span
-                                with _start_agent_span(
-                                    self.SERVICE_NAME,
-                                    f"gen_ai.tool.{tool_name}",
-                                    {"tool.name": tool_name, "tool.args": json.dumps(tool_args, ensure_ascii=False)[:500]}
-                                ):
-                                    # 도구 실행
+                                # Tool execution span (DART metrics 사용)
+                                if start_tool_call_span is not None:
+                                    logger.debug(f"[{self.SERVICE_NAME}] Using start_tool_call_span for tool: {tool_name}")
+                                    with start_tool_call_span(
+                                        tool_name,
+                                        tool_args,
+                                        parent_carrier
+                                    ) as (tool_span, record_tool):
+                                        # 도구 실행
+                                        tool_result = None
+                                        tool_start_time = time.time()
+                                        for tool in self.tools:
+                                            if tool.name == tool_name:
+                                                try:
+                                                    tool_result = await tool.ainvoke(tool_args)
+                                                except Exception as e:
+                                                    tool_result = json.dumps({"error": str(e)}, ensure_ascii=False)
+                                                break
+                                        
+                                        if tool_result is None:
+                                            tool_result = json.dumps({"error": f"Unknown tool: {tool_name}"}, ensure_ascii=False)
+                                        
+                                        # 도구 결과 기록
+                                        tool_latency_ms = (time.time() - tool_start_time) * 1000
+                                        record_tool(tool_result, tool_latency_ms)
+                                else:
+                                    # start_tool_call_span이 없는 경우 기본 실행
                                     tool_result = None
                                     for tool in self.tools:
                                         if tool.name == tool_name:

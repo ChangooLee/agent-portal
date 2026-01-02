@@ -169,3 +169,5 @@ class HealthSingleAgent(BaseSingleAgent):
 - 응급 상황 시 119로 연락하세요.
 - 제공된 정보의 정확성은 공공데이터 기준입니다."""
 
+
+

@@ -136,3 +136,5 @@ class RealEstateSingleAgent(BaseSingleAgent):
 - 변동률은 % 단위로 표시
 - 평당가와 ㎡당 가격 모두 제공"""
 
+
+

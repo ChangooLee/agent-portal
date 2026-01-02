@@ -133,3 +133,5 @@ class LegislationSingleAgent(BaseSingleAgent):
 - 법령은 수시로 개정되므로 반드시 최신 법령을 확인하세요.
 - 제공된 정보는 일반적인 법률 정보이며, 개별 사안에 대한 법률 조언이 아닙니다."""
 
+
+
