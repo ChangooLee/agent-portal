@@ -1,7 +1,7 @@
 """
 Base Single Agent - 범용 MCP 기반 Single Agent
 
-DART Single Agent 패턴을 일반화한 베이스 클래스.
+Single Agent 패턴을 일반화한 베이스 클래스.
 각 도메인별 에이전트가 상속하여 사용.
 """
 
@@ -23,7 +23,7 @@ from app.agents.common.mcp_client_base import MCPClientBase, MCPTool, create_mcp
 
 logger = logging.getLogger(__name__)
 
-# DART metrics 함수들 import (LLM/도구 호출 로깅용)
+# OTEL tracing metrics 함수들 import (LLM/도구 호출 로깅용)
 try:
     from app.agents.dart_agent.metrics import (
         start_llm_call_span,
@@ -32,9 +32,9 @@ try:
         inject_context_to_carrier,
         set_active_service
     )
-    logger.info("DART metrics imported successfully for base_single_agent")
+    logger.info("OTEL tracing metrics imported successfully for base_single_agent")
 except ImportError as e:
-    logger.warning(f"DART metrics not available, using no-op: {e}")
+    logger.warning(f"OTEL tracing metrics not available, using no-op: {e}")
     start_llm_call_span = None
     start_tool_call_span = None
     get_trace_headers = lambda: {}
@@ -273,10 +273,10 @@ class BaseSingleAgent(ABC):
         
         logger.info(f"[{self.SERVICE_NAME}] Starting analysis: {question[:50]}...")
         
-        # DART metrics에 서비스 이름 설정 (LLM/도구 호출 span이 올바른 service name 사용)
+        # OTEL tracing에 서비스 이름 설정 (LLM/도구 호출 span이 올바른 service name 사용)
         if set_active_service is not None:
             set_active_service(self.SERVICE_NAME)
-            logger.debug(f"[{self.SERVICE_NAME}] Set active service for DART metrics: {self.SERVICE_NAME}")
+            logger.debug(f"[{self.SERVICE_NAME}] Set active service for OTEL tracing: {self.SERVICE_NAME}")
         
         # OTEL Root Span 생성
         with _start_agent_span(
@@ -350,7 +350,7 @@ class BaseSingleAgent(ABC):
                         }
                         
                         # LLM 호출 (span으로 기록)
-                        # 메시지를 dict로 변환 (DART metrics 형식)
+                        # 메시지를 dict로 변환 (OTEL tracing 형식)
                         messages_dict = []
                         for msg in messages:
                             if isinstance(msg, SystemMessage):
@@ -428,7 +428,7 @@ class BaseSingleAgent(ABC):
                                     "args": tool_args
                                 }
                                 
-                                # Tool execution span (DART metrics 사용)
+                                # Tool execution span (OTEL tracing 사용)
                                 if start_tool_call_span is not None:
                                     logger.debug(f"[{self.SERVICE_NAME}] Using start_tool_call_span for tool: {tool_name}")
                                     with start_tool_call_span(
