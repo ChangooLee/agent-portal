@@ -52,6 +52,20 @@ class MonitoringAdapter:
         # JSONEachRow 형식으로 결과 반환
         full_query = f"{query} FORMAT JSONEachRow"
         
+        # 디버깅: list_query와 count_query만 로깅 및 파일 저장
+        if "GROUP BY TraceId" in query:
+            # trace_id_filter 포함 여부 확인
+            if "TraceId IN" in query:
+                logger.info("✓ trace_id_filter is present in query")
+            else:
+                logger.warning("✗ trace_id_filter NOT found in query!")
+                # 실제 실행되는 쿼리를 파일로 저장 (디버깅용)
+                try:
+                    with open('/tmp/executed_query_no_trace_id_filter.sql', 'w') as f:
+                        f.write(query)
+                except:
+                    pass
+        
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
@@ -148,7 +162,50 @@ class MonitoringAdapter:
           )
         """
         
-        # 총 개수
+        # trace_type 필터 조건
+        # trace_type이 'llm' 또는 'agent'일 때는 먼저 TraceId를 필터링한 다음 해당 TraceId의 스팬만 집계
+        trace_id_filter = ""
+        if trace_type == 'llm':
+            # LLM 필터: gen_ai.content.completion, dart.llm_call.*, litellm_request를 포함하는 TraceId만 선택
+            trace_id_filter = f"""
+            AND TraceId IN (
+              SELECT DISTINCT TraceId
+              FROM {CLICKHOUSE_DATABASE}.otel_traces
+              WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
+                AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
+                AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+                {llm_filter}
+                AND (
+                  SpanName = 'gen_ai.content.completion'
+                  OR SpanName LIKE 'dart.llm_call.%'
+                  OR SpanName = 'litellm_request'
+                )
+            )
+            """
+        elif trace_type == 'agent':
+            # Agent 필터: gen_ai.session, gen_ai.agent.*, gen_ai.tool.call를 포함하는 TraceId만 선택
+            trace_id_filter = f"""
+            AND TraceId IN (
+              SELECT DISTINCT TraceId
+              FROM {CLICKHOUSE_DATABASE}.otel_traces
+              WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
+                AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
+                AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+                {llm_filter}
+                AND (
+                  SpanName = 'gen_ai.session'
+                  OR SpanName LIKE 'gen_ai.agent.%'
+                  OR SpanName = 'gen_ai.tool.call'
+                  OR SpanName LIKE 'dart.tool_call.%'
+                  OR SpanName LIKE '%agent%'
+                  OR SpanName LIKE '%text2sql%'
+                  OR ServiceName LIKE 'agent-%'
+                )
+            )
+            """
+        # trace_type이 None이면 필터 없음 (모두)
+        
+        # 총 개수 (trace_type 필터 적용)
         # Note: project_id가 비어있는 데이터도 포함 (LiteLLM 기본 설정)
         count_query = f"""
         SELECT count(DISTINCT TraceId) as total
@@ -157,8 +214,10 @@ class MonitoringAdapter:
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
+          {trace_id_filter}
           {search_clause}
         """
+        logging.info(f"Count query (trace_type={trace_type}): {count_query}")
         count_result = await self._execute_query(count_query)
         total = count_result[0]['total'] if count_result else 0
         
@@ -166,11 +225,45 @@ class MonitoringAdapter:
         # Note: LiteLLM/OpenRouter stores cost in llm.openrouter.usage field
         # Pattern: 'cost': 0.249325 - use extractAll to extract cost value
         # Also check metadata.usage_object as fallback
+        # trace_type 필터가 있을 때는 필터 조건을 만족하는 SpanName만 선택
+        # trace_id_filter로 이미 TraceId가 필터링되었으므로, 해당 조건을 만족하는 SpanName만 선택
+        span_name_select = "any(SpanName) as span_name"
+        if trace_type == 'llm':
+            # LLM 필터: gen_ai.content.completion, dart.llm_call.*, litellm_request만 선택
+            # trace_id_filter로 이미 LLM 관련 TraceId만 필터링되었으므로, 해당 조건을 만족하는 SpanName만 선택
+            # anyIf를 사용하여 조건을 만족하는 SpanName만 선택 (우선순위: gen_ai.content.completion > dart.llm_call.* > litellm_request)
+            # 조건을 만족하지 않는 SpanName은 선택되지 않도록 함
+            span_name_select = """
+            argMax(
+              if(SpanName = 'gen_ai.content.completion' OR SpanName LIKE 'dart.llm_call.%' OR SpanName = 'litellm_request', SpanName, NULL),
+              CASE 
+                WHEN SpanName = 'gen_ai.content.completion' THEN 3
+                WHEN SpanName LIKE 'dart.llm_call.%' THEN 2
+                WHEN SpanName = 'litellm_request' THEN 1
+                ELSE 0
+              END
+            ) as span_name
+            """
+        elif trace_type == 'agent':
+            # Agent 필터: gen_ai.session, gen_ai.agent.*, gen_ai.tool.call만 선택
+            span_name_select = """
+            argMax(SpanName,
+              CASE
+                WHEN SpanName = 'gen_ai.session' THEN 5
+                WHEN SpanName LIKE 'gen_ai.agent.%' THEN 4
+                WHEN SpanName = 'gen_ai.tool.call' THEN 3
+                WHEN SpanName LIKE 'dart.tool_call.%' THEN 2
+                WHEN SpanName LIKE '%agent%' OR SpanName LIKE '%text2sql%' OR ServiceName LIKE 'agent-%' THEN 1
+                ELSE 0
+              END
+            ) as span_name
+            """
+        
         list_query = f"""
         SELECT 
             TraceId as trace_id,
             any(ServiceName) as service_name,
-            any(SpanName) as span_name,
+            {span_name_select},
             min(Timestamp) as start_time,
             sum(Duration) / 1000000 as duration,
             count() as span_count,
@@ -203,11 +296,20 @@ class MonitoringAdapter:
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {llm_filter}
+          {trace_id_filter}
           {search_clause}
         GROUP BY TraceId
         ORDER BY start_time DESC
         LIMIT {size} OFFSET {offset}
         """
+        logging.info(f"List query (trace_type={trace_type}): {list_query[:500]}...")
+        
+        # 디버깅: trace_type이 'llm'일 때 trace_id_filter 확인
+        if trace_type == 'llm' and 'AND TraceId IN' not in list_query:
+            logger.error(f"CRITICAL: trace_id_filter NOT found in list_query for trace_type=llm!")
+            logger.error(f"trace_id_filter length: {len(trace_id_filter)}")
+            logger.error(f"list_query WHERE clause: {list_query[list_query.find('WHERE'):list_query.find('GROUP BY')]}")
+        
         traces = await self._execute_query(list_query)
         
         return {
