@@ -23,7 +23,7 @@ async def record_demo():
         
         # Get login credentials from environment or use defaults
         login_email = os.getenv('DEMO_LOGIN_EMAIL', 'lchangoo@gmail.com')
-        login_password = os.getenv('DEMO_LOGIN_PASSWORD', 'Cksrn0604!')
+        login_password = os.getenv('DEMO_LOGIN_PASSWORD', 'xxxxxxxx')
         
         # Navigate directly to auth page to show login process
         print("Navigating to login page...")
