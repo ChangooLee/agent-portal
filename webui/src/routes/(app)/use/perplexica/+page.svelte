@@ -392,27 +392,50 @@
 	function messagesToSections(): Section[] {
 		console.debug('[Perplexica] messagesToSections called, messages:', messages.length);
 		return messages.map((msg) => {
-			console.debug('[Perplexica] Processing message:', msg.messageId, 'responseBlocks:', msg.responseBlocks.length);
+			console.debug('[Perplexica] Processing message:', msg.messageId, 'responseBlocks:', msg.responseBlocks?.length || 0);
 			const textBlocks: string[] = [];
 			let speechMessage = '';
 			let thinkingEnded = false;
 			let suggestions: string[] = [];
 			
+			// responseBlocks가 없거나 비어있는 경우 기본값 반환
+			if (!msg.responseBlocks || msg.responseBlocks.length === 0) {
+				return {
+					message: msg,
+					parsedTextBlocks: [],
+					sources: [],
+					suggestions: undefined,
+					widgets: [],
+					speechMessage: '',
+					thinkingEnded: false
+				};
+			}
+			
 			const sourceBlocks = msg.responseBlocks.filter(
 				(block): block is SourceBlock => block.type === 'source'
 			);
-			const sources = sourceBlocks.flatMap((block) => block.data);
+			const sources = sourceBlocks.flatMap((block) => block.data || []);
 			
 			const widgetBlocks = msg.responseBlocks
 				.filter((b): b is WidgetBlock => b.type === 'widget')
-				.map((b) => b.data);
+				.map((b) => b.data)
+				.filter((d) => d != null);
 			
 			msg.responseBlocks.forEach((block) => {
 				console.debug('[Perplexica] Processing block:', block.type, block.id);
 				if (block.type === 'text') {
+					// block.data가 없거나 비어있는 경우 처리
+					if (!block.data || typeof block.data !== 'string') {
+						textBlocks.push('');
+						return;
+					}
+					
 					let processedText = block.data;
 					const citationRegex = /\[([^\]]+)\]/g;
 					const regex = /\[(\d+)\]/g;
+					
+					// [widgets_result] 플레이스홀더 제거 (위젯은 별도로 렌더링됨)
+					processedText = processedText.replace(/\[widgets_result\]/g, '');
 					
 					// thinking 태그 처리
 					if (processedText.includes('<think>')) {
@@ -428,7 +451,7 @@
 						thinkingEnded = true;
 					}
 					
-					// Citation 처리
+					// Citation 처리 - 표준 Markdown 링크 형식으로 변환
 					if (sources.length > 0) {
 						processedText = processedText.replace(
 							citationRegex,
@@ -437,7 +460,7 @@
 									.split(',')
 									.map((numStr) => numStr.trim());
 								
-								const linksHtml = numbers
+								const linksMarkdown = numbers
 									.map((numStr) => {
 										const number = parseInt(numStr);
 										
@@ -449,14 +472,15 @@
 										const url = source?.metadata?.url;
 										
 										if (url) {
-											return `<citation href="${url}">${numStr}</citation>`;
+											// 표준 Markdown 링크 형식으로 변환
+											return `[${numStr}](${url})`;
 										} else {
-											return ``;
+											return `[${numStr}]`;
 										}
 									})
-									.join('');
+									.join(' ');
 								
-								return linksHtml;
+								return linksMarkdown;
 							}
 						);
 						speechMessage += block.data.replace(regex, '');
@@ -467,7 +491,10 @@
 					
 					textBlocks.push(processedText);
 				} else if (block.type === 'suggestion') {
-					suggestions = (block as SuggestionBlock).data;
+					const suggestionBlock = block as SuggestionBlock;
+					if (suggestionBlock.data && Array.isArray(suggestionBlock.data)) {
+						suggestions = suggestionBlock.data;
+					}
 				}
 			});
 			
@@ -1320,7 +1347,8 @@
 								
 								<!-- Answer 섹션 -->
 								<div class="flex flex-col space-y-2">
-									{#if section.sources.length > 0}
+									<!-- Answer 제목은 sources가 있거나 parsedTextBlocks가 있을 때 표시 -->
+									{#if section.sources.length > 0 || section.parsedTextBlocks.length > 0 || section.message.status === 'answering'}
 										<div class="flex flex-row items-center space-x-2 mb-2">
 											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
@@ -1329,6 +1357,7 @@
 										</div>
 									{/if}
 									
+									<!-- Answer 내용은 parsedTextBlocks가 있거나 answering 상태일 때 표시 -->
 									{#if section.parsedTextBlocks.length > 0 || section.message.status === 'answering'}
 										<div class="w-full min-w-full markdown-prose text-slate-200">
 											{#if section.message.status === 'answering'}
@@ -1337,7 +1366,9 @@
 													<span class="text-xs text-slate-400">응답 생성 중...</span>
 												</div>
 											{/if}
-											<Markdown content={section.parsedTextBlocks.join('\n\n')} />
+											{#if section.parsedTextBlocks.length > 0}
+												<Markdown content={section.parsedTextBlocks.join('\n\n')} />
+											{/if}
 										</div>
 									{/if}
 								</div>
@@ -1384,8 +1415,89 @@
 							</div>
 							
 							<!-- 우측 위젯 (3/12, sticky) -->
-							{#if section.parsedTextBlocks.length > 0 || section.message.status === 'answering'}
+							{#if section.parsedTextBlocks.length > 0 || section.message.status === 'answering' || section.widgets.length > 0}
 								<div class="lg:sticky lg:top-20 flex flex-col items-center space-y-3 w-full lg:w-3/12 z-30 h-full pb-4">
+									<!-- 날씨/계산/주식 위젯 -->
+									{#each section.widgets as widget}
+										{#if widget.widgetType === 'weather'}
+											<div class="w-full relative overflow-hidden rounded-lg shadow-md bg-gray-200 dark:bg-gray-800">
+												<div class="relative p-4 text-gray-800 dark:text-white">
+													<div class="flex items-start justify-between mb-3">
+														<div class="flex items-center gap-3">
+															<div class="w-16 h-16 flex items-center justify-center text-4xl">
+																{#if (widget.params?.current?.weather_code || 0) === 0 || (widget.params?.current?.weather_code || 0) === 1}
+																	{(widget.params?.current?.is_day === 1) ? '☀️' : '🌙'}
+																{:else if (widget.params?.current?.weather_code || 0) === 2 || (widget.params?.current?.weather_code || 0) === 3}
+																	{(widget.params?.current?.is_day === 1) ? '⛅' : '☁️'}
+																{:else if (widget.params?.current?.weather_code || 0) >= 45 && (widget.params?.current?.weather_code || 0) <= 48}
+																	🌫️
+																{:else if (widget.params?.current?.weather_code || 0) >= 51 && (widget.params?.current?.weather_code || 0) <= 67}
+																	🌧️
+																{:else if (widget.params?.current?.weather_code || 0) >= 71 && (widget.params?.current?.weather_code || 0) <= 77}
+																	❄️
+																{:else if (widget.params?.current?.weather_code || 0) >= 80 && (widget.params?.current?.weather_code || 0) <= 82}
+																	🌦️
+																{:else if (widget.params?.current?.weather_code || 0) >= 95 && (widget.params?.current?.weather_code || 0) <= 99}
+																	⛈️
+																{:else}
+																	☀️
+																{/if}
+															</div>
+															<div>
+																<div class="flex items-baseline gap-1">
+																	<span class="text-4xl font-bold">
+																		{Math.round(widget.params?.current?.temperature_2m || 0)}°
+																	</span>
+																	<span class="text-lg">°C</span>
+																</div>
+																<p class="text-sm font-medium mt-0.5">
+																	{widget.params?.location || 'Unknown'}
+																</p>
+															</div>
+														</div>
+														<div class="text-right">
+															{#if widget.params?.daily?.temperature_2m_max?.[0] !== undefined && widget.params?.daily?.temperature_2m_min?.[0] !== undefined}
+																<p class="text-xs font-medium opacity-90">
+																	{Math.round(widget.params.daily.temperature_2m_max[0])}° {Math.round(widget.params.daily.temperature_2m_min[0])}°
+																</p>
+															{/if}
+														</div>
+													</div>
+													<div class="grid grid-cols-2 gap-2 text-xs">
+														<div>
+															<p class="opacity-70">체감 온도</p>
+															<p class="font-semibold">{Math.round(widget.params?.current?.apparent_temperature || 0)}°</p>
+														</div>
+														<div>
+															<p class="opacity-70">습도</p>
+															<p class="font-semibold">{widget.params?.current?.relative_humidity_2m || 0}%</p>
+														</div>
+														<div>
+															<p class="opacity-70">바람</p>
+															<p class="font-semibold">{Math.round(widget.params?.current?.wind_speed_10m || 0)} km/h</p>
+														</div>
+														<div>
+															<p class="opacity-70">기압</p>
+															<p class="font-semibold">{Math.round(widget.params?.current?.pressure_msl || 0)} hPa</p>
+														</div>
+													</div>
+												</div>
+											</div>
+										{:else if widget.widgetType === 'calculation_result'}
+											<div class="w-full bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
+												<p class="text-xs text-gray-400 mb-2">계산 결과</p>
+												<p class="text-2xl font-bold text-white">{widget.params?.result || 'N/A'}</p>
+												<p class="text-sm text-gray-400 mt-1">{widget.params?.expression || ''}</p>
+											</div>
+										{:else if widget.widgetType === 'stock'}
+											<div class="w-full bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
+												<p class="text-xs text-gray-400 mb-2">주식 정보</p>
+												<p class="text-xl font-bold text-white">{widget.params?.symbol || 'N/A'}</p>
+												<p class="text-sm text-gray-400 mt-1">{widget.params?.price || 'N/A'}</p>
+											</div>
+										{/if}
+									{/each}
+									
 									<!-- 이미지 검색 위젯 -->
 									<div class="w-full">
 										{#if !imageWidgets[section.message.messageId]}
