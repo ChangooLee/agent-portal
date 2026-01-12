@@ -1419,7 +1419,7 @@
 								<div class="lg:sticky lg:top-20 flex flex-col items-center space-y-3 w-full lg:w-3/12 z-30 h-full pb-4">
 									<!-- 날씨/계산/주식 위젯 -->
 									{#each section.widgets as widget}
-										{#if widget.widgetType === 'weather'}
+										{#if widget.widgetType === 'weather' && !widget.params?.error && widget.params?.current}
 											<div class="w-full relative overflow-hidden rounded-lg shadow-md bg-gray-200 dark:bg-gray-800">
 												<div class="relative p-4 text-gray-800 dark:text-white">
 													<div class="flex items-start justify-between mb-3">
@@ -1483,17 +1483,17 @@
 													</div>
 												</div>
 											</div>
-										{:else if widget.widgetType === 'calculation_result'}
+										{:else if widget.widgetType === 'calculation_result' && !widget.params?.error && widget.params?.result}
 											<div class="w-full bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
 												<p class="text-xs text-gray-400 mb-2">계산 결과</p>
-												<p class="text-2xl font-bold text-white">{widget.params?.result || 'N/A'}</p>
+												<p class="text-2xl font-bold text-white">{widget.params.result}</p>
 												<p class="text-sm text-gray-400 mt-1">{widget.params?.expression || ''}</p>
 											</div>
-										{:else if widget.widgetType === 'stock'}
+										{:else if widget.widgetType === 'stock' && !widget.params?.error && widget.params?.symbol && widget.params?.price}
 											<div class="w-full bg-gray-800/60 rounded-lg p-4 border border-gray-700/50">
 												<p class="text-xs text-gray-400 mb-2">주식 정보</p>
-												<p class="text-xl font-bold text-white">{widget.params?.symbol || 'N/A'}</p>
-												<p class="text-sm text-gray-400 mt-1">{widget.params?.price || 'N/A'}</p>
+												<p class="text-xl font-bold text-white">{widget.params.symbol}</p>
+												<p class="text-sm text-gray-400 mt-1">{widget.params.price}</p>
 											</div>
 										{/if}
 									{/each}
