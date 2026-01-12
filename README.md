@@ -158,6 +158,90 @@ Agent Portal supports the entire AI agent lifecycle with a **Use → Build → O
 
 ---
 
+## Screenshots
+
+### Splash Screen
+![Splash Screen](docs/images/00-splash.png)
+*Welcome screen with AI Agent Portal branding and navigation*
+
+### Use — Interact with AI
+
+#### Main Dashboard
+![Main Page](docs/images/01-main-page.png)
+*Landing page with agent cards and quick access to all features*
+
+#### Multi-LLM Chat
+![Chat Interface](docs/images/02-chat.png)
+*Unified access to 100+ LLM models with real-time conversation*
+
+#### AI Agents
+![Agents Main](docs/images/02b-agents-main.png)
+*Browse and launch specialized AI agents for different tasks*
+
+#### DART Corporate Disclosure Analysis
+![DART Agent](docs/images/03-dart-agent.png)
+*AI-powered corporate disclosure analysis with multi-agent orchestration*
+
+![DART Multi Agent Workflow](docs/images/03b-dart-workflow.png)
+*Multi-agent workflow orchestration with specialized agents for financial, governance, and document analysis*
+
+#### Text-to-SQL
+![Text-to-SQL](docs/images/04-text2sql.png)
+*Natural language to SQL conversion with zero-copy database access*
+
+#### AI Search (Perplexica)
+![Perplexica](docs/images/05-perplexica.png)
+*AI-powered web search with source citations and real-time results*
+
+![Perplexica Library](docs/images/05b-perplexica-library.png)
+*Browse and manage past search conversations and results*
+
+### Build — Develop Agents
+
+#### LLM Management
+![Build LLM](docs/images/07-build-llm.png)
+*Configure and manage 100+ LLM models from a single interface*
+
+#### MCP Server Management
+![Build MCP](docs/images/08-build-mcp.png)
+*Manage Model Context Protocol servers with Anthropic standard*
+
+#### Data Cloud Management
+![Build Data Cloud](docs/images/07b-build-datacloud.png)
+*Configure and manage database connections with zero-copy access*
+
+#### Guardrails
+![Build Guardrails](docs/images/07c-build-guardrails.png)
+*Configure safety policies and content filtering (Coming Soon)*
+
+#### Model Evaluations
+![Build Evaluations](docs/images/07d-build-evaluations.png)
+*Evaluate and compare LLM models with leaderboard rankings*
+
+### Operate — Operations & Management
+
+#### Monitoring Dashboard
+![Monitoring](docs/images/06-monitoring.png)
+*Real-time cost, latency, error rate, and token usage tracking*
+
+#### Trace Viewer
+![Monitoring Traces](docs/images/06b-monitoring-traces.png)
+*Detailed trace view showing agent execution, LLM calls, tool usage, and performance metrics*
+
+#### API Gateway
+![Gateway](docs/images/06c-gateway.png)
+*Kong-based API gateway management with service routing, authentication, and rate limiting*
+
+#### User Management
+![Users](docs/images/06d-users.png)
+*RBAC-based user and team management with role assignments*
+
+#### System Settings
+![Settings](docs/images/06e-settings.png)
+*Centralized platform configuration including authentication, features, and integrations*
+
+---
+
 ## Technical Excellence
 
 ### AI Native Architecture
