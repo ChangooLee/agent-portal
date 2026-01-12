@@ -316,7 +316,7 @@
 		</div>
 	{:else}
 		<table
-			class="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-auto max-w-full rounded {loadingLeaderboard
+			class="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-auto max-w-full rounded-sm {loadingLeaderboard
 				? 'opacity-20'
 				: ''}"
 		>
@@ -344,7 +344,7 @@
 			<tbody class="">
 				{#each rankedModels as model, modelIdx (model.id)}
 					<tr class="bg-white dark:bg-gray-900 dark:border-gray-850 text-xs group">
-						<td class="px-3 py-1.5 text-left font-medium text-gray-900 dark:text-white w-fit">
+						<td class="px-3 py-1.5 text-left font-medium text-gray-900 dark:text-gray-200 w-fit">
 							<div class=" line-clamp-1">
 								{model?.rating !== '-' ? modelIdx + 1 : '-'}
 							</div>
@@ -364,7 +364,7 @@
 								</div>
 							</div>
 						</td>
-						<td class="px-3 py-1.5 text-right font-medium text-gray-900 dark:text-white w-max">
+						<td class="px-3 py-1.5 text-right font-medium text-gray-900 dark:text-gray-200 w-max">
 							{model.rating}
 						</td>
 
