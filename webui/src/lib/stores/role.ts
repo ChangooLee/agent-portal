@@ -44,10 +44,10 @@ export const roleMenus: Record<UserRole, MenuItem[]> = {
         { id: 'datacloud', name: 'Data Cloud', href: '/use/datacloud', icon: 'database', status: 'active', description: '데이터 질의' },
         { id: 'report', name: '보고서', href: '/report', icon: 'document', status: 'coming-soon', description: 'AI 보고서 생성' },
         { id: 'notebook', name: 'Notebook', href: '/notebook', icon: 'book', status: 'coming-soon', description: 'AI 노트북' },
-        { id: 'perplexica', name: 'Perplexica', href: '/use/perplexica', icon: 'search', status: 'coming-soon', description: 'AI 검색' },
+            { id: 'perplexica', name: 'AI 검색', href: '/use/perplexica', icon: 'search', status: 'active', description: 'AI 검색' },
     ],
     build: [
-        { id: 'agents', name: '에이전트', href: '/build/agents', icon: 'cube', status: 'active', description: '에이전트 개발' },
+        { id: 'agents', name: '에이전트', href: '/build/agents', icon: 'cube', status: 'coming-soon', description: '에이전트 개발' },
         { id: 'workflows', name: '워크플로우', href: '/build/workflows', icon: 'workflow', status: 'coming-soon', description: '워크플로우 빌더' },
         { id: 'llm', name: 'LLM', href: '/build/llm', icon: 'cpu', status: 'active', description: 'LLM 모델 관리' },
         { id: 'mcp', name: 'MCP', href: '/build/mcp', icon: 'server', status: 'active', description: 'MCP 서버 관리' },

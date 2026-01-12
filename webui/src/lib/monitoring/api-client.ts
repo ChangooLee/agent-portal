@@ -36,6 +36,7 @@ export async function getTraces(params: {
 	page?: number;
 	size?: number;
 	search?: string;
+	trace_type?: 'agent' | 'llm' | 'all';
 }): Promise<{ traces: Trace[]; total: number; page: number; size: number }> {
 	const queryParams = new URLSearchParams({
 		project_id: params.project_id,
@@ -47,6 +48,10 @@ export async function getTraces(params: {
 
 	if (params.search) {
 		queryParams.append('search', params.search);
+	}
+	
+	if (params.trace_type && params.trace_type !== 'all') {
+		queryParams.append('trace_type', params.trace_type);
 	}
 
 	const response = await fetch(`${API_BASE_URL}/traces?${queryParams}`);

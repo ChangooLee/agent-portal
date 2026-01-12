@@ -252,6 +252,65 @@ class BaseSingleAgent(ABC):
         """도구 표시명 반환 - 서브클래스에서 오버라이드 가능"""
         return tool_name
     
+    def _extract_finish_reason(self, response: Any, response_metadata: Dict[str, Any]) -> str:
+        """
+        Provider에 관계없이 finish_reason 추출
+        
+        Args:
+            response: LangChain AIMessage 객체
+            response_metadata: response_metadata 딕셔너리
+            
+        Returns:
+            정규화된 finish_reason 문자열
+        """
+        if not isinstance(response_metadata, dict):
+            response_metadata = {}
+        
+        # 1. OpenAI 형식: finish_reason 확인
+        finish_reason = response_metadata.get("finish_reason", "")
+        
+        # 2. Anthropic 형식: stop_reason 확인 (finish_reason이 없을 때)
+        if not finish_reason:
+            stop_reason = response_metadata.get("stop_reason", "")
+            if stop_reason:
+                # Anthropic의 stop_reason을 OpenAI 형식으로 변환
+                stop_reason_map = {
+                    "end_turn": "stop",
+                    "max_tokens": "length",
+                    "stop_sequence": "stop"
+                }
+                finish_reason = stop_reason_map.get(stop_reason, "stop")
+        
+        # 3. response_metadata에 없으면 tool_calls 유무로 추론
+        if not finish_reason:
+            if hasattr(response, "tool_calls") and response.tool_calls:
+                finish_reason = "tool_call"
+            else:
+                finish_reason = "stop"
+        
+        return finish_reason
+    
+    def _get_finish_reason_message(self, finish_reason: str) -> str:
+        """
+        finish_reason을 사용자 친화적 메시지로 변환
+        
+        Args:
+            finish_reason: 정규화된 finish_reason 문자열
+            
+        Returns:
+            사용자 친화적 메시지
+        """
+        finish_reason_messages = {
+            "stop": "✅ 응답 완료",
+            "tool_call": "🔧 도구 호출 필요",
+            "tool_calls": "🔧 도구 호출 필요",
+            "length": "⚠️ 길이 제한 도달",
+            "content_filter": "⚠️ 콘텐츠 필터링",
+            "function_call": "🔧 함수 호출",
+            "max_tokens": "⚠️ 최대 토큰 도달"
+        }
+        return finish_reason_messages.get(finish_reason, f"⏳ 처리 중 ({finish_reason})")
+    
     async def analyze_stream(
         self,
         question: str,
@@ -364,6 +423,7 @@ class BaseSingleAgent(ABC):
                             else:
                                 messages_dict.append({"role": "user", "content": str(msg)})
                         
+                        logger.info(f"[{self.SERVICE_NAME}] About to call LLM, start_llm_call_span is None: {start_llm_call_span is None}")
                         if start_llm_call_span is not None:
                             logger.debug(f"[{self.SERVICE_NAME}] Using start_llm_call_span for LLM call")
                             with start_llm_call_span(
@@ -373,9 +433,12 @@ class BaseSingleAgent(ABC):
                                 parent_carrier
                             ) as (llm_span, record_llm):
                                 try:
+                                    logger.info(f"[{self.SERVICE_NAME}] Calling LLM with tools...")
                                     response = await llm_with_tools.ainvoke(messages)
+                                    logger.info(f"[{self.SERVICE_NAME}] LLM response received, type: {type(response)}")
                                     # LLM 응답 기록 (LangChain AIMessage를 dict로 변환)
                                     response_metadata = getattr(response, "response_metadata", {})
+                                    logger.info(f"[{self.SERVICE_NAME}] Got response_metadata: {response_metadata is not None}, type: {type(response_metadata)}")
                                     token_usage = response_metadata.get("token_usage", {}) or {}
                                     
                                     response_dict = {
@@ -401,6 +464,24 @@ class BaseSingleAgent(ABC):
                                         }
                                     }
                                     record_llm(response_dict)
+                                    
+                                    # finish_reason을 SSE 이벤트로 전달 (Provider 독립적)
+                                    logger.info(f"[{self.SERVICE_NAME}] response_metadata full: {response_metadata}")
+                                    logger.info(f"[{self.SERVICE_NAME}] response_metadata type: {type(response_metadata)}")
+                                    
+                                    # Provider에 관계없이 finish_reason 추출
+                                    finish_reason = self._extract_finish_reason(response, response_metadata)
+                                    
+                                    logger.info(f"[{self.SERVICE_NAME}] LLM response finish_reason: {finish_reason}, response_metadata keys: {list(response_metadata.keys()) if isinstance(response_metadata, dict) else 'N/A'}")
+                                    
+                                    # LLM 응답 내용을 그대로 표시 (필터링 없이)
+                                    llm_response_content = response.content if hasattr(response, "content") else ""
+                                    logger.info(f"[{self.SERVICE_NAME}] Yielding finish_reason event: finish_reason={finish_reason}, content_length={len(llm_response_content)}")
+                                    yield {
+                                        "event": "progress",
+                                        "message": llm_response_content if llm_response_content else f"finish_reason: {finish_reason}",
+                                        "finish_reason": finish_reason
+                                    }
                                 except Exception as e:
                                     logger.error(f"LLM 호출 실패: {e}")
                                     if llm_span and hasattr(llm_span, "set_attribute"):
@@ -408,7 +489,27 @@ class BaseSingleAgent(ABC):
                                     raise
                         else:
                             # start_llm_call_span이 없는 경우 기본 호출
+                            logger.info(f"[{self.SERVICE_NAME}] Calling LLM without span...")
                             response = await llm_with_tools.ainvoke(messages)
+                            logger.info(f"[{self.SERVICE_NAME}] LLM response received (no span), type: {type(response)}")
+                            
+                            # finish_reason 추출 및 전달 (Provider 독립적)
+                            response_metadata = getattr(response, "response_metadata", {})
+                            logger.info(f"[{self.SERVICE_NAME}] Got response_metadata (no span): {response_metadata is not None}, type: {type(response_metadata)}")
+                            
+                            # Provider에 관계없이 finish_reason 추출
+                            finish_reason = self._extract_finish_reason(response, response_metadata)
+                            
+                            logger.info(f"[{self.SERVICE_NAME}] LLM response finish_reason (no span): {finish_reason}, response_metadata keys: {list(response_metadata.keys()) if isinstance(response_metadata, dict) else 'N/A'}")
+                            
+                            # LLM 응답 내용을 그대로 표시 (필터링 없이)
+                            llm_response_content = response.content if hasattr(response, "content") else ""
+                            logger.info(f"[{self.SERVICE_NAME}] Yielding finish_reason event (no span): finish_reason={finish_reason}, content_length={len(llm_response_content)}")
+                            yield {
+                                "event": "progress",
+                                "message": llm_response_content if llm_response_content else f"finish_reason: {finish_reason}",
+                                "finish_reason": finish_reason
+                            }
                         
                         # 도구 호출이 있는 경우
                         if response.tool_calls:

@@ -54,41 +54,8 @@
 	// Traces sub-tab state
 	let tracesSubTab: 'agent' | 'llm' | 'all' = 'agent';
 	
-	// Filtered traces based on sub-tab (GenAI 표준 + 기존 호환)
-	$: filteredTraces = traces.filter(trace => {
-		if (tracesSubTab === 'all') return true;
-		
-		const spanName = trace.span_name?.toLowerCase() || '';
-		const serviceName = trace.service_name?.toLowerCase() || '';
-		
-		if (tracesSubTab === 'agent') {
-			// Agent traces: GenAI 표준 + 레거시
-			// GenAI 표준: gen_ai.session, gen_ai.agent.*, gen_ai.tool.call
-			// 레거시: dart.tool_call.*, agent 관련 span
-			return spanName === 'gen_ai.session' ||
-			       spanName.startsWith('gen_ai.agent.') ||
-			       spanName === 'gen_ai.tool.call' ||
-			       spanName.startsWith('dart.tool_call.') || 
-			       spanName.includes('agent') || spanName.includes('text2sql') || 
-			       serviceName.includes('agent') || spanName.includes('entry') ||
-			       spanName.includes('analyze') || spanName.includes('generate') ||
-			       spanName.includes('validate') || spanName.includes('execute') ||
-			       spanName.includes('format') || spanName.includes('complete');
-		}
-		if (tracesSubTab === 'llm') {
-			// LLM Call traces: GenAI 표준 + 레거시
-			// GenAI 표준: gen_ai.content.completion
-			// 레거시: dart.llm_call.*, litellm_request
-			return spanName === 'gen_ai.content.completion' ||
-			       spanName.startsWith('dart.llm_call.') || 
-			       spanName === 'litellm_request' ||
-			       spanName.startsWith('dart.http.') ||
-			       spanName.includes('chat_completion') ||
-			       serviceName.includes('litellm') ||
-			       (trace.prompt_tokens && trace.prompt_tokens > 0);
-		}
-		return true;
-	});
+	// 서버 사이드 필터링 사용 (클라이언트 필터링 제거)
+	// filteredTraces는 더 이상 사용하지 않음 - traces를 직접 사용
 
 	// Metrics state
 	let metrics: Metrics | null = null;
@@ -210,7 +177,8 @@
 			end_time: filters.end_time,
 			page: currentPage,
 			size: pageSize,
-			search: filters.search || undefined
+			search: filters.search || undefined,
+			trace_type: tracesSubTab !== 'all' ? tracesSubTab : undefined
 		});
 
 		traces = result.traces;
@@ -302,6 +270,12 @@
 	function handlePageSizeChange(newSize: number) {
 		pageSize = newSize;
 		currentPage = 1; // 페이지 크기 변경 시 첫 페이지로
+		loadTraces();
+	}
+
+	function handleSubTabChange(newTab: 'agent' | 'llm' | 'all') {
+		tracesSubTab = newTab;
+		currentPage = 1; // 서브 탭 변경 시 첫 페이지로
 		loadTraces();
 	}
 
@@ -496,47 +470,25 @@
 										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'agent'
 											? 'bg-cyan-600 text-white shadow-sm'
 											: 'text-slate-300 hover:text-white hover:bg-slate-700/50'}"
-										on:click={() => tracesSubTab = 'agent'}
+										on:click={() => handleSubTabChange('agent')}
 									>
 										🤖 Agent
-										<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-											{traces.filter(t => {
-												const s = t.span_name?.toLowerCase() || '';
-												const svc = t.service_name?.toLowerCase() || '';
-												return s.startsWith('dart.tool_call.') ||
-												       s.includes('agent') || s.includes('text2sql') || svc.includes('agent') || 
-												       s.includes('entry') || s.includes('analyze') || s.includes('generate') ||
-												       s.includes('validate') || s.includes('execute') || s.includes('format') || s.includes('complete');
-											}).length}
-										</span>
 									</button>
 									<button
 										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'llm'
 											? 'bg-cyan-600 text-white shadow-sm'
 											: 'text-slate-300 hover:text-white hover:bg-slate-700/50'}"
-										on:click={() => tracesSubTab = 'llm'}
+										on:click={() => handleSubTabChange('llm')}
 									>
 										💬 LLM Call
-										<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-											{traces.filter(t => {
-												const s = t.span_name?.toLowerCase() || '';
-												const svc = t.service_name?.toLowerCase() || '';
-												return s.startsWith('dart.llm_call.') || s === 'litellm_request' ||
-												       s.startsWith('dart.http.') || s.includes('chat_completion') || 
-												       svc.includes('litellm') || (t.prompt_tokens && t.prompt_tokens > 0);
-											}).length}
-										</span>
 									</button>
 									<button
 										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'all'
 											? 'bg-cyan-600 text-white shadow-sm'
 											: 'text-slate-300 hover:text-white hover:bg-slate-700/50'}"
-										on:click={() => tracesSubTab = 'all'}
+										on:click={() => handleSubTabChange('all')}
 									>
 										📋 All
-										<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-slate-500/20 text-slate-400 border border-slate-500/30">
-											{traces.length}
-										</span>
 									</button>
 								</div>
 							</div>
@@ -558,7 +510,7 @@
 										</tr>
 									</thead>
 									<tbody class="divide-y divide-slate-800/50">
-										{#each filteredTraces as trace}
+										{#each traces as trace}
 											{@const maxDuration = 120000}
 											{@const durationPercent = Math.min((trace.duration / maxDuration) * 100, 100)}
 											{@const barColor = trace.duration >= 60000 ? 'bg-amber-400/60' : trace.duration >= 30000 ? 'bg-slate-400/60' : 'bg-emerald-400/60'}

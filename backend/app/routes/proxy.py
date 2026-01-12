@@ -4,11 +4,14 @@ from typing import Optional
 import httpx
 import time
 import json
+import logging
+import asyncio
 
 from app.services.mcp_service import mcp_service
 from app.services.webui_auth_service import webui_auth_service
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
+api_router = APIRouter(prefix="/api/perplexica", tags=["perplexica-proxy"])
 
 @router.api_route("/langflow/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 async def proxy_langflow(path: str, request: Request) -> Response:
@@ -183,6 +186,234 @@ async def proxy_autogen(path: str, request: Request) -> Response:
             media_type=response.headers.get("content-type")
         )
     except Exception as e:
+        return Response(
+            content=f"Proxy error: {str(e)}",
+            status_code=500,
+            media_type="text/plain"
+        )
+
+
+@router.api_route("/perplexica/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_perplexica_api(path: str, request: Request) -> Response:
+    """
+    Perplexica API 리버스 프록시
+    - httpx + Queue 기반 SSE 스트리밍 지원
+    - CORS 헤더 추가
+    """
+    perplexica_url = f"http://perplexica:3000/api/{path}"
+    logger = logging.getLogger(__name__)
+    
+    # 요청 본문 읽기
+    body = await request.body()
+    
+    # OPTIONS 요청 처리 (CORS preflight)
+    if request.method == "OPTIONS":
+        return Response(
+            content="",
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Max-Age": "86400",
+            }
+        )
+    
+    # SSE 스트리밍 처리 (POST /api/chat)
+    if path == "chat" and request.method == "POST":
+        # JSON 본문 파싱 및 검증
+        request_json = None
+        if body:
+            try:
+                request_json = json.loads(body)
+            except json.JSONDecodeError as e:
+                logger.error(f"[PROXY] Invalid JSON in request body: {e}")
+                return Response(
+                    content=json.dumps({"error": f"Invalid JSON: {str(e)}"}),
+                    status_code=400,
+                    media_type="application/json",
+                    headers={"Access-Control-Allow-Origin": "*"}
+                )
+        
+        if not request_json:
+            logger.error("[PROXY] Empty request body")
+            return Response(
+                content=json.dumps({"error": "Empty request body"}),
+                status_code=400,
+                media_type="application/json",
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
+        
+        # Queue 기반 스트리밍
+        queue: asyncio.Queue[Optional[bytes]] = asyncio.Queue()
+        stream_error: Optional[Exception] = None
+        
+        async def fetch_stream():
+            """백그라운드 태스크: 스트림을 읽어 큐에 넣음"""
+            nonlocal stream_error
+            try:
+                async with httpx.AsyncClient(timeout=None) as client:
+                    async with client.stream(
+                        "POST",
+                        perplexica_url,
+                        json=request_json,  # httpx가 자동으로 처리
+                        headers={"Accept": "text/event-stream"}
+                    ) as response:
+                        logger.debug(f"[PROXY] Perplexica response status: {response.status_code}")
+                        
+                        if response.status_code >= 400:
+                            error_body = await response.aread()
+                            error_msg = json.dumps({
+                                "type": "error",
+                                "data": f"Perplexica error {response.status_code}: {error_body.decode()[:200]}"
+                            }) + "\n"
+                            await queue.put(error_msg.encode('utf-8'))
+                            return
+                        
+                        async for chunk in response.aiter_bytes():
+                            await queue.put(chunk)
+                            
+            except asyncio.CancelledError:
+                logger.debug("[PROXY] Stream fetch cancelled")
+            except Exception as e:
+                logger.error(f"[PROXY] Stream fetch error: {e}", exc_info=True)
+                stream_error = e
+            finally:
+                await queue.put(None)  # 종료 신호
+        
+        # 백그라운드 태스크 시작
+        fetch_task = asyncio.create_task(fetch_stream())
+        
+        async def event_generator():
+            """제너레이터: 큐에서 읽어 클라이언트로 전달"""
+            try:
+                while True:
+                    try:
+                        chunk = await asyncio.wait_for(queue.get(), timeout=120.0)
+                    except asyncio.TimeoutError:
+                        if fetch_task.done():
+                            break
+                        continue
+                    
+                    if chunk is None:
+                        break
+                    
+                    yield chunk
+                    
+            except asyncio.CancelledError:
+                logger.debug("[PROXY] Event generator cancelled")
+            except GeneratorExit:
+                logger.debug("[PROXY] Generator exited")
+            finally:
+                if not fetch_task.done():
+                    fetch_task.cancel()
+                    try:
+                        await fetch_task
+                    except asyncio.CancelledError:
+                        pass
+                
+                # 에러가 있었다면 마지막에 에러 메시지 전송
+                if stream_error:
+                    error_msg = json.dumps({"type": "error", "data": f"Proxy error: {str(stream_error)}"}) + "\n"
+                    yield error_msg.encode('utf-8')
+        
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
+    
+    # 비스트리밍 요청 처리 (GET, 기타 경로)
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.request(
+                method=request.method,
+                url=perplexica_url,
+                json=json.loads(body) if body and request.method != "GET" else None,
+                params=dict(request.query_params) if request.query_params else None
+            )
+            
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                    "content-type": response.headers.get("content-type", "application/json")
+                }
+            )
+    except httpx.HTTPStatusError as e:
+        logger.error(f"[PROXY] Perplexica proxy HTTP error: {e}")
+        return Response(
+            content=json.dumps({"error": str(e)}),
+            status_code=e.response.status_code,
+            media_type="application/json",
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    except httpx.RequestError as e:
+        logger.error(f"[PROXY] Perplexica proxy request error: {e}")
+        return Response(
+            content=json.dumps({"error": f"Bad Gateway: {str(e)}"}),
+            status_code=502,
+            media_type="application/json",
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    except Exception as e:
+        logger.error(f"[PROXY] Unexpected Perplexica proxy error: {e}", exc_info=True)
+        return Response(
+            content=json.dumps({"error": "Internal server error"}),
+            status_code=500,
+            media_type="application/json",
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    except (ConnectionError, BrokenPipeError, OSError) as e:
+        # 클라이언트 연결 종료는 정상적인 상황일 수 있음
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Client connection closed: {str(e)}")
+        return Response(
+            content="",
+            status_code=200,
+            media_type="text/plain"
+        )
+    except BaseExceptionGroup as eg:
+        # Python 3.11+ ExceptionGroup 처리
+        logger = logging.getLogger(__name__)
+        logger.debug(f"ExceptionGroup in proxy: {len(eg.exceptions)} exceptions")
+        # ExceptionGroup 내부의 예외들을 개별적으로 처리
+        has_critical = False
+        for exc in eg.exceptions:
+            if isinstance(exc, (GeneratorExit, asyncio.CancelledError)):
+                has_critical = True
+                break
+            elif isinstance(exc, (ConnectionError, BrokenPipeError, OSError)):
+                logger.debug(f"Connection error in ExceptionGroup: {str(exc)}")
+        
+        if has_critical:
+            # GeneratorExit나 CancelledError가 있으면 조용히 처리
+            return Response(
+                content="",
+                status_code=200,
+                media_type="text/plain"
+            )
+        else:
+            # 기타 예외는 로그 남기고 에러 응답
+            logger.warning(f"Unhandled exceptions in ExceptionGroup: {eg}")
+            return Response(
+                content="Proxy error: Multiple exceptions occurred",
+                status_code=500,
+                media_type="text/plain"
+            )
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Proxy error: {str(e)}", exc_info=True)
         return Response(
             content=f"Proxy error: {str(e)}",
             status_code=500,
@@ -524,4 +755,18 @@ async def proxy_mcp_sse(server_id: str, request: Request):
             "Access-Control-Allow-Origin": "*",
         }
     )
+
+
+# API Router for /api/perplexica/* paths (Vite proxy bypass)
+@api_router.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_perplexica_api_via_api(path: str, request: Request) -> Response:
+    """
+    Perplexica API 리버스 프록시 (via /api/perplexica/*)
+    - /api/perplexica/* 경로를 /proxy/perplexica/api/*로 리라이트
+    """
+    logger = logging.getLogger(__name__)
+    print(f"[PROXY-API] ===== Request received via /api/perplexica: {request.method} {path} =====")
+    logger.info(f"[PROXY-API] Request received via /api/perplexica: {request.method} {path}")
+    # 기존 proxy_perplexica_api 함수를 재사용
+    return await proxy_perplexica_api(path, request)
 

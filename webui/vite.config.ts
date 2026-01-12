@@ -96,6 +96,12 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/llm/, '/llm')
 			},
+			// Perplexica API → FastAPI BFF (포트 3010)
+			'/api/perplexica': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/perplexica/, '/proxy/perplexica/api')
+			},
 			// Embed Proxy (Kong Admin) → FastAPI BFF (포트 3010)
 			'/api/embed': {
 				target: bffTarget,

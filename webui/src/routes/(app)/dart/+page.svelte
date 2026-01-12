@@ -554,10 +554,12 @@
 							switch (event) {
 								case 'analyzing':
 									return eventData.message || '분석 중...';
-								case 'progress': {
-									const rawMsg = eventData.content || eventData.message || '처리 중...';
-									return transformProgressMessage(rawMsg);
-								}
+							case 'progress': {
+								// finish_reason이 있으면 백엔드에서 이미 친화적 메시지로 변환되어 있음
+								// 없으면 기본 메시지 사용
+								const rawMsg = eventData.message || eventData.content || '처리 중...';
+								return transformProgressMessage(rawMsg);
+							}
 								case 'intent_classified':
 									return `📋 ${eventData.company_name || '기업'} 분석 준비 중...`;
 								case 'iteration':

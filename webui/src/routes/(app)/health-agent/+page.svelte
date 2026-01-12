@@ -153,9 +153,11 @@
 	}
 	
 	async function deleteHistory(historyId: string) {
+		if (!confirm('이 대화 기록을 삭제하시겠습니까?')) return;
+		
 		try {
 			await fetch(`/api/health-agent/history/${historyId}`, { method: 'DELETE' });
-			await loadHistories();
+			histories = histories.filter(h => h.id !== historyId);
 			if (currentHistoryId === historyId) {
 				currentHistoryId = null;
 				startNewChat();
@@ -409,6 +411,8 @@
 							case 'analyzing':
 							case 'progress':
 							case 'iteration':
+								// finish_reason이 있으면 백엔드에서 이미 친화적 메시지로 변환되어 있음
+								// 없으면 기본 메시지 사용
 								const progressMsg = data.message || data.content || '분석 진행 중...';
 								currentToolCall = transformProgressMessage(progressMsg);
 								break;
@@ -540,10 +544,10 @@
 	
 	// 예시 질문
 	const exampleQuestions = [
-		'서울 강남구 병원 검색',
-		'타이레놀 의약품 정보',
-		'감기 증상과 치료법',
-		'인근 약국 찾기'
+		'서울 강남구 의료기관 현황 및 우수평가 병원 분석',
+		'아세트아미노펜 성분 의약품 비교 및 ATC 분류 통계',
+		'감기 질병코드별 입원/외래 통계 및 지역별 분포 분석',
+		'서울 강남구 소아야간진료 가능 병원 및 근처 약국 검색'
 	];
 </script>
 
@@ -581,7 +585,10 @@
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
 						</svg>
-						<span>히스토리</span>
+						<span>기록</span>
+						{#if histories.length > 0}
+							<span class="bg-gray-700/50 px-1.5 py-0.5 rounded text-[10px]">{histories.length}</span>
+						{/if}
 					</button>
 					
 					<button 
@@ -649,31 +656,42 @@
 		<!-- 히스토리 사이드바 -->
 		{#if showHistorySidebar}
 			<div class="w-72 border-r border-gray-800/50 bg-gray-900/80 backdrop-blur-sm flex flex-col h-full">
-				<div class="px-4 py-3 border-b border-gray-800/50 flex items-center justify-between">
-					<h3 class="text-sm font-medium text-gray-300">채팅 기록</h3>
-					<button 
-						class="p-1 rounded hover:bg-gray-800/50 text-gray-400 hover:text-white transition-colors"
-						on:click={() => showHistorySidebar = false}
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+				<!-- 사이드바 헤더 -->
+				<div class="p-3 border-b border-gray-800/50">
+					<div class="flex items-center justify-between mb-2">
+						<span class="text-sm font-medium text-gray-200">대화 기록</span>
+						<button 
+							class="p-1 rounded hover:bg-gray-800/50 text-gray-400 hover:text-white transition-colors"
+							on:click={() => showHistorySidebar = false}
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					<!-- 검색 -->
+					<div class="relative">
+						<input 
+							type="text" 
+							placeholder="검색..." 
+							bind:value={historySearchQuery}
+							on:input={searchHistories}
+							class="w-full px-3 py-1.5 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+						/>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
 						</svg>
-					</button>
+					</div>
 				</div>
-				<div class="px-3 py-2 border-b border-gray-800/50">
-					<input
-						type="text"
-						placeholder="검색..."
-						bind:value={historySearchQuery}
-						on:input={() => searchHistories()}
-						class="w-full px-3 py-1.5 text-sm rounded-lg bg-gray-800/60 border border-gray-700/50 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500/50"
-					/>
-				</div>
+				
+				<!-- 히스토리 목록 -->
 				<div class="flex-1 overflow-y-auto">
 					{#if histories.length === 0}
-						<div class="p-4 text-center text-gray-500 text-sm">채팅 기록이 없습니다</div>
+						<div class="p-4 text-center text-gray-500 text-sm">
+							저장된 대화가 없습니다
+						</div>
 					{:else}
-						{#each histories as history}
+						{#each histories as history (history.id)}
 							<div 
 								class="group px-3 py-2 border-b border-gray-800/30 hover:bg-gray-800/40 cursor-pointer transition-colors {currentHistoryId === history.id ? 'bg-red-500/10 border-l-2 border-l-red-500' : ''}"
 								on:click={() => loadHistory(history.id)}
@@ -683,11 +701,16 @@
 							>
 								<div class="flex items-start justify-between gap-2">
 									<div class="flex-1 min-w-0">
-										<p class="text-sm text-gray-200 truncate">{history.title}</p>
-										<p class="text-xs text-gray-500 mt-1">{new Date(history.updated_at).toLocaleDateString('ko-KR')}</p>
+										<div class="text-sm text-gray-200 truncate">{history.title}</div>
+										<div class="flex items-center gap-2 mt-1">
+											<span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-400">{history.model_tab}</span>
+											<span class="text-[10px] text-gray-500">
+												{new Date(history.updated_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+											</span>
+										</div>
 									</div>
-									<button
-										class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-all"
+									<button 
+										class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all"
 										on:click|stopPropagation={() => deleteHistory(history.id)}
 									>
 										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">

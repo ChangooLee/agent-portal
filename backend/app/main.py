@@ -95,6 +95,89 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(NoCacheMiddleware)
 
+# ExceptionGroup 처리 미들웨어 (Python 3.11+)
+import httpx
+
+class ExceptionGroupMiddleware(BaseHTTPMiddleware):
+    """ExceptionGroup을 안전하게 처리하는 미들웨어"""
+    async def dispatch(self, request: StarletteRequest, call_next):
+        try:
+            return await call_next(request)
+        except (httpx.StreamClosed, httpx.StreamError) as e:
+            # httpx 스트림 에러는 정상 종료로 처리
+            logger = logging.getLogger(__name__)
+            logger.debug(f"Stream closed in middleware: {str(e)}")
+            from starlette.responses import Response
+            return Response(
+                content="",
+                status_code=200,
+                media_type="text/plain"
+            )
+        except BaseExceptionGroup as eg:
+            # ExceptionGroup 내부의 예외들을 개별적으로 처리
+            logger = logging.getLogger(__name__)
+            
+            # 모든 예외 분석
+            has_critical = False
+            has_connection_error = False
+            has_cancelled = False
+            has_stream_closed = False
+            other_exceptions = []
+            
+            for exc in eg.exceptions:
+                if isinstance(exc, GeneratorExit):
+                    has_critical = True
+                    has_cancelled = True
+                elif isinstance(exc, asyncio.CancelledError):
+                    has_critical = True
+                    has_cancelled = True
+                elif isinstance(exc, (ConnectionError, BrokenPipeError, OSError)):
+                    has_connection_error = True
+                    has_critical = True
+                elif isinstance(exc, (httpx.StreamClosed, httpx.StreamError)):
+                    has_stream_closed = True
+                    has_critical = True
+                else:
+                    other_exceptions.append(exc)
+            
+            # 정상적인 클라이언트 연결 종료는 DEBUG 레벨로 로깅
+            if has_critical and (has_connection_error or has_cancelled or has_stream_closed) and not other_exceptions:
+                logger.debug(f"Client connection closed normally: {len(eg.exceptions)} exceptions")
+                from starlette.responses import Response
+                return Response(
+                    content="",
+                    status_code=200,
+                    media_type="text/plain"
+                )
+            elif has_critical and not other_exceptions:
+                # 클라이언트 연결 종료이지만 다른 예외는 없음
+                logger.debug(f"Stream cancelled or connection closed: {len(eg.exceptions)} exceptions")
+                from starlette.responses import Response
+                return Response(
+                    content="",
+                    status_code=200,
+                    media_type="text/plain"
+                )
+            else:
+                # 실제 에러가 포함된 경우만 WARNING 레벨로 로깅
+                logger.warning(f"ExceptionGroup with unexpected errors: {len(eg.exceptions)} exceptions, {len(other_exceptions)} non-connection errors", exc_info=True)
+                from starlette.responses import Response
+                return Response(
+                    content="Internal server error",
+                    status_code=500,
+                    media_type="text/plain"
+                )
+
+app.add_middleware(ExceptionGroupMiddleware)
+
+# ExceptionGroup 전용 exception handler (Starlette 에러 미들웨어보다 우선)
+from fastapi import Request as FastAPIRequest
+from fastapi.responses import Response as FastAPIResponse
+
+# BaseExceptionGroup은 Exception의 서브클래스가 아니므로 exception handler에 등록 불가
+# ExceptionGroup을 사용하거나 미들웨어에서만 처리
+# 미들웨어(ExceptionGroupMiddleware)에서 이미 처리하므로 exception handler는 불필요
+
 # Include routers
 # BFF 라우터를 먼저 등록 (우선순위 높음)
 # /mcp, /datacloud, /gateway 등은 BFF에서 직접 처리
@@ -103,7 +186,8 @@ app.include_router(kong_admin.router)
 app.include_router(chat.router)
 app.include_router(observability.router)
 app.include_router(news.router)
-app.include_router(proxy.router)
+app.include_router(proxy.router)  # /proxy/* - BFF에서 직접 처리
+app.include_router(proxy.api_router)  # /api/perplexica/* - Vite 프록시를 통한 요청 처리
 app.include_router(agents.router)
 app.include_router(monitoring.router)
 app.include_router(projects.router)

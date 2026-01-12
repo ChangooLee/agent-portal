@@ -25,6 +25,12 @@ async def proxy_webui_backend(
     request: Request,
     authorization: Optional[str] = Header(None, alias="Authorization")
 ) -> Response:
+    import logging
+    logger = logging.getLogger(__name__)
+    if path.startswith("perplexica"):
+        logger.warning(f"[WEBUI-PROXY] Perplexica request caught by webui_proxy: {request.method} {path}")
+        # Perplexica 요청은 webui_proxy에서 처리하지 않음
+        raise HTTPException(status_code=404, detail="Not found")
     """
     WebUI Backend 프록시
     
@@ -385,6 +391,20 @@ async def proxy_api_catchall(
     request: Request,
     authorization: Optional[str] = Header(None, alias="Authorization")
 ) -> Response:
+    import logging
+    import sys
+    logger = logging.getLogger(__name__)
+    
+    # 디버그: 모든 /api/* 요청 로깅
+    msg = f"[WEBUI-PROXY-API] Request received: {request.method} /api/{path}\n"
+    sys.stdout.write(msg)
+    sys.stdout.flush()
+    logger.info(f"[WEBUI-PROXY-API] Request received: {request.method} /api/{path}")
+    
+    if path.startswith("perplexica"):
+        logger.warning(f"[WEBUI-PROXY-API] Perplexica request caught by webui_proxy.api_router: {request.method} /api/{path}")
+        # Perplexica 요청은 webui_proxy에서 처리하지 않음 - proxy.api_router로 가야 함
+        raise HTTPException(status_code=404, detail="Not found")
     """
     /api/* 경로를 WebUI Backend로 프록시 (catch-all)
     
@@ -392,7 +412,7 @@ async def proxy_api_catchall(
     단, /api/mcp/*, /api/datacloud/*, /api/gateway/*, /api/monitoring/* 등은 제외됩니다.
     """
     # BFF에서 직접 처리하는 경로는 제외
-    excluded_paths = ["mcp", "datacloud", "gateway", "monitoring", "projects", "teams", "agents", "news", "llm", "text2sql", "dart", "embed", "proxy"]
+    excluded_paths = ["mcp", "datacloud", "gateway", "monitoring", "projects", "teams", "agents", "news", "llm", "text2sql", "dart", "embed", "proxy", "perplexica"]
     path_parts = path.split("/")
     if path_parts and path_parts[0] in excluded_paths:
         # BFF의 다른 라우터에서 처리해야 하는 경로는 404 반환

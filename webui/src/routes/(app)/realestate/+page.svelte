@@ -415,6 +415,8 @@
 							case 'analyzing':
 							case 'progress':
 							case 'iteration':
+								// finish_reason이 있으면 백엔드에서 이미 친화적 메시지로 변환되어 있음
+								// 없으면 기본 메시지 사용
 								const progressMsg = data.message || data.content || '분석 진행 중...';
 								currentToolCall = transformProgressMessage(progressMsg);
 								break;
