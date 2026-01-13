@@ -41,8 +41,6 @@ EXCLUDE_DIRS=(
   ".next"
   "langflow"
   "flowise"
-  "autogen-studio"
-  "autogen-api"
   "perplexica"
   "open-notebook"
   "litellm"

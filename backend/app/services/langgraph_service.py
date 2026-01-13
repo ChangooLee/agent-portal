@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 # Service URLs (Docker internal)
 LANGFLOW_BASE_URL = os.getenv("LANGFLOW_URL", "http://langflow:7860")
 FLOWISE_BASE_URL = os.getenv("FLOWISE_URL", "http://flowise:3000")
-AUTOGEN_BASE_URL = os.getenv("AUTOGEN_URL", "http://autogen-api:8000")
 
 
 class LangGraphService:
@@ -93,35 +92,6 @@ class LangGraphService:
             base_url=FLOWISE_BASE_URL,
             inputs={"question": question},
             extra_params={"history": history} if history else None,
-            tags=tags
-        )
-    
-    async def execute_autogen(
-        self,
-        agent_id: str,
-        task: str,
-        context: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
-        """
-        AutoGen 에이전트 실행.
-        
-        Args:
-            agent_id: AutoGen 에이전트 ID
-            task: 수행할 작업
-            context: 추가 컨텍스트
-            tags: 태그 목록
-            
-        Returns:
-            실행 결과 + trace_id
-        """
-        return await self._execute_flow(
-            flow_id=agent_id,
-            flow_name=f"autogen-{agent_id[:8]}",
-            agent_type=AgentType.AUTOGEN,
-            base_url=AUTOGEN_BASE_URL,
-            inputs={"task": task},
-            extra_params={"context": context} if context else None,
             tags=tags
         )
     
@@ -242,8 +212,6 @@ class LangGraphService:
                     return await self._call_langflow(client, base_url, flow_id, inputs, extra_params)
                 elif agent_type == AgentType.FLOWISE:
                     return await self._call_flowise(client, base_url, flow_id, inputs, extra_params)
-                elif agent_type == AgentType.AUTOGEN:
-                    return await self._call_autogen(client, base_url, flow_id, inputs, extra_params)
                 else:
                     raise ValueError(f"Unsupported agent type: {agent_type}")
                     
@@ -316,35 +284,6 @@ class LangGraphService:
             "raw_response": data,
             "cost": 0,
             "total_tokens": data.get("totalTokens", 0)
-        }
-    
-    async def _call_autogen(
-        self,
-        client: httpx.AsyncClient,
-        base_url: str,
-        agent_id: str,
-        inputs: Dict[str, Any],
-        extra_params: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """AutoGen API 호출"""
-        url = f"{base_url}/api/agents/{agent_id}/run"
-        
-        payload = {
-            "task": inputs.get("task", str(inputs))
-        }
-        
-        if extra_params and extra_params.get("context"):
-            payload["context"] = extra_params["context"]
-        
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        
-        return {
-            "output": data.get("result", data),
-            "raw_response": data,
-            "cost": data.get("cost", 0),
-            "total_tokens": data.get("total_tokens", 0)
         }
     
     async def sync_langflow_flows(self) -> List[Dict[str, Any]]:

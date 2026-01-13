@@ -23,7 +23,6 @@ class AgentType(str, Enum):
     TEXT2SQL = "text2sql"
     LANGFLOW = "langflow"
     FLOWISE = "flowise"
-    AUTOGEN = "autogen"
     DART = "dart"
     CUSTOM = "custom"
 
@@ -38,7 +37,7 @@ class AgentRegistryService:
     """
     에이전트 레지스트리 서비스.
     
-    모든 에이전트(Text2SQL, Langflow, Flowise, AutoGen, Custom)를
+    모든 에이전트(Text2SQL, Langflow, Flowise, Custom)를
     통합 관리하고 모니터링 대상으로 등록.
     """
     
@@ -84,7 +83,7 @@ class AgentRegistryService:
         
         Args:
             name: 에이전트 이름
-            agent_type: 에이전트 유형 (text2sql, langflow, flowise, autogen, custom)
+            agent_type: 에이전트 유형 (text2sql, langflow, flowise, custom)
             project_id: 프로젝트 ID
             external_id: 외부 시스템 ID (flow_id, chatflow_id 등)
             description: 설명

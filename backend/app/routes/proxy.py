@@ -143,56 +143,6 @@ async def proxy_flowise(path: str, request: Request) -> Response:
         )
 
 
-@router.api_route("/autogen/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-async def proxy_autogen(path: str, request: Request) -> Response:
-    """
-    AutoGen Studio 리버스 프록시 (향후 확장)
-    """
-    autogen_url = f"http://autogen-studio:5050/{path}"
-    
-    headers = dict(request.headers)
-    headers.pop("host", None)
-    body = await request.body()
-    
-    if request.method == "OPTIONS":
-        return Response(
-            status_code=200,
-            headers={
-                "access-control-allow-origin": "*",
-                "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-                "access-control-allow-headers": "*",
-            }
-        )
-    
-    try:
-        async with httpx.AsyncClient(timeout=300.0) as client:
-            response = await client.request(
-                method=request.method,
-                url=autogen_url,
-                headers=headers,
-                content=body,
-                params=request.query_params
-            )
-        
-        response_headers = dict(response.headers)
-        response_headers.pop("x-frame-options", None)
-        response_headers["content-security-policy"] = "frame-ancestors 'self'"
-        response_headers["access-control-allow-origin"] = "*"
-        
-        return Response(
-            content=response.content,
-            status_code=response.status_code,
-            headers=response_headers,
-            media_type=response.headers.get("content-type")
-        )
-    except Exception as e:
-        return Response(
-            content=f"Proxy error: {str(e)}",
-            status_code=500,
-            media_type="text/plain"
-        )
-
-
 @router.api_route("/perplexica/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 async def proxy_perplexica_api(path: str, request: Request) -> Response:
     """

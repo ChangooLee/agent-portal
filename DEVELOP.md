@@ -41,10 +41,6 @@ repo/
 - Python 3.10+ (backend 개발용)
 - (선택) NVIDIA 드라이버/CUDA (vLLM 사용 시)
 
-**AutoGen Studio 관련**:
-- AutoGen Studio는 로컬 빌드 방식 사용 (라이선스 충돌 회피 및 커스터마이즈 용이)
-- `autogen-studio/`, `autogen-api/` 디렉토리에 Dockerfile 포함 필요
-
 ### 0.3 초기 저장소 설정
 
 ```bash
@@ -440,14 +436,6 @@ backend/
       ├─ langflow_converter.py # Langflow → LangGraph 변환
       └─ langgraph_service.py # LangGraph 실행 서비스
 
-autogen-studio/              # AutoGen Studio UI (임베드)
-├─ Dockerfile
-└─ ...
-
-autogen-api/                 # AutoGen Studio 백엔드(프록시/어댑터)
-├─ Dockerfile
-└─ ...
-
 webui/
 └─ overrides/
    └─ pages/
@@ -486,14 +474,6 @@ services:
       - LITELLM_BASE_URL=http://litellm:4000
     depends_on: [litellm]
 
-  autogen-api:
-    build: ./autogen-api
-    ports: ["${AUTOGEN_API_PORT:-5051}:5051"]
-    environment:
-      - LITELLM_BASE_URL=http://litellm:4000
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-    depends_on: [litellm, otel-collector]
-
 volumes:
   langflow_data:
   flowise_data:
@@ -503,19 +483,17 @@ volumes:
 
 1. **구동 테스트**
    ```bash
-   docker-compose up -d langflow flowise autogen-studio autogen-api
+   docker-compose up -d langflow flowise
    ```
 
 2. **빌더 접근 확인**
    - [ ] `/builder/langflow` 접근 가능
    - [ ] `/builder/flowise` 접근 가능
-   - [ ] `/builder/autogen` 접근 가능
    - [ ] iframe 임베드 정상 동작
 
 3. **플로우 생성 및 Export**
    - [ ] Langflow에서 간단한 플로우 생성
    - [ ] Flowise에서 간단한 플로우 생성
-   - [ ] AutoGen Studio에서 그룹챗 시나리오 생성
    - [ ] 각 빌더에서 Export 버튼 클릭 시 LangGraph JSON 생성
    - [ ] 저장된 에이전트 정의 확인
 

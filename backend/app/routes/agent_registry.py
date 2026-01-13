@@ -28,7 +28,7 @@ router = APIRouter(prefix="/agents", tags=["agent-registry"])
 class AgentRegisterRequest(BaseModel):
     """에이전트 등록 요청"""
     name: str = Field(..., description="에이전트 이름")
-    type: str = Field(..., description="에이전트 유형 (text2sql, langflow, flowise, autogen, custom)")
+    type: str = Field(..., description="에이전트 유형 (text2sql, langflow, flowise, custom)")
     project_id: str = Field("default-project", description="프로젝트 ID")
     external_id: Optional[str] = Field(None, description="외부 시스템 ID (flow_id 등)")
     description: Optional[str] = Field(None, description="설명")

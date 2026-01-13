@@ -19,12 +19,6 @@
 [submodule "paddleocr"]
 	path = paddleocr
 	url = https://github.com/PaddlePaddle/PaddleOCR.git
-[submodule "seaweedfs"]
-	path = seaweedfs
-	url = https://github.com/chrislusf/seaweedfs.git
-[submodule "unstructured"]
-	path = unstructured
-	url = https://github.com/Unstructured-IO/unstructured.git
 
 [submodule "libs/vanna"]
 	path = libs/vanna

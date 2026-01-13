@@ -15,7 +15,7 @@ Enterprise AI agent management platform built on Open-WebUI, providing:
 - **Monitoring Dashboard**: Real-time LLM call observability via OTEL/ClickHouse
 - **Data Cloud**: Zero-copy database connectors with Text-to-SQL
 - **MCP Gateway**: Model Context Protocol server management via Kong
-- **Agent Builders**: Embedded Langflow, Flowise, AutoGen Studio
+- **Agent Builders**: Embedded Langflow, Flowise
 
 ### 1.2 Critical Development Rule: Common Infrastructure Protection
 

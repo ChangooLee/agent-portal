@@ -118,36 +118,7 @@ registered = await langgraph_service.sync_flowise_chatflows()
 
 ---
 
-## 4. AutoGen Integration
-
-### 4.1 Prerequisites
-
-```yaml
-# docker-compose.yml에 추가
-services:
-  autogen-api:
-    build: ./autogen
-    ports:
-      - "8000:8000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-```
-
-### 4.2 Execution
-
-```python
-from app.services.langgraph_service import langgraph_service
-
-result = await langgraph_service.execute_autogen(
-    agent_id="uuid-of-agent",
-    task="Analyze this data and provide insights",
-    context={"data": [...]}
-)
-```
-
----
-
-## 5. Custom Agent Integration
+## 4. Custom Agent Integration
 
 ### 5.1 Register Agent
 
@@ -294,7 +265,6 @@ docker exec monitoring-clickhouse clickhouse-client \
 |----------|---------|-------------|
 | `LANGFLOW_URL` | `http://langflow:7860` | Langflow API URL |
 | `FLOWISE_URL` | `http://flowise:3000` | Flowise API URL |
-| `AUTOGEN_URL` | `http://autogen-api:8000` | AutoGen API URL |
 | `DEFAULT_PROJECT_ID` | `default-project` | 기본 프로젝트 ID |
 
 ---

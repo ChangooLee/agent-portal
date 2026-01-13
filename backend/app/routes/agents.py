@@ -1,4 +1,4 @@
-"""Agents API routes - Langflow/Flowise/AutoGen flow management"""
+"""Agents API routes - Langflow/Flowise flow management"""
 from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any, List, Literal
 import httpx

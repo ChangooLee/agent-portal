@@ -382,22 +382,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  autogen-studio:
-    build: ./autogen-studio
-    profiles: ["disabled"]
-    ports:
-      - "5050:5050"
-    environment:
-      - LITELLM_BASE_URL=http://host.docker.internal:4000
-
-  autogen-api:
-    build: ./autogen-api
-    profiles: ["disabled"]
-    ports:
-      - "5051:5051"
-    environment:
-      - LITELLM_BASE_URL=http://host.docker.internal:4000
-
 volumes:
   mariadb:
   chromadb:

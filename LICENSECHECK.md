@@ -20,7 +20,7 @@
 | **MariaDB**                  | 코어 메타데이터 DB  |               11.x LTS | **GPL-2.0** (또는 상용)          | GPL-2.0이지만 서비스로만 사용 시 의무 완화. 상용 라이선스 옵션 존재.                                                      |
 | **Redis**                    | 세션/캐시        |               7.x LTS | **BSD-3-Clause** (구버전) / **Redis Source Available License** (신버전) | 7.x는 BSD-3-Clause. 최신 버전은 Redis Source Available License (상업적 제한 있음). 7.x 사용 권장. |
 | **PostgreSQL**               | 관측성 DB (Langfuse/Helicone/Konga) | 15.x / 11.x | **PostgreSQL License** (BSD-like) | 매우 퍼미시브. 수정/배포 자유.                                                                                    |
-| **MinIO**                    | 오브젝트 스토리지   |                최신 안정 태그 | **AGPL-3.0**                     | 수정 후 네트워크 제공 시 소스 공개 의무. SeaweedFS(Apache-2.0) 대안 검토 권장.                                          |
+| **MinIO**                    | 오브젝트 스토리지   |                최신 안정 태그 | **AGPL-3.0**                     | 수정 후 네트워크 제공 시 소스 공개 의무.                                                                                  |
 | **Konga**                    | Kong Admin UI    |                최신 안정 태그 | **MIT**                          | Kong 관리 UI. MIT로 커스터마이징 자유.                                                                              |
 | **LangGraph Server**         | 에이전트 실행 런타임 |               최신 릴리스 | *(LangChain 프로젝트 일부, 확인 필요)* | LangChain 생태계의 일부. 라이선스 확인 필요.                                                                        |
 
@@ -41,7 +41,7 @@
    * **MIT/Apache/BSD** 조합으로 핵심 UI·게이트웨이·벡터DB를 구성 → **브랜딩 제거/테마 전환/플러그인 주입** 모두 자유.
    * (참고) **AGPL** 컴포넌트는 **수정 후 네트워크 제공 시 소스 공개 의무**가 생기니, 가능한 **퍼미시브 대체**를 기본값으로.
 
-     * 예: 오브젝트 스토리지가 꼭 필요하면 **MinIO(AGPL-3.0)** 대신 **SeaweedFS(Apache-2.0)** 같은 대안을 검토.
+     * 예: 오브젝트 스토리지가 꼭 필요하면 **MinIO(AGPL-3.0)** 사용 시 라이선스 의무 확인.
      * MinIO를 **수정 없이 서비스로만 사용**하면 의무가 완화되지만, “완전 자유” 관점에선 퍼미시브 대안이 더 안전.
 
 3. **상표/브랜딩**
@@ -148,15 +148,6 @@ Kong Gateway (MCP/API 보안)
 - GitHub: https://github.com/Kong/kong
 - 권장 포크 버전: 3.6.x LTS (Apache-2.0 라이선스)
 
-AutoGen Studio (대화형 에이전트 빌더)
-- GitHub: https://github.com/microsoft/autogen (autogenstudio 브랜치)
-- 권장 포크 버전: 최신 안정 태그 (MIT 라이선스)
-- 위치: samples/apps/autogen-studio/
-
-SeaweedFS (오브젝트 스토리지 대체)
-- GitHub: https://github.com/chrislusf/seaweedfs
-- 권장 포크 버전: 최신 안정 버전 (Apache-2.0 라이선스)
-
 MariaDB (코어 메타데이터 DB)
 - GitHub: https://github.com/MariaDB/server
 - 권장 포크 버전: 11.x LTS (GPL-2.0 라이선스, 상용 라이선스 옵션)
@@ -175,7 +166,7 @@ PostgreSQL (관측성 DB)
 MinIO (오브젝트 스토리지)
 - GitHub: https://github.com/minio/minio
 - 권장 포크 버전: 최신 안정 버전 (AGPL-3.0 라이선스)
-- 참고: 수정 후 네트워크 제공 시 소스 공개 의무. SeaweedFS(Apache-2.0) 대안 검토 권장.
+- 참고: 수정 후 네트워크 제공 시 소스 공개 의무.
 
 Konga (Kong Admin UI)
 - GitHub: https://github.com/pantsel/konga
