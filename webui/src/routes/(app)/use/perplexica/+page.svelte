@@ -128,8 +128,8 @@
 	
 	// 모델 프로바이더 타입
 	interface ModelProvider {
-		id: string;
-		name: string;
+        id: string;
+        name: string;
 		chatModels: Array<{ key: string; name: string }>;
 		embeddingModels: Array<{ key: string; name: string }>;
 	}
@@ -1078,17 +1078,17 @@
 	// 섹션 변경 시 divider 너비 업데이트
 	$: if (sections.length > 0) {
 		setTimeout(updateDividerWidth, 100);
-	}
+    }
 </script>
 
 <svelte:head>
-	<title>AI 검색 | AI Agent Portal</title>
+    <title>AI 검색 | AI Agent Portal</title>
 </svelte:head>
 
-<div class="h-screen bg-gray-950 text-slate-50 overflow-hidden flex">
+<div class="min-h-full bg-gray-950 text-slate-50 flex">
 	<!-- 좌측 사이드바 (원본 Perplexica 구조) -->
-	<div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-[72px] lg:flex-col border-r border-gray-800/50">
-		<div class="flex grow flex-col items-center justify-between gap-y-5 overflow-y-auto bg-gray-900/80 backdrop-blur-sm px-2 py-8 shadow-sm">
+	<div class="hidden lg:flex lg:w-[72px] lg:flex-col lg:shrink-0 border-r border-gray-800/50">
+		<div class="flex flex-col items-center justify-center gap-y-6 bg-gray-900/80 backdrop-blur-sm px-2 py-8 shadow-sm h-full">
 			<!-- 새 채팅 버튼 (Home) -->
 			<a
 				href="/use/perplexica"
@@ -1180,10 +1180,10 @@
 	</div>
 	
 	<!-- 메인 컨텐츠 (중앙 정렬) -->
-	<main class="flex-1 lg:pl-20 bg-gray-950 min-h-screen">
-		<div class="max-w-screen-lg lg:mx-auto">
+	<main class="flex-1 bg-gray-950 flex flex-col">
+		<div class="max-w-4xl lg:mx-auto flex-1 flex flex-col min-h-0 w-full">
 			<!-- 채팅 영역 -->
-			<div class="flex flex-col h-screen relative overflow-hidden">
+			<div class="flex flex-col flex-1 relative overflow-hidden min-h-0">
 				<!-- Export 버튼 (우측 상단) -->
 				<div class="absolute top-4 right-4 z-10">
 					<div class="relative" bind:this={exportPopoverRef}>
@@ -1298,7 +1298,7 @@
 																	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3 text-gray-400">
 																		<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
 																	</svg>
-																</div>
+        </div>
 															{/if}
 															<p class="text-xs text-gray-400 overflow-hidden whitespace-nowrap text-ellipsis">
 																{source.metadata.url && source.metadata.url.includes('file_id://')
@@ -1307,7 +1307,7 @@
 																		? source.metadata.url.replace(/.+\/\/|www.|\..+/g, '')
 																		: 'Unknown'}
 															</p>
-														</div>
+    </div>
 														<div class="flex flex-row items-center space-x-1 text-gray-400 text-xs">
 															<div class="bg-gray-500 h-[4px] w-[4px] rounded-full" />
 															<span>{i + 1}</span>
@@ -1352,9 +1352,9 @@
 										<div class="flex flex-row items-center space-x-2 mb-2">
 											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-											</svg>
+                    </svg>
 											<h3 class="text-white dark:text-white font-medium text-xl">Answer</h3>
-										</div>
+                </div>
 									{/if}
 									
 									<!-- Answer 내용은 parsedTextBlocks가 있거나 answering 상태일 때 표시 -->
@@ -1401,19 +1401,19 @@
 																<p class="text-sm text-gray-300 group-hover:text-blue-400 transition-colors duration-200 leading-relaxed">
 																	{suggestion}
 																</p>
-															</div>
+                </div>
 															<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors duration-200 flex-shrink-0">
 																<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
 															</svg>
-														</div>
+            </div>
 													</button>
 												</div>
 											{/each}
 										</div>
 									</div>
 								{/if}
-							</div>
-							
+        </div>
+
 							<!-- 우측 위젯 (3/12, sticky) -->
 							{#if section.parsedTextBlocks.length > 0 || section.message.status === 'answering' || section.widgets.length > 0}
 								<div class="lg:sticky lg:top-20 flex flex-col items-center space-y-3 w-full lg:w-3/12 z-30 h-full pb-4">
@@ -1723,7 +1723,7 @@
 					<div class="flex items-center gap-2 p-3 rounded-lg bg-gray-800/60 border border-gray-700/50">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-blue-400 animate-spin">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-						</svg>
+                                    </svg>
 						<span class="text-sm text-gray-300">Brainstorming...</span>
 					</div>
 				{/if}
@@ -1757,7 +1757,7 @@
 											<span class="text-base">{optimizationModes.find(m => m.value === selectedOptimizationMode)?.icon}</span>
 											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-white {showOptimizationModePopover ? 'rotate-180' : ''} transition-transform">
 												<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-											</svg>
+                                    </svg>
 										</div>
 									</button>
 									{#if showOptimizationModePopover}
@@ -1800,7 +1800,7 @@
 										>
 											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-[18px] h-auto text-white">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418" />
-											</svg>
+                                    </svg>
 										</button>
 										{#if showFocusModePopover}
 											<div
@@ -1838,7 +1838,7 @@
 										>
 											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-white">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5m-1.5 0V12m0 4.5V12m0 4.5h-1.5m-1.5 0H15m-6 0H4.5m0 0H3m1.5 0v-1.5M15 12v4.5m0-4.5h-1.5m1.5 0H12m-6 0H4.5m0 0V12m0 0H3m1.5 0h1.5m0 0H9m-1.5 0v-1.5M9 3H6.75m0 0H4.5m2.25 0v1.5M9 3v1.5m0 0V8.25m0-4.5h2.25m0 0H15m-2.25 0v1.5M15 3h2.25m0 0H21m-2.25 0v1.5M21 3v1.5m0 0V8.25m0-4.5H18.75m0 0H15m2.25 0h2.25m0 0H21" />
-											</svg>
+                                    </svg>
 										</button>
 										{#if showModelSelectorPopover}
 											<div
@@ -1858,7 +1858,7 @@
 														<div class="text-center text-gray-400 py-4 text-sm">로딩 중...</div>
 													{:else if filteredProviders.length === 0}
 														<div class="text-center text-gray-400 py-4 text-sm">모델을 찾을 수 없습니다</div>
-													{:else}
+                                {:else}
 														{#each filteredProviders as provider}
 															<div class="space-y-2">
 																<h4 class="text-xs font-semibold text-gray-400 uppercase px-2">{provider.name}</h4>
@@ -1911,7 +1911,7 @@
 								>
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-									</svg>
+                                    </svg>
 								</button>
 							</div>
 						</div>
@@ -1919,7 +1919,7 @@
 				</div>
 			{:else if dividerWidth > 0}
 				<!-- 메시지가 있을 때: dividerWidth 기반 중앙 배치 -->
-				<div class="fixed z-40 bottom-24 lg:bottom-6" style="width: {dividerWidth}px; left: 50%; transform: translateX(-50%);">
+				<div class="fixed z-40 bottom-24 lg:bottom-6" style="width: {Math.max(dividerWidth, 600)}px; max-width: 800px; left: 50%; transform: translateX(-50%);">
 					<form 
 						on:submit|preventDefault={sendMessage}
 						class="w-full relative"
@@ -1971,9 +1971,9 @@
 													{/each}
 												</div>
 											</div>
-										{/if}
-									</div>
-									
+                                {/if}
+                            </div>
+
 									<!-- Focus Mode -->
 									<div class="relative" bind:this={singleFocusModePopoverRef}>
 										<button
@@ -2076,14 +2076,14 @@
 																			</button>
 																		{/each}
 																	{/if}
-																</div>
-															</div>
-														{/each}
+                        </div>
+                    </div>
+                {/each}
 													{/if}
-												</div>
-											</div>
+            </div>
+        </div>
 										{/if}
-									</div>
+    </div>
 								</div>
 								
 								<textarea

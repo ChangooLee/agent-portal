@@ -254,6 +254,31 @@ node scripts/integrate-learnings-to-rules.js
 - `ui-layouts.json` 생성 (레이아웃 계층)
 - `ui-navigation.json` 생성 (네비게이션 구조)
 
+### 4. protect-env.sh / restore-env.sh
+
+**목적**: `.env` 파일 보호 (민감 정보 - API 키, 비밀번호 등)
+
+**사용**:
+```bash
+# git clean 실행 전 백업
+./scripts/protect-env.sh
+
+# git clean 실행
+git clean -fdx
+
+# git clean 실행 후 복구
+./scripts/restore-env.sh
+```
+
+**기능**:
+- `protect-env.sh`: `.env` 파일을 `.env.backup.protected`로 백업
+- `restore-env.sh`: 백업 파일에서 `.env` 파일 복구 후 백업 파일 삭제
+
+**주의사항**:
+- `git clean -fdx` 실행 시 `-x` 옵션으로 `.gitignore`에 포함된 파일도 삭제됨
+- `.env` 파일은 `.gitignore`에 포함되어 있어 `git clean -fdx` 실행 시 삭제될 수 있음
+- **반드시** `git clean -fdx` 실행 전에 `./scripts/protect-env.sh` 실행 필요
+
 ---
 
 ## Git Hooks 연동

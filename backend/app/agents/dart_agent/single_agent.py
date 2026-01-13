@@ -508,13 +508,13 @@ class DartSingleAgent:
                 }
 
 
-# 싱글톤
-_single_agent: Optional[DartSingleAgent] = None
+# 싱글톤 (모델명별로 관리)
+_single_agents: Dict[str, DartSingleAgent] = {}
 
 
 def get_dart_single_agent(model: str = "claude-opus-4.5") -> DartSingleAgent:
-    """DART 단일 에이전트 싱글톤 반환"""
-    global _single_agent
-    if _single_agent is None:
-        _single_agent = DartSingleAgent(model=model)
-    return _single_agent
+    """DART 단일 에이전트 반환 (모델명별로 인스턴스 관리)"""
+    global _single_agents
+    if model not in _single_agents:
+        _single_agents[model] = DartSingleAgent(model=model)
+    return _single_agents[model]

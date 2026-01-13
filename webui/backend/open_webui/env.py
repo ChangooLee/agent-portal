@@ -105,8 +105,8 @@ for source in log_sources:
 
 log.setLevel(SRC_LOG_LEVELS["CONFIG"])
 
-WEBUI_NAME = os.environ.get("WEBUI_NAME", "SFN AI Portal")
-if WEBUI_NAME != "SFN AI Portal" and not WEBUI_NAME.endswith("(Open WebUI)"):
+WEBUI_NAME = os.environ.get("WEBUI_NAME", "AI Agent Portal")
+if WEBUI_NAME != "AI Agent Portal" and not WEBUI_NAME.endswith("(Open WebUI)"):
     WEBUI_NAME += " (Open WebUI)"
 
 WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"

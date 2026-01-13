@@ -42,9 +42,10 @@ export const roleMenus: Record<UserRole, MenuItem[]> = {
         { id: 'chat', name: 'Chat', href: '/c', icon: 'chat', status: 'active', description: 'AI 채팅' },
         { id: 'agents', name: '에이전트', href: '/use/agents', icon: 'cube', status: 'active', description: 'AI 에이전트 실행' },
         { id: 'datacloud', name: 'Data Cloud', href: '/use/datacloud', icon: 'database', status: 'active', description: '데이터 질의' },
+        { id: 'perplexica', name: 'AI 검색', href: '/use/perplexica', icon: 'search', status: 'active', description: 'AI 검색' },
+        { id: 'slides', name: '슬라이드', href: '/use/slides', icon: 'presentation', status: 'coming-soon', description: 'AI 슬라이드 생성 (Genspark 스타일)' },
         { id: 'report', name: '보고서', href: '/report', icon: 'document', status: 'coming-soon', description: 'AI 보고서 생성' },
         { id: 'notebook', name: 'Notebook', href: '/notebook', icon: 'book', status: 'coming-soon', description: 'AI 노트북' },
-            { id: 'perplexica', name: 'AI 검색', href: '/use/perplexica', icon: 'search', status: 'active', description: 'AI 검색' },
     ],
     build: [
         { id: 'agents', name: '에이전트', href: '/build/agents', icon: 'cube', status: 'coming-soon', description: '에이전트 개발' },

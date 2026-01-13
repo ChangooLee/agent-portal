@@ -94,10 +94,10 @@
 	<title>Library | AI Agent Portal</title>
 </svelte:head>
 
-<div class="h-screen bg-gray-950 text-slate-50 overflow-hidden flex">
+<div class="min-h-full bg-gray-950 text-slate-50 flex">
 	<!-- 좌측 사이드바 (메인 페이지와 동일) -->
-	<div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-[72px] lg:flex-col border-r border-gray-800/50">
-		<div class="flex grow flex-col items-center justify-between gap-y-5 overflow-y-auto bg-gray-900/80 backdrop-blur-sm px-2 py-8 shadow-sm">
+	<div class="hidden lg:flex lg:w-[72px] lg:flex-col lg:shrink-0 border-r border-gray-800/50">
+		<div class="flex flex-col items-center justify-between gap-y-5 bg-gray-900/80 backdrop-blur-sm px-2 py-8 shadow-sm">
 			<!-- 새 채팅 버튼 (Home) -->
 			<a
 				href="/use/perplexica"
@@ -184,7 +184,7 @@
 	</div>
 	
 	<!-- 메인 컨텐츠 -->
-	<main class="flex-1 lg:pl-20 bg-gray-950 min-h-screen">
+	<main class="flex-1 bg-gray-950">
 		<div class="max-w-screen-lg lg:mx-auto px-4 sm:px-4 md:px-8">
 			<!-- 헤더 -->
 			<div class="flex flex-col pt-10 border-b border-gray-800/50 pb-6">

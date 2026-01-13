@@ -17,7 +17,35 @@ Enterprise AI agent management platform built on Open-WebUI, providing:
 - **MCP Gateway**: Model Context Protocol server management via Kong
 - **Agent Builders**: Embedded Langflow, Flowise, AutoGen Studio
 
-### 1.2 Tech Stack
+### 1.2 Critical Development Rule: Common Infrastructure Protection
+
+**⚠️ IMPORTANT**: 사용자의 명시적 요청이 없는 한, 다음 공통 인프라 구성 요소는 수정하지 마세요:
+
+| Component | Location | Purpose | Why Protected |
+|-----------|----------|---------|---------------|
+| **LiteLLM Gateway** | `config/litellm.yaml`, `docker-compose.yml` (litellm service) | LLM 통합 게이트웨이 | 모든 에이전트와 서비스에서 사용하는 핵심 인프라 |
+| **Kong Gateway** | `config/kong.yml`, `docker-compose.yml` (kong service) | API 게이트웨이 | MCP, DataCloud 등 여러 서비스의 라우팅 담당 |
+| **MariaDB Schema** | `scripts/init-*.sql` | 애플리케이션 데이터베이스 | 모든 서비스의 데이터 저장소 |
+| **ClickHouse Schema** | Monitoring setup | 트레이스 저장소 | 모든 에이전트의 관측 데이터 저장 |
+| **OTEL Collector** | `docker-compose.yml` (otel-collector) | 텔레메트리 수집 | 모든 서비스의 관측 파이프라인 |
+| **Docker Compose Base** | `docker-compose.yml` | 서비스 오케스트레이션 | 전체 시스템의 기반 인프라 |
+
+**수정 허용 조건**:
+- ✅ 사용자가 명시적으로 요청한 경우
+- ✅ 버그 수정이 필요한 경우 (하지만 먼저 사용자에게 보고)
+- ✅ 새로운 기능 추가가 필요한 경우 (하지만 먼저 사용자에게 확인)
+
+**수정 금지 시나리오**:
+- ❌ "작동하지 않아서" 임시로 우회하기 위해 수정
+- ❌ 다른 기능 개발 중 "편의상" 수정
+- ❌ 테스트를 위해 임시로 수정
+
+**대신 해야 할 것**:
+1. 문제 발생 시 원인 분석 후 사용자에게 보고
+2. 해결 방안 2-3가지 제시 (우회책 제외)
+3. 사용자 승인 후 진행
+
+### 1.3 Tech Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -649,7 +677,49 @@ docker compose exec monitoring-clickhouse clickhouse-client
 curl "http://localhost:8124/?query=SELECT+count()+FROM+otel_2.otel_traces"
 ```
 
-### 9.3 Testing
+### 9.3 WebUI Database Backup and Restore
+
+**WebUI SQLite Database** (`webui/backend/data/webui.db`):
+```bash
+# 백업
+./scripts/backup-webui-db.sh
+
+# 백업 (커스텀 디렉토리)
+./scripts/backup-webui-db.sh /path/to/backup/dir
+
+# 복구
+./scripts/restore-webui-db.sh ./backups/webui.db.YYYYMMDD_HHMMSS.backup
+
+# 사용자 확인
+docker compose exec webui python3 -c "import sqlite3; conn = sqlite3.connect('/app/backend/data/webui.db'); cursor = conn.cursor(); cursor.execute('SELECT email, name, role FROM user'); [print(f'{row[0]} - {row[1]} ({row[2]})') for row in cursor.fetchall()]; conn.close()"
+```
+
+**주의사항**:
+- `git clean -fdx` 실행 시 `webui/backend/data/` 디렉토리가 삭제될 수 있음
+- `.gitignore`에 `webui/backend/data/*`가 포함되어 있어야 함
+- 정기적인 백업 권장
+
+### 9.4 Environment File (.env) Protection
+
+**`.env` 파일 보호** (민감 정보 포함 - API 키, 비밀번호 등):
+```bash
+# git clean 실행 전 백업
+./scripts/protect-env.sh
+
+# git clean 실행
+git clean -fdx
+
+# git clean 실행 후 복구
+./scripts/restore-env.sh
+```
+
+**주의사항**:
+- `git clean -fdx` 실행 시 `-x` 옵션으로 `.gitignore`에 포함된 파일도 삭제됨
+- `.env` 파일은 `.gitignore`에 포함되어 있어 `git clean -fdx` 실행 시 삭제될 수 있음
+- **반드시** `git clean -fdx` 실행 전에 `./scripts/protect-env.sh` 실행 필요
+- 백업 파일은 `.env.backup.protected`로 저장되며, `.gitignore`에 포함되어 있음
+
+### 9.5 Testing
 
 ```bash
 # Test backend API (Single Port Architecture)
@@ -667,7 +737,67 @@ curl http://localhost:4000/health
 
 ## 11. Testing and Validation
 
-### 10.1 Test Scripts
+### 11.0 Browser Testing (MANDATORY for UI/Frontend Changes)
+
+**⚠️ CRITICAL**: 화면 변경, UI 수정, 프론트엔드 기능 변경 후에는 **반드시 브라우저에서 직접 테스트**해야 합니다.
+
+**When to Use Browser Testing**:
+- ✅ SvelteKit 페이지/컴포넌트 수정
+- ✅ 네비게이션 메뉴 변경
+- ✅ UI 레이아웃/스타일 변경
+- ✅ 사용자 인터랙션 기능 추가/수정
+- ✅ API 통합 프론트엔드 변경
+- ✅ 라우팅/URL 파라미터 변경
+
+**Browser Testing Tools** (MCP Browser Extension):
+- `browser_navigate`: 페이지 이동 (`http://localhost:3010/...`)
+- `browser_snapshot`: 현재 화면 상태 확인
+- `browser_click`: 버튼/링크 클릭
+- `browser_type`: 텍스트 입력
+- `browser_wait_for`: 로딩 대기
+- `browser_console_messages`: 콘솔 오류 확인
+- `browser_take_screenshot`: 시각적 확인
+
+**Required Testing Steps**:
+1. **페이지 로드 확인**:
+   ```typescript
+   browser_navigate({ url: "http://localhost:3010/use/perplexica" })
+   browser_wait_for({ time: 5 })  // 로딩 대기
+   browser_snapshot()  // 화면 상태 확인
+   ```
+
+2. **기능 동작 테스트**:
+   ```typescript
+   browser_click({ element: "검색 버튼", ref: "e128" })
+   browser_type({ element: "입력창", ref: "e111", text: "테스트 쿼리" })
+   browser_wait_for({ time: 10 })  // 응답 대기
+   browser_snapshot()  // 결과 확인
+   ```
+
+3. **오류 확인**:
+   ```typescript
+   browser_console_messages()  // 콘솔 오류 확인
+   ```
+
+4. **시각적 확인**:
+   ```typescript
+   browser_take_screenshot({ filename: "test-result.png" })
+   ```
+
+**Testing Checklist**:
+- [ ] 페이지가 정상적으로 로드됨
+- [ ] 주요 UI 요소가 표시됨
+- [ ] 사용자 인터랙션(클릭, 입력)이 정상 동작
+- [ ] 콘솔에 오류가 없음
+- [ ] 레이아웃이 의도한 대로 표시됨
+- [ ] 다크/라이트 모드 모두 정상 동작 (해당 시)
+- [ ] 반응형 디자인 정상 동작 (해당 시)
+
+**Completion Criteria**:
+- 브라우저에서 직접 테스트 완료 후에만 작업 완료 표시
+- 테스트 결과를 사용자에게 보고 (성공/실패, 발견된 문제)
+
+### 11.1 Test Scripts
 
 **기동 및 기본 테스트**:
 ```bash
@@ -696,7 +826,7 @@ curl http://localhost:4000/health
 - 에러율 통계
 - 네트워크 토폴로지 검증
 
-### 10.2 Test Scenarios
+### 11.2 Test Scenarios
 
 핵심 네트워크 경로별 테스트 케이스:
 
@@ -732,7 +862,7 @@ curl http://localhost:4000/health
 
 자세한 테스트 절차는 [docs/TESTING.md](./docs/TESTING.md)를 참조하세요.
 
-### 10.3 Network Path Verification
+### 11.3 Network Path Verification
 
 **단일 포트 구조 검증**:
 

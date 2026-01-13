@@ -76,3 +76,7 @@ data/*
 !data/.gitkeep
 !data/news/.gitkeep
 
+# WebUI SQLite Database (로컬 데이터 - git 제외)
+webui/backend/data/*
+!webui/backend/data/.gitkeep
+

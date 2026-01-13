@@ -129,7 +129,7 @@
     {
       "path": "routes/(app)/+page.svelte",
       "routePath": "/",
-      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
+      "description": "{$WEBUI_NAME || 'AI Agent Portal'}",
       "components": [
         "chat/Chat.svelte",
         "layout/Help.svelte"
@@ -1243,7 +1243,7 @@
     {
       "path": "routes/+layout.svelte",
       "routePath": "/",
-      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
+      "description": "{$WEBUI_NAME || 'AI Agent Portal'}",
       "components": [
         "NotificationToast.svelte",
         "app/AppSidebar.svelte"
@@ -1313,7 +1313,7 @@
     {
       "path": "routes/auth/+page.svelte",
       "routePath": "/auth",
-      "description": "SFN AI Portal",
+      "description": "AI Agent Portal",
       "components": [
         "common/Spinner.svelte",
         "OnBoarding.svelte"

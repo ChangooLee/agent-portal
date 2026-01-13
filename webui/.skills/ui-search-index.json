@@ -44,7 +44,7 @@
     {
       "path": "routes/(app)/+page.svelte",
       "routePath": "/",
-      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
+      "description": "{$WEBUI_NAME || 'AI Agent Portal'}",
       "keywords": [
         "{$webui_name",
         "'sfn",
@@ -718,7 +718,7 @@
     {
       "path": "routes/+layout.svelte",
       "routePath": "/",
-      "description": "{$WEBUI_NAME || 'SFN AI Portal'}",
+      "description": "{$WEBUI_NAME || 'AI Agent Portal'}",
       "keywords": [
         "rosepine themes have been disabled as it's not up to date with our latest version.",
         "feel free to make a pr to fix if anyone wants to see it return",
@@ -739,7 +739,7 @@
     {
       "path": "routes/auth/+page.svelte",
       "routePath": "/auth",
-      "description": "SFN AI Portal",
+      "description": "AI Agent Portal",
       "keywords": [
         "subtle reflective light layer",
         "animated samsung blue multi-layer gradient background",
