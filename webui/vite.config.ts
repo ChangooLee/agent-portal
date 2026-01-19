@@ -96,6 +96,12 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api\/llm/, '/llm')
 			},
+			// Slide Studio API → FastAPI BFF (포트 3010)
+			'/api/slides': {
+				target: bffTarget,
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api\/slides/, '/slides')
+			},
 			// Perplexica API → FastAPI BFF (포트 3010)
 			'/api/perplexica': {
 				target: bffTarget,

@@ -135,7 +135,7 @@
 		<div class="relative px-6 py-8">
 			<div class="text-center mb-4">
 				<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
-					🌐 API Gateway
+					API Gateway
 				</h1>
 				<p class="text-base text-indigo-200/80 mb-6">
 					API 게이트웨이 관리 및 보안 설정

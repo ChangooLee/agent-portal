@@ -230,6 +230,65 @@ query = f"WHERE ResourceAttributes['project_id'] = '{project_id}'"
 2. ResourceAttributes access syntax
 3. Time range filter format
 
+## GenAI Monitoring Standard (MANDATORY)
+
+**⚠️ CRITICAL**: 에이전트 개발 시 반드시 GenAI 모니터링 패턴을 따라야 합니다.
+
+**참조 문서**:
+- [.cursor/rules/agent-development.mdc](./agent-development.mdc) - 상세 가이드
+- [docs/OTEL_GENAI_METRICS.md](../../docs/OTEL_GENAI_METRICS.md) - 표준 정의
+
+### GenAI 표준 Span Names
+
+| Span Name | 유형 | 설명 |
+|-----------|------|------|
+| `gen_ai.session` | Root | 에이전트 세션 루트 span (필수) |
+| `gen_ai.content.completion` | LLM | LLM 완성 호출 (LiteLLM 자동 생성) |
+| `gen_ai.tool.call` | Tool | 도구 호출 |
+| `gen_ai.agent.*` | Agent | 에이전트 작업 |
+
+### GenAI 표준 속성 (필수)
+
+```python
+# Root span에 반드시 포함
+{
+    "gen_ai.agent.id": "agent-id",
+    "gen_ai.agent.name": "Agent Name",
+    "gen_ai.agent.type": "agent-type",
+    "service.name": "agent-{agent-type}"
+}
+```
+
+### Context Propagation (LLM 호출 시 필수)
+
+```python
+# ❌ WRONG: trace_headers 없음 → LLM span이 별도 trace_id로 분리됨
+response = await litellm_service.chat_completion_sync(
+    model=model,
+    messages=messages
+)
+
+# ✅ CORRECT: trace_headers 전달 → 같은 trace_id로 연결됨
+trace_headers = state.get("otel_carrier", {})
+response = await litellm_service.chat_completion_sync(
+    model=model,
+    messages=messages,
+    trace_headers=trace_headers  # Context propagation
+)
+```
+
+### Why LLM Calls Were Missing
+
+**원인**:
+1. LiteLLM은 자동으로 `litellm_request` span을 생성하지만, parent context가 없으면 별도의 trace_id를 생성
+2. `trace_headers`를 전달하지 않으면 context propagation이 실패
+3. 결과적으로 에이전트 span과 LLM span이 다른 trace_id를 가지게 됨
+
+**해결책**:
+- Root span에서 `inject(carrier)`로 context를 추출
+- LLM 호출 시 `trace_headers=carrier` 전달
+- LiteLLM이 자동으로 parent context를 인식하여 같은 trace_id 사용
+
 ## Key Rules
 
 - Always use `otel_2` database
@@ -237,7 +296,9 @@ query = f"WHERE ResourceAttributes['project_id'] = '{project_id}'"
 - Convert Duration from nanoseconds to milliseconds
 - Use `/api/monitoring/` proxy from frontend
 - Set 30s timeout for ClickHouse queries
+- **Always use GenAI monitoring pattern for agents** (CRITICAL)
+- **Always pass trace_headers to LLM calls** (CRITICAL)
 
 ---
 
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-12-23

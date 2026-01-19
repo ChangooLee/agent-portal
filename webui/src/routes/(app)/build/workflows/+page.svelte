@@ -13,7 +13,7 @@
         
         <div class="relative px-6 py-8 text-center">
             <h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
-                🔀 워크플로우
+                워크플로우
             </h1>
             <p class="text-base text-purple-200/80">
                 AI 에이전트 워크플로우를 시각적으로 설계하세요.

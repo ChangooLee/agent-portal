@@ -125,6 +125,10 @@
 		// Load projects first
 		await loadProjects();
 
+		// 초기 날짜 설정
+		startDate = formatDateForInput(new Date(filters.start_time));
+		endDate = formatDateForInput(new Date(filters.end_time));
+
 		// WebSocket 실시간 업데이트
 		monitoringWS.connect(selectedProjectId);
 		monitoringWS.on('trace_new', handleNewTrace);
@@ -324,6 +328,79 @@
 		return num.toString();
 	}
 
+	// 기간 선택 관련 상태
+	let selectedPeriod: string = '7d';
+	let startDate: string = '';
+	let endDate: string = '';
+
+	// 날짜를 YYYY-MM-DD 형식으로 변환
+	function formatDateForInput(date: Date): string {
+		return date.toISOString().split('T')[0];
+	}
+
+	// 기간 설정 함수
+	function setPeriod(period: string) {
+		selectedPeriod = period;
+		const now = new Date();
+		let start: Date;
+
+		switch (period) {
+			case '1d':
+				start = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+				break;
+			case '7d':
+				start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+				break;
+			case '30d':
+				start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+				break;
+			case '1m':
+				start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+				break;
+			case '3m':
+				start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+				break;
+			case '6m':
+				start = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+				break;
+			case '1y':
+				start = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+				break;
+			default:
+				start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+		}
+
+		filters = {
+			...filters,
+			start_time: start.toISOString(),
+			end_time: now.toISOString()
+		};
+
+		startDate = formatDateForInput(start);
+		endDate = formatDateForInput(now);
+		loadData();
+	}
+
+	// 날짜 범위 직접 선택
+	function handleDateRangeChange() {
+		if (startDate && endDate) {
+			const start = new Date(startDate);
+			const end = new Date(endDate);
+			end.setHours(23, 59, 59, 999); // 하루의 끝으로 설정
+
+			filters = {
+				...filters,
+				start_time: start.toISOString(),
+				end_time: end.toISOString()
+			};
+			selectedPeriod = 'custom';
+			loadData();
+		}
+	}
+
+	// 초기화: 현재 필터에 맞춰 날짜 설정 (단, 수동으로 변경한 경우는 제외)
+	// 반응형 구문 제거 - setPeriod와 handleDateRangeChange에서 직접 관리
+
 	$: totalPages = Math.ceil(totalTraces / pageSize);
 </script>
 
@@ -345,7 +422,7 @@
 			<div class="relative px-6 py-8">
 				<div class="text-center mb-4">
 					<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
-						📊 Monitoring
+						Monitoring
 					</h1>
 					<p class="text-base text-cyan-200/80 mb-6">
 						실시간 에이전트 실행 모니터링, 비용 추적, 세션 리플레이
@@ -398,7 +475,7 @@
 					loadData();
 				}}
 			>
-				📈 Overview
+				Overview
 			</button>
 			<button
 				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'analytics'
@@ -409,7 +486,7 @@
 					loadData();
 				}}
 			>
-				🎯 Analytics
+				Analytics
 			</button>
 			<button
 				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'traces'
@@ -420,7 +497,7 @@
 					loadData();
 				}}
 			>
-				📊 Traces
+				Traces
 			</button>
 			<button
 				class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap {activeTab === 'replay'
@@ -430,7 +507,7 @@
 					activeTab = 'replay';
 				}}
 			>
-				▶️ Replay
+				Replay
 			</button>
 		</div>
 
@@ -472,7 +549,7 @@
 											: 'text-slate-300 hover:text-white hover:bg-slate-700/50'}"
 										on:click={() => handleSubTabChange('agent')}
 									>
-										🤖 Agent
+										Agent
 									</button>
 									<button
 										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'llm'
@@ -480,7 +557,7 @@
 											: 'text-slate-300 hover:text-white hover:bg-slate-700/50'}"
 										on:click={() => handleSubTabChange('llm')}
 									>
-										💬 LLM Call
+										LLM Call
 									</button>
 									<button
 										class="px-4 py-1.5 text-sm font-medium rounded-md transition-all {tracesSubTab === 'all'
@@ -488,7 +565,7 @@
 											: 'text-slate-300 hover:text-white hover:bg-slate-700/50'}"
 										on:click={() => handleSubTabChange('all')}
 									>
-										📋 All
+										All
 									</button>
 								</div>
 							</div>
@@ -633,8 +710,76 @@
 						<!-- Overview Tab: 표준 스타일 대시보드 -->
 						<div class="space-y-6">
 							<!-- Page Title -->
-							<div class="mt-2 flex items-center gap-2">
+							<div class="mt-2 flex items-center justify-between">
 								<span class="text-2xl font-medium text-white">Overview</span>
+							</div>
+
+							<!-- 기간 선택 UI -->
+							<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-4">
+								<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+									<!-- 빠른 선택 버튼 -->
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="text-sm text-slate-400 mr-2">Period:</span>
+										<button
+											on:click={() => setPeriod('1d')}
+											class="px-3 py-1.5 text-sm rounded-lg transition-colors {selectedPeriod === '1d' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50'}"
+										>
+											1일
+										</button>
+										<button
+											on:click={() => setPeriod('7d')}
+											class="px-3 py-1.5 text-sm rounded-lg transition-colors {selectedPeriod === '7d' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50'}"
+										>
+											7일
+										</button>
+										<button
+											on:click={() => setPeriod('30d')}
+											class="px-3 py-1.5 text-sm rounded-lg transition-colors {selectedPeriod === '30d' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50'}"
+										>
+											30일
+										</button>
+										<button
+											on:click={() => setPeriod('1m')}
+											class="px-3 py-1.5 text-sm rounded-lg transition-colors {selectedPeriod === '1m' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50'}"
+										>
+											1개월
+										</button>
+										<button
+											on:click={() => setPeriod('3m')}
+											class="px-3 py-1.5 text-sm rounded-lg transition-colors {selectedPeriod === '3m' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50'}"
+										>
+											3개월
+										</button>
+										<button
+											on:click={() => setPeriod('6m')}
+											class="px-3 py-1.5 text-sm rounded-lg transition-colors {selectedPeriod === '6m' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50'}"
+										>
+											6개월
+										</button>
+										<button
+											on:click={() => setPeriod('1y')}
+											class="px-3 py-1.5 text-sm rounded-lg transition-colors {selectedPeriod === '1y' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800/50 text-slate-300 border border-slate-700/50 hover:bg-slate-700/50'}"
+										>
+											1년
+										</button>
+									</div>
+									<!-- 날짜 범위 선택기 -->
+									<div class="flex items-center gap-2">
+										<input
+											type="date"
+											bind:value={startDate}
+											on:change={handleDateRangeChange}
+											class="px-3 py-1.5 text-sm rounded-lg bg-slate-800/50 text-slate-300 border border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+										/>
+										<span class="text-slate-400">~</span>
+										<input
+											type="date"
+											bind:value={endDate}
+											on:change={handleDateRangeChange}
+											class="px-3 py-1.5 text-sm rounded-lg bg-slate-800/50 text-slate-300 border border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+										/>
+									</div>
+								</div>
 							</div>
 
 							<!-- Metrics Cards (표준 스타일) -->
@@ -649,7 +794,7 @@
 
 								<!-- LLM Calls -->
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300">
-									<div class="text-sm text-slate-400 mb-2">🤖 LLM Calls</div>
+									<div class="text-sm text-slate-400 mb-2">LLM Calls</div>
 									<div class="text-2xl font-medium text-cyan-400">
 										{formatNumber(metrics?.llm_call_count || 0)}
 									</div>
@@ -657,7 +802,7 @@
 
 								<!-- Agent Calls -->
 								<div class="bg-slate-900/80 border border-slate-800/50 rounded-xl p-6 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 hover:bg-slate-800/80 hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300">
-									<div class="text-sm text-slate-400 mb-2">🔧 Agent Calls</div>
+									<div class="text-sm text-slate-400 mb-2">Agent Calls</div>
 									<div class="text-2xl font-medium text-emerald-400">
 										{formatNumber(metrics?.agent_call_count || 0)}
 									</div>

@@ -418,7 +418,7 @@
 		
 		<div class="relative px-6 py-8 text-center">
 			<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
-				🗄️ Data Cloud
+				Data Cloud
 			</h1>
 			<p class="text-base text-cyan-200/80">
 				데이터 복제 없이 실시간으로 데이터베이스에 연결하여 스키마 조회 및 쿼리를 실행할 수 있습니다.

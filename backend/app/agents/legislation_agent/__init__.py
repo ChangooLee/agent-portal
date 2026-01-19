@@ -6,8 +6,9 @@ mcp-kr-legislation MCP 서버 활용.
 """
 
 from app.agents.legislation_agent.single_agent import LegislationSingleAgent
+from app.agents.legislation_agent.graph import LegislationGraphAgent, legislation_graph_agent
 
-__all__ = ["LegislationSingleAgent"]
+__all__ = ["LegislationSingleAgent", "LegislationGraphAgent", "legislation_graph_agent"]
 
 
 

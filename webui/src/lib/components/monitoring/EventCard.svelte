@@ -19,19 +19,19 @@
 	function getEventIcon(type: string): string {
 		switch (type) {
 			case 'llm_call':
-				return '🤖';
+				return 'LLM';
 			case 'tool_use':
-				return '🔧';
+				return 'Tool';
 			case 'error':
-				return '❌';
+				return 'Error';
 			case 'decision':
-				return '🎯';
+				return 'Decision';
 			case 'span_start':
-				return '▶️';
+				return 'Start';
 			case 'span_end':
-				return '⏹️';
+				return 'End';
 			default:
-				return '📝';
+				return 'Event';
 		}
 	}
 

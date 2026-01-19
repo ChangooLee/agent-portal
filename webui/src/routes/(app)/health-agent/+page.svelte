@@ -367,12 +367,12 @@
 						
 						// 기술적 이벤트 → 사용자 친화적 메시지 매핑
 						const technicalToFriendly: Record<string, string> = {
-							'mcp_call_start': '🔧 데이터 조회 중...',
-							'mcp_call_complete': '✅ 데이터 조회 완료',
-							'llm_call_start': '🤖 AI 분석 중...',
-							'llm_call_complete': '✅ AI 분석 완료',
-							'tool_call_start': '🔧 도구 실행 중...',
-							'tool_call_complete': '✅ 도구 실행 완료'
+							'mcp_call_start': '데이터 조회 중...',
+							'mcp_call_complete': '데이터 조회 완료',
+							'llm_call_start': 'AI 분석 중...',
+							'llm_call_complete': 'AI 분석 완료',
+							'tool_call_start': '도구 실행 중...',
+							'tool_call_complete': '도구 실행 완료'
 						};
 						
 						const transformProgressMessage = (msg: string): string => {
@@ -382,7 +382,7 @@
 								}
 							}
 							if (msg.includes('_start') || msg.includes('_complete') || msg.includes('_end')) {
-								return '⏳ 처리 중...';
+								return '처리 중...';
 							}
 							return msg;
 						};
@@ -392,7 +392,7 @@
 								messages = [...messages, {
 									id: generateId(),
 									role: 'assistant',
-									content: '💊 건강/의료 정보를 분석합니다...',
+									content: '건강/의료 정보를 분석합니다...',
 									timestamp: new Date()
 								}];
 								break;
@@ -402,7 +402,7 @@
 									messages = [...messages, {
 										id: generateId(),
 										role: 'assistant',
-										content: `🔍 **분석 의도**: ${data.reasoning || data.analysis_reasoning}`,
+										content: `**분석 의도**: ${data.reasoning || data.analysis_reasoning}`,
 										timestamp: new Date()
 									}];
 								}
@@ -419,7 +419,7 @@
 								
 							case 'tool_start':
 							case 'tool_call':
-								currentToolCall = `🔧 ${data.tool_name || data.tool || '도구'} 실행 중...`;
+								currentToolCall = `${data.tool_name || data.tool || '도구'} 실행 중...`;
 								break;
 								
 							case 'tool_end':
@@ -456,7 +456,7 @@
 								messages = [...messages, {
 									id: generateId(),
 									role: 'assistant',
-									content: `❌ 오류: ${data.error || data.message || '알 수 없는 오류'}`,
+									content: `오류: ${data.error || data.message || '알 수 없는 오류'}`,
 									timestamp: new Date()
 								}];
 								reportStreaming = false;
@@ -478,7 +478,7 @@
 									messages = [...messages, {
 										id: generateId(),
 										role: 'assistant',
-										content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
+										content: '분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
 										timestamp: new Date()
 									}];
 								}
@@ -570,7 +570,7 @@
 						</svg>
 					</div>
 					<div>
-						<h1 class="text-2xl font-bold text-white">💊 건강/의료 분석</h1>
+						<h1 class="text-2xl font-bold text-white">건강/의료 분석</h1>
 						<p class="text-sm text-red-200/80">Health AI Agent</p>
 					</div>
 				</div>

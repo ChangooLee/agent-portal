@@ -146,6 +146,80 @@ async def chat_single_stream(request_data: LegislationChatRequest):
     )
 
 
+@router.post("/chat/graph", summary="Legislation Graph Agent Chat (Streaming)")
+@api_router.post("/chat/graph", summary="Legislation Graph Agent Chat (Streaming)")
+async def chat_graph_stream(request_data: LegislationChatRequest):
+    """
+    법률 분석 Graph Agent 채팅 (SSE 스트리밍).
+    
+    LangGraph 기반 계층적 작업 분해를 사용하여 법률 정보를 분석합니다.
+    """
+    from app.agents.legislation_agent.graph import legislation_graph_agent
+    
+    logger.info(f"Legislation graph stream request: {request_data.question[:50]}...")
+    
+    trace_id = str(uuid.uuid4())
+    session_id = request_data.session_id or trace_id
+    
+    async def event_generator():
+        try:
+            final_state = None
+            
+            # Graph Agent 실행 (스트리밍)
+            async for node_name, state in legislation_graph_agent.run_stream(
+                question=request_data.question,
+                session_id=session_id,
+                trace_id=trace_id
+            ):
+                final_state = state
+                
+                # 노드 완료 이벤트
+                yield _format_sse({
+                    "event": "node_complete",
+                    "node": node_name,
+                    "message": f"{node_name} 단계 완료"
+                })
+                
+                # 중간 결과 전송 (선택적)
+                if node_name == "analyze" and state.get("analysis_result"):
+                    yield _format_sse({
+                        "event": "content",
+                        "content": state["analysis_result"]
+                    })
+            
+            # 최종 결과 전송
+            if final_state and final_state.get("final_answer"):
+                yield _format_sse({
+                    "event": "content",
+                    "content": final_state["final_answer"]
+                })
+            
+            # 완료 이벤트
+            yield _format_sse({
+                "event": "done",
+                "tool_calls": final_state.get("tool_calls", []) if final_state else [],
+                "verification_passed": final_state.get("verification_passed", False) if final_state else False
+            })
+            
+        except Exception as e:
+            logger.error(f"Legislation graph stream error: {e}", exc_info=True)
+            yield _format_sse({
+                "event": "error",
+                "message": f"분석 중 오류가 발생했습니다: {str(e)}"
+            })
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Origin": "*"
+        }
+    )
+
+
 @router.post("/chat", response_model=LegislationChatResponse, summary="Legislation Analysis Chat")
 @api_router.post("/chat", response_model=LegislationChatResponse, summary="Legislation Analysis Chat")
 async def chat(request_data: LegislationChatRequest):

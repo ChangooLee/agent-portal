@@ -22,6 +22,8 @@ export interface Trace {
 export interface TraceDetail {
 	trace_id: string;
 	project_id: string;
+	total_spans?: number;
+	total_cost?: number;
 	spans: Span[];
 	timeline?: TraceTimeline;
 }

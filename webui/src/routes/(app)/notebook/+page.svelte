@@ -32,7 +32,7 @@
 			<div class="relative px-6 py-8">
 				<div class="text-center mb-6">
 					<h1 class="text-3xl md:text-4xl font-medium text-white mb-3">
-						📓 Notebook
+						Notebook
 					</h1>
 					<p class="text-base text-amber-200/80 mb-6">
 						노트 중심 인터페이스와 광범위한 모델 프로바이더 지원으로 연구 워크플로를 최적화합니다.

@@ -24,6 +24,7 @@ class AgentType(str, Enum):
     LANGFLOW = "langflow"
     FLOWISE = "flowise"
     DART = "dart"
+    SLIDES = "slides"
     CUSTOM = "custom"
 
 

@@ -38,7 +38,7 @@
             id: 'dart',
             name: '기업공시분석',
             description: 'DART 전자공시 데이터를 분석하고 리포트를 생성합니다.',
-            icon: '📊',
+            icon: '',
             href: '/dart',
             color: 'purple',
             status: 'active'
@@ -47,7 +47,7 @@
             id: 'text2sql',
             name: 'Text-to-SQL',
             description: '자연어로 데이터베이스를 질의하고 SQL을 생성합니다.',
-            icon: '🗃️',
+            icon: '',
             href: '/use/datacloud',
             color: 'emerald',
             status: 'active'
@@ -56,7 +56,7 @@
             id: 'realestate',
             name: '부동산',
             description: '한국 부동산 실거래가 및 시세 정보를 분석합니다.',
-            icon: '🏠',
+            icon: '',
             href: '/realestate',
             color: 'orange',
             status: 'active'
@@ -65,7 +65,7 @@
             id: 'health',
             name: '건강/의료',
             description: '건강보험 및 의료기관 정보를 검색하고 분석합니다.',
-            icon: '💊',
+            icon: '',
             href: '/health-agent',
             color: 'red',
             status: 'active'
@@ -74,7 +74,7 @@
             id: 'legislation',
             name: '법률',
             description: '법제처 법률 정보를 검색하고 분석합니다.',
-            icon: '⚖️',
+            icon: '',
             href: '/legislation',
             color: 'indigo',
             status: 'active'
@@ -166,7 +166,6 @@
         <section>
             <div class="flex items-center justify-between mb-8">
                 <h2 class="text-2xl font-medium text-white flex items-center gap-3">
-                    <span class="text-3xl">🤖</span>
                     AI 에이전트
                 </h2>
                 <a href="/use/agents" class="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors duration-200 flex items-center gap-1">
@@ -210,7 +209,6 @@
         <section>
             <div class="flex items-center justify-between mb-8">
                 <h2 class="text-2xl font-medium text-white flex items-center gap-3">
-                    <span class="text-3xl">📰</span>
                     최신 뉴스
                 </h2>
                 <a href="/today" class="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors duration-200 flex items-center gap-1">
@@ -233,7 +231,6 @@
                 </div>
             {:else if news.length === 0}
                 <div class="text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800/50">
-                    <div class="text-4xl mb-4">📭</div>
                     <p class="text-slate-500">뉴스를 불러올 수 없습니다.</p>
                 </div>
             {:else}
@@ -261,8 +258,7 @@
 
         <!-- Quick Links -->
         <section>
-            <h2 class="text-2xl font-medium text-white mb-8 flex items-center gap-3">
-                <span class="text-3xl">⚡</span>
+                <h2 class="text-2xl font-medium text-white mb-8 flex items-center gap-3">
                 빠른 접근
             </h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -270,28 +266,24 @@
                     shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30
                     hover:bg-slate-800/80 hover:border-slate-700/50 
                     transition-all duration-300 text-center hover:-translate-y-1">
-                    <div class="text-3xl mb-3 transform group-hover:scale-110 transition-transform duration-300">🔌</div>
                     <span class="text-sm text-slate-300 font-medium group-hover:text-white transition-colors">MCP 서버</span>
                 </a>
                 <a href="/operate/monitoring" class="group p-5 rounded-xl bg-slate-900/80 border border-slate-800/50 
                     shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30
                     hover:bg-slate-800/80 hover:border-slate-700/50 
                     transition-all duration-300 text-center hover:-translate-y-1">
-                    <div class="text-3xl mb-3 transform group-hover:scale-110 transition-transform duration-300">📈</div>
                     <span class="text-sm text-slate-300 font-medium group-hover:text-white transition-colors">Monitoring</span>
                 </a>
                 <a href="/build/llm" class="group p-5 rounded-xl bg-slate-900/80 border border-slate-800/50 
                     shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30
                     hover:bg-slate-800/80 hover:border-slate-700/50 
                     transition-all duration-300 text-center hover:-translate-y-1">
-                    <div class="text-3xl mb-3 transform group-hover:scale-110 transition-transform duration-300">🧠</div>
                     <span class="text-sm text-slate-300 font-medium group-hover:text-white transition-colors">LLM 관리</span>
                 </a>
                 <a href="/operate/settings" class="group p-5 rounded-xl bg-slate-900/80 border border-slate-800/50 
                     shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30
                     hover:bg-slate-800/80 hover:border-slate-700/50 
                     transition-all duration-300 text-center hover:-translate-y-1">
-                    <div class="text-3xl mb-3 transform group-hover:scale-110 transition-transform duration-300">⚙️</div>
                     <span class="text-sm text-slate-300 font-medium group-hover:text-white transition-colors">설정</span>
                 </a>
             </div>

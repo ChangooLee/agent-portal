@@ -143,7 +143,7 @@
         <!-- News Section -->
         <section>
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-medium text-white">📰 최신 뉴스</h2>
+                <h2 class="text-2xl font-medium text-white">최신 뉴스</h2>
                 <a href="/today" class="text-blue-400 hover:text-blue-300 text-sm">
                     모두 보기 →
                 </a>
@@ -187,22 +187,18 @@
 
         <!-- Quick Links -->
         <section>
-            <h2 class="text-2xl font-medium text-white mb-6">⚡ 빠른 접근</h2>
+            <h2 class="text-2xl font-medium text-white mb-6">빠른 접근</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <a href="/build/mcp" class="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all text-center">
-                    <div class="text-2xl mb-2">🔌</div>
                     <span class="text-sm text-gray-300">MCP 서버</span>
                 </a>
                 <a href="/operate/monitoring" class="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all text-center">
-                    <div class="text-2xl mb-2">📈</div>
                     <span class="text-sm text-gray-300">Monitoring</span>
                 </a>
                 <a href="/build/llm" class="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all text-center">
-                    <div class="text-2xl mb-2">🧠</div>
                     <span class="text-sm text-gray-300">LLM 관리</span>
                 </a>
                 <a href="/operate/settings" class="p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all text-center">
-                    <div class="text-2xl mb-2">⚙️</div>
                     <span class="text-sm text-gray-300">설정</span>
                 </a>
             </div>

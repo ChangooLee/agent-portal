@@ -131,6 +131,7 @@ class MonitoringAdapter:
         # 기존 호환:
         # - dart.llm_call.*, dart.tool_call.* (레거시)
         # - litellm_request (LiteLLM 프록시)
+        # - legislation.* (법률 에이전트)
         llm_filter = """
           AND (
             -- GenAI 표준: LLM 호출 (completion)
@@ -141,11 +142,16 @@ class MonitoringAdapter:
             OR SpanName = 'gen_ai.session'
             -- GenAI 표준: 에이전트 span
             OR SpanName LIKE 'gen_ai.agent.%'
+            -- GenAI 표준 속성이 있는 span (gen_ai.agent.id, gen_ai.agent.name 등)
+            OR SpanAttributes['gen_ai.agent.id'] != ''
+            OR SpanAttributes['gen_ai.agent.name'] != ''
             -- 토큰이 있는 LLM 호출 (실제 API 호출) - GenAI 표준 속성도 포함
             OR toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens']) > 0
             OR toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) > 0
             -- DART 에이전트 호출 (모든 dart.* 패턴 포함)
             OR SpanName LIKE 'dart.%'
+            -- 법률 에이전트 호출 (legislation.* 패턴)
+            OR SpanName LIKE 'legislation.%'
             -- LiteLLM 프록시 호출
             OR SpanName = 'litellm_request'
             -- OpenRouter 원시 요청 (비용 정보 포함)
@@ -197,6 +203,9 @@ class MonitoringAdapter:
                   OR SpanName LIKE 'gen_ai.agent.%'
                   OR SpanName = 'gen_ai.tool.call'
                   OR SpanName LIKE 'dart.tool_call.%'
+                  OR SpanName LIKE 'legislation.%'
+                  OR SpanAttributes['gen_ai.agent.id'] != ''
+                  OR SpanAttributes['gen_ai.agent.name'] != ''
                   OR SpanName LIKE '%agent%'
                   OR SpanName LIKE '%text2sql%'
                   OR ServiceName LIKE 'agent-%'
@@ -249,9 +258,10 @@ class MonitoringAdapter:
             span_name_select = """
             argMax(SpanName,
               CASE
-                WHEN SpanName = 'gen_ai.session' THEN 5
-                WHEN SpanName LIKE 'gen_ai.agent.%' THEN 4
-                WHEN SpanName = 'gen_ai.tool.call' THEN 3
+                WHEN SpanName = 'gen_ai.session' THEN 6
+                WHEN SpanName LIKE 'gen_ai.agent.%' THEN 5
+                WHEN SpanName = 'gen_ai.tool.call' THEN 4
+                WHEN SpanName LIKE 'legislation.%' THEN 3
                 WHEN SpanName LIKE 'dart.tool_call.%' THEN 2
                 WHEN SpanName LIKE '%agent%' OR SpanName LIKE '%text2sql%' OR ServiceName LIKE 'agent-%' THEN 1
                 ELSE 0
@@ -269,15 +279,8 @@ class MonitoringAdapter:
             count() as span_count,
             countIf(StatusCode = 'ERROR') as error_count,
             sum(
-                greatest(
-                    -- Primary: Extract cost from llm.openrouter.usage (OpenRouter response)
-                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
-                    -- Fallback 1: Extract cost from metadata.usage_object
-                    toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
-                    -- Fallback 2: calculate from tokens (OpenRouter qwen pricing)
-                    (greatest(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens']), toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) * 0.000000072) +
-                    (greatest(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens']), toUInt64OrZero(SpanAttributes['llm.usage.total_tokens'])) * 0.000000464)
-                )
+                -- OpenRouter 응답에서 저장된 비용만 사용 (metadata.usage_object에 cost 필드)
+                toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], '''cost'':\\s*([0-9.eE+-]+)')[1])
             ) as total_cost,
             sum(greatest(
                 toUInt64OrZero(SpanAttributes['gen_ai.usage.prompt_tokens']),
@@ -323,6 +326,7 @@ class MonitoringAdapter:
         """
         트레이스 상세 조회 (모든 스팬 반환).
         Duration은 나노초에서 밀리초로 변환하여 반환.
+        총 비용도 백엔드에서 집계하여 반환.
         """
         query = f"""
         SELECT 
@@ -347,9 +351,26 @@ class MonitoringAdapter:
         if not spans:
             return None
         
+        # 총 비용 집계 (백엔드에서 계산)
+        total_cost_query = f"""
+        SELECT 
+            sum(
+                -- OpenRouter 응답에서 저장된 비용만 사용 (metadata.usage_object에 cost 필드)
+                toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], '''cost'':\\s*([0-9.eE+-]+)')[1])
+            ) as total_cost,
+            count() as total_spans
+        FROM {CLICKHOUSE_DATABASE}.otel_traces
+        WHERE TraceId = '{trace_id}'
+        """
+        cost_result = await self._execute_query(total_cost_query)
+        total_cost = cost_result[0]['total_cost'] if cost_result and cost_result[0] else 0.0
+        total_spans = cost_result[0]['total_spans'] if cost_result and cost_result[0] else len(spans)
+        
         return {
             "trace_id": trace_id,
             "project_id": spans[0].get('project_id', ''),
+            "total_spans": total_spans,
+            "total_cost": float(total_cost),
             "spans": spans
         }
     
@@ -363,19 +384,23 @@ class MonitoringAdapter:
         메트릭 집계.
         LLM/Agent 호출만 집계 (auth, postgres 등 내부 호출 제외).
         """
-        # LLM/Agent 호출만 필터링하는 조건
+        # LLM/Agent 호출만 필터링하는 조건 (GenAI 표준 span 이름 기반)
         # Note: LiteLLM uses 'llm.usage.total_tokens' instead of 'gen_ai.usage.prompt_tokens'
         llm_filter = """
           AND (
-            SpanName = 'Received Proxy Server Request'
+            -- GenAI 표준 span 이름
+            SpanName = 'gen_ai.session'
+            OR SpanName = 'gen_ai.content.completion'
+            OR SpanName = 'gen_ai.tool.call'
+            OR SpanName LIKE 'gen_ai.agent.%'
+            -- LiteLLM span
             OR SpanName = 'litellm_request'
-            OR SpanName LIKE '%langflow%'
-            OR SpanName LIKE '%flowise%'
-            OR SpanName LIKE '%autogen%'
-            OR SpanName LIKE '%agent%'
-            OR SpanName LIKE '%chat%'
-            OR SpanName LIKE '%completion%'
+            OR SpanName = 'Received Proxy Server Request'
+            -- 에이전트 서비스 (ServiceName 기반)
+            OR ServiceName LIKE 'agent-%'
+            -- 토큰 사용량이 있는 span (LLM 호출 표시)
             OR SpanAttributes['llm.usage.total_tokens'] != ''
+            OR SpanAttributes['gen_ai.usage.total_tokens'] != ''
           )
         """
         
@@ -396,15 +421,8 @@ class MonitoringAdapter:
                 OR ServiceName LIKE 'agent-%'
             ) as agent_call_count,
             sum(
-                greatest(
-                    -- Primary: Extract cost from llm.openrouter.usage (OpenRouter response)
-                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
-                    -- Fallback 1: Extract cost from metadata.usage_object
-                    toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
-                    -- Fallback 2: calculate from tokens (OpenRouter qwen pricing)
-                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
-                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
-                )
+                -- OpenRouter 응답에서 저장된 비용만 사용 (metadata.usage_object에 cost 필드)
+                toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], '''cost'':\\s*([0-9.eE+-]+)')[1])
             ) as total_cost,
             sum(greatest(
                 toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']),
@@ -825,11 +843,21 @@ class MonitoringAdapter:
         query = f"""
         SELECT 
             {time_format} as timestamp,
-            sum(toFloat64OrZero(SpanAttributes['gen_ai.usage.cost'])) as cost
+            -- OpenRouter 응답에서 저장된 비용만 사용 (metadata.usage_object에 cost 필드)
+            sum(toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], '''cost'':\\s*([0-9.eE+-]+)')[1])) as cost
         FROM {CLICKHOUSE_DATABASE}.otel_traces
         WHERE (ResourceAttributes['project_id'] = '{project_id}' OR ResourceAttributes['project_id'] = '')
           AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
           AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+          AND (
+            SpanName = 'gen_ai.session'
+            OR SpanName = 'gen_ai.content.completion'
+            OR SpanName = 'gen_ai.tool.call'
+            OR SpanName LIKE 'gen_ai.agent.%'
+            OR SpanName = 'litellm_request'
+            OR ServiceName LIKE 'agent-%'
+            OR SpanAttributes['llm.usage.total_tokens'] != ''
+          )
         GROUP BY timestamp
         ORDER BY timestamp ASC
         """
@@ -1172,93 +1200,111 @@ class MonitoringAdapter:
         """
         # Agent 호출만 필터링 (LiteLLM 프록시 제외)
         # SpanAttributes['agent.id']가 있는 트레이스 또는 알려진 에이전트 서비스
+        # Agent 호출만 필터링 (LiteLLM 프록시 제외)
+        # gen_ai.session 또는 gen_ai.agent.* span, 또는 agent 서비스
         agent_filter = """
           AND (
-            SpanAttributes['agent.id'] != ''
-            OR SpanName LIKE '%langflow%'
-            OR SpanName LIKE '%flowise%'
-            OR SpanName LIKE '%autogen%'
-            OR SpanName LIKE '%text2sql%'
-            OR ServiceName LIKE '%langflow%'
-            OR ServiceName LIKE '%flowise%'
-            OR ServiceName LIKE '%autogen%'
-            OR ServiceName LIKE '%text2sql%'
-            OR ServiceName LIKE 'agent-%'
+            a.SpanName = 'gen_ai.session'
+            OR a.SpanName LIKE 'gen_ai.agent.%'
+            OR a.SpanAttributes['gen_ai.agent.id'] != ''
+            OR a.SpanAttributes['agent.id'] != ''
+            OR a.SpanName LIKE '%langflow%'
+            OR a.SpanName LIKE '%flowise%'
+            OR a.SpanName LIKE '%autogen%'
+            OR a.SpanName LIKE '%text2sql%'
+            OR a.SpanName LIKE '%legislation%'
+            OR a.SpanName LIKE '%slide%'
+            OR a.ServiceName LIKE '%langflow%'
+            OR a.ServiceName LIKE '%flowise%'
+            OR a.ServiceName LIKE '%autogen%'
+            OR a.ServiceName LIKE '%text2sql%'
+            OR a.ServiceName LIKE 'agent-%'
           )
-          AND ServiceName != 'litellm-proxy'
+          AND a.ServiceName != 'litellm-proxy'
         """
         
         query = f"""
         SELECT 
             -- Use agent.id if available, otherwise use SpanName or ServiceName as identifier
             if(
-                SpanAttributes['agent.id'] != '',
-                SpanAttributes['agent.id'],
+                a.SpanAttributes['gen_ai.agent.id'] != '' OR a.SpanAttributes['agent.id'] != '',
+                coalesce(a.SpanAttributes['gen_ai.agent.id'], a.SpanAttributes['agent.id']),
                 if(
-                    SpanName LIKE '%text2sql%',
-                    'text2sql-agent',
+                    a.SpanName LIKE '%slide%' OR a.ServiceName = 'agent-slides',
+                    'slide-studio',
                     if(
-                        SpanName LIKE '%langflow%',
-                        'langflow-agent',
+                        a.SpanName LIKE '%text2sql%' OR a.ServiceName LIKE '%text2sql%',
+                        'text2sql-agent',
                         if(
-                            SpanName LIKE '%flowise%',
-                            'flowise-agent',
+                            a.SpanName LIKE '%legislation%' OR a.ServiceName = 'agent-legislation',
+                            'legislation-agent',
                             if(
-                                SpanName LIKE '%autogen%',
-                                'autogen-agent',
-                                ServiceName
+                                a.SpanName LIKE '%langflow%',
+                                'langflow-agent',
+                                if(
+                                    a.SpanName LIKE '%flowise%',
+                                    'flowise-agent',
+                                    if(
+                                        a.SpanName LIKE '%autogen%',
+                                        'autogen-agent',
+                                        a.ServiceName
+                                    )
+                                )
                             )
                         )
                     )
                 )
             ) as agent_id,
             any(if(
-                SpanAttributes['agent.name'] != '',
-                SpanAttributes['agent.name'],
+                a.SpanAttributes['gen_ai.agent.name'] != '' OR a.SpanAttributes['agent.name'] != '',
+                coalesce(a.SpanAttributes['gen_ai.agent.name'], a.SpanAttributes['agent.name']),
                 if(
-                    SpanName LIKE '%text2sql%',
-                    'Text-to-SQL Agent',
+                    a.SpanName LIKE '%slide%' OR a.ServiceName = 'agent-slides',
+                    'Slide Studio Agent',
                     if(
-                        SpanName LIKE '%langflow%',
-                        'Langflow Agent',
+                        a.SpanName LIKE '%text2sql%' OR a.ServiceName LIKE '%text2sql%',
+                        'Text-to-SQL Agent',
                         if(
-                            SpanName LIKE '%flowise%',
-                            'Flowise Agent',
+                            a.SpanName LIKE '%legislation%' OR a.ServiceName = 'agent-legislation',
+                            'Legislation Agent',
                             if(
-                                SpanName LIKE '%autogen%',
-                                'AutoGen Agent',
-                                ServiceName
+                                a.SpanName LIKE '%langflow%',
+                                'Langflow Agent',
+                                if(
+                                    a.SpanName LIKE '%flowise%',
+                                    'Flowise Agent',
+                                    if(
+                                        a.SpanName LIKE '%autogen%',
+                                        'AutoGen Agent',
+                                        a.ServiceName
+                                    )
+                                )
                             )
                         )
                     )
                 )
             )) as agent_name,
-            any(ServiceName) as service_name,
-            count(DISTINCT TraceId) as event_count,
-            sum(toUInt64OrZero(SpanAttributes['gen_ai.usage.total_tokens'])) as total_tokens,
+            any(a.ServiceName) as service_name,
+            count(DISTINCT a.TraceId) as event_count,
+            sum(toUInt64OrZero(b.SpanAttributes['llm.usage.total_tokens'])) as total_tokens,
+            -- Agent의 TraceId로 연결된 모든 LLM span의 비용 합산
             sum(
-                greatest(
-                    -- Primary: Extract cost from llm.openrouter.usage (OpenRouter response)
-                    toFloat64OrZero(extractAll(SpanAttributes['llm.openrouter.usage'], '\\'cost\\': ([0-9.]+)')[1]),
-                    -- Fallback 1: get from gen_ai.usage.total_cost (stored by agent_trace_adapter)
-                    toFloat64OrZero(SpanAttributes['gen_ai.usage.total_cost']),
-                    -- Fallback 2: Extract cost from metadata.usage_object
-                    toFloat64OrZero(extractAll(SpanAttributes['metadata.usage_object'], 'cost.: ([0-9.eE-]+)')[1]),
-                    -- Last fallback: calculate from tokens (OpenRouter qwen pricing)
-                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000072) +
-                    (toUInt64OrZero(SpanAttributes['llm.usage.total_tokens']) * 0.000000464)
-                )
+                toFloat64OrZero(extractAll(b.SpanAttributes['metadata.usage_object'], '''cost'':\\s*([0-9.eE+-]+)')[1])
             ) as total_cost,
-            avg(Duration) / 1000000 as avg_latency_ms,
-            countIf(StatusCode = 'ERROR') as error_count
-        FROM {CLICKHOUSE_DATABASE}.otel_traces
+            avg(a.Duration) / 1000000 as avg_latency_ms,
+            countIf(a.StatusCode = 'ERROR') as error_count
+        FROM {CLICKHOUSE_DATABASE}.otel_traces a
+        LEFT JOIN {CLICKHOUSE_DATABASE}.otel_traces b 
+            ON a.TraceId = b.TraceId 
+            AND b.SpanName = 'litellm_request'
+            AND b.SpanAttributes['metadata.usage_object'] LIKE '%cost%'
         WHERE (
-            ResourceAttributes['project_id'] = '{project_id}' 
-            OR ResourceAttributes['project_id'] = '' 
-            OR ResourceAttributes['project_id'] = 'default-project'
+            a.ResourceAttributes['project_id'] = '{project_id}' 
+            OR a.ResourceAttributes['project_id'] = '' 
+            OR a.ResourceAttributes['project_id'] = 'default-project'
           )
-          AND Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
-          AND Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
+          AND a.Timestamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
+          AND a.Timestamp <= '{end_time.strftime('%Y-%m-%d %H:%M:%S')}'
           {agent_filter}
         GROUP BY agent_id
         HAVING agent_id != '' AND agent_id IS NOT NULL

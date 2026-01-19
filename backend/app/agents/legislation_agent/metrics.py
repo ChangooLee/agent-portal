@@ -62,9 +62,32 @@ class _NoOpTracer:
         yield _NoOpSpan()
 
 
+def extract_context_from_carrier(carrier: Dict[str, str]):
+    """carrier(dict)에서 trace context 추출"""
+    try:
+        from opentelemetry.propagate import extract
+        return extract(carrier)
+    except ImportError:
+        return None
+    except Exception as e:
+        logger.debug(f"Failed to extract context: {e}")
+        return None
+
+
 @contextmanager
-def start_legislation_span(name: str, attributes: Optional[Dict[str, Any]] = None):
-    """Legislation 에이전트용 span 시작"""
+def start_legislation_span(
+    name: str,
+    attributes: Optional[Dict[str, Any]] = None,
+    parent_carrier: Optional[Dict[str, str]] = None
+):
+    """
+    Legislation 에이전트용 span 시작 (Context Propagation 지원).
+    
+    Args:
+        name: Span 이름
+        attributes: 추가 속성
+        parent_carrier: 부모 span의 carrier (있으면 사용)
+    """
     tracer = _get_tracer()
     
     span_attributes = {
@@ -74,8 +97,35 @@ def start_legislation_span(name: str, attributes: Optional[Dict[str, Any]] = Non
     if attributes:
         span_attributes.update(attributes)
     
-    with tracer.start_as_current_span(name, attributes=span_attributes) as span:
-        yield span
+    # GenAI 표준 속성 추가 (모니터링 화면에서 인식)
+    if "gen_ai.agent.id" not in span_attributes:
+        span_attributes["gen_ai.agent.id"] = span_attributes.get("agent.id", "legislation-agent")
+    if "gen_ai.agent.name" not in span_attributes:
+        span_attributes["gen_ai.agent.name"] = span_attributes.get("agent.name", "Legislation Agent")
+    if "gen_ai.agent.type" not in span_attributes:
+        span_attributes["gen_ai.agent.type"] = "legislation"
+    
+    try:
+        from opentelemetry.context import attach, detach
+        
+        # Parent context 추출 및 attach
+        token = None
+        if parent_carrier:
+            parent_context = extract_context_from_carrier(parent_carrier)
+            if parent_context:
+                token = attach(parent_context)
+        
+        try:
+            with tracer.start_as_current_span(name, attributes=span_attributes) as span:
+                yield span
+        finally:
+            if token is not None:
+                detach(token)
+    except ImportError:
+        yield _NoOpSpan()
+    except Exception as e:
+        logger.warning(f"Failed to create span {name}: {e}")
+        yield _NoOpSpan()
 
 
 def record_tool_call(tool_name: str, arguments: Dict[str, Any], result: Any, latency_ms: float):

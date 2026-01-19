@@ -26,8 +26,8 @@ except Exception as e:
 
 try:
     from app.routes import proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud, llm, agent_registry, text2sql, dart, webui_proxy
-    from app.routes import realestate, health as health_route, legislation  # New MCP agents
-    logger.info("✅ New routes (proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud, llm, agent_registry, text2sql, dart, webui_proxy, realestate, health, legislation) imported successfully")
+    from app.routes import realestate, health as health_route, legislation, slides  # New MCP agents + Slide Studio
+    logger.info("✅ New routes (proxy, agents, monitoring, projects, teams, mcp, gateway, datacloud, llm, agent_registry, text2sql, dart, webui_proxy, realestate, health, legislation, slides) imported successfully")
 except Exception as e:
     logger.error(f"❌ New routes import failed: {e}")
     import traceback
@@ -215,6 +215,8 @@ app.include_router(health_route.router)  # /health-agent/* - 건강/의료 분�
 app.include_router(health_route.api_router)  # /api/health-agent/* - Vite 프록시를 통한 요청 처리
 app.include_router(legislation.router)  # /legislation/* - 법률 정보 분석 에이전트
 app.include_router(legislation.api_router)  # /api/legislation/* - Vite 프록시를 통한 요청 처리
+app.include_router(slides.router)  # /slides/* - Slide Studio
+app.include_router(slides.api_router)  # /api/slides/* - Vite 프록시를 통한 요청 처리
 
 # WebUI Backend 프록시는 마지막에 등록 (catch-all)
 # /api/* 경로 중 BFF에서 처리하지 않는 것만 WebUI Backend로 프록시

@@ -522,16 +522,16 @@
 						
 						// 기술적 이벤트 이름 → 사용자 친화적 메시지 매핑
 						const technicalToFriendly: Record<string, string> = {
-							'intent_classification_start': '🔍 질문 분석 중...',
-							'intent_classification_complete': '✅ 질문 분석 완료',
-							'mcp_call_start': '🔧 데이터 조회 중...',
-							'mcp_call_complete': '✅ 데이터 조회 완료',
-							'llm_call_start': '🤖 AI 분석 중...',
-							'llm_call_complete': '✅ AI 분석 완료',
-							'tool_call_start': '🔧 도구 실행 중...',
-							'tool_call_complete': '✅ 도구 실행 완료',
-							'mcp_start': '🔧 MCP 도구 호출 중...',
-							'mcp_complete': '✅ MCP 도구 호출 완료'
+							'intent_classification_start': '질문 분석 중...',
+							'intent_classification_complete': '질문 분석 완료',
+							'mcp_call_start': '데이터 조회 중...',
+							'mcp_call_complete': '데이터 조회 완료',
+							'llm_call_start': 'AI 분석 중...',
+							'llm_call_complete': 'AI 분석 완료',
+							'tool_call_start': '도구 실행 중...',
+							'tool_call_complete': '도구 실행 완료',
+							'mcp_start': 'MCP 도구 호출 중...',
+							'mcp_complete': 'MCP 도구 호출 완료'
 						};
 						
 						// progress 이벤트 메시지 변환
@@ -544,7 +544,7 @@
 							}
 							// 기술적 이벤트 패턴 감지
 							if (msg.includes('_start') || msg.includes('_complete') || msg.includes('_end')) {
-								return '⏳ 처리 중...';
+								return '처리 중...';
 							}
 							return msg;
 						};
@@ -561,15 +561,15 @@
 								return transformProgressMessage(rawMsg);
 							}
 								case 'intent_classified':
-									return `📋 ${eventData.company_name || '기업'} 분석 준비 중...`;
+									return `${eventData.company_name || '기업'} 분석 준비 중...`;
 								case 'iteration':
-									return `🔄 반복 ${eventData.iteration}...`;
+									return `반복 ${eventData.iteration}...`;
 								case 'tool_start':
-									return `🔧 ${eventData.tool || eventData.display_name || '도구'} 실행 중...`;
+									return `${eventData.tool || eventData.display_name || '도구'} 실행 중...`;
 								case 'tool_end':
-									return `✅ ${eventData.tool || '도구'} 완료`;
+									return `${eventData.tool || '도구'} 완료`;
 								case 'tool_result':
-									return `✅ ${eventData.display_name || eventData.tool_name || eventData.tool || '도구'} 완료`;
+									return `${eventData.display_name || eventData.tool_name || eventData.tool || '도구'} 완료`;
 								default:
 									return '처리 중...';
 							}
@@ -583,7 +583,7 @@
 								messages = [...messages, {
 									id: generateId(),
 									role: 'assistant',
-									content: data.content || '🔍 분석을 시작합니다...',
+									content: data.content || '분석을 시작합니다...',
 									timestamp: new Date()
 								}];
 								break;
@@ -591,11 +591,11 @@
 							case 'agent_response':
 								// 서브 에이전트 응답 - 화면에 표시
 								const agentName = data.agent_name || '에이전트';
-								currentToolCall = `📊 ${agentName} 분석 완료`;
+								currentToolCall = `${agentName} 분석 완료`;
 								messages = [...messages, {
 									id: generateId(),
 									role: 'assistant',
-									content: `📊 ${agentName} 분석이 완료되었습니다.`,
+									content: `${agentName} 분석이 완료되었습니다.`,
 									timestamp: new Date()
 								}];
 								// 에이전트 응답을 레포트에도 추가
@@ -610,7 +610,7 @@
 								messages = [...messages, {
 									id: generateId(),
 									role: 'assistant',
-									content: `❌ 오류: ${data.error || '알 수 없는 오류'}`,
+									content: `오류: ${data.error || '알 수 없는 오류'}`,
 									timestamp: new Date()
 								}];
 								reportStreaming = false;
@@ -693,7 +693,7 @@
 								messages = [...messages, {
 									id: generateId(),
 									role: 'assistant',
-									content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
+									content: '분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
 									timestamp: new Date()
 								}];
 								reportStreaming = false;
@@ -717,7 +717,7 @@
 									messages = [...messages, {
 										id: generateId(),
 										role: 'assistant',
-										content: '✨ 분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
+										content: '분석이 완료되었습니다. 우측 레포트를 확인해주세요.',
 										timestamp: new Date()
 									}];
 								}
@@ -842,7 +842,7 @@
 						</svg>
 					</div>
 					<div>
-						<h1 class="text-2xl font-bold text-white">📊 기업공시분석</h1>
+						<h1 class="text-2xl font-bold text-white">기업공시분석</h1>
 						<p class="text-sm text-emerald-200/80">DART AI Agent</p>
 					</div>
 				</div>

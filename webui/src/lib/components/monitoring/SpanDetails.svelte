@@ -25,6 +25,84 @@
 		return span.span_attributes?.tool_name !== undefined;
 	}
 
+	/**
+	 * Span attributes에서 비용 정보 추출 (GenAI 표준 + 기존 호환)
+	 * 우선순위:
+	 * 1. gen_ai.usage.total_cost (GenAI 표준)
+	 * 2. llm.openrouter.usage에서 cost 추출
+	 * 3. metadata.usage_object에서 cost 추출
+	 * 4. cost (기존 호환)
+	 */
+	function extractCost(attrs: any): number {
+		if (!attrs) return 0;
+		
+		// 1. GenAI 표준: gen_ai.usage.total_cost
+		if (attrs['gen_ai.usage.total_cost'] !== undefined) {
+			const cost = parseFloat(attrs['gen_ai.usage.total_cost']);
+			if (!isNaN(cost)) return cost;
+		}
+		
+		// 2. llm.openrouter.usage에서 cost 추출
+		if (attrs['llm.openrouter.usage']) {
+			try {
+				const usage = typeof attrs['llm.openrouter.usage'] === 'string' 
+					? JSON.parse(attrs['llm.openrouter.usage']) 
+					: attrs['llm.openrouter.usage'];
+				if (usage?.cost !== undefined) {
+					const cost = parseFloat(usage.cost);
+					if (!isNaN(cost)) return cost;
+				}
+			} catch (e) {
+				// Python 딕셔너리 문자열 형식 처리: {'cost': 0.000159295, ...} 또는 {'cost': 9.2294e-05, ...}
+				try {
+					const usageStr = String(attrs['llm.openrouter.usage']);
+					// 과학적 표기법 포함 매칭: 'cost': 0.000159295 또는 'cost': 9.2294e-05
+					const match = usageStr.match(/'cost':\s*([0-9.eE+-]+)/);
+					if (match && match[1]) {
+						const cost = parseFloat(match[1]);
+						if (!isNaN(cost)) return cost;
+					}
+				} catch (e2) {
+					// Ignore
+				}
+			}
+		}
+		
+		// 3. metadata.usage_object에서 cost 추출
+		if (attrs['metadata.usage_object']) {
+			try {
+				const usage = typeof attrs['metadata.usage_object'] === 'string'
+					? JSON.parse(attrs['metadata.usage_object'])
+					: attrs['metadata.usage_object'];
+				if (usage?.cost !== undefined) {
+					const cost = parseFloat(usage.cost);
+					if (!isNaN(cost)) return cost;
+				}
+			} catch (e) {
+				// Python 딕셔너리 문자열 형식 처리: {'cost': 0.000158, ...} 또는 {'cost': 7.84e-05, ...}
+				try {
+					const usageStr = String(attrs['metadata.usage_object']);
+					// 과학적 표기법 포함 매칭: 'cost': 0.000158 또는 'cost': 7.84e-05
+					const match = usageStr.match(/'cost':\s*([0-9.eE+-]+)/);
+					if (match && match[1]) {
+						const cost = parseFloat(match[1]);
+						if (!isNaN(cost)) return cost;
+					}
+				} catch (e2) {
+					// Ignore
+				}
+			}
+		}
+		
+		// 4. 기존 호환: cost
+		if (attrs.cost !== undefined) {
+			const cost = parseFloat(attrs.cost);
+			if (!isNaN(cost)) return cost;
+		}
+		
+		return 0;
+	}
+
 	function formatJSON(obj: any): string {
 		return JSON.stringify(obj, null, 2);
 	}
@@ -235,11 +313,12 @@
 					{/if}
 				</div>
 
-				{#if span.span_attributes.cost !== undefined}
+				{#if extractCost(span.span_attributes) > 0}
+					{@const cost = extractCost(span.span_attributes)}
 					<div>
 						<p class="text-sm text-slate-400">Cost</p>
 						<p class="text-sm font-semibold text-cyan-400 mt-1">
-							${span.span_attributes.cost.toFixed(4)}
+							${cost.toFixed(6)}
 						</p>
 					</div>
 				{/if}

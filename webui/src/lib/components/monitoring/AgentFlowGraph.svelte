@@ -39,24 +39,24 @@
 			
 			// 노드 라벨 구성
 			const labelParts = [
-				isGuardrail ? `🛡️ ${stageName}` : stageName,
+				isGuardrail ? `Guardrail: ${stageName}` : stageName,
 				`${node.data.call_count} calls`,
-				`⏱ ${formatLatency(node.data.avg_latency_ms || 0)}`,
+				`${formatLatency(node.data.avg_latency_ms || 0)}`,
 			];
 			
 			// 토큰이 있는 경우에만 표시
 			if (node.data.total_tokens > 0) {
-				labelParts.push(`🔤 ${formatTokens(node.data.total_tokens)} tokens`);
+				labelParts.push(`${formatTokens(node.data.total_tokens)} tokens`);
 			}
 			
 			// 비용이 있는 경우에만 표시
 			if (node.data.total_cost > 0) {
-				labelParts.push(`💰 $${node.data.total_cost.toFixed(6)}`);
+				labelParts.push(`$${node.data.total_cost.toFixed(6)}`);
 			}
 			
 			// 에러/차단이 있는 경우 표시
 			if (node.data.error_count > 0) {
-				labelParts.push(`⚠️ ${node.data.error_count} blocked`);
+				labelParts.push(`${node.data.error_count} blocked`);
 			}
 
 			return {
@@ -139,7 +139,7 @@
 	</div>
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded-full" style="background: linear-gradient(135deg, #F97316 0%, #EA580C 100%)"></div>
-		<span class="text-slate-300">🛡️ Guardrail</span>
+		<span class="text-slate-300">Guardrail</span>
 	</div>
 	<div class="flex items-center gap-1.5">
 		<div class="w-3 h-3 rounded" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%)"></div>

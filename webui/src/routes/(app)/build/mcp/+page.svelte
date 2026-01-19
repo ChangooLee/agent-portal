@@ -556,7 +556,7 @@
 			<div class="relative px-6 py-8">
 				<div class="text-center mb-4">
 					<h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
-						🔌 MCP 서버
+						MCP 서버
 					</h1>
 					<p class="text-base text-purple-200/80 mb-6">
 						MCP 서버를 등록하고 AI 에이전트에서 외부 도구로 활용할 수 있습니다.

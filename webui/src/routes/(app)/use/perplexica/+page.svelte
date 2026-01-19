@@ -182,12 +182,12 @@
 	
 	// Focus Mode 설정
 	const focusModes: Array<{ value: FocusMode; label: string; icon: string }> = [
-		{ value: 'webSearch', label: '웹 검색', icon: '🌐' },
-		{ value: 'academicSearch', label: '학술 검색', icon: '📚' },
-		{ value: 'youtubeSearch', label: 'YouTube 검색', icon: '▶️' },
-		{ value: 'writingAssistant', label: '글쓰기 보조', icon: '✍️' },
-		{ value: 'wolframAlpha', label: '계산/분석', icon: '🔢' },
-		{ value: 'redditSearch', label: 'Reddit 검색', icon: '💬' }
+		{ value: 'webSearch', label: '웹 검색', icon: '' },
+		{ value: 'academicSearch', label: '학술 검색', icon: '' },
+		{ value: 'youtubeSearch', label: 'YouTube 검색', icon: '' },
+		{ value: 'writingAssistant', label: '글쓰기 보조', icon: '' },
+		{ value: 'wolframAlpha', label: '계산/분석', icon: '' },
+		{ value: 'redditSearch', label: 'Reddit 검색', icon: '' }
 	];
 	let selectedFocusMode: FocusMode = 'webSearch';
 	
@@ -244,9 +244,9 @@
 	
 	// Optimization Mode 설정
 	const optimizationModes: Array<{ value: OptimizationMode; title: string; description: string; icon: string }> = [
-		{ value: 'speed', title: '속도', description: '빠른 응답을 위해 최적화합니다.', icon: '⚡' },
-		{ value: 'balanced', title: '균형', description: '속도와 품질의 균형을 맞춥니다.', icon: '⚖️' },
-		{ value: 'quality', title: '품질', description: '높은 품질의 응답을 위해 최적화합니다.', icon: '✨' }
+		{ value: 'speed', title: '속도', description: '빠른 응답을 위해 최적화합니다.', icon: '' },
+		{ value: 'balanced', title: '균형', description: '속도와 품질의 균형을 맞춥니다.', icon: '' },
+		{ value: 'quality', title: '품질', description: '높은 품질의 응답을 위해 최적화합니다.', icon: '' }
 	];
 	
 	// 필터된 프로바이더
@@ -1426,21 +1426,21 @@
 														<div class="flex items-center gap-3">
 															<div class="w-16 h-16 flex items-center justify-center text-4xl">
 																{#if (widget.params?.current?.weather_code || 0) === 0 || (widget.params?.current?.weather_code || 0) === 1}
-																	{(widget.params?.current?.is_day === 1) ? '☀️' : '🌙'}
+																	{(widget.params?.current?.is_day === 1) ? 'Sunny' : 'Clear'}
 																{:else if (widget.params?.current?.weather_code || 0) === 2 || (widget.params?.current?.weather_code || 0) === 3}
-																	{(widget.params?.current?.is_day === 1) ? '⛅' : '☁️'}
+																	{(widget.params?.current?.is_day === 1) ? 'Partly Cloudy' : 'Cloudy'}
 																{:else if (widget.params?.current?.weather_code || 0) >= 45 && (widget.params?.current?.weather_code || 0) <= 48}
-																	🌫️
+																	Fog
 																{:else if (widget.params?.current?.weather_code || 0) >= 51 && (widget.params?.current?.weather_code || 0) <= 67}
-																	🌧️
+																	Rain
 																{:else if (widget.params?.current?.weather_code || 0) >= 71 && (widget.params?.current?.weather_code || 0) <= 77}
-																	❄️
+																	Snow
 																{:else if (widget.params?.current?.weather_code || 0) >= 80 && (widget.params?.current?.weather_code || 0) <= 82}
-																	🌦️
+																	Rain Showers
 																{:else if (widget.params?.current?.weather_code || 0) >= 95 && (widget.params?.current?.weather_code || 0) <= 99}
-																	⛈️
+																	Thunderstorm
 																{:else}
-																	☀️
+																	Sunny
 																{/if}
 															</div>
 															<div>

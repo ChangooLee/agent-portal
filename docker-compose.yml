@@ -68,6 +68,8 @@ services:
       # MCP 저장 경로 (stdio MCP 서버용)
       - MCP_STORAGE_PATH=/data/mcp
     volumes:
+      # Backend 코드 마운트 (개발 모드 - 코드 변경 즉시 반영)
+      - ./backend/app:/app/app
       # News data from mcp-naver-news project (개발용)
       # .env에서 NEWS_DATA_PATH_HOST 설정 필요
       - ${NEWS_DATA_PATH_HOST:-./data/news}:/data/news:ro

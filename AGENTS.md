@@ -569,6 +569,129 @@ async def get_example(id: str):
 {/if}
 ```
 
+### 7.6 Agent Development with GenAI Monitoring (MANDATORY)
+
+**⚠️ CRITICAL**: 모든 에이전트 개발 시 반드시 GenAI 모니터링 패턴을 따라야 합니다.
+
+**참조 문서**:
+- [.cursor/rules/agent-development.mdc](.cursor/rules/agent-development.mdc) - 상세 가이드
+- [docs/OTEL_GENAI_METRICS.md](docs/OTEL_GENAI_METRICS.md) - 표준 정의
+
+#### Root Agent Session Span
+
+```python
+from opentelemetry import trace
+from opentelemetry.propagate import inject
+
+# Root span 생성 (필수)
+tracer = trace.get_tracer(__name__)
+with tracer.start_as_current_span(
+    "gen_ai.session",  # GenAI 표준: root agent session
+    attributes={
+        "service.name": "agent-{agent_type}",
+        "gen_ai.agent.id": agent_id,
+        "gen_ai.agent.name": agent_name,
+        "gen_ai.agent.type": agent_type,
+    }
+) as root_span:
+    # Context를 carrier에 주입하여 하위 span에 전달
+    carrier = {}
+    inject(carrier)
+    state["otel_carrier"] = carrier
+    
+    # 에이전트 실행
+    result = await agent.run(...)
+```
+
+#### LLM Calls with Context Propagation
+
+```python
+from app.services.litellm_service import litellm_service
+
+# Parent context를 trace_headers로 변환 (필수)
+trace_headers = state.get("otel_carrier", {})
+
+# LiteLLM 호출 시 trace_headers 전달 (필수)
+response = await litellm_service.chat_completion_sync(
+    model=model,
+    messages=messages,
+    trace_headers=trace_headers,  # Context propagation - 필수!
+    metadata={
+        "agent_id": agent_id,
+        "agent_name": agent_name,
+        "node": node_name
+    }
+)
+```
+
+**중요**: `trace_headers`를 전달하지 않으면 LLM span이 별도의 trace_id로 분리되어 모니터링 화면에서 연결되지 않습니다.
+
+#### Agent Node Spans
+
+```python
+from contextlib import contextmanager
+from opentelemetry import trace
+from opentelemetry.propagate import extract
+from opentelemetry.context import attach, detach
+
+@contextmanager
+def start_agent_span(name: str, attributes: dict, parent_carrier: dict):
+    """Agent 노드용 span 생성 (Context Propagation 지원)"""
+    tracer = trace.get_tracer(__name__)
+    
+    # GenAI 표준 속성 자동 추가
+    span_attributes = {
+        "service.name": "agent-{agent_type}",
+        "gen_ai.agent.id": agent_id,
+        "gen_ai.agent.name": agent_name,
+        "gen_ai.agent.type": agent_type,
+    }
+    span_attributes.update(attributes)
+    
+    # Parent context attach
+    token = None
+    if parent_carrier:
+        parent_context = extract(parent_carrier)
+        if parent_context:
+            token = attach(parent_context)
+    
+    try:
+        with tracer.start_as_current_span(name, attributes=span_attributes) as span:
+            yield span
+    finally:
+        if token is not None:
+            detach(token)
+```
+
+#### Checklist
+
+에이전트 개발 시 반드시 확인:
+
+- [ ] Root span이 `gen_ai.session`으로 생성되는가?
+- [ ] `gen_ai.agent.id`, `gen_ai.agent.name`, `gen_ai.agent.type` 속성이 설정되는가?
+- [ ] LLM 호출 시 `trace_headers`를 전달하여 context propagation이 되는가?
+- [ ] 모든 노드 span이 parent carrier를 사용하여 같은 trace_id를 공유하는가?
+- [ ] 모니터링 화면에서 하나의 요청이 하나의 trace로 표시되는가?
+
+#### Why LLM Calls Were Missing
+
+**원인 분석**:
+1. LiteLLM은 자동으로 `litellm_request` span을 생성하지만, parent context가 없으면 별도의 trace_id를 생성
+2. `trace_headers`를 전달하지 않으면 context propagation이 실패
+3. 결과적으로 에이전트 span과 LLM span이 다른 trace_id를 가지게 됨
+
+**해결책**:
+- Root span에서 `inject(carrier)`로 context를 추출
+- LLM 호출 시 `trace_headers=carrier` 전달
+- LiteLLM이 자동으로 parent context를 인식하여 같은 trace_id 사용
+
+#### Reference Examples
+
+- **Slide Studio**: `backend/app/services/slide_studio/orchestrator/metrics.py`
+- **Text2SQL**: `backend/app/agents/text2sql/metrics.py`
+- **DART Agent**: `backend/app/agents/dart_agent/metrics.py`
+- **Legislation Agent**: `backend/app/agents/legislation_agent/metrics.py`
+
 ---
 
 ## 9. Troubleshooting

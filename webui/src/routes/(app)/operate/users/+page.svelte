@@ -10,7 +10,7 @@
 		
 		<div class="relative px-6 py-8 text-center">
 			<h1 class="text-3xl md:text-4xl font-medium mb-3 text-white">
-				👥 사용자 관리
+				사용자 관리
 			</h1>
 			<p class="text-base text-blue-200/80">
 				조직 구성원과 권한을 한 곳에서 관리하세요.

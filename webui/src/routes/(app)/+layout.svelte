@@ -280,9 +280,9 @@
 				{/if}
 
 				<!-- Main Content (스크롤 영역) -->
-				<div class="flex-1 overflow-y-auto">
+				<div class="flex-1 overflow-y-auto min-h-0">
 					{#if loaded}
-						<main class="w-full">
+						<main class="w-full h-full min-h-full">
 							<slot />
 						</main>
 					{:else}

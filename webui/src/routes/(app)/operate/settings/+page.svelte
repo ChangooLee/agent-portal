@@ -10,7 +10,7 @@
 		
 		<div class="relative px-6 py-8 text-center">
 			<h1 class="text-3xl md:text-4xl font-medium mb-3 text-white">
-				⚙️ 설정
+				설정
 			</h1>
 			<p class="text-base text-slate-300/80">
 				플랫폼 전역 설정을 안전하게 관리하세요.

@@ -97,10 +97,11 @@
 ### 1.3 Required Reference Documents
 
 **Priority 1: Domain Rules (`.cursor/rules/*.mdc`)**
+- `agent-development.mdc` — **Agent development with GenAI monitoring (MANDATORY)**
 - `backend-api.mdc` — FastAPI, services, error handling
 - `ui-development.mdc` — SvelteKit, Tailwind, patterns
 - `admin-screens.mdc` — Admin UI, Glassmorphism
-- `monitoring-development.mdc` — ClickHouse, OTEL traces
+- `monitoring-development.mdc` — ClickHouse, OTEL traces, GenAI standard
 - `datacloud-development.mdc` — Database connector, Text-to-SQL
 - `mcp-gateway.mdc` — MCP servers, Kong integration
 
@@ -844,11 +845,30 @@ mcp_path = os.environ.get("MCP_STORAGE_PATH", "/data/mcp")
 ✅ Maximally reusing existing code
 ```
 
-### 9.8 Architecture Bypass (CRITICAL)
+### 9.8 Agent Development Without GenAI Monitoring (CRITICAL)
+
+**NEVER develop agents without following GenAI monitoring pattern.**
+
+```
+❌ Creating agents without gen_ai.session root span
+❌ LLM calls without trace_headers (context propagation)
+❌ Missing gen_ai.agent.id, gen_ai.agent.name, gen_ai.agent.type attributes
+❌ Agent spans not sharing the same trace_id
+```
+
+**Required**:
+- ✅ Always create `gen_ai.session` root span
+- ✅ Always set `gen_ai.agent.*` attributes
+- ✅ Always pass `trace_headers` to LLM calls
+- ✅ Always use parent carrier for context propagation
+
+**Reference**: [.cursor/rules/agent-development.mdc](.cursor/rules/agent-development.mdc)
+
+### 9.9 Architecture Bypass (CRITICAL)
 
 **NEVER bypass established architecture. When issues occur, investigate root cause instead of workarounds.**
 
-#### 9.8.1 Environment Bypass
+#### 9.9.1 Environment Bypass
 ```
 ❌ Docker로 기동해야 하는데 npm/python 직접 실행
 ❌ 포트 충돌 시 docker-compose.yml 포트 변경으로 우회
@@ -857,7 +877,7 @@ mcp_path = os.environ.get("MCP_STORAGE_PATH", "/data/mcp")
 ✅ Docker 내부 네트워크명 사용 (예: litellm:4000, mariadb:3306)
 ```
 
-#### 9.8.2 Configuration Bypass
+#### 9.9.2 Configuration Bypass
 ```
 ❌ DB 기반 관리가 안되서 YAML 파일로 우회
 ❌ 암호화 문제 해결 안되서 암호화 비활성화
@@ -866,7 +886,7 @@ mcp_path = os.environ.get("MCP_STORAGE_PATH", "/data/mcp")
 ✅ 문제 해결이 어려우면 사용자와 아키텍처 결정 논의
 ```
 
-#### 9.8.3 Rollback Prohibition
+#### 9.9.3 Rollback Prohibition
 ```
 ❌ 개선 작업 후 동작 안되면 이전 방식으로 롤백
 ❌ 새 기능 구현 실패 시 임시 해결책 적용
@@ -874,7 +894,7 @@ mcp_path = os.environ.get("MCP_STORAGE_PATH", "/data/mcp")
 ✅ 근본 해결 또는 아키텍처 재검토 요청
 ```
 
-#### 9.8.4 Required Actions When Issues Occur
+#### 9.9.4 Required Actions When Issues Occur
 ```
 1. 문제 발생 시 우회하지 말고 원인 분석
 2. 분석 결과를 사용자에게 명확히 보고

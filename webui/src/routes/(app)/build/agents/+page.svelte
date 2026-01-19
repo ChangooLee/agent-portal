@@ -14,7 +14,7 @@
         
         <div class="relative px-6 py-8 text-center">
             <h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
-                🛠️ 에이전트 빌더
+                에이전트 빌더
             </h1>
             <p class="text-base text-blue-200/80">
                 시각적 에이전트 빌더를 통해 맞춤형 AI 에이전트를 생성하세요.

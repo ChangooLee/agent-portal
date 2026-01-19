@@ -1,0 +1,828 @@
+---
+alwaysApply: false
+---
+# Slide Studio Development Rules
+
+Rules for developing AI-powered slide generation feature in Agent Portal.
+
+## 1. Overview
+
+**Goal**: 사용자가 프롬프트를 입력하면, 에이전트가 덱을 기획하고, 여러 슬라이드가 병렬로 reflection을 반복하며 생성되는 진행 상황을 실시간 UI로 보여준 뒤, 최종 결과물을 PPTX/PDF로 다운로드할 수 있는 "AI Slides" 기능.
+
+**Key Requirements**:
+- 실시간 진행 상황 표시 (SSE 스트리밍)
+- 병렬 슬라이드 생성 (동시성 제어)
+- Reflection 루프 (최대 2회 자동, 수동 Fix Layout 가능)
+- Flux 없이도 운영 가능 (이미지 폴백 체인)
+- Advanced Edit (드래그/리사이즈/속성 편집)
+- 버전 관리 (Save/Restore)
+
+**Quality Targets**:
+- 10장 기준 생성 시간: 3~5분 내
+- 덱 품질 점수: >= 80
+- native_text_ratio: >= 0.7
+
+## 2. Architecture Principles
+
+### 2.1 IR (Intermediate Representation) 중심
+
+- **LLM은 IR(JSON)만 생성**: UI 편집, Preview, PPTX, PDF 모두 동일 IR에서 생성
+- **Source of Truth 단일화**: IR이 모든 출력의 기준
+- **Pydantic 스키마**: 타입 안전성과 검증
+
+### 2.2 하이브리드 PPTX 전략
+
+- **텍스트/기본도형/단순표**: 네이티브로 생성 (편집 가능)
+- **복잡 도표/복잡 표/프로세스 다이어그램/일러스트**: 이미지로 생성 (또는 grouped shape)
+
+### 2.3 검증 전략
+
+- **기본**: 휴리스틱 검증 (글자수/불릿수/최소폰트/영역 용량 추정)
+- **선택**: Playwright로 Preview DOM overflow/겹침 탐지 (환경 허용 시)
+
+### 2.4 Agentic + 병렬 생성
+
+- 덱 전체를 한 번에 만들지 않음
+- 먼저 "덱 기획(슬라이드 계획)" 생성
+- 슬라이드를 SlideWorker로 쪼개 병렬 생성
+- 각 슬라이드가 독립적으로 reflection 루프 실행
+
+### 2.5 실시간 UI (SSE)
+
+- SSE(Server-Sent Events)로 서버가 상태 변화를 계속 푸시
+- 사용자는 "지금 무엇이 생성/검증/수정 중인지" 실시간 확인
+
+### 2.6 Flux 없이도 운영 가능
+
+- ImageProvider 체인으로 폴백:
+  1. UserProvidedImageProvider
+  2. LocalAssetLibraryProvider
+  3. IconComposerProvider
+  4. ChartRendererProvider
+  5. PlaceholderProvider
+  6. (옵션) FluxProvider
+
+## 3. Tech Stack
+
+### 3.1 Backend
+
+- Python 3.11+
+- FastAPI
+- Pydantic v2
+- httpx (LLM 호출)
+- LangGraph (선택: 상태 그래프 명확화 시) 또는 자체 asyncio 오케스트레이터
+- python-pptx (PPTX 생성)
+- LibreOffice headless (PPTX → PDF 변환, 선택)
+
+### 3.2 Frontend
+
+- **UI 참조**: `webui/.skills/DESIGN_GUIDE.md` 및 `webui/.skills/ui-summary.json`
+- SvelteKit (Agent Portal 통합)
+- Tailwind CSS
+- Canvas: HTML div absolute layout (단순) 또는 Konva/Fabric.js (고급)
+- SSE 클라이언트로 실시간 이벤트 반영
+
+## 4. Directory Structure
+
+```
+backend/app/
+├── routes/
+│   └── slides.py              # API 엔드포인트
+├── services/
+│   └── slide_studio/
+│       ├── __init__.py
+│       ├── config.py
+│       ├── llm/
+│       │   ├── client.py      # Qwen3 호출 래퍼
+│       │   ├── prompts.py     # 시스템/슬라이드 프롬프트
+│       │   └── json_repair.py # JSON 깨짐 자동 복구/재시도
+│       ├── ir/
+│       │   ├── schema.py      # IR 스키마(Pydantic)
+│       │   ├── planner.py     # DeckPlanner: prompt/docs -> SlidePlan[]
+│       │   ├── builder.py     # SlideBuilder: SlidePlan -> SlideIR
+│       │   ├── validator.py   # IR 구조 검증/정합성
+│       │   └── versioning.py  # Snapshot/Restore/Diff
+│       ├── layout/
+│       │   ├── tokens.py      # Design tokens
+│       │   ├── engine.py      # 좌표/그리드 레이아웃
+│       │   └── rules.py       # slide type 별 레이아웃 규칙
+│       ├── verify/
+│       │   ├── heuristic.py   # 기본 검증
+│       │   ├── playwright.py  # 선택 검증
+│       │   └── metrics.py     # 품질 점수/리포트
+│       ├── fix/
+│       │   ├── reflector.py   # reflection(원인 분석+수정안 생성)
+│       │   ├── auto_fix.py    # 텍스트 압축/슬라이드 분할/단순화
+│       │   └── policies.py    # 루프 제한/score gating
+│       ├── assets/
+│       │   ├── manager.py     # 폰트/아이콘/이미지 라이브러리
+│       │   └── library/       # 로컬 에셋(폐쇄망)
+│       ├── image/
+│       │   ├── provider.py    # ImageProvider 인터페이스/체인
+│       │   ├── flux_client.py # FLUX(옵션)
+│       │   ├── chart_renderer.py # 차트 -> 이미지
+│       │   ├── icon_composer.py  # 아이콘+배경 합성
+│       │   └── placeholder.py    # 플레이스홀더 생성
+│       ├── preview/
+│       │   ├── renderer.py    # IR + layout -> HTML/SVG 프리뷰
+│       │   └── templates/
+│       ├── export/
+│       │   ├── strategy.py    # 하이브리드 전략 결정
+│       │   ├── pptx_exporter.py # PPTX 생성
+│       │   └── pdf_exporter.py  # PPTX->PDF
+│       ├── orchestrator/
+│       │   ├── state.py       # DeckState/SlideState
+│       │   ├── runner.py      # 병렬 SlideWorker 오케스트레이션
+│       │   └── events.py      # SSE 이벤트 스키마/emit
+│       └── store/
+│           ├── repo.py        # IR/작업 상태 저장(메모리→Redis/DB)
+│           └── artifact.py    # pptx/pdf/thumbnail 저장
+
+webui/src/routes/(app)/use/slides/
+├── +page.svelte              # 메인 UI
+├── components/
+│   ├── SlideList.svelte      # 좌측 슬라이드 목록
+│   ├── Canvas.svelte         # 중앙 캔버스 (프리뷰)
+│   ├── PropertiesPanel.svelte # 우측 속성 패널
+│   ├── IssuesPanel.svelte    # 우측 이슈 패널
+│   └── FixLayoutPanel.svelte # 우측 Fix Layout 패널
+└── stores/
+    └── slideStudioStore.ts   # 상태 관리
+```
+
+## 5. Data Model (IR)
+
+### 5.1 Design Tokens
+
+- 폰트/색/타이포 스케일/여백을 고정해 일관성 확보
+- 폐쇄망이므로 폰트 파일은 로컬 assets로 배포
+
+### 5.2 SlideType / Slots / ExportStrategy
+
+- Slide는 type과 slots(dict)로 구성
+- slot마다 export_strategy를 둬 하이브리드 PPTX 지원
+
+### 5.3 Versioning
+
+- IR에 history 스냅샷을 쌓고 Restore 가능
+
+### 5.4 QualityMetrics
+
+- overflow/overlap/margin violation 같은 "실제로 고칠 수 있는" 지표만 점수화
+
+**Implementation Note**: 
+- slots를 `dict[str, SlotUnion]`로 명확히 정의
+- JSON 저장 시 discriminator 사용
+
+## 6. Orchestration Pipeline
+
+### 6.1 전체 파이프라인
+
+1. **DeckPlanner** (prompt, docs) -> SlidePlan[]
+2. **SlideWorker들 병렬 실행**:
+   - SlideBuilder(LLM) -> SlideIR
+   - LayoutEngine -> 좌표 계산
+   - Verify(휴리스틱 기본) -> issues/score
+   - Reflect/Fix(최대 2회) -> 개선
+   - Preview render -> thumbnail/HTML
+   - Finalize
+3. **Exporter** (PPTX)
+4. **PDF exporter** (PPTX->PDF)
+
+### 6.2 병렬 처리
+
+- `asyncio.gather` + `semaphore`로 동시성 제한
+- 슬라이드별 독립 상태머신
+- 사용자가 "Stop"을 누르면 진행 중 작업 취소 및 partial export 가능
+
+### 6.3 Reflection 루프 정책
+
+- 자동 루프는 최대 2회(기본)
+- 점수 기준:
+  - `slide_score >= 85`면 export 허용 (완벽주의 금지)
+  - error 이슈가 남으면 "Fix Layout 추천" 상태로 UI에 노출
+  - "Fix Layout"은 사용자 명시적 액션으로 추가 실행 (자동 무한루프 금지)
+
+## 7. Image Strategy (Flux 없이도 운영)
+
+### 7.1 ImageProvider 체인 (우선순위)
+
+1. **UserProvidedImageProvider**: 사용자가 업로드/URL 제공한 이미지
+2. **LocalAssetLibraryProvider**: `/assets/library`에서 키워드/태그/임베딩 검색
+3. **IconComposerProvider**: 아이콘(SVG) + 배경(그라데이션/패턴) + 카드 텍스트 합성(PIL)
+4. **ChartRendererProvider**: 차트/데이터는 이미지로 렌더 (기본 제공)
+5. **PlaceholderProvider**: 타입별 플레이스홀더 (일관된 스타일)
+6. **(옵션) FluxProvider**: FLUX가 있을 때만 prompt로 생성, 실패 시 2~5로 폴백
+
+### 7.2 "이미지 없어도 고급스러움" 기본 규칙
+
+- 사진이 없으면:
+  - 카드 + 아이콘 + 큰 수치/키워드 + 디바이더로 비주얼 밀도 확보
+  - 섹션/타이틀은 타이포그래피 중심으로 강하게
+  - 데이터 슬라이드는 차트 이미지로 채우기
+  - 즉 "빈 공간 방치" 금지
+
+## 8. Verification / Quality Score
+
+### 8.1 HeuristicVerifier (기본)
+
+- 글자수/불릿수/최소폰트/슬롯 영역 용량 추정
+- 한국어 폰트 렌더링 불일치가 있으므로 Safe Margin을 보수적으로 잡는다
+- overflow 해결 순서:
+  1. 텍스트 압축
+  2. shrink_to_fit (최소 폰트 제한)
+  3. 슬라이드 분할
+  4. 레이아웃 단순화 (2단→1단)
+
+### 8.2 PlaywrightVerifier (선택)
+
+- preview HTML 렌더 후 실제 DOM overflow/겹침 감지
+- 설치/실행 불가 시 자동으로 휴리스틱으로 폴백
+
+### 8.3 Score 계산
+
+- `overflow_count`, `overlap_count`, `margin_violation_count` 페널티
+- `min_font_size`, `max_text_per_slide` 페널티
+- `native_text_ratio` 보너스
+
+## 9. Real-time UI (SSE)
+
+### 9.1 SSE 엔드포인트
+
+```
+GET /api/slides/{deck_id}/events
+Content-Type: text/event-stream
+```
+
+### 9.2 이벤트 타입
+
+- `deck.created` {deck_id}
+- `deck.plan.created` {deck_id, slides:[{slide_id,title,type,goal}]}
+- `slide.stage` {deck_id, slide_id, stage, progress, message}
+- `slide.preview.updated` {deck_id, slide_id, thumbnail_url|data_uri}
+- `slide.issues` {deck_id, slide_id, issues:[...], score, metrics}
+- `slide.finalized` {deck_id, slide_id, score, editability_estimate}
+- `export.started` {deck_id, formats:["pptx","pdf"]}
+- `export.finished` {deck_id, pptx_path, pdf_path, stats}
+- `job.error` {scope:"deck|slide", id, error}
+- `job.stopped` {deck_id}
+
+### 9.3 UI 화면 구성
+
+**참조**: `webui/.skills/DESIGN_GUIDE.md` (UI 디자인 가이드)
+
+**기본 레이아웃**: 3패널 + 상단바 (Genspark 유사 UX)
+
+#### Top Bar (고정)
+
+- **좌측**: Project 이름(Deck Title), 상태 배지 (Generating / Paused / Ready / Exporting)
+- **중앙**: 진행률 (슬라이드 완료 n/전체 m) + ETA (옵션, 추정치)
+- **우측 CTA**:
+  - [Generate] [Stop] [Export ▼] [Save Point] [Restore ▼]
+  - Export 드롭다운: PPTX / PDF / PPTX+PDF / Zip(IR+assets+log)
+
+**Top Bar 상태 규칙**:
+- Generating: Stop 활성, Export 비활성 (또는 "Partial Export"만)
+- Ready: Export 활성
+- Exporting: Export disabled + spinner
+
+#### Left Panel: Slide List
+
+각 슬라이드 카드 구성:
+- 썸네일 (16:9, 없으면 스켈레톤)
+- 슬라이드 번호 + 제목 (없으면 "Untitled")
+- 타입 배지 (Title/Agenda/Two Column 등)
+- 진행 상태 배지 (stage)
+- 점수 (score) 또는 이슈 아이콘
+- 액션 메뉴 (⋮): Regenerate / Rewrite / Fix Layout / Split / Simplify / Duplicate / Delete
+
+**Stage 배지** (실시간 갱신):
+- `PLANNED` (기획됨)
+- `DRAFTING` (LLM Draft 생성)
+- `LAYOUTING` (좌표 계산)
+- `VERIFYING` (검증)
+- `REFLECTING` (수정/반성)
+- `PREVIEW_RENDERING` (프리뷰 렌더)
+- `FINAL` (완료)
+- `ERROR` (실패)
+- `STOPPED` (중단)
+- `FINAL_WITH_WARNINGS` (경고 포함 완료)
+
+**이슈 표시 규칙**:
+- error issue 존재: 빨간 점 + "!" + 카드 테두리 강조
+- warning만: 노랑 점
+- issue 없음: 정상
+
+**선택/멀티 선택**:
+- 클릭: 해당 슬라이드 선택 → Center Canvas에 표시
+- Shift+Click: 범위 선택
+- Cmd/Ctrl+Click: 다중 선택 (선택된 여러 슬라이드에 Fix Layout/Rewrite/Export scope 가능)
+
+#### Center Panel: Canvas / Preview
+
+**모드 탭** (상단):
+- [Preview] [Edit] [Diff] (Diff는 버전간 변경 시)
+
+**Preview 모드**:
+- 기본은 "현재 슬라이드 썸네일보다 큰 프리뷰"
+- 렌더 방식:
+  - 서버가 생성한 HTML/SVG를 iframe 또는 div로 렌더
+  - 또는 서버가 만든 썸네일 이미지를 표시 (초기)
+- 생성 중에도 프리뷰가 주기적으로 업데이트 ("slide.preview.updated" 이벤트)
+
+**Edit 모드** (Advanced Edit 필수):
+- 요소 선택: 클릭 → element 선택 (테두리, 리사이즈 핸들 표시)
+- Drag: 이동
+- Resize: 핸들 8개 (모서리/변)
+- Shift+Resize: 비율 고정
+- Alt+Drag: 복제
+- Snap & Guide:
+  - 8px grid snap (DesignTokens.spacing.grid)
+  - 안전 여백 (safe_margin) 가이드 라인 표시
+  - 정렬 가이드 (상하좌우 센터 라인)
+- 요소 속성 패널 연동 (우측 패널):
+  - Typography: font, size, weight, line-height
+  - Color: text color, bg color
+  - Align: left/center/right
+  - Spacing: padding
+  - Box: x,y,w,h 숫자 입력
+- 적용 방식:
+  - 편집 즉시 PATCH 호출 (optimistic update)
+  - PATCH `/api/slides/{deck_id}/slides/{slide_id}/elements/{element_id}`
+  - "Reflow" 버튼을 따로 제공 (레이아웃 엔진 재계산)
+  - 자동 reflow는 옵션 (기본은 수동)
+
+#### Right Panel: Inspector (탭 구조)
+
+탭:
+1. **Progress** (실시간 생성 로그)
+2. **Issues** (이슈 리스트 및 Quick actions)
+3. **Fix Layout** (Genspark의 핵심 UX)
+4. **Rewrite** (Instruction 기반 재작성)
+5. **Properties** (선택 요소/슬라이드 속성)
+6. **(옵션) Fact Check** (claim 검증)
+7. **(옵션) Assets** (로컬 에셋 검색/교체)
+
+**Progress 탭**:
+- 현재 슬라이드 (or 덱 전체)의 step 로그를 타임라인으로 표시
+- 예: "12:01 Draft generated", "12:02 Overflow detected (title)", "12:02 Score improved 72 → 88"
+- 데이터는 SSE 이벤트에서 축적: `slide.stage`, `slide.issues`, `slide.finalized`, `job.error`
+
+**Issues 탭**:
+- 이슈 리스트 (Severity / slot / 원인 / 추천 해결)
+- 클릭하면 Canvas에서 해당 요소 highlight + 자동 스크롤
+- Quick actions:
+  - "Shorten text"
+  - "Split slide"
+  - "Simplify layout"
+  - "Lower font size (min 14)"
+  - "Convert to image" (해당 slot만 export_strategy 변경)
+
+**Fix Layout 탭**:
+- Scope: [This Slide] [Selected Slides] [Entire Deck]
+- Mode:
+  - Auto (텍스트 압축 + 최소 수정)
+  - Split (오버플로우 슬라이드 분할)
+  - Simplify (레이아웃 단순화: 2단→1단 등)
+- 버튼: [Run Fix Layout]
+- 결과 표시: "Fixed issues: X, Remaining: Y", score 변화 (전/후), 생성된 버전 번호 + Restore 버튼
+
+**Rewrite 탭**:
+- Instruction 텍스트 입력
+- 예: "더 임팩트 있게", "임원 보고 톤", "문장을 30% 더 짧게"
+- Scope: slide only / selected slides
+- 버튼:
+  - [Rewrite] (슬라이드 컨텐츠만 바꾸고 레이아웃은 유지 옵션)
+  - [Regenerate from scratch] (plan은 유지하고 해당 슬라이드만 새로 생성)
+
+**Properties 탭**:
+- 선택 요소 없으면: 슬라이드 속성 (배경/테마/그리드/마진)
+- 선택 요소 있으면: 요소 속성 (텍스트/박스/색/정렬)
+
+**Fact Check 탭** (옵션):
+- claim 리스트, source (내부 문서/사용자 제공) 매핑
+- "Unverified"를 시각적으로 표시
+
+**Assets 탭** (옵션, Flux 없는 환경에서 특히 중요):
+- 로컬 에셋 검색 (아이콘/일러스트/사진)
+- 드래그해서 슬라이드에 drop → ImageSlot 생성
+- "Replace image" 버튼 제공
+
+## 10. Advanced Edit
+
+### 10.1 편집 모델
+
+- 슬라이드에는 layout 결과로 각 요소의 `bbox(x,y,w,h)`와 `style`이 있음
+- UI에서 요소 선택 후:
+  - 드래그/리사이즈 -> bbox patch
+  - 속성 변경 -> style patch
+- PATCH API로 서버에 반영 후:
+  - 필요 시 Reflow 버튼으로 layout engine 재계산 (자동은 옵션)
+
+### 10.2 편집 API
+
+```
+PATCH /api/slides/{deck_id}/slides/{slide_id}/elements/{element_id}
+Body: {bbox?, style?, content?}
+
+POST /api/slides/{deck_id}/reflow
+Body: {scope, slide_id?}
+```
+
+## 11. Fact Check (옵션)
+
+- 검증 범위: 제공 문서 + 내부 지식 (사내 KB가 있으면) + 사용자 입력
+- 검증 불가/불확실은 Unverified 표시
+
+**API**:
+```
+POST /api/slides/{deck_id}/fact-check
+POST /api/slides/{deck_id}/slides/{slide_id}/fact-check
+```
+
+## 12. Export
+
+### 12.1 PPTX
+
+- `python-pptx`로 16:9 기준 생성
+- 하이브리드 전략:
+  - TextSlot/BulletSlot: native text
+  - ChartSlot: chart_renderer로 이미지 후 삽입
+  - 복잡 TableSlot: 복잡도 기준으로 native table 또는 이미지 변환
+
+### 12.2 PDF
+
+- LibreOffice headless로 PPTX->PDF
+- 실패 시 명확한 에러 제공, PPTX만이라도 다운로드 가능
+
+## 13. API Reference
+
+### 생성/상태
+
+```
+POST /api/slides/generate
+Request: {prompt, documents?, options?}
+Response: {deck_id, events_url}
+
+GET /api/slides/{deck_id}
+Response: {deck_state, ir_summary, slides_status}
+
+GET /api/slides/{deck_id}/events (SSE)
+```
+
+### 제어
+
+```
+POST /api/slides/{deck_id}/stop
+POST /api/slides/{deck_id}/export
+Body: {formats:["pptx","pdf"]}
+```
+
+### 품질/수정
+
+```
+GET /api/slides/{deck_id}/quality
+POST /api/slides/{deck_id}/fix-layout
+Body: {mode, scope(deck|slide), slide_id?}
+POST /api/slides/{deck_id}/slides/{slide_id}/regenerate
+POST /api/slides/{deck_id}/slides/{slide_id}/rewrite
+Body: {instruction}
+```
+
+### 버전
+
+```
+POST /api/slides/{deck_id}/save
+Body: {label}
+GET /api/slides/{deck_id}/versions
+POST /api/slides/{deck_id}/restore/{version}
+```
+
+### 편집
+
+```
+PATCH /api/slides/{deck_id}/slides/{slide_id}/elements/{element_id}
+Body: {bbox?, style?, content?}
+POST /api/slides/{deck_id}/reflow
+Body: {scope, slide_id?}
+```
+
+## 14. Implementation Order
+
+### Step 1: SSE 스트림 + 병렬 SlideWorker 오케스트레이터
+
+- DeckPlanner 더미로 10장 계획만 먼저 생성
+- SlideWorker는 각 슬라이드에서 stage 이벤트를 emit하며 병렬 진행
+- UI는 "동시에 생성되는 체감"이 바로 나오도록 먼저 만든다
+
+### Step 2: IR 스키마 + LayoutEngine + Preview Renderer
+
+- IR에 bbox를 채워 HTML/SVG로 preview 생성
+- Playwright 없이도 볼 수 있게 만든다
+
+### Step 3: HeuristicVerifier + Reflect/Fix (2회 제한)
+
+- overflow/too_many_bullets/text_too_long 해결 루틴 연결
+
+### Step 4: PPTX Exporter + PDF Exporter
+
+- 텍스트/불릿 네이티브 → 우선 구현
+- 차트/복잡 요소는 이미지/플레이스홀더부터
+
+### Step 5: Flux 없는 ImageProvider 체인
+
+- 로컬 에셋/아이콘 합성/플레이스홀더 완성
+
+### Step 6: Advanced Edit + 버전 관리
+
+- 드래그/리사이즈 + PATCH 반영
+- Save/Restore/History UI
+
+### Step 7: (옵션) Playwright 검증, Fact Check, Flux 연동
+
+- 환경이 허용하면 추가
+
+## 15. Qwen3 JSON 안정화
+
+### 15.1 JSON 파싱 실패 처리
+
+- Pydantic parse 실패 시:
+  1. `json_repair` 시도
+  2. "스키마에 맞게 JSON만 다시 출력" 재시도 (최대 2~3회)
+
+### 15.2 덱 생성 전략
+
+- 덱 전체 JSON을 한 번에 만들지 말고:
+  - DeckPlanner는 SlidePlan[]만
+  - SlideBuilder는 슬라이드 1장씩 생성 (안정성↑)
+
+## 16. Performance / Stability
+
+- `semaphore`로 LLM 동시 호출 제한
+- 이미지 생성(있다면) 별도 제한
+- job stop/cancel 지원
+- artifacts(썸네일/pptx/pdf)는 파일 스토리지/오브젝트 스토리지에 저장
+
+## 17. Testing Checklist
+
+### 기능
+
+- [ ] Generate → SSE로 stage가 실시간 표시되는지
+- [ ] 병렬 생성: 여러 slide.stage 이벤트가 interleave 되는지
+- [ ] Stop 동작
+- [ ] Export PPTX/PDF 다운로드
+
+### 품질
+
+- [ ] quality score 계산/리포트 노출
+- [ ] Fix Layout로 overflow 개선
+
+### 편집
+
+- [ ] 요소 드래그/리사이즈 후 export 결과 반영
+
+### Flux 없음
+
+- [ ] 이미지 없는 슬라이드도 빈 공간 없이 "그럴듯한" 디자인 유지
+
+## 18. UI Implementation Details
+
+### 18.1 생성 플로우 UX
+
+#### 입력 다이얼로그 (Generate Modal)
+
+필드:
+- Topic / Goal / Audience / Tone (dropdown)
+- Slide count (기본 10)
+- Brand theme (옵션)
+- Include images toggle
+- if Flux available: "Generate AI Images"
+- if Flux not available: "Use Asset Library / Icons / Placeholders"
+- Use Playwright toggle (advanced)
+
+버튼: [Generate]
+
+#### Generate 누르면 즉시 일어나는 일
+
+1. Left Panel에 "Slide Plan" 10개가 먼저 생성되어 나타난다 (썸네일 스켈레톤)
+2. 각 슬라이드는 동시에 stage가 DRAFTING으로 바뀌면서 진행된다
+3. Center Panel은 1번 슬라이드 프리뷰를 자동 선택, 생성 과정이 바로 보인다
+4. Right Panel Progress 탭에서 로그가 계속 쌓인다
+
+### 18.2 Flux 없는 경우 UI 처리 (필수)
+
+Flux가 없으면 이미지 슬롯은 다음으로 대체되며, UI에서 사용자가 이해할 수 있어야 한다.
+
+#### 이미지 슬롯 표시 규칙
+
+"AI Image 생성" 대신:
+- 아이콘 합성 배너 (IconComposer)
+- 로컬 에셋 (Asset Library)
+- 차트 렌더 (ChartRenderer)
+- 플레이스홀더 (Placeholder)
+- 썸네일/프리뷰에는 "Generated from Assets" 같은 작은 워터마크 배지 (선택)
+
+#### Assets 탭은 필수로 활성화
+
+- 검색/필터:
+  - type: icon/photo/illustration/bg
+  - tags
+- "Replace image" UX:
+  - 선택 이미지 슬롯 → Assets에서 클릭 → 즉시 교체
+
+### 18.3 Export UX
+
+#### Export 드롭다운
+
+- PPTX
+- PDF
+- PPTX + PDF
+- (옵션) Zip (IR+assets+logs)
+
+#### Export 진행 표시
+
+- `export.started` 이벤트 수신 → Top bar에 Exporting 표시
+- 완료 시:
+  - Download buttons 활성화
+  - "Open folder" (옵션) / "Copy link" (옵션)
+
+### 18.4 버전 관리 UX
+
+#### Save Point
+
+- Top bar의 Save Point 클릭 → label 입력 (옵션)
+- 저장 후 toast: "Saved v12"
+
+#### Restore
+
+- Restore ▼ 클릭 → 버전 리스트 (시간/label/슬라이드수)
+- 특정 버전 선택 → Restore 실행
+- Restore는 "현재 상태도 자동 스냅샷으로 저장" 후 복구 (안전장치)
+
+### 18.5 단축키 (편집성 체감에 중요)
+
+- `Cmd/Ctrl+S`: Save Point
+- `Cmd/Ctrl+Z`: Undo (클라이언트 레벨 임시, 서버 snapshot과 별개)
+- `Cmd/Ctrl+Shift+Z`: Redo
+- `Delete`: 선택 요소 삭제
+- `Esc`: 선택 해제
+- `Space+Drag`: 캔버스 패닝 (옵션)
+
+### 18.6 상태 모델 (프론트에서 반드시 가져야 할 최소 구조)
+
+#### DeckStore
+
+```typescript
+{
+  deck_id: string;
+  slides: Array<{
+    slide_id: string;
+    title: string;
+    type: string;
+    stage: string;
+    score: number;
+    issuesCount: number;
+    thumbnailUrl: string;
+  }>;
+  selectedSlideIds: string[];
+  selectedElementId: string | null;
+  globalStatus: 'generating' | 'exporting' | 'ready';
+  exportArtifacts: {
+    pptxUrl?: string;
+    pdfUrl?: string;
+  };
+  eventLog: {
+    bySlideId: Record<string, Array<{
+      timestamp: string;
+      stage: string;
+      message: string;
+    }>>;
+  };
+}
+```
+
+#### SSE 이벤트 핸들링 규칙
+
+- `slide.stage`: stage/progress update + log append
+- `slide.preview.updated`: thumbnailUrl 갱신
+- `slide.issues`: issues list 갱신 + score 갱신
+- `slide.finalized`: stage=FINAL
+- `export.finished`: exportArtifacts set
+
+### 18.7 구현 우선순위 (절대 이 순서로)
+
+1. **UI 레이아웃** (3패널 + 탭) + Slide List + Preview + SSE 수신
+2. **"Stage가 interleave 되는 병렬 생성"이 UI에서 보이게 만들기**
+3. **Issues/Fix Layout/Rewrite 버튼만 먼저 연결** (동작은 stub 가능)
+4. **Edit 모드** (드래그/리사이즈) + PATCH
+5. **Export 다운로드**
+
+## 19. State Machine (상태 전이)
+
+### 19.1 기본 상태 전이
+
+```
+PLANNED → DRAFTING → LAYOUTING → VERIFYING → PREVIEW_RENDERING → FINAL
+                                                      ↓
+                                                REFLECTING (최대 2회)
+                                                      ↓
+                                                DRAFTING (부분 재생성)
+```
+
+### 19.2 상태 전이 규칙 (보강 사항)
+
+#### RENDERING 분리
+
+- **PREVIEW_RENDERING**: HTML/SVG/thumbnail 생성
+- **EXPORTING**: PPTX/PDF 생성 (별도 상태)
+
+#### Score 단독 분기 금지
+
+분기 규칙:
+- `passed == True AND score >= threshold` → 진행
+- `error_issues > 0` → 무조건 REFLECTING 또는 "FINAL_WITH_WARNINGS"로 명확히
+
+#### REFLECTING → DRAFTING
+
+REFLECTING이 "텍스트/구성 수정"이라면:
+- REFLECTING → **DRAFTING (부분 재생성/수정)** → LAYOUTING
+- 또는 REFLECTING (=IR patch) → LAYOUTING (정의 명확화)
+
+#### STOPPED는 어디서든 갈 수 있어야 함
+
+"사용자가 Stop"을 누르면 현재 진행 중 슬라이드/전체 덱을 STOPPED로 전환
+
+### 19.3 ERROR 복구
+
+- ERROR → DRAFTING (Regenerate)
+- ERROR → STOPPED (Skip)
+- **ERROR → FINAL_WITH_WARNINGS** (덱 전체 export를 위해 "에러 슬라이드는 placeholder로 대체하고 진행")
+
+## 20. Concurrency Limits (동시성 제한)
+
+### 20.1 기본 제한
+
+| 작업 | 동시성 |
+|------|--------|
+| 슬라이드 단위 LLM | 2-3 (환경변수로 조절) |
+| 이미지 생성 (Flux) | 2 (Flux 없으면 0) |
+| Playwright 검증 | 1 |
+| PPTX 생성 | 1 |
+
+### 20.2 추가 고려 사항
+
+1. **슬라이드 단위 LLM 3개**는 "235B + 폐쇄망"이면 종종 과할 수 있음
+   - GPU/서빙 스택에 따라 2가 더 안정적일 수 있음
+   - 환경변수로 조절 가능하게 구현
+
+2. **이미지 2개**도 Flux가 있을 때만 의미
+   - Flux 없으면 0 또는 asset-only로 스위치 필요
+
+3. **Rate limit / Queue** 필요
+   - 슬라이드 10장 요청이 동시에 5명 들어오면, per-user/per-job 큐잉 필요
+   - 동시성 값만으로는 운영 안정성이 완성되지 않음
+
+## 21. 한국어 텍스트 용량 보정
+
+### 21.1 기본 원칙
+
+- 한글은 폰트/자간/줄바꿈 규칙 때문에 영문 대비 실제 박스 높이가 더 빨리 차는 경우가 많음
+- line-height 보정과 safe margin은 실무적으로 효과적
+- 최소 폰트 14px는 "현업 PPT 가독성" 기준으로 합리적
+
+### 21.2 보정 전략 (프로파일 기반)
+
+**고정값 사용 금지**: 1.2~1.4배는 "대체로 그런 경향"이지, 보편 상수로 박아두면 깨짐
+
+**FontProfile 기반**:
+- family별 `height_factor`, `avg_char_width_factor`
+- OS별 (Windows/Mac) 프리셋
+
+**슬라이드 타입별 안전 마진**:
+- Title: 20%
+- Bullet: 15%
+- Dense table: 25%
+
+## 22. References
+
+### UI Development
+
+- **Design Guide**: `webui/.skills/DESIGN_GUIDE.md`
+- **UI Structure**: `webui/.skills/ui-summary.json`
+- **Component Patterns**: `webui/.skills/ui-structure.json`
+
+### Backend Patterns
+
+- **Service Pattern**: `backend/app/services/` (Singleton pattern)
+- **Router Pattern**: `backend/app/routes/` (FastAPI routers)
+- **Error Handling**: `backend/app/services/langgraph_service.py` 참조
+
+### Related Features
+
+- **Perplexica**: `webui/src/routes/(app)/use/perplexica/` (SSE 스트리밍 예시)
+- **Text-to-SQL Agent**: `backend/app/agents/text2sql/` (LangGraph 패턴)
+
+---
+
+**Last Updated**: 2025-01-13
+**Version**: 2.0 (UI 스펙 추가)

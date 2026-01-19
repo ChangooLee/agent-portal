@@ -13,7 +13,7 @@
         
         <div class="relative px-6 py-8 text-center">
             <h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
-                📚 Knowledge Base
+                Knowledge Base
             </h1>
             <p class="text-base text-emerald-200/80">
                 RAG를 위한 지식 베이스를 구축하고 관리합니다.

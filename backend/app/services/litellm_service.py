@@ -68,6 +68,7 @@ class LiteLLMService:
         model: str,
         messages: list,
         metadata: Optional[Dict[str, Any]] = None,
+        trace_headers: Optional[Dict[str, str]] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -78,7 +79,8 @@ class LiteLLMService:
             messages: Chat messages
             metadata: Optional metadata for OTEL tracing (agent_id, parent_trace_id, etc.)
                       LiteLLM's OTEL callback stores this in SpanAttributes
-                      W3C Trace Context headers (traceparent, tracestate) are also extracted
+            trace_headers: Optional W3C Trace Context headers (traceparent, tracestate)
+                          이렇게 하면 LiteLLM의 OTEL callback이 이 trace의 child로 span을 생성
             **kwargs: Additional LiteLLM parameters
             
         Returns:
@@ -90,9 +92,13 @@ class LiteLLMService:
             "Content-Type": "application/json"
         }
         
-        # W3C Trace Context headers 추출 (metadata에서 traceparent/tracestate)
-        # 이렇게 하면 LiteLLM의 OTEL callback이 이 trace의 child로 span을 생성
-        if metadata:
+        # W3C Trace Context headers 설정 (우선순위: trace_headers > metadata)
+        if trace_headers:
+            if "traceparent" in trace_headers:
+                headers["traceparent"] = trace_headers["traceparent"]
+            if "tracestate" in trace_headers:
+                headers["tracestate"] = trace_headers["tracestate"]
+        elif metadata:
             if "traceparent" in metadata:
                 headers["traceparent"] = metadata["traceparent"]
             if "tracestate" in metadata:

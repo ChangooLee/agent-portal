@@ -119,6 +119,84 @@
 		return `${(ms / 1000).toFixed(2)}s`;
 	}
 
+	/**
+	 * Span attributes에서 비용 정보 추출 (GenAI 표준 + 기존 호환)
+	 */
+	function extractCost(attrs: any): number {
+		if (!attrs) return 0;
+		
+		// 1. GenAI 표준: gen_ai.usage.total_cost
+		if (attrs['gen_ai.usage.total_cost'] !== undefined) {
+			const cost = parseFloat(attrs['gen_ai.usage.total_cost']);
+			if (!isNaN(cost)) return cost;
+		}
+		
+		// 2. llm.openrouter.usage에서 cost 추출
+		if (attrs['llm.openrouter.usage']) {
+			try {
+				const usage = typeof attrs['llm.openrouter.usage'] === 'string' 
+					? JSON.parse(attrs['llm.openrouter.usage']) 
+					: attrs['llm.openrouter.usage'];
+				if (usage?.cost !== undefined) {
+					const cost = parseFloat(usage.cost);
+					if (!isNaN(cost)) return cost;
+				}
+			} catch (e) {
+				// Python 딕셔너리 문자열 형식 처리: {'cost': 0.000159295, ...} 또는 {'cost': 9.2294e-05, ...}
+				try {
+					const usageStr = String(attrs['llm.openrouter.usage']);
+					// 과학적 표기법 포함 매칭: 'cost': 0.000159295 또는 'cost': 9.2294e-05
+					const match = usageStr.match(/'cost':\s*([0-9.eE+-]+)/);
+					if (match && match[1]) {
+						const cost = parseFloat(match[1]);
+						if (!isNaN(cost)) return cost;
+					}
+				} catch (e2) {
+					// Ignore
+				}
+			}
+		}
+		
+		// 3. metadata.usage_object에서 cost 추출
+		if (attrs['metadata.usage_object']) {
+			try {
+				const usage = typeof attrs['metadata.usage_object'] === 'string'
+					? JSON.parse(attrs['metadata.usage_object'])
+					: attrs['metadata.usage_object'];
+				if (usage?.cost !== undefined) {
+					const cost = parseFloat(usage.cost);
+					if (!isNaN(cost)) return cost;
+				}
+			} catch (e) {
+				// Python 딕셔너리 문자열 형식 처리: {'cost': 0.000158, ...} 또는 {'cost': 7.84e-05, ...}
+				try {
+					const usageStr = String(attrs['metadata.usage_object']);
+					// 과학적 표기법 포함 매칭: 'cost': 0.000158 또는 'cost': 7.84e-05
+					const match = usageStr.match(/'cost':\s*([0-9.eE+-]+)/);
+					if (match && match[1]) {
+						const cost = parseFloat(match[1]);
+						if (!isNaN(cost)) return cost;
+					}
+				} catch (e2) {
+					// Ignore
+				}
+			}
+		}
+		
+		// 4. 기존 호환: cost
+		if (attrs.cost !== undefined) {
+			const cost = parseFloat(attrs.cost);
+			if (!isNaN(cost)) return cost;
+		}
+		
+		return 0;
+	}
+
+	// 트레이스 전체의 총 비용 (백엔드에서 집계된 값 사용, 없으면 프론트엔드에서 계산)
+	$: totalCost = traceDetail 
+		? (traceDetail.total_cost ?? traceDetail.spans.reduce((sum, span) => sum + extractCost(span.span_attributes), 0))
+		: 0;
+
 	function getStatusColor(status: string): string {
 		if (status === 'ERROR' || status === 'UNSET') return 'text-red-400';
 		return 'text-emerald-400';
@@ -208,14 +286,18 @@
 				<div class="w-1/2 border-r border-slate-700/50 flex flex-col overflow-hidden">
 					<!-- Trace Metadata -->
 					<div class="p-4 border-b border-slate-700/50 bg-slate-800/30">
-						<div class="flex items-center justify-between">
+						<div class="grid grid-cols-3 gap-4">
 							<div>
 								<h3 class="text-sm font-semibold text-slate-400">Project ID</h3>
 								<p class="text-sm font-mono text-white">{traceDetail.project_id}</p>
 							</div>
-							<div class="text-right">
+							<div class="text-center">
 								<h3 class="text-sm font-semibold text-slate-400">Total Spans</h3>
-								<p class="text-sm font-semibold text-white">{traceDetail.spans.length}</p>
+								<p class="text-sm font-semibold text-white">{traceDetail.total_spans ?? traceDetail.spans.length}</p>
+							</div>
+							<div class="text-right">
+								<h3 class="text-sm font-semibold text-slate-400">Total Cost</h3>
+								<p class="text-sm font-semibold text-cyan-400">${totalCost.toFixed(6)}</p>
 							</div>
 						</div>
 					</div>

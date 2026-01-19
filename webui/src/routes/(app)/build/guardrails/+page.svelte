@@ -30,7 +30,7 @@
 			
 		<div class="relative px-6 py-8 text-center">
 			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
-				🛡️ 가드레일
+				가드레일
 			</h1>
 			<p class="text-base text-red-200/80">
 				안전하고 책임감 있는 AI 응답을 보장하세요.

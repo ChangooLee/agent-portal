@@ -234,6 +234,21 @@ PYTHONPATH=. uvicorn open_webui.main:app --host 0.0.0.0 --port 8080 --reload
 - [ ] Check `/docs` for OpenAPI
 - [ ] Check container logs
 
+## GenAI Monitoring Pattern (MANDATORY for Agents)
+
+**⚠️ CRITICAL**: 에이전트 개발 시 반드시 GenAI 모니터링 패턴을 따라야 합니다.
+
+**참조 문서**: 
+- [.cursor/rules/agent-development.mdc](./agent-development.mdc) - 상세 가이드
+- [docs/OTEL_GENAI_METRICS.md](../../docs/OTEL_GENAI_METRICS.md) - 표준 정의
+
+### Quick Checklist
+
+- [ ] Root span: `gen_ai.session` 사용
+- [ ] GenAI 속성: `gen_ai.agent.id`, `gen_ai.agent.name`, `gen_ai.agent.type` 설정
+- [ ] LLM 호출: `trace_headers` 전달 (context propagation)
+- [ ] 도구 호출: `gen_ai.tool.call` span 사용
+
 ## Prohibited
 
 - ❌ Sync methods for I/O operations
@@ -242,7 +257,9 @@ PYTHONPATH=. uvicorn open_webui.main:app --host 0.0.0.0 --port 8080 --reload
 - ❌ Missing error handling
 - ❌ Hardcoded credentials
 - ❌ Direct SQL without parameter binding
+- ❌ **Agent development without GenAI monitoring pattern** (CRITICAL)
+- ❌ **LLM calls without trace_headers** (CRITICAL)
 
 ---
 
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-12-23

@@ -1,120 +1,444 @@
+<script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import { slideStudioStore } from './stores/slideStudioStore';
+	import TopBar from './components/TopBar.svelte';
+	import SlideList from './components/SlideList.svelte';
+	import Canvas from './components/Canvas.svelte';
+	import Inspector from './components/Inspector.svelte';
+	import ChatInput from './components/ChatInput.svelte';
+	import ChatHistory from './components/ChatHistory.svelte';
+	
+	let store = slideStudioStore.get();
+	let sseConnection: EventSource | null = null;
+	
+	const unsubscribe = slideStudioStore.subscribe((s) => {
+		const prevDeckId = store.deck_id;
+		store = s;
+		// Switch to editor mode when deck_id is created (only if it's new)
+		if (s.deck_id && !prevDeckId && s.viewMode === 'chat') {
+			// Use setTimeout to avoid updating during subscription
+			setTimeout(() => {
+				slideStudioStore.update(currentStore => ({
+					...currentStore,
+					viewMode: 'editor'
+				}));
+			}, 0);
+		}
+	});
+	
+	onMount(() => {
+		// Cleanup on unmount
+		return () => {
+			if (sseConnection) {
+				sseConnection.close();
+			}
+		};
+	});
+	
+	onDestroy(() => {
+		if (sseConnection) {
+			sseConnection.close();
+		}
+		unsubscribe();
+	});
+	
+	async function handleGenerate(data: {
+		prompt: string;
+		goal?: string;
+		audience?: string;
+		tone?: string;
+		slide_count: number;
+		options?: {
+			include_images?: boolean;
+			use_playwright?: boolean;
+		};
+	}) {
+		try {
+			// Add assistant message for generation start
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-assistant`,
+				role: 'assistant',
+				content: '슬라이드 생성을 시작합니다...',
+				timestamp: new Date().toISOString()
+			});
+
+			// Check if we have an existing deck_id for follow-up request
+			const existingDeckId = store.deck_id;
+			const url = existingDeckId 
+				? `/api/slides/${existingDeckId}/add-slides`
+				: '/api/slides/generate';
+
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(data)
+			});
+			
+			if (!response.ok) {
+				throw new Error('Failed to generate deck');
+			}
+			
+			const result = await response.json();
+			const deckId = result.deck_id || existingDeckId;
+			
+			if (!deckId) {
+				throw new Error('No deck_id returned');
+			}
+
+			// Update store with deck_id
+			slideStudioStore.update(s => ({
+				...s,
+				deck_id: deckId
+			}));
+			
+			// Connect to SSE stream
+			connectSSE(deckId);
+		} catch (error) {
+			console.error('Generate error:', error);
+			// Add error message
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-error`,
+				role: 'assistant',
+				content: `오류가 발생했습니다: ${error}`,
+				timestamp: new Date().toISOString()
+			});
+		}
+	}
+	
+	function connectSSE(deckId: string) {
+		// Close existing connection
+		if (sseConnection) {
+			sseConnection.close();
+		}
+		
+		// Create new SSE connection
+		const eventSource = new EventSource(`/api/slides/${deckId}/events`);
+		sseConnection = eventSource;
+		
+		eventSource.onmessage = (event) => {
+			try {
+				const data = JSON.parse(event.data);
+				const eventType = event.type || data.event;
+				slideStudioStore.handleSSEEvent(eventType, data);
+			} catch (error) {
+				console.error('SSE parse error:', error);
+			}
+		};
+		
+		eventSource.addEventListener('deck.created', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('deck.created', data);
+			// Add chat message
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-deck-created`,
+				role: 'assistant',
+				content: '덱이 생성되었습니다. 슬라이드 계획을 수립 중입니다...',
+				timestamp: new Date().toISOString(),
+				metadata: { deck_id: data.deck_id }
+			});
+		});
+		
+		eventSource.addEventListener('deck.plan.created', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('deck.plan.created', data);
+			// Add chat message
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-plan-created`,
+				role: 'assistant',
+				content: `${data.slides?.length || 0}개의 슬라이드를 생성하기 시작합니다.`,
+				timestamp: new Date().toISOString(),
+				metadata: { deck_id: data.deck_id, slide_count: data.slides?.length || 0 }
+			});
+		});
+		
+		eventSource.addEventListener('slide.stage', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('slide.stage', data);
+		});
+		
+		eventSource.addEventListener('slide.preview.updated', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('slide.preview.updated', data);
+		});
+		
+		eventSource.addEventListener('slide.issues', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('slide.issues', data);
+		});
+		
+		eventSource.addEventListener('slide.finalized', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('slide.finalized', data);
+			// Add chat message for finalized slide
+			const slide = store.slides.find(s => s.slide_id === data.slide_id);
+			if (slide) {
+				const finalizedCount = store.slides.filter(s => 
+					s.stage === 'FINAL' || s.stage === 'FINAL_WITH_WARNINGS'
+				).length;
+				const totalCount = store.slides.length;
+				if (finalizedCount === totalCount) {
+					slideStudioStore.addMessage({
+						id: `msg-${Date.now()}-all-finalized`,
+						role: 'assistant',
+						content: `모든 슬라이드 생성이 완료되었습니다! (${totalCount}개)`,
+						timestamp: new Date().toISOString(),
+						metadata: { deck_id: data.deck_id }
+					});
+				}
+			}
+		});
+		
+		eventSource.addEventListener('export.started', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('export.started', data);
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-export-started`,
+				role: 'assistant',
+				content: '파일 내보내기를 시작합니다...',
+				timestamp: new Date().toISOString()
+			});
+		});
+		
+		eventSource.addEventListener('export.finished', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('export.finished', data);
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-export-finished`,
+				role: 'assistant',
+				content: '파일 내보내기가 완료되었습니다.',
+				timestamp: new Date().toISOString()
+			});
+		});
+		
+		eventSource.addEventListener('job.error', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('job.error', data);
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-error`,
+				role: 'assistant',
+				content: `오류가 발생했습니다: ${data.error || data.message || 'Unknown error'}`,
+				timestamp: new Date().toISOString()
+			});
+		});
+		
+		eventSource.addEventListener('job.stopped', (e: any) => {
+			const data = JSON.parse(e.data);
+			slideStudioStore.handleSSEEvent('job.stopped', data);
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-stopped`,
+				role: 'assistant',
+				content: '생성이 중지되었습니다.',
+				timestamp: new Date().toISOString()
+			});
+		});
+		
+		eventSource.onerror = (error) => {
+			console.error('SSE error:', error);
+			eventSource.close();
+		};
+	}
+	
+	function handleStop() {
+		if (store.deck_id) {
+			fetch(`/api/slides/${store.deck_id}/stop`, {
+				method: 'POST'
+			}).catch(console.error);
+			// Add user message
+			slideStudioStore.addMessage({
+				id: `msg-${Date.now()}-stop`,
+				role: 'user',
+				content: '생성 중지',
+				timestamp: new Date().toISOString()
+			});
+		}
+	}
+	
+	function handleExport() {
+		// TODO: Implement export
+		console.log('Export clicked');
+	}
+	
+	async function handleSave() {
+		if (!store.deck_id) return;
+		
+		const label = window.prompt('Version label (optional):');
+		
+		try {
+			const response = await fetch(`/api/slides/${store.deck_id}/save`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					label: label || undefined
+				})
+			});
+			
+			if (!response.ok) {
+				throw new Error('Save failed');
+			}
+			
+			const data = await response.json();
+			alert(`Saved ${data.label}`);
+		} catch (error) {
+			console.error('Save error:', error);
+			alert('Failed to save: ' + error);
+		}
+	}
+	
+	let showRestoreModal = false;
+	let versions: Array<{version_id: string; label: string; created_at: string}> = [];
+	
+	async function loadVersions() {
+		if (!store.deck_id) return;
+		
+		try {
+			const response = await fetch(`/api/slides/${store.deck_id}/versions`);
+			if (response.ok) {
+				const data = await response.json();
+				versions = data.versions || [];
+			}
+		} catch (error) {
+			console.error('Failed to load versions:', error);
+		}
+	}
+	
+	function handleRestore() {
+		showRestoreModal = true;
+		loadVersions();
+	}
+	
+	async function restoreVersion(versionId: string) {
+		if (!store.deck_id) return;
+		
+		try {
+			const response = await fetch(`/api/slides/${store.deck_id}/restore/${versionId}`, {
+				method: 'POST'
+			});
+			
+			if (!response.ok) {
+				throw new Error('Restore failed');
+			}
+			
+			showRestoreModal = false;
+			alert('Version restored');
+			// Reload page or refresh state
+			location.reload();
+		} catch (error) {
+			console.error('Restore error:', error);
+			alert('Failed to restore: ' + error);
+		}
+	}
+	
+	function handleSlideSelect(slideId: string, multi: boolean) {
+		if (multi) {
+			slideStudioStore.update(s => {
+				const selected = [...s.selectedSlideIds];
+				const index = selected.indexOf(slideId);
+				if (index === -1) {
+					selected.push(slideId);
+				} else {
+					selected.splice(index, 1);
+				}
+				return { selectedSlideIds: selected };
+			});
+		} else {
+			slideStudioStore.update(s => ({
+				selectedSlideIds: [slideId]
+			}));
+		}
+	}
+</script>
+
 <svelte:head>
 	<title>슬라이드 | AI Agent Portal</title>
 </svelte:head>
 
-<div class="min-h-full bg-gray-950 text-slate-50">
-	<!-- Hero Section -->
-	<div class="relative overflow-hidden border-b border-slate-800/50">
-		<div class="absolute inset-0 bg-gradient-to-br from-purple-600/5 via-transparent to-pink-600/5"></div>
-		<div class="absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+<div class="h-full min-h-full bg-gray-950 text-slate-50 flex flex-col">
+	{#if store.viewMode === 'chat'}
+		<!-- Chat Mode: Initial screen -->
+		<div class="flex-1 flex flex-col min-h-0">
+			<!-- Chat History -->
+			<ChatHistory />
+			
+			<!-- Chat Input -->
+			<div class="flex-shrink-0 border-t border-gray-800/50">
+				<ChatInput onGenerate={handleGenerate} />
+			</div>
+		</div>
+	{:else}
+		<!-- Editor Mode: 3-panel layout -->
+		<!-- Top Bar -->
+		<TopBar
+			onGenerate={() => {
+				// Switch back to chat mode for new generation
+				slideStudioStore.update(s => ({ ...s, viewMode: 'chat' }));
+			}}
+			onStop={handleStop}
+			onExport={handleExport}
+			onSave={handleSave}
+			onRestore={handleRestore}
+		/>
 		
-		<div class="relative px-6 py-12 text-center">
-			<div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 mb-6 shadow-lg shadow-purple-500/20">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 text-white">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-				</svg>
+		<!-- Main Content (3-panel layout) -->
+		<div class="flex-1 flex min-h-0 overflow-hidden">
+			<!-- Left Panel: Slide List -->
+			<div class="w-64 shrink-0 overflow-y-auto border-r border-gray-800/50">
+				<SlideList onSlideSelect={handleSlideSelect} />
 			</div>
-			<h1 class="text-4xl md:text-5xl font-medium text-white mb-4">
-				AI 슬라이드 생성
-			</h1>
-			<p class="text-lg text-purple-200/80 max-w-2xl mx-auto">
-				Genspark 스타일의 AI 기반 프레젠테이션 슬라이드를 자동으로 생성합니다
-			</p>
-		</div>
-	</div>
-
-	<!-- Content Section -->
-	<div class="px-6 py-12 max-w-6xl mx-auto">
-		<!-- Coming Soon Badge -->
-		<div class="flex justify-center mb-8">
-			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-				</svg>
-				<span class="text-sm font-medium">Coming Soon</span>
+			
+			<!-- Center Panel: Canvas -->
+			<div class="flex-1 min-w-0 overflow-hidden">
+				<Canvas />
+			</div>
+			
+			<!-- Right Panel: Inspector -->
+			<div class="w-80 shrink-0 overflow-y-auto border-l border-gray-800/50">
+				<Inspector />
 			</div>
 		</div>
-
-		<!-- Feature Cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-			<!-- Feature 1 -->
-			<div class="bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800/50 p-6 hover:border-purple-500/30 transition-colors">
-				<div class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-purple-400">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-					</svg>
+	{/if}
+	
+	<!-- Restore Modal -->
+	{#if showRestoreModal}
+		<div
+			class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+			on:click={() => showRestoreModal = false}
+		>
+			<div
+				class="bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+				on:click|stopPropagation
+			>
+				<div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+					<h2 class="text-lg font-semibold text-white">Restore Version</h2>
+					<button
+						on:click={() => showRestoreModal = false}
+						class="p-1 hover:bg-gray-700 rounded-lg"
+					>
+						<svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
 				</div>
-				<h3 class="text-lg font-semibold text-white mb-2">AI 기반 자동 생성</h3>
-				<p class="text-sm text-slate-400">
-					주제만 입력하면 AI가 자동으로 슬라이드 구조와 내용을 생성합니다
-				</p>
-			</div>
-
-			<!-- Feature 2 -->
-			<div class="bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800/50 p-6 hover:border-purple-500/30 transition-colors">
-				<div class="w-12 h-12 rounded-lg bg-pink-500/10 flex items-center justify-center mb-4">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-pink-400">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-					</svg>
-				</div>
-				<h3 class="text-lg font-semibold text-white mb-2">시각적 레이아웃</h3>
-				<p class="text-sm text-slate-400">
-					이미지, 차트, 다이어그램을 자동으로 배치하여 전문적인 슬라이드를 만듭니다
-				</p>
-			</div>
-
-			<!-- Feature 3 -->
-			<div class="bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800/50 p-6 hover:border-purple-500/30 transition-colors">
-				<div class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-400">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-						<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-					</svg>
-				</div>
-				<h3 class="text-lg font-semibold text-white mb-2">맞춤형 스타일</h3>
-				<p class="text-sm text-slate-400">
-					다양한 템플릿과 테마를 선택하여 원하는 스타일의 슬라이드를 만들 수 있습니다
-				</p>
-			</div>
-		</div>
-
-		<!-- Genspark Reference -->
-		<div class="bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800/50 p-8">
-			<div class="flex items-start gap-4">
-				<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-purple-400">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-					</svg>
-				</div>
-				<div class="flex-1">
-					<h3 class="text-xl font-semibold text-white mb-3">Genspark AI Slides와 유사한 기능</h3>
-					<p class="text-slate-300 mb-4 leading-relaxed">
-						이 기능은 Genspark의 AI 슬라이드 생성 기능과 유사한 경험을 제공합니다. 
-						주제를 입력하면 AI가 자동으로 프레젠테이션 구조를 분석하고, 
-						각 슬라이드에 적합한 내용과 시각적 요소를 생성합니다.
-					</p>
-					<div class="space-y-2 text-sm text-slate-400">
-						<div class="flex items-center gap-2">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-purple-400">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-							</svg>
-							<span>주제 기반 자동 슬라이드 구조 생성</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-purple-400">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-							</svg>
-							<span>이미지 및 차트 자동 배치</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-purple-400">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-							</svg>
-							<span>프레젠테이션 형식으로 내보내기 (PPTX, PDF)</span>
-						</div>
+				
+				<div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+					<div class="space-y-2">
+						{#each versions as version (version.version_id)}
+							<button
+								on:click={() => restoreVersion(version.version_id)}
+								class="w-full p-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-left transition-colors"
+							>
+								<div class="font-medium text-white">{version.label}</div>
+								<div class="text-xs text-gray-400 mt-1">
+									{new Date(version.created_at).toLocaleString()}
+								</div>
+							</button>
+						{/each}
 					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	{/if}
 </div>

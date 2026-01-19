@@ -10,7 +10,7 @@
 		
 		<div class="relative px-6 py-8 text-center">
 			<h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
-				🏆 리더보드
+				리더보드
 			</h1>
 			<p class="text-base text-amber-200/80">
 				모델과 에이전트 성능을 한눈에 비교하세요.

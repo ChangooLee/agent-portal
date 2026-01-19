@@ -13,7 +13,7 @@
         
         <div class="relative px-6 py-8 text-center">
             <h1 class="text-3xl md:text-4xl font-bold mb-3 text-white">
-                📝 프롬프트 라이브러리
+                프롬프트 라이브러리
             </h1>
             <p class="text-base text-amber-200/80">
                 프롬프트 템플릿을 관리하고 버전을 추적합니다.
